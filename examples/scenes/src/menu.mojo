@@ -19,7 +19,7 @@ struct Menu:
         with canvas.style():
             canvas.fill(Color.WHITE)
             canvas.font_size(48)
-            canvas.text_align(HorizontalAlignment.CENTER)
+            canvas.text_align(Align.TOP)
             canvas.text("Scenes", 0, 40)
 
             canvas.fill(Color(180, 180, 190))

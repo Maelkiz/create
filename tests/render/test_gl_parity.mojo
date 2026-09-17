@@ -183,9 +183,7 @@ struct _Parity(Program):
                 canvas.no_stroke()
                 canvas.fill(Color.WHITE)
                 canvas.font_size(16)
-                canvas.text_align(
-                    HorizontalAlignment.CENTER, VerticalAlignment.MIDDLE
-                )
+                canvas.text_align(Align.CENTER)
                 canvas.text("parity", 0, 0)
         else:
             # Rotation defeats the axis-aligned fast path on both backends,

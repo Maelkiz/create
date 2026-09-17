@@ -35,7 +35,7 @@ struct App(Program):
 
         canvas.fill(Color(255, 255, 255, 160))
         canvas.font_size(28)
-        canvas.text_align(HorizontalAlignment.CENTER)
+        canvas.text_align(Align.TOP)
         canvas.text("alpha", 0.0, -150.0)
 
 

@@ -106,25 +106,21 @@ struct App(Program):
             canvas.no_stroke()
             canvas.fill(Color.WHITE)
             canvas.font_size(28)
-            canvas.text_align(
-                HorizontalAlignment.CENTER, VerticalAlignment.MIDDLE
-            )
+            canvas.text_align(Align.CENTER)
             canvas.text("centre / middle", 0, 0)
 
         with canvas.style():
             canvas.no_stroke()
             canvas.fill(Color(0x9C, 0xE8, 0x6E))
             canvas.font_size(20)
-            canvas.text_align(HorizontalAlignment.LEFT, VerticalAlignment.TOP)
+            canvas.text_align(Align.TOP_LEFT)
             canvas.text("left / top", canvas.left() + 12, canvas.top() - 12)
 
         with canvas.style():
             canvas.no_stroke()
             canvas.fill(Color(0xFF, 0xD5, 0x4F, 0xA0))
             canvas.font_size(20)
-            canvas.text_align(
-                HorizontalAlignment.RIGHT, VerticalAlignment.BOTTOM
-            )
+            canvas.text_align(Align.BOTTOM_RIGHT)
             canvas.text(
                 "right / bottom — translucent",
                 canvas.right() - 12,

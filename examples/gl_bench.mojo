@@ -117,7 +117,7 @@ struct Bench(Program):
             canvas.no_stroke()
             canvas.fill(Color.WHITE)
             canvas.font_size(22)
-            canvas.text_align(HorizontalAlignment.LEFT, VerticalAlignment.TOP)
+            canvas.text_align(Align.TOP_LEFT)
             canvas.text(
                 String(_SHAPES) + " shapes, two sprites, this line",
                 canvas.left() + 16,

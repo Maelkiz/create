@@ -1,29 +1,23 @@
-struct HorizontalAlignment(Copyable, Equatable, ImplicitlyCopyable, Movable):
-    """Which edge of the text box `canvas.text`'s position names horizontally.
+struct Align(Copyable, Equatable, ImplicitlyCopyable, Movable):
+    """Which point of a box a position names — one value for both axes.
 
-    A separate type from `VerticalAlignment` so `canvas.text_align` can be
-    overloaded on the axis: pass either one alone to set just that axis, or
-    both together.
-    """
+    The nine constants are the nine points of the box, so a single argument
+    says everything `canvas.text_align` needs:
 
-    var value: Int
+    ```
+    # # # # # # # # # # # # # # # # # # # # # #
+    # TOP_LEFT ———————— TOP ——————— TOP_RIGHT #
+    # |                  |                  | #
+    # |                  |                  | #
+    # LEFT —————————— CENTER —————————— RIGHT #
+    # |                  |                  | #
+    # |                  |                  | #
+    # BOTTOM_LEFT ——— BOTTOM ——— BOTTOM_RIGHT #
+    # # # # # # # # # # # # # # # # # # # # # #
+    ```
 
-    comptime LEFT = HorizontalAlignment(0)
-    comptime CENTER = HorizontalAlignment(1)
-    comptime RIGHT = HorizontalAlignment(2)
-
-    def __init__(out self, value: Int):
-        self.value = value
-
-    def __eq__(self, other: HorizontalAlignment) -> Bool:
-        return self.value == other.value
-
-    def __ne__(self, other: HorizontalAlignment) -> Bool:
-        return self.value != other.value
-
-
-struct VerticalAlignment(Copyable, Equatable, ImplicitlyCopyable, Movable):
-    """Which edge of the text box `canvas.text`'s position names vertically.
+    The one-word constants name an edge's midpoint: `TOP` is top-centre,
+    `LEFT` is middle-left, `CENTER` is the middle of the box.
 
     Edges of the box, not typographic baselines — there is no separate
     `text_baseline`. `TOP` and `BOTTOM` mean the visual top and bottom even
@@ -33,15 +27,52 @@ struct VerticalAlignment(Copyable, Equatable, ImplicitlyCopyable, Movable):
 
     var value: Int
 
-    comptime TOP = VerticalAlignment(0)
-    comptime MIDDLE = VerticalAlignment(1)
-    comptime BOTTOM = VerticalAlignment(2)
+    comptime TOP = Align(0)
+    comptime CENTER = Align(1)
+    comptime BOTTOM = Align(2)
+    comptime LEFT = Align(3)
+    comptime RIGHT = Align(4)
+    comptime TOP_LEFT = Align(5)
+    comptime BOTTOM_LEFT = Align(6)
+    comptime TOP_RIGHT = Align(7)
+    comptime BOTTOM_RIGHT = Align(8)
 
     def __init__(out self, value: Int):
         self.value = value
 
-    def __eq__(self, other: VerticalAlignment) -> Bool:
+    def __eq__(self, other: Align) -> Bool:
         return self.value == other.value
 
-    def __ne__(self, other: VerticalAlignment) -> Bool:
+    def __ne__(self, other: Align) -> Bool:
         return self.value != other.value
+
+    # The two axes, decoded for layout. Internal: a consumer picks a point,
+    # not an axis, so only the text layout ever asks which half of one it is.
+
+    def _left(self) -> Bool:
+        return (
+            self == Align.LEFT
+            or self == Align.TOP_LEFT
+            or self == Align.BOTTOM_LEFT
+        )
+
+    def _right(self) -> Bool:
+        return (
+            self == Align.RIGHT
+            or self == Align.TOP_RIGHT
+            or self == Align.BOTTOM_RIGHT
+        )
+
+    def _top(self) -> Bool:
+        return (
+            self == Align.TOP
+            or self == Align.TOP_LEFT
+            or self == Align.TOP_RIGHT
+        )
+
+    def _bottom(self) -> Bool:
+        return (
+            self == Align.BOTTOM
+            or self == Align.BOTTOM_LEFT
+            or self == Align.BOTTOM_RIGHT
+        )

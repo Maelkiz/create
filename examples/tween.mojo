@@ -121,7 +121,7 @@ struct App(Program):
 
         canvas.fill(Color(200, 200, 212))
         canvas.font_size(30)
-        canvas.text_align(HorizontalAlignment.CENTER)
+        canvas.text_align(Align.TOP)
         canvas.text("Easing and Tweens", 0, 362)
         canvas.font_size(18)
         canvas.text(
@@ -129,7 +129,7 @@ struct App(Program):
         )
 
         canvas.font_size(18)
-        canvas.text_align(HorizontalAlignment.LEFT, VerticalAlignment.MIDDLE)
+        canvas.text_align(Align.LEFT)
         for i in range(len(self.curves)):
             if i == self.pick:
                 canvas.fill(Color(235, 120, 70))

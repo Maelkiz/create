@@ -68,7 +68,7 @@ struct App(Program):
                 canvas.circle((0, 0), 70)
 
         canvas.fill(Color.WHITE)
-        canvas.text_align(HorizontalAlignment.CENTER)
+        canvas.text_align(Align.TOP)
         canvas.font_size(26)
         canvas.text("S - screenshot     I - image     Shift+I - 2x", 0, 220)
         canvas.font_size(20)

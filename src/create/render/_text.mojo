@@ -1,6 +1,6 @@
 from std.collections import Dict
 from std.math import max
-from .align import HorizontalAlignment, VerticalAlignment
+from .align import Align
 from .color import Color
 from .font import Font, _GlyphInfo, FONT_DEFAULT_PATH, FONT_FALLBACK_PATH
 from ._raster import blit_glyph
@@ -162,8 +162,8 @@ struct TextRenderer(Movable):
         """Place `s` around the already-mapped anchor `(tx, ty)`.
 
         The caller maps the anchor; glyphs lay out upright in pixel space, so
-        `VerticalAlignment.TOP`/`BOTTOM` keep meaning the top and bottom of the
-        text box however the world axes are oriented.
+        `Align.TOP`/`BOTTOM` keep meaning the top and bottom of the text box
+        however the world axes are oriented.
 
         Every glyph is in the cache when this returns, so a caller can read
         each one's mask by key without another FreeType call.
@@ -180,20 +180,21 @@ struct TextRenderer(Movable):
 
         var draw_x = Int(tx)
         var draw_y = Int(ty)
-        if style.text_horizontal_alignment == HorizontalAlignment.CENTER:
-            draw_x -= tw // 2
-        elif style.text_horizontal_alignment == HorizontalAlignment.RIGHT:
+        var align = style.text_align
+        if align._right():
             draw_x -= tw
+        elif not align._left():
+            draw_x -= tw // 2
 
         var asc = self._font[0].ascender
         var desc = self._font[0].descender
         var baseline_y = draw_y
-        if style.text_vertical_alignment == VerticalAlignment.TOP:
+        if align._top():
             baseline_y += asc
-        elif style.text_vertical_alignment == VerticalAlignment.MIDDLE:
-            baseline_y += (asc + desc) // 2
-        elif style.text_vertical_alignment == VerticalAlignment.BOTTOM:
+        elif align._bottom():
             baseline_y += desc
+        else:
+            baseline_y += (asc + desc) // 2
 
         var placed = List[PlacedGlyph]()
         var cx = draw_x

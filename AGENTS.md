@@ -64,7 +64,7 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 | `src/create/render/_style.mojo` | `Style` — fill, stroke, font settings; rebuilt fresh each frame, scoped by `canvas.style()` |
 | `src/create/render/_text.mojo` | `TextRenderer` — font loading, glyph cache, text layout |
 | `src/create/render/font.mojo` | `Font`, `FontWeight`, and the paths of the two packaged Noto faces |
-| `src/create/render/align.mojo` | `HorizontalAlignment` (`LEFT`/`CENTER`/`RIGHT`), `VerticalAlignment` (`TOP`/`MIDDLE`/`BOTTOM`) |
+| `src/create/render/align.mojo` | `Align` — the nine points of a box (`TOP_LEFT`/`TOP`/…/`CENTER`/…/`BOTTOM_RIGHT`), one value for both axes |
 | `src/create/render/color.mojo` | `Color` — constants, `hex`/`hsv`/`lerp` factories, `over` compositing |
 | `src/create/math/point2d.mojo` | `Point2D` — a position: `Point2D - Point2D -> Vector2D`, `Point2D + Vector2D -> Point2D`, `dist`, `lerp`, `xy`/`xyz`, and deliberately nothing else |
 | `src/create/math/vector2d.mojo` | `Vector2D` — an extent or a displacement: the full linear surface, `mag`, `normalize`, `dot`, scalar `*`, `zero()`/`one()` |
@@ -180,7 +180,7 @@ line. Every example and every test uses it.
 Each subpackage exports the names it owns and nothing from a layer below:
 
 - `from create.core import *` — `Program`, `run`, `run_headless`, `Context`, `Time`, `Input`, `MouseButton`, `Key`, `script_dir`.
-- `from create.render import *` — `Canvas` and its guards, `Surface`/`MemorySurface`, `Viewport`, `Color`, `Font`/`FontWeight`, the alignments, `AutoScale`, `RenderBackend`.
+- `from create.render import *` — `Canvas` and its guards, `Surface`/`MemorySurface`, `Viewport`, `Color`, `Font`/`FontWeight`, `Align`, `AutoScale`, `RenderBackend`.
 - `from create.math import *` — `Point2D`, `Vector2D`/`Vector3D`, `Matrix` and its constructors, the geometry shapes and `overlaps`, `Random`, `Easing`/`ease`/`Tween`, the util functions, and a re-export of `std.math` (`sin`, `cos`, `sqrt`, `clamp`, `pi`, `tau`, …).
 - `from create.sprite import *` — `Sprite`, `SpriteAnimation`, `SpriteAnimator`.
 - `from create.audio import *` — `Sound`, `Audio`.

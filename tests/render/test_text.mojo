@@ -5,7 +5,7 @@
 
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
-from create.render.align import HorizontalAlignment, VerticalAlignment
+from create.render.align import Align
 from create.render.color import Color
 from create.render.font import Font, FontWeight, FONT_DEFAULT_PATH, _GlyphInfo
 from create.render._style import Style
@@ -35,26 +35,18 @@ def _ink_box(m: MemorySurface) -> Tuple[Int, Int, Int, Int]:
     return (x0, y0, x1, y1)
 
 
-def _style(
-    horizontal: HorizontalAlignment, vertical: VerticalAlignment
-) -> Style:
+def _style(align: Align) -> Style:
     var s = Style()
     s.fill = Color.WHITE
     s.font_size = 24
-    s.text_horizontal_alignment = horizontal
-    s.text_vertical_alignment = vertical
+    s.text_align = align
     return s^
 
 
-def _draw(
-    horizontal: HorizontalAlignment,
-    vertical: VerticalAlignment,
-    x: Float64,
-    y: Float64,
-) raises -> MemorySurface:
+def _draw(align: Align, x: Float64, y: Float64) raises -> MemorySurface:
     var m = MemorySurface(200, 120)
     var t = TextRenderer()
-    t.draw(m.surface(), "Hi", x, y, _style(horizontal, vertical), 1.0)
+    t.draw(m.surface(), "Hi", x, y, _style(align), 1.0)
     return m^
 
 
@@ -102,7 +94,7 @@ def test_fallback_is_attempted_at_most_once() raises -> None:
 
 
 def test_draw_puts_ink_below_and_right_of_a_top_left_anchor() raises -> None:
-    var m = _draw(HorizontalAlignment.LEFT, VerticalAlignment.TOP, 40.0, 30.0)
+    var m = _draw(Align.TOP_LEFT, 40.0, 30.0)
     var box = _ink_box(m)
     assert_true(box[2] >= 0, "nothing was drawn")
     assert_true(box[0] >= 40, "ink started left of the anchor")
@@ -111,15 +103,9 @@ def test_draw_puts_ink_below_and_right_of_a_top_left_anchor() raises -> None:
 
 
 def test_centre_align_shifts_ink_left_of_left_align() raises -> None:
-    var left = _ink_box(
-        _draw(HorizontalAlignment.LEFT, VerticalAlignment.TOP, 100.0, 30.0)
-    )
-    var centre = _ink_box(
-        _draw(HorizontalAlignment.CENTER, VerticalAlignment.TOP, 100.0, 30.0)
-    )
-    var right = _ink_box(
-        _draw(HorizontalAlignment.RIGHT, VerticalAlignment.TOP, 100.0, 30.0)
-    )
+    var left = _ink_box(_draw(Align.TOP_LEFT, 100.0, 30.0))
+    var centre = _ink_box(_draw(Align.TOP, 100.0, 30.0))
+    var right = _ink_box(_draw(Align.TOP_RIGHT, 100.0, 30.0))
     assert_true(centre[0] < left[0], "CENTER did not shift left of LEFT")
     assert_true(right[0] < centre[0], "RIGHT did not shift left of CENTER")
 
@@ -128,15 +114,9 @@ def test_baseline_shifts_ink_up_the_buffer() raises -> None:
     # Glyphs rasterise upright regardless of the world y axis, so TOP must put
     # the box below the anchor and BOTTOM above it — in pixel rows, upward
     # means smaller.
-    var top = _ink_box(
-        _draw(HorizontalAlignment.LEFT, VerticalAlignment.TOP, 40.0, 60.0)
-    )
-    var middle = _ink_box(
-        _draw(HorizontalAlignment.LEFT, VerticalAlignment.MIDDLE, 40.0, 60.0)
-    )
-    var bottom = _ink_box(
-        _draw(HorizontalAlignment.LEFT, VerticalAlignment.BOTTOM, 40.0, 60.0)
-    )
+    var top = _ink_box(_draw(Align.TOP_LEFT, 40.0, 60.0))
+    var middle = _ink_box(_draw(Align.LEFT, 40.0, 60.0))
+    var bottom = _ink_box(_draw(Align.BOTTOM_LEFT, 40.0, 60.0))
     assert_true(middle[1] < top[1], "MIDDLE did not sit above TOP")
     assert_true(bottom[1] < middle[1], "BOTTOM did not sit above MIDDLE")
 
@@ -150,7 +130,7 @@ def test_pixel_scale_grows_the_glyphs() raises -> None:
         "Hi",
         20.0,
         20.0,
-        _style(HorizontalAlignment.LEFT, VerticalAlignment.TOP),
+        _style(Align.TOP_LEFT),
         1.0,
     )
     var m2 = MemorySurface(200, 120)
@@ -160,7 +140,7 @@ def test_pixel_scale_grows_the_glyphs() raises -> None:
         "Hi",
         20.0,
         20.0,
-        _style(HorizontalAlignment.LEFT, VerticalAlignment.TOP),
+        _style(Align.TOP_LEFT),
         2.0,
     )
     var small = _ink_box(m1)
@@ -182,15 +162,14 @@ def test_style_defaults() raises -> None:
     assert_true(s.stroke_enabled)
     assert_equal(s.font_size, 16)
     assert_equal(s.font_weight, FontWeight.REGULAR)
-    assert_true(s.text_horizontal_alignment == HorizontalAlignment.LEFT)
-    assert_true(s.text_vertical_alignment == VerticalAlignment.TOP)
+    assert_true(s.text_align == Align.TOP_LEFT)
 
 
 def test_repeating_a_draw_adds_no_cache_entries() raises -> None:
     # The point of the cache: a static line of text rasterises its glyphs on
     # the frame it first appears and on no frame after.
     var t = TextRenderer()
-    var top_left = _style(HorizontalAlignment.LEFT, VerticalAlignment.TOP)
+    var top_left = _style(Align.TOP_LEFT)
     var first = _draw_with(t, top_left.copy())
     var after_first = len(t._glyphs)
     var second = _draw_with(t, top_left.copy())
@@ -204,7 +183,7 @@ def test_repeating_a_draw_adds_no_cache_entries() raises -> None:
 def test_size_and_weight_are_part_of_the_key() raises -> None:
     # Both change the mask, so neither may be served from the other's entry.
     var t = TextRenderer()
-    var base = _style(HorizontalAlignment.LEFT, VerticalAlignment.TOP)
+    var base = _style(Align.TOP_LEFT)
 
     var regular = _draw_with(t, base.copy())
     var entries = len(t._glyphs)
@@ -229,7 +208,7 @@ def test_swapping_the_font_drops_the_cache() raises -> None:
     # The key says nothing about which face rendered the mask, so a face swap
     # would otherwise keep drawing the old font's glyphs.
     var t = TextRenderer()
-    var top_left = _style(HorizontalAlignment.LEFT, VerticalAlignment.TOP)
+    var top_left = _style(Align.TOP_LEFT)
     _ = _draw_with(t, top_left^)
     assert_true(len(t._glyphs) > 0, "nothing was cached")
     t.set_font(Font(FONT_DEFAULT_PATH, 24))
@@ -251,7 +230,7 @@ def test_the_cache_is_bounded() raises -> None:
 
     # The next miss drops the lot rather than growing past the limit, and the
     # draw it came from still lands its ink.
-    var top_left = _style(HorizontalAlignment.LEFT, VerticalAlignment.TOP)
+    var top_left = _style(Align.TOP_LEFT)
     var m = _draw_with(t, top_left^)
     assert_true(
         len(t._glyphs) < _GLYPH_CACHE_LIMIT, "the cache grew past its limit"
