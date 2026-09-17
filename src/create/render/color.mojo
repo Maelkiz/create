@@ -119,6 +119,15 @@ struct Color(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             UInt8(a + Int(dst.a) * ia // 255),
         )
 
+    def with_alpha(self, a: UInt8) -> Color:
+        """This color at a different opacity, 0 (invisible) to 255 (opaque).
+
+        The RGB channels are carried over untouched, so a named constant or a
+        computed color stays spelled once: `Color.RED.with_alpha(128)` rather
+        than respelling all three channels to change the fourth.
+        """
+        return Color(self.r, self.g, self.b, a)
+
     @staticmethod
     def hex(rgb: Int) -> Color:
         """Build a color from a packed literal: `Color.hex(0x336699)`."""

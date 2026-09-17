@@ -359,5 +359,23 @@ def test_over_repeated_converges_on_source() raises -> None:
     assert_true(c.r > UInt8(240))
 
 
+def test_with_alpha_keeps_rgb() raises -> None:
+    var c = Color(12, 34, 56, 255).with_alpha(128)
+    assert_equal(c.r, UInt8(12))
+    assert_equal(c.g, UInt8(34))
+    assert_equal(c.b, UInt8(56))
+    assert_equal(c.a, UInt8(128))
+
+
+def test_with_alpha_replaces_existing_alpha() raises -> None:
+    assert_equal(Color(1, 2, 3, 64).with_alpha(255), Color(1, 2, 3, 255))
+
+
+def test_with_alpha_composites_like_a_spelled_out_color() raises -> None:
+    var a = Color.RED.with_alpha(128).over(Color.BLUE)
+    var b = Color(255, 0, 0, 128).over(Color.BLUE)
+    assert_equal(a, b)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
