@@ -3,6 +3,7 @@ from std.testing import (
     assert_equal,
     assert_true,
     assert_almost_equal,
+    assert_raises,
 )
 from create.render.color import Color
 
@@ -93,6 +94,58 @@ def test_hex_channels() raises -> None:
 def test_hex_black_and_white() raises -> None:
     assert_equal(Color.hex(0x000000).r, UInt8(0))
     assert_equal(Color.hex(0xFFFFFF).b, UInt8(255))
+
+
+def test_hex_string_six_digits() raises -> None:
+    var c = Color.hex("#336699")
+    assert_equal(c.r, UInt8(0x33))
+    assert_equal(c.g, UInt8(0x66))
+    assert_equal(c.b, UInt8(0x99))
+    assert_equal(c.a, UInt8(255))
+
+
+def test_hex_string_hash_is_optional() raises -> None:
+    assert_equal(Color.hex("336699"), Color.hex("#336699"))
+
+
+def test_hex_string_is_case_insensitive() raises -> None:
+    assert_equal(Color.hex("#AbCdEf"), Color.hex("#abcdef"))
+
+
+def test_hex_string_matches_int_form() raises -> None:
+    assert_equal(Color.hex("#336699"), Color.hex(0x336699))
+    assert_equal(Color.hex("#ffffff"), Color.WHITE)
+    assert_equal(Color.hex("#000000"), Color.BLACK)
+
+
+def test_hex_string_short_form_doubles_digits() raises -> None:
+    assert_equal(Color.hex("#f80"), Color.hex("#ff8800"))
+    assert_equal(Color.hex("#fff"), Color.WHITE)
+    assert_equal(Color.hex("#000"), Color.BLACK)
+
+
+def test_hex_string_carries_alpha() raises -> None:
+    var c = Color.hex("#11223344")
+    assert_equal(c.r, UInt8(0x11))
+    assert_equal(c.a, UInt8(0x44))
+    assert_equal(Color.hex("#0000"), Color(0, 0, 0, 0))
+    assert_equal(Color.hex("#f00f"), Color.RED)
+
+
+def test_hex_string_rejects_bad_length() raises -> None:
+    with assert_raises():
+        _ = Color.hex("#12345")
+    with assert_raises():
+        _ = Color.hex("#")
+    with assert_raises():
+        _ = Color.hex("")
+
+
+def test_hex_string_rejects_non_hex_digit() raises -> None:
+    with assert_raises():
+        _ = Color.hex("#gggggg")
+    with assert_raises():
+        _ = Color.hex("#12 456")
 
 
 def test_hsv_primaries() raises -> None:

@@ -14,6 +14,18 @@ def _linear(v: UInt8) -> Float64:
     return ((c + 0.055) / 1.055) ** 2.4
 
 
+def _hex_digit(byte: UInt8) -> Int:
+    """One hex digit's value, or -1 if the byte is not a hex digit."""
+    var c = Int(byte)
+    if c >= 48 and c <= 57:  # '0'-'9'
+        return c - 48
+    if c >= 97 and c <= 102:  # 'a'-'f'
+        return c - 87
+    if c >= 65 and c <= 70:  # 'A'-'F'
+        return c - 55
+    return -1
+
+
 def _mix(a: UInt8, b: UInt8, t: Float64) -> UInt8:
     var fa = Float64(Int(a))
     var fb = Float64(Int(b))
@@ -114,6 +126,57 @@ struct Color(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             UInt8((rgb >> 16) & 0xFF),
             UInt8((rgb >> 8) & 0xFF),
             UInt8(rgb & 0xFF),
+        )
+
+    @staticmethod
+    def hex(code: String) raises -> Color:
+        """Build a color from a CSS hex string: `Color.hex("#336699")`.
+
+        Accepts `#rgb`, `#rgba`, `#rrggbb` and `#rrggbbaa`; the leading `#` is
+        optional and case does not matter. The short forms double each digit,
+        as CSS does, so `"#f80"` is `"#ff8800"`. Alpha defaults to opaque.
+
+        This is the form to paste into from a design tool, and the only one
+        that carries alpha in a single token. `hex(Int)` stays the form for a
+        literal written in source, since a parse can raise and so cannot run
+        at compile time.
+
+        Raises:
+            If the string is not one of the four accepted lengths, or holds a
+            character that is not a hex digit.
+        """
+        var bytes = code.as_bytes()
+        var start = 0
+        if len(bytes) > 0 and bytes[0] == 35:  # '#'
+            start = 1
+        var count = len(bytes) - start
+        if count != 3 and count != 4 and count != 6 and count != 8:
+            raise Error(
+                "Color.hex: expected 3, 4, 6 or 8 hex digits, got '",
+                code,
+                "'",
+            )
+        var digits = List[Int]()
+        for i in range(start, len(bytes)):
+            var d = _hex_digit(bytes[i])
+            if d < 0:
+                raise Error("Color.hex: not a hex color: '", code, "'")
+            digits.append(d)
+
+        if count <= 4:
+            var a = 255 if count == 3 else digits[3] * 17
+            return Color(
+                UInt8(digits[0] * 17),
+                UInt8(digits[1] * 17),
+                UInt8(digits[2] * 17),
+                UInt8(a),
+            )
+        var a = 255 if count == 6 else (digits[6] << 4) | digits[7]
+        return Color(
+            UInt8((digits[0] << 4) | digits[1]),
+            UInt8((digits[2] << 4) | digits[3]),
+            UInt8((digits[4] << 4) | digits[5]),
+            UInt8(a),
         )
 
     @staticmethod
