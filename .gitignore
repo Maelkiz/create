@@ -9,3 +9,6 @@
 # build artifacts
 *.mojoc
 /build/
+
+# Written by examples/screenshot.mojo when its save keys are pressed
+out/

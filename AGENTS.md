@@ -53,6 +53,7 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 | `src/create/render/render_backend.mojo` | `RenderBackend` — the `CPU`/`GPU` backend-selector constants |
 | `src/create/render/_backend.mojo` | `Backend` — owns the fonts, glyph cache and interned sprite images; replays a frame's `DrawCommand`s onto a `Surface` (`present`) or through GL (`present_gpu`) |
 | `src/create/render/surface.mojo` | `Surface` — a borrowed RGBA framebuffer; `MemorySurface` — one backed by owned memory. The CPU backend's replay target, not `Canvas`'s |
+| `src/create/render/_png.mojo` | `write_png` — an RGBA buffer out to a PNG file through libpng's simplified API. Knows nothing about what the pixels mean, so both capture kinds use it |
 | `src/create/render/_raster.mojo` | Free functions over a `Surface`: `blend`, `fill_span` and every fill/line/triangle/blit built on it. Called only from `_backend.mojo` |
 | `src/create/render/_gl.mojo` | The GL 3.3 entry points, resolved at runtime through SDL's loader and held as bitcast function pointers. The only file that talks to the driver |
 | `src/create/render/_tessellate.mojo` | `DrawCommand` to triangles: the CPU-side geometry the GPU replays, transform baked per-vertex |
@@ -276,6 +277,26 @@ resolved at replay, in the backend that owns the fonts. Add a new shape by exten
 `RenderBackend.GPU` replays through `GLRenderer` in [_gl_backend.mojo](src/create/render/_gl_backend.mojo)
 — and a `kind` rather than a trait object because Mojo 1.0 has no dynamic trait dispatch. Users
 select one with `run[T](..., backend=RenderBackend.GPU)`; the default is unchanged.
+
+**A capture is serviced inside `present`/`present_gpu`, never from the run loop.**
+`canvas.save_image` and `canvas.save_screenshot` file a request on the `Backend` and return;
+the file is written when the frame is presented. That is not laziness — `present` is the only
+place that holds both halves at once: the finished framebuffer (what a screenshot is) and the
+frame's command buffer, still unconsumed (what an image is replayed from). Filing a request also
+makes the call position-independent: the image holds the whole frame however early in `render` it
+was asked for. A failed write raises out of `present`, like a missing font does.
+
+`save_image` re-rasterises **on the CPU under both backends**, through `replay` with the capture's
+own pre-matrix (`capture_view.base_matrix() @ canvas._base_inv`) and `CMD_LETTERBOX` masked out.
+That is possible because the glyph cache and the interned images live on `Backend`, not on
+`GLRenderer` — so a GPU frame is captured at a resolution the window never had, with no
+`glReadPixels` and no stall. The screenshot is the opposite trade: the CPU path is a `memcpy` of
+the `Surface`, and the GPU path is a `GLRenderer.read_frame` readback, which does stall the
+pipeline for that one frame. Acceptable on a keypress, not per frame — and the capture doubles the
+frame's rasterisation cost on the frame it happens, whichever kind it is.
+
+[examples/screenshot.mojo](examples/screenshot.mojo) demonstrates both, side by side: resize
+the window and the screenshot follows it while the image never does.
 
 **A CPU rasteriser computes the covered run per row and hands it to `fill_span`; `blend` is only
 for genuinely scattered pixels.** `fill_span` ([_raster.mojo](src/create/render/_raster.mojo)) is
@@ -502,6 +523,7 @@ docstring; this table is not an API reference and must not grow into one.
 | `DrawCommand` | One recorded draw: local-space geometry, the transform at record time, and the resolved `Style`. What `Canvas` appends instead of touching pixels — see [_command.mojo](src/create/render/_command.mojo) |
 | `Backend` | Owns the fonts, glyph cache and interned sprite images, and replays a frame's `DrawCommand`s — onto a `Surface` at `present` (CPU, the one caller of `_raster.mojo`) or through `GLRenderer` at `present_gpu` (GPU). Which one is a `kind` field, not a trait object |
 | `Surface` | A borrowed RGBA framebuffer: pixel pointer plus width and height. Deliberately a plain value, not a trait. The **CPU** backend's replay target specifically — the GPU path has none, and `Canvas` never holds one either way. Taken after event processing so a resize is never missed |
+| `save_image` / `save_screenshot` | The two captures, and they answer different questions. `canvas.save_image(path, scale, transparent)` is what the program *drew*: design resolution times `scale`, no letterbox bars, CPU-replayed from the recorded commands under **both** backends, so it is reproducible across machines and window sizes. `canvas.save_screenshot(path)` is what the user *saw*: the drawable's own resolution, bars included, drawn by whichever rasteriser drew the frame, hence machine-dependent by design. Neither is a fallback for the other |
 | `Viewport` | The design-space-to-pixel mapping: design size, autoscale mode, scale factor, offsets, base matrix. Owns no window and no pixels, so it is pure arithmetic; `Context` forwards to it |
 | `PersistentCanvasState` | What survives the frame boundary — the `Backend` (hence fonts, glyph cache, sprite images) and the letterbox colour — moved into each frame's `Canvas` and back out again by `_release`. Style is *not* in it: `Canvas` is reachable only from `render`, so nothing could seed a style outside a frame, and carrying one forward would preserve only a forgotten setting |
 | `TransformGuard` / `StyleGuard` | RAII wrappers from `canvas.transform(m)` and `canvas.style()` — pop the matrix, restore the style, on scope exit |
