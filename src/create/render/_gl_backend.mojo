@@ -633,6 +633,10 @@ struct GLRenderer(Movable):
         """The GL texture for a backend image id, uploaded on first use."""
         if id in self.textures:
             return self.textures[id]
+        # Uploading rebinds unit 1 itself, ahead of `_bind`'s own check — so
+        # whatever the batch so far is sampling from unit 1 must be flushed
+        # here, or it silently gets drawn under this new texture instead.
+        self._flush()
         ref img = images[id]
         var name = _gen_object(self.gl.gen_textures)
         self.gl.active_texture(GL_TEXTURE1)
