@@ -34,11 +34,12 @@ would compare a smooth edge against a hard one and prove nothing about
 geometry. Turning it on is a separate change, one this rewrite exists to
 unblock rather than to make.
 
-**It skips without a display.** There is no CI, `pixi run test` has to stay
-runnable over SSH, and a GL context needs a compositor.
+**It skips with no GL context at all.** SDL3's offscreen video driver gives a
+working GL 3.3 context with no display, so `pixi run test` falls back to it
+when `DISPLAY`, `WAYLAND_DISPLAY` and `XDG_RUNTIME_DIR` are all unset — this
+test only skips if `GLWindow` construction itself raises.
 """
 
-from std.os import getenv
 from std.math import abs, max, min
 from std.testing import TestSuite, assert_true
 
@@ -398,13 +399,6 @@ def _cpu_frame(shape: Int) raises -> MemorySurface:
     return mem^
 
 
-def _has_display() -> Bool:
-    return (
-        getenv("DISPLAY").byte_length() > 0
-        or getenv("WAYLAND_DISPLAY").byte_length() > 0
-    )
-
-
 def _gpu_frame(mut win: GLWindow, shape: Int) raises -> List[UInt8]:
     """One shape's frame through the GL backend, into an offscreen RGBA
     target.
@@ -477,9 +471,6 @@ def _gpu_frame(mut win: GLWindow, shape: Int) raises -> List[UInt8]:
 
 
 def test_the_gl_backend_matches_the_cpu_backend() raises -> None:
-    if not _has_display():
-        print("SKIP — no DISPLAY or WAYLAND_DISPLAY, so no GL context")
-        return
     var win: GLWindow
     try:
         # Tiny and never drawn into: the frame goes to an FBO, and this exists
