@@ -14,11 +14,11 @@ how much of the repo it touches.
 
 Mojo Create follows these principles:
 
-- **Prioritize API intuitiveness.** Avoid non-obvious abbreviations and jargon. Prefer clarity over brevity when naming.
+- **Prioritize API intuitiveness.** Avoid non-obvious abbreviations and refer clarity over brevity when naming.
 - **Prioritize consumer ergonomics.** Do not sacrifice usability merely to minimize the API surface.
 - **Keep the common path simple.** Simple sketches should require minimal ceremony.
 - **Keep the architecture modular.** Separate concerns appropriately and minimise coupling between components.
-- **Prefer consistency over cleverness.** Similar concepts should behave and be named consistently throughout the API.
+- **Consistency is key.** Similar concepts should behave and be named consistently throughout the API.
 - **Make good performance the default.** Users should not need to understand the library's internals or use specialised APIs to get good performance.
 
 The goal is **Processing's ergonomics + clean separation of concerns + Mojo's performance**.
