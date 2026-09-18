@@ -1,6 +1,8 @@
 from create.render.autoscale import AutoScale
 from create.render.canvas import PersistentCanvasState
+from create.render.render_backend import RenderBackend
 from ._frame import step
+from ._headless_gl import _run_headless_gl
 from .context import Context
 from .input import Input
 from .program import Program
@@ -20,6 +22,7 @@ def run_headless[
     frames: Int = 1,
     pixel_width: Int = 0,
     pixel_height: Int = 0,
+    backend: Int = RenderBackend.CPU,
 ) raises -> MemorySurface:
     """Run `P` for `frames` frames over an owned buffer and return it.
 
@@ -32,7 +35,17 @@ def run_headless[
 
     Time is synthetic and the input is empty, so the result depends only on
     the program.
+
+    `backend=RenderBackend.GPU` runs the same frames through the GL backend
+    into an offscreen framebuffer instead, reading the result back at the
+    end rather than replaying onto the buffer every frame — see
+    `_headless_gl.mojo`. It raises if no GL context can be created; it never
+    falls back to the CPU backend.
     """
+    if backend == RenderBackend.GPU:
+        return _run_headless_gl[P](
+            width, height, frames, pixel_width, pixel_height
+        )
     var pw = pixel_width if pixel_width > 0 else width
     var ph = pixel_height if pixel_height > 0 else height
     var mem = MemorySurface(pw, ph)
