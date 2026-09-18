@@ -46,23 +46,8 @@ from std.testing import TestSuite, assert_true
 from create import *
 from create.core._frame import step
 from create.render.render_backend import RenderBackend
-from create.render._gl import (
-    GL,
-    GL_COLOR_ATTACHMENT0,
-    GL_CLAMP_TO_EDGE,
-    GL_FRAMEBUFFER,
-    GL_FRAMEBUFFER_COMPLETE,
-    GL_NEAREST,
-    GL_RGBA,
-    GL_RGBA8,
-    GL_TEXTURE_2D,
-    GL_TEXTURE_MAG_FILTER,
-    GL_TEXTURE_MIN_FILTER,
-    GL_TEXTURE_WRAP_S,
-    GL_TEXTURE_WRAP_T,
-    GL_UNSIGNED_BYTE,
-    _UInts,
-)
+from create.render._gl import GL
+from create.render._gl_target import _GLTarget
 from create.render.canvas import PersistentCanvasState
 from window import GLWindow
 
@@ -410,37 +395,7 @@ def _gpu_frame(mut win: GLWindow, shape: Int) raises -> List[UInt8]:
     Returns rows top-down, matching `MemorySurface` — `GLRenderer.read_frame`
     does the flip.
     """
-    var gl = GL()
-    var names = List[UInt32](length=1, fill=0)
-    gl.gen_textures(1, _UInts(unsafe_from_address=Int(names.unsafe_ptr())))
-    var color = names[0]
-    gl.bind_texture(GL_TEXTURE_2D, color)
-    var blank = List[UInt8](length=_PIXEL_W * _PIXEL_H * 4, fill=0)
-    gl.tex_image_2d(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGBA8,
-        Int32(_PIXEL_W),
-        Int32(_PIXEL_H),
-        0,
-        GL_RGBA,
-        GL_UNSIGNED_BYTE,
-        Int(blank.unsafe_ptr()),
-    )
-    _ = blank^
-    gl.tex_parameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-    gl.tex_parameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-    gl.tex_parameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
-    gl.tex_parameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
-
-    gl.gen_framebuffers(1, _UInts(unsafe_from_address=Int(names.unsafe_ptr())))
-    var fbo = names[0]
-    gl.bind_framebuffer(GL_FRAMEBUFFER, fbo)
-    gl.framebuffer_texture_2d(
-        GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color, 0
-    )
-    if gl.check_framebuffer_status(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
-        raise Error("the offscreen framebuffer is incomplete")
+    var target = _GLTarget(GL(), _PIXEL_W, _PIXEL_H)
 
     var ctx = Context()
     ctx.view.set_design(_DESIGN_W, _DESIGN_H)
@@ -459,14 +414,10 @@ def _gpu_frame(mut win: GLWindow, shape: Int) raises -> List[UInt8]:
     # library cannot drift in how a GL frame is read or which way up it is.
     var out = state.backend.gl.value().read_frame(_PIXEL_W, _PIXEL_H)
 
-    gl.bind_framebuffer(GL_FRAMEBUFFER, 0)
-    gl.delete_framebuffers(
-        1, _UInts(unsafe_from_address=Int(names.unsafe_ptr()))
-    )
-    # Rule 3: the renderer's GL objects are freed when `state` drops, which
-    # must happen while the context is still current.
+    # Rule 3: both renderers' GL objects are freed while the context — still
+    # owned by `win`, in the caller — is current.
     _ = state^
-    _ = names^
+    _ = target^
     return out^
 
 
