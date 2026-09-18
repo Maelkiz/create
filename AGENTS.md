@@ -42,7 +42,8 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 | `src/create/core/program.mojo` | Defines the `Program` trait |
 | `src/create/core/run.mojo` | `run[T](title, width, height, fullscreen, backend)` — the windowed entry point; dispatches to the GPU loop when `backend == RenderBackend.GPU` |
 | `src/create/core/_frame.mojo` | `step[P]` — one frame: update, render, letterbox, release. The one copy, shared by both loops |
-| `src/create/core/headless.mojo` | `run_headless[T](width, height, frames, pixel_width, pixel_height)` — same loop, owned buffer, no window |
+| `src/create/core/headless.mojo` | `run_headless[T](width, height, frames, pixel_width, pixel_height, backend)` — same loop, owned buffer, no window; dispatches to `_headless_gl.mojo` when `backend == RenderBackend.GPU` |
+| `src/create/core/_headless_gl.mojo` | `_run_headless_gl[T]` — `run_headless`'s GPU counterpart: the same frames through the GL backend into an offscreen `_GLTarget`, read back once at the end |
 | `src/create/core/context.mojo` | `Context` — width/height/time/autoscale passed to every frame |
 | `src/create/core/time.mojo` | `Time` — frame delta, frame count, elapsed seconds |
 | `src/create/core/input.mojo` | `Input` — keyboard state, mouse position/buttons |
@@ -56,6 +57,7 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 | `src/create/render/_png.mojo` | `write_png` — an RGBA buffer out to a PNG file through libpng's simplified API. Knows nothing about what the pixels mean, so both capture kinds use it |
 | `src/create/render/_raster.mojo` | Free functions over a `Surface`: `blend`, `fill_span` and every fill/line/triangle/blit built on it. Called only from `_backend.mojo` |
 | `src/create/render/_gl.mojo` | The GL 3.3 entry points, resolved at runtime through SDL's loader and held as bitcast function pointers. The only file that talks to the driver |
+| `src/create/render/_gl_target.mojo` | `_GLTarget` — an offscreen framebuffer object sized exactly to a requested resolution, for the parity test and the headless GPU path, neither of which can trust a window's own drawable to be the size they asked for |
 | `src/create/render/_tessellate.mojo` | `DrawCommand` to triangles: the CPU-side geometry the GPU replays, transform baked per-vertex |
 | `src/create/render/_gl_backend.mojo` | `GLRenderer` — the shader, the vertex buffer, the glyph atlas and sprite textures, and the batching that replays a frame in one draw call where it can |
 | `src/create/core/_run_gl.mojo` | `run_gl[T]` — the GPU run loop: a `GLWindow`, the same `step`, `present_gpu` plus a buffer swap |
@@ -91,7 +93,9 @@ mojo run -I src examples/sketch.mojo
 # Pixi shorthand for examples
 pixi run create examples/sketch.mojo
 
-# Run all tests
+# Run all tests — falls back to SDL's offscreen video driver with no display
+# (DISPLAY, WAYLAND_DISPLAY and XDG_RUNTIME_DIR all unset), so the GL tests
+# still run rather than skip
 pixi run test
 
 # Run a single test file
@@ -156,14 +160,36 @@ orientation, alpha compositing, stroke scaling, letterbox bars and sprite blits 
 them, and [tests/core/test_frame.mojo](tests/core/test_frame.mojo) scripts an `Input` and calls `step`
 directly to drive click- and key-driven behaviour with no window.
 
-[tests/render/test_gl_parity.mojo](tests/render/test_gl_parity.mojo) is what keeps the two backends
-honest: one shape kind per frame, drawn through `run_headless` and through a GL framebuffer object,
-compared structurally rather than pixel by pixel — bounding box, centroid and ink coverage, each
-within a tolerance sized for rasteriser disagreement, plus the interior colour away from every edge.
-Structural rather than exact because two rasterisers are entitled to disagree at the edges (integer
-vs. float coverage, different fill rules) without either being wrong, and because a pixel-exact
-comparison would forever forbid antialiasing the GPU path. A failure names the shape kind rather than
-a pixel count. The test skips itself with no display, since it needs a real GL context.
+GPU coverage is two tiers, and they catch different things. [tests/render/test_gl_parity.mojo](tests/render/test_gl_parity.mojo)
+is what keeps the two backends honest: one shape kind per frame, drawn through `run_headless` and
+through a GL framebuffer object, compared structurally rather than pixel by pixel — bounding box,
+centroid and ink coverage, each within a tolerance sized for rasteriser disagreement, plus the
+interior colour away from every edge. Structural rather than exact because two rasterisers are
+entitled to disagree at the edges (integer vs. float coverage, different fill rules) without either
+being wrong, and because a pixel-exact comparison would forever forbid antialiasing the GPU path. A
+failure names the shape kind rather than a pixel count. It draws one shape kind per frame by design,
+so it cannot reach anything that only exists across several draws in one frame.
+
+That's the other tier's job: `run_headless(..., backend=RenderBackend.GPU)`
+([tests/render/test_headless_gl.mojo](tests/render/test_headless_gl.mojo)) drives a program through the
+GL backend alone, with no CPU frame to compare against, for behaviour that parity is structurally
+blind to — [tests/render/test_gl_batching.mojo](tests/render/test_gl_batching.mojo) covers the batch
+breaks (an opaque clear, a second sprite texture) and the vertex buffer surviving reuse past its
+first-frame capacity; [tests/render/test_gl_capture.mojo](tests/render/test_gl_capture.mojo) covers
+the two GPU-only capture paths — `save_screenshot`'s real `glReadPixels` stall and forced opacity,
+and `save_image`'s byte-for-byte agreement with the CPU backend's own capture, which holds because
+both replay the same recorded commands through the same CPU code regardless of which backend drew
+the live frame.
+
+Every GL test skips itself with no GL context, and none needs a display to get one: SDL3's offscreen
+video driver gives a working GL 3.3 context headless, and `pixi run test` switches to it whenever
+`DISPLAY`, `WAYLAND_DISPLAY` and `XDG_RUNTIME_DIR` are all unset. Offscreen is likely software
+rasterisation (llvmpipe or similar), which is fine for what these tests check — batching, texture
+units, buffer growth, the readback path, geometric agreement between backends are all library-logic
+bugs a software rasteriser catches as well as any GPU — and blind to bugs specific to a real driver,
+which were never in scope. The drawable-versus-logical-size distinction (Gotcha 6) has no offscreen
+counterpart: an FBO has one size and no window manager to disagree with it, so that stays a
+windowed-only concern.
 
 `tests/core/test_smoke.mojo` is both: the pre-commit hook builds it, and `pixi run test` runs it
 through `run_headless`. Its `_windowed_entry_point` is never called — `run[T]` opens a window and
