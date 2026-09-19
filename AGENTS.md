@@ -59,6 +59,7 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 | `src/create/render/_gl.mojo` | The GL 3.3 entry points, resolved at runtime through SDL's loader and held as bitcast function pointers. The only file that talks to the driver |
 | `src/create/render/_gl_target.mojo` | `_GLTarget` — an offscreen framebuffer object sized exactly to a requested resolution, for the parity test and the headless GPU path, neither of which can trust a window's own drawable to be the size they asked for |
 | `src/create/render/_tessellate.mojo` | `DrawCommand` to triangles: the CPU-side geometry the GPU replays, transform baked per-vertex |
+| `src/create/render/_fillet.mojo` | Corner-radius geometry shared by both backends: `rect_corner_radius`/`triangle_corner_radius` clamp a requested radius to what a shape can hold, `corner_fillet` returns one vertex's fillet centre, tangent points and arc angles — no shape-specific special-casing, so `_backend.mojo` and `_tessellate.mojo` round rectangles and triangles from the same numbers |
 | `src/create/render/_gl_backend.mojo` | `GLRenderer` — the shader, the vertex buffer, the glyph atlas and sprite textures, and the batching that replays a frame in one draw call where it can |
 | `src/create/core/_run_gl.mojo` | `run_gl[T]` — the GPU run loop: a `GLWindow`, the same `step`, `present_gpu` plus a buffer swap |
 | `src/create/render/viewport.mojo` | `Viewport` — the design-space-to-pixel mapping, autoscale arithmetic, base matrix |
@@ -444,7 +445,17 @@ Consequences worth internalising:
 
 **Style defaults are not blank:** every frame starts from `Style()`, which has **outline `BLACK`,
 enabled, 1 unit thick** — a `rectangle` drawn without `outline(enabled=False)` gets an outline nobody
-asked for. The rest of the defaults are in [_style.mojo](src/create/render/_style.mojo).
+asked for. `corner_radius` defaults to `0` (sharp corners, unchanged behaviour). The rest of the
+defaults are in [_style.mojo](src/create/render/_style.mojo).
+
+**Rounding a corner does not change what "outline" means for that shape.** A rectangle's outline
+is an **inset ring** — the stroke sits inside the fill footprint, so rounding just curves the ring's
+own inner and outer edges at each corner. A triangle's outline is **centred, device-space bands**
+running along and around the shape at a fixed pixel width — rounding replaces each straight band's
+corner join with a centred arc band, but the fill footprint itself is unchanged either way. This
+distinction predates `corner_radius` and rounding must preserve it exactly, not blur the two
+conventions together — currently the only place both are spelled out together is
+`emit_triangle`'s docstring in [_tessellate.mojo](src/create/render/_tessellate.mojo).
 
 **Three colours, not two, and glyphs take their own.** `Style` carries `fill_color`,
 `outline_color` and `text_color` — the `_color` suffix on all three so a colour field never reads
