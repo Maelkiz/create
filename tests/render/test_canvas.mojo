@@ -267,6 +267,149 @@ def test_rotation_takes_the_inverse_mapped_path() raises -> None:
     assert_equal(m.pixel(41, 41), Color.BLACK)
 
 
+@fieldwise_init
+struct SharpRect(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut ctx: Context) raises -> SharpRect:
+        return SharpRect(0)
+
+    def render(self, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(0)
+        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
+
+
+def test_corner_radius_zero_matches_sharp_rect() raises -> None:
+    # A 40x40 rect at the origin covers device pixels [30, 70) on both axes.
+    # corner_radius(0) must leave every corner square, not just mostly so.
+    var m = run_headless[SharpRect](100, 100)
+    assert_equal(m.pixel(31, 31), Color.RED)
+    assert_equal(m.pixel(68, 68), Color.RED)
+
+
+@fieldwise_init
+struct RoundedRect(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut ctx: Context) raises -> RoundedRect:
+        return RoundedRect(0)
+
+    def render(self, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(10)
+        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
+
+
+def test_rect_corner_radius_rounds_the_corner() raises -> None:
+    # Same 40x40 rect, corner_radius 10: the top-left fillet is a disc of
+    # radius 10 centred on device pixel (40, 40).
+    var m = run_headless[RoundedRect](100, 100)
+    # Right at the sharp rect's own corner — well outside the fillet disc.
+    assert_equal(m.pixel(31, 31), Color.BLACK)
+    # Close to the fillet's own centre — inside the disc, so still filled.
+    assert_equal(m.pixel(39, 39), Color.RED)
+
+
+@fieldwise_init
+struct RoundedRectOutlined(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut ctx: Context) raises -> RoundedRectOutlined:
+        return RoundedRectOutlined(0)
+
+    def render(self, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.BLUE, thickness=2)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(10)
+        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
+
+
+def test_rect_corner_radius_outline_follows_the_arc() raises -> None:
+    # Same fillet, centred on device pixel (40, 40), radius 10, with a 2-unit
+    # outline: outer ring at distance 10, inner edge at distance 8. Probing
+    # along the diagonal (not an axis) is what actually exercises the arc
+    # rather than a square corner's straight edges.
+    var m = run_headless[RoundedRectOutlined](100, 100)
+    # Distance from (40, 40) is about 9.9 — inside the outer radius, outside
+    # the inner one: on the ring.
+    assert_equal(m.pixel(33, 33), Color.BLUE)
+    # Distance about 11.3 — outside the fillet disc entirely.
+    assert_equal(m.pixel(32, 32), Color.BLACK)
+    # Distance about 7.1 — inside the inner radius: fill, not outline.
+    assert_equal(m.pixel(35, 35), Color.RED)
+
+
+def test_rect_corner_radius_keeps_the_flat_edge() raises -> None:
+    # Away from either corner, the top edge of the same rect is untouched by
+    # rounding — still the sharp rect's own straight boundary at row 30/31.
+    var m = run_headless[RoundedRect](100, 100)
+    assert_equal(m.pixel(50, 31), Color.RED)
+    assert_equal(m.pixel(50, 29), Color.BLACK)
+
+
+@fieldwise_init
+struct ScaledRoundedRect(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut ctx: Context) raises -> ScaledRoundedRect:
+        return ScaledRoundedRect(0)
+
+    def render(self, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(5)
+        canvas.rectangle(0.0, 0.0, 20.0, 20.0)
+
+
+def test_corner_radius_scales_to_pixels() raises -> None:
+    # 50x50 design in a 100x100 buffer is a 2x scale: a 20x20 world rect with
+    # a 5-unit corner_radius covers the same device pixels — [30, 70) with a
+    # 10-pixel fillet — as RoundedRect's own 40x40-at-1x case above.
+    var m = run_headless[ScaledRoundedRect](50, 50, 1, 100, 100)
+    assert_equal(m.pixel(31, 31), Color.BLACK)
+    assert_equal(m.pixel(39, 39), Color.RED)
+
+
+@fieldwise_init
+struct RotatedRoundedRect(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut ctx: Context) raises -> RotatedRoundedRect:
+        return RotatedRoundedRect(0)
+
+    def render(self, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.YELLOW)
+        canvas.corner_radius(6)
+        with canvas.transform(rotate(pi / 4.0)):
+            canvas.rectangle(0.0, 0.0, 20.0, 20.0)
+
+
+def test_rect_corner_radius_under_rotation() raises -> None:
+    # Same rotated square as test_rotation_takes_the_inverse_mapped_path, but
+    # with corner_radius 6. World (0, 13) maps to local (9.19, 9.19) — right
+    # next to the local corner vertex (10, 10) — so a fillet that size must
+    # now exclude it, where the sharp rotated square included it.
+    var m = run_headless[RotatedRoundedRect](100, 100)
+    assert_equal(m.pixel(50, 50), Color.YELLOW)
+    assert_equal(m.pixel(50, 37), Color.BLACK)
+    # Deep interior, far from any corner: unaffected by rounding.
+    assert_equal(m.pixel(46, 46), Color.YELLOW)
+
+
 struct SpriteBlit(Program):
     var sprite: Sprite
 

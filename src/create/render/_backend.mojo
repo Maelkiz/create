@@ -28,10 +28,12 @@ from ._gl_backend import GLRenderer
 from ._image import _Image
 from ._style import Style
 from ._transform import pixel_scale, outline_thickness_px, uniform
+from ._fillet import rect_corner_radius
 from ._png import write_png
 from .surface import MemorySurface, Surface, _force_opaque
 from ._text import TextRenderer
 from .render_backend import RenderBackend
+from .color import Color
 
 
 def device_bounds(
@@ -214,6 +216,230 @@ def _ellipse_row_span(
     var start = max(Int(ceil(r0)) + col0, col_lo)
     var end = min(Int(floor(r1)) + col0, col_hi - 1)
     return (start, end)
+
+
+def _circle_arc_row[
+    o: Origin[mut=True]
+](
+    s: Surface[o],
+    row_off: Int,
+    pcx: Float64,
+    dy: Float64,
+    pr2: Float64,
+    pr_inner2: Float64,
+    x0: Int,
+    x1: Int,
+    full_fill: Bool,
+    outline_visible: Bool,
+    fill_enabled: Bool,
+    fill_col: Color,
+    outline_col: Color,
+):
+    """One row of a circle (or a rounded rect's corner quarter-disc,
+    restricted to `[x0, x1)`), factored out of `_circle`'s own uniform
+    branch so both call sites share one solve. `full_fill` and `pr_inner2`
+    carry the caller's `pr_inner <= 0.0` degenerate case exactly as `_circle`
+    already handled it — the whole span paints in *fill* colour, not
+    outline, when the outline is too thick for the radius to leave a ring.
+    A pure refactor for `_circle`'s own call site: same branches, same
+    order, same colours.
+    """
+    var outer = _circle_row_span(pcx, dy, pr2, x0, x1)
+    var ol = outer[0]
+    var oh = outer[1]
+    if ol > oh:
+        return
+    if full_fill:
+        fill_span(s, (row_off + ol) * 4, oh - ol + 1, fill_col)
+    elif outline_visible:
+        var inner = _circle_row_span(pcx, dy, pr_inner2, ol, oh + 1)
+        var il = inner[0]
+        var ih = inner[1]
+        if il <= ih:
+            if fill_enabled:
+                fill_span(s, (row_off + il) * 4, ih - il + 1, fill_col)
+            if il > ol:
+                fill_span(s, (row_off + ol) * 4, il - ol, outline_col)
+            if ih < oh:
+                fill_span(s, (row_off + ih + 1) * 4, oh - ih, outline_col)
+        else:
+            fill_span(s, (row_off + ol) * 4, oh - ol + 1, outline_col)
+
+
+def _fillet_disc_row_span(
+    a: Float64,
+    inv_2a: Float64,
+    step_x: Float64,
+    step_y: Float64,
+    A0: Float64,
+    B0: Float64,
+    cx: Float64,
+    cy: Float64,
+    r2: Float64,
+    col0: Int,
+    col_lo: Int,
+    col_hi: Int,
+) -> Tuple[Int, Int]:
+    """`_ellipse_row_span` specialised to one fillet corner's circle, centred
+    at `(cx, cy)` in local space rather than at the shape's own centre —
+    `a`/`inv_2a` stay the caller's precomputed, transform-only constants."""
+    var dx0 = A0 - cx
+    var dy0 = B0 - cy
+    var bcoef = 2.0 * (dx0 * step_x + dy0 * step_y)
+    var c0 = dx0 * dx0 + dy0 * dy0 - r2
+    return _ellipse_row_span(a, bcoef, c0, inv_2a, col0, col_lo, col_hi)
+
+
+def _rounded_rect_row_span(
+    A0: Float64,
+    B0: Float64,
+    col0: Int,
+    step_x: Float64,
+    step_y: Float64,
+    inv_step_x: Float64,
+    inv_step_y: Float64,
+    a: Float64,
+    inv_2a: Float64,
+    lx0: Float64,
+    ly0: Float64,
+    lx1: Float64,
+    ly1: Float64,
+    r: Float64,
+    r2: Float64,
+    col_lo: Int,
+    col_hi: Int,
+) -> Tuple[Int, Int]:
+    """One row's covered columns inside a rounded rect `[lx0,lx1] x
+    [ly0,ly1]` with corner radius `r`, under a non-uniform transform.
+
+    A rounded rect is convex, so a row's covered columns are always one
+    interval — this finds it as the union of up to three column-contiguous
+    sub-solves, ordered by local `y` (monotone in `col` for a fixed row):
+    the bottom and top corner bands each solve a straight strip plus two
+    fillet discs, the middle band solves the sharp rect's own x-range
+    outright, and merging by min/max of endpoints is valid precisely
+    because that union stays contiguous. `r <= 0` skips all of it for the
+    plain two-axis rect test `_rect`'s sharp path already used.
+    """
+    if r <= 0.0:
+        var xr = _affine_row_span(
+            A0, step_x, inv_step_x, col0, lx0, lx1, col_lo, col_hi
+        )
+        var yr = _affine_row_span(
+            B0, step_y, inv_step_y, col0, ly0, ly1, col_lo, col_hi
+        )
+        return (max(xr[0], yr[0]), min(xr[1], yr[1]))
+
+    var y_bot = _affine_row_span(
+        B0, step_y, inv_step_y, col0, ly0, ly0 + r, col_lo, col_hi
+    )
+    var y_mid = _affine_row_span(
+        B0, step_y, inv_step_y, col0, ly0 + r, ly1 - r, col_lo, col_hi
+    )
+    var y_top = _affine_row_span(
+        B0, step_y, inv_step_y, col0, ly1 - r, ly1, col_lo, col_hi
+    )
+
+    var lo = col_hi
+    var hi = col_lo - 1
+
+    if y_mid[0] <= y_mid[1]:
+        var xr = _affine_row_span(
+            A0, step_x, inv_step_x, col0, lx0, lx1, y_mid[0], y_mid[1] + 1
+        )
+        if xr[0] <= xr[1]:
+            lo = min(lo, xr[0])
+            hi = max(hi, xr[1])
+
+    if y_bot[0] <= y_bot[1]:
+        var run_lo = y_bot[0]
+        var run_hi = y_bot[1] + 1
+        var xr = _affine_row_span(
+            A0, step_x, inv_step_x, col0, lx0 + r, lx1 - r, run_lo, run_hi
+        )
+        if xr[0] <= xr[1]:
+            lo = min(lo, xr[0])
+            hi = max(hi, xr[1])
+        var dl = _fillet_disc_row_span(
+            a,
+            inv_2a,
+            step_x,
+            step_y,
+            A0,
+            B0,
+            lx0 + r,
+            ly0 + r,
+            r2,
+            col0,
+            run_lo,
+            run_hi,
+        )
+        if dl[0] <= dl[1]:
+            lo = min(lo, dl[0])
+            hi = max(hi, dl[1])
+        var dr = _fillet_disc_row_span(
+            a,
+            inv_2a,
+            step_x,
+            step_y,
+            A0,
+            B0,
+            lx1 - r,
+            ly0 + r,
+            r2,
+            col0,
+            run_lo,
+            run_hi,
+        )
+        if dr[0] <= dr[1]:
+            lo = min(lo, dr[0])
+            hi = max(hi, dr[1])
+
+    if y_top[0] <= y_top[1]:
+        var run_lo = y_top[0]
+        var run_hi = y_top[1] + 1
+        var xr = _affine_row_span(
+            A0, step_x, inv_step_x, col0, lx0 + r, lx1 - r, run_lo, run_hi
+        )
+        if xr[0] <= xr[1]:
+            lo = min(lo, xr[0])
+            hi = max(hi, xr[1])
+        var dl = _fillet_disc_row_span(
+            a,
+            inv_2a,
+            step_x,
+            step_y,
+            A0,
+            B0,
+            lx0 + r,
+            ly1 - r,
+            r2,
+            col0,
+            run_lo,
+            run_hi,
+        )
+        if dl[0] <= dl[1]:
+            lo = min(lo, dl[0])
+            hi = max(hi, dl[1])
+        var dr = _fillet_disc_row_span(
+            a,
+            inv_2a,
+            step_x,
+            step_y,
+            A0,
+            B0,
+            lx1 - r,
+            ly1 - r,
+            r2,
+            col0,
+            run_lo,
+            run_hi,
+        )
+        if dr[0] <= dr[1]:
+            lo = min(lo, dr[0])
+            hi = max(hi, dr[1])
+
+    return (lo, hi)
 
 
 @fieldwise_init
@@ -514,6 +740,10 @@ struct Backend(Movable):
         var lx1 = x + c.geom[2] / 2.0
         var ly1 = y + c.geom[3] / 2.0
 
+        var r_local = rect_corner_radius(
+            Float64(c.style.corner_radius), c.geom[2], c.geom[3]
+        )
+
         if uniform(m):
             # Axis-aligned: map the two opposite corners and order them, since
             # the y flip in the base mapping sends the smaller world y to the
@@ -524,15 +754,149 @@ struct Backend(Movable):
             var y0 = Int(min(p0[1], p1[1]))
             var iw = Int(abs(p1[0] - p0[0]))
             var ih = Int(abs(p1[1] - p0[1]))
-            if c.style.fill_enabled:
-                fill_pixels(s, x0, y0, x0 + iw, y0 + ih, c.style.fill_color)
-            if c.style.outline_visible():
-                var sw = outline_thickness_px(c.style, m, scale)
-                var sc = c.style.outline_color
-                fill_pixels(s, x0, y0, x0 + iw, y0 + sw, sc)
-                fill_pixels(s, x0, y0 + ih - sw, x0 + iw, y0 + ih, sc)
-                fill_pixels(s, x0, y0 + sw, x0 + sw, y0 + ih - sw, sc)
-                fill_pixels(s, x0 + iw - sw, y0 + sw, x0 + iw, y0 + ih - sw, sc)
+            if r_local <= 0.0:
+                if c.style.fill_enabled:
+                    fill_pixels(s, x0, y0, x0 + iw, y0 + ih, c.style.fill_color)
+                if c.style.outline_visible():
+                    var sw = outline_thickness_px(c.style, m, scale)
+                    var sc = c.style.outline_color
+                    fill_pixels(s, x0, y0, x0 + iw, y0 + sw, sc)
+                    fill_pixels(s, x0, y0 + ih - sw, x0 + iw, y0 + ih, sc)
+                    fill_pixels(s, x0, y0 + sw, x0 + sw, y0 + ih - sw, sc)
+                    fill_pixels(
+                        s, x0 + iw - sw, y0 + sw, x0 + iw, y0 + ih - sw, sc
+                    )
+            else:
+                # Cross decomposition, same shape as the sharp path above but
+                # shortened by the clamped device-space radius `pr`: a
+                # full-height centre band, two full-width middle bands, and
+                # four corner quarter-discs through `_circle_arc_row` — the
+                # same helper `_circle` uses, so a corner too thick for its
+                # outline degenerates exactly like a circle does (a solid
+                # disc in *fill* colour, not outline).
+                var pr = r_local * pixel_scale(m, scale)
+                var pr_i = Int(pr)
+                var fill_enabled = c.style.fill_enabled
+                var outline_enabled = c.style.outline_visible()
+                var fill_col = c.style.fill_color
+                var outline_col = c.style.outline_color
+                var sw = outline_thickness_px(
+                    c.style, m, scale
+                ) if outline_enabled else 0
+                if fill_enabled:
+                    fill_pixels(
+                        s, x0 + pr_i, y0, x0 + iw - pr_i, y0 + ih, fill_col
+                    )
+                    fill_pixels(
+                        s, x0, y0 + pr_i, x0 + pr_i, y0 + ih - pr_i, fill_col
+                    )
+                    fill_pixels(
+                        s,
+                        x0 + iw - pr_i,
+                        y0 + pr_i,
+                        x0 + iw,
+                        y0 + ih - pr_i,
+                        fill_col,
+                    )
+                if outline_enabled:
+                    fill_pixels(
+                        s, x0 + pr_i, y0, x0 + iw - pr_i, y0 + sw, outline_col
+                    )
+                    fill_pixels(
+                        s,
+                        x0 + pr_i,
+                        y0 + ih - sw,
+                        x0 + iw - pr_i,
+                        y0 + ih,
+                        outline_col,
+                    )
+                    fill_pixels(
+                        s, x0, y0 + pr_i, x0 + sw, y0 + ih - pr_i, outline_col
+                    )
+                    fill_pixels(
+                        s,
+                        x0 + iw - sw,
+                        y0 + pr_i,
+                        x0 + iw,
+                        y0 + ih - pr_i,
+                        outline_col,
+                    )
+                var pr2 = pr * pr
+                var pr_inner = pr - Float64(sw)
+                var pr_inner2 = pr_inner * pr_inner
+                var full_fill = fill_enabled and (
+                    not outline_enabled or pr_inner <= 0.0
+                )
+                var tl_cx = Float64(x0) + pr
+                var tl_cy = Float64(y0) + pr
+                var tr_cx = Float64(x0 + iw) - pr
+                var bl_cy = Float64(y0 + ih) - pr
+                for row in range(y0, y0 + pr_i):
+                    var row_off = row * W
+                    var dy = Float64(row) - tl_cy
+                    _circle_arc_row(
+                        s,
+                        row_off,
+                        tl_cx,
+                        dy,
+                        pr2,
+                        pr_inner2,
+                        x0,
+                        x0 + pr_i,
+                        full_fill,
+                        outline_enabled,
+                        fill_enabled,
+                        fill_col,
+                        outline_col,
+                    )
+                    _circle_arc_row(
+                        s,
+                        row_off,
+                        tr_cx,
+                        dy,
+                        pr2,
+                        pr_inner2,
+                        x0 + iw - pr_i,
+                        x0 + iw,
+                        full_fill,
+                        outline_enabled,
+                        fill_enabled,
+                        fill_col,
+                        outline_col,
+                    )
+                for row in range(y0 + ih - pr_i, y0 + ih):
+                    var row_off = row * W
+                    var dy = Float64(row) - bl_cy
+                    _circle_arc_row(
+                        s,
+                        row_off,
+                        tl_cx,
+                        dy,
+                        pr2,
+                        pr_inner2,
+                        x0,
+                        x0 + pr_i,
+                        full_fill,
+                        outline_enabled,
+                        fill_enabled,
+                        fill_col,
+                        outline_col,
+                    )
+                    _circle_arc_row(
+                        s,
+                        row_off,
+                        tr_cx,
+                        dy,
+                        pr2,
+                        pr_inner2,
+                        x0 + iw - pr_i,
+                        x0 + iw,
+                        full_fill,
+                        outline_enabled,
+                        fill_enabled,
+                        fill_col,
+                        outline_col,
+                    )
         else:
             # Rotated/sheared: the inverse mapping is still affine (no
             # perspective row), so a device column maps to local space by
@@ -555,85 +919,192 @@ struct Backend(Movable):
             var step_y = minv[1, 0]
             var inv_step_x = 1.0 / step_x if step_x != 0.0 else 0.0
             var inv_step_y = 1.0 / step_y if step_y != 0.0 else 0.0
-            var fill_enabled = c.style.fill_enabled
-            var outline_enabled = c.style.outline_visible()
-            var fill_col = c.style.fill_color
-            var outline_col = c.style.outline_color
-            for row in range(b[1], b[3]):
-                var local0 = mat_apply(minv, Float64(b[0]), Float64(row))
-                var A = local0[0]
-                var B = local0[1]
-                var row_off = row * W
-                var xr = _affine_row_span(
-                    A, step_x, inv_step_x, b[0], lx0, lx1, b[0], b[2]
-                )
-                var yr = _affine_row_span(
-                    B, step_y, inv_step_y, b[0], ly0, ly1, b[0], b[2]
-                )
-                var outer_lo = max(xr[0], yr[0])
-                var outer_hi = min(xr[1], yr[1])
-                if outer_lo > outer_hi:
-                    continue
-                if not outline_enabled:
-                    if fill_enabled:
+            if r_local <= 0.0:
+                var fill_enabled = c.style.fill_enabled
+                var outline_enabled = c.style.outline_visible()
+                var fill_col = c.style.fill_color
+                var outline_col = c.style.outline_color
+                for row in range(b[1], b[3]):
+                    var local0 = mat_apply(minv, Float64(b[0]), Float64(row))
+                    var A = local0[0]
+                    var B = local0[1]
+                    var row_off = row * W
+                    var xr = _affine_row_span(
+                        A, step_x, inv_step_x, b[0], lx0, lx1, b[0], b[2]
+                    )
+                    var yr = _affine_row_span(
+                        B, step_y, inv_step_y, b[0], ly0, ly1, b[0], b[2]
+                    )
+                    var outer_lo = max(xr[0], yr[0])
+                    var outer_hi = min(xr[1], yr[1])
+                    if outer_lo > outer_hi:
+                        continue
+                    if not outline_enabled:
+                        if fill_enabled:
+                            fill_span(
+                                s,
+                                (row_off + outer_lo) * 4,
+                                outer_hi - outer_lo + 1,
+                                fill_col,
+                            )
+                        continue
+                    var xi = _affine_row_span(
+                        A,
+                        step_x,
+                        inv_step_x,
+                        b[0],
+                        lx0 + sw_f,
+                        lx1 - sw_f,
+                        outer_lo,
+                        outer_hi + 1,
+                    )
+                    var yi = _affine_row_span(
+                        B,
+                        step_y,
+                        inv_step_y,
+                        b[0],
+                        ly0 + sw_f,
+                        ly1 - sw_f,
+                        outer_lo,
+                        outer_hi + 1,
+                    )
+                    var inner_lo = max(xi[0], yi[0])
+                    var inner_hi = min(xi[1], yi[1])
+                    if inner_lo <= inner_hi:
+                        if fill_enabled:
+                            fill_span(
+                                s,
+                                (row_off + inner_lo) * 4,
+                                inner_hi - inner_lo + 1,
+                                fill_col,
+                            )
+                        if inner_lo > outer_lo:
+                            fill_span(
+                                s,
+                                (row_off + outer_lo) * 4,
+                                inner_lo - outer_lo,
+                                outline_col,
+                            )
+                        if inner_hi < outer_hi:
+                            fill_span(
+                                s,
+                                (row_off + inner_hi + 1) * 4,
+                                outer_hi - inner_hi,
+                                outline_col,
+                            )
+                    else:
                         fill_span(
                             s,
                             (row_off + outer_lo) * 4,
                             outer_hi - outer_lo + 1,
-                            fill_col,
+                            outline_col,
                         )
-                    continue
-                var xi = _affine_row_span(
-                    A,
-                    step_x,
-                    inv_step_x,
-                    b[0],
-                    lx0 + sw_f,
-                    lx1 - sw_f,
-                    outer_lo,
-                    outer_hi + 1,
-                )
-                var yi = _affine_row_span(
-                    B,
-                    step_y,
-                    inv_step_y,
-                    b[0],
-                    ly0 + sw_f,
-                    ly1 - sw_f,
-                    outer_lo,
-                    outer_hi + 1,
-                )
-                var inner_lo = max(xi[0], yi[0])
-                var inner_hi = min(xi[1], yi[1])
-                if inner_lo <= inner_hi:
-                    if fill_enabled:
-                        fill_span(
-                            s,
-                            (row_off + inner_lo) * 4,
-                            inner_hi - inner_lo + 1,
-                            fill_col,
-                        )
-                    if inner_lo > outer_lo:
+            else:
+                # Same outer/inner span shape as the sharp path above, but
+                # both spans come from `_rounded_rect_row_span` instead of a
+                # plain two-axis intersection. The inner (fill) shape is
+                # inset by the outline width on both the rect and its
+                # radius; when that leaves the radius at or below zero,
+                # `_rounded_rect_row_span`'s own `r <= 0` branch falls back
+                # to the sharp two-axis test, so a corner too thick for its
+                # outline gets a sharp inner silhouette rather than a
+                # negative radius.
+                var fill_enabled = c.style.fill_enabled
+                var outline_enabled = c.style.outline_visible()
+                var fill_col = c.style.fill_color
+                var outline_col = c.style.outline_color
+                var r2 = r_local * r_local
+                var a = step_x * step_x + step_y * step_y
+                var inv_2a = 1.0 / (2.0 * a) if abs(a) >= 1e-18 else 0.0
+                var inner_r = r_local - sw_f
+                var inner_r2 = inner_r * inner_r if inner_r > 0.0 else 0.0
+                for row in range(b[1], b[3]):
+                    var local0 = mat_apply(minv, Float64(b[0]), Float64(row))
+                    var A0 = local0[0]
+                    var B0 = local0[1]
+                    var row_off = row * W
+                    var outer = _rounded_rect_row_span(
+                        A0,
+                        B0,
+                        b[0],
+                        step_x,
+                        step_y,
+                        inv_step_x,
+                        inv_step_y,
+                        a,
+                        inv_2a,
+                        lx0,
+                        ly0,
+                        lx1,
+                        ly1,
+                        r_local,
+                        r2,
+                        b[0],
+                        b[2],
+                    )
+                    var outer_lo = outer[0]
+                    var outer_hi = outer[1]
+                    if outer_lo > outer_hi:
+                        continue
+                    if not outline_enabled:
+                        if fill_enabled:
+                            fill_span(
+                                s,
+                                (row_off + outer_lo) * 4,
+                                outer_hi - outer_lo + 1,
+                                fill_col,
+                            )
+                        continue
+                    var inner = _rounded_rect_row_span(
+                        A0,
+                        B0,
+                        b[0],
+                        step_x,
+                        step_y,
+                        inv_step_x,
+                        inv_step_y,
+                        a,
+                        inv_2a,
+                        lx0 + sw_f,
+                        ly0 + sw_f,
+                        lx1 - sw_f,
+                        ly1 - sw_f,
+                        inner_r,
+                        inner_r2,
+                        outer_lo,
+                        outer_hi + 1,
+                    )
+                    var inner_lo = inner[0]
+                    var inner_hi = inner[1]
+                    if inner_lo <= inner_hi:
+                        if fill_enabled:
+                            fill_span(
+                                s,
+                                (row_off + inner_lo) * 4,
+                                inner_hi - inner_lo + 1,
+                                fill_col,
+                            )
+                        if inner_lo > outer_lo:
+                            fill_span(
+                                s,
+                                (row_off + outer_lo) * 4,
+                                inner_lo - outer_lo,
+                                outline_col,
+                            )
+                        if inner_hi < outer_hi:
+                            fill_span(
+                                s,
+                                (row_off + inner_hi + 1) * 4,
+                                outer_hi - inner_hi,
+                                outline_col,
+                            )
+                    else:
                         fill_span(
                             s,
                             (row_off + outer_lo) * 4,
-                            inner_lo - outer_lo,
+                            outer_hi - outer_lo + 1,
                             outline_col,
                         )
-                    if inner_hi < outer_hi:
-                        fill_span(
-                            s,
-                            (row_off + inner_hi + 1) * 4,
-                            outer_hi - inner_hi,
-                            outline_col,
-                        )
-                else:
-                    fill_span(
-                        s,
-                        (row_off + outer_lo) * 4,
-                        outer_hi - outer_lo + 1,
-                        outline_col,
-                    )
 
     def _circle[
         o: Origin[mut=True]
@@ -674,51 +1145,27 @@ struct Backend(Movable):
             var full_fill = c.style.fill_enabled and (
                 not c.style.outline_visible() or pr_inner <= 0.0
             )
+            var fill_enabled = c.style.fill_enabled
+            var outline_enabled = c.style.outline_visible()
+            var fill_col = c.style.fill_color
+            var outline_col = c.style.outline_color
             for row in range(y0, y1):
                 var dy = Float64(row) - pcy
-                var outer = _circle_row_span(pcx, dy, pr2, x0, x1)
-                var ol = outer[0]
-                var oh = outer[1]
-                if ol > oh:
-                    continue
-                var row_off = row * W
-                if full_fill:
-                    fill_span(
-                        s, (row_off + ol) * 4, oh - ol + 1, c.style.fill_color
-                    )
-                elif c.style.outline_visible():
-                    var inner = _circle_row_span(pcx, dy, pr_inner2, ol, oh + 1)
-                    var il = inner[0]
-                    var ih = inner[1]
-                    if il <= ih:
-                        if c.style.fill_enabled:
-                            fill_span(
-                                s,
-                                (row_off + il) * 4,
-                                ih - il + 1,
-                                c.style.fill_color,
-                            )
-                        if il > ol:
-                            fill_span(
-                                s,
-                                (row_off + ol) * 4,
-                                il - ol,
-                                c.style.outline_color,
-                            )
-                        if ih < oh:
-                            fill_span(
-                                s,
-                                (row_off + ih + 1) * 4,
-                                oh - ih,
-                                c.style.outline_color,
-                            )
-                    else:
-                        fill_span(
-                            s,
-                            (row_off + ol) * 4,
-                            oh - ol + 1,
-                            c.style.outline_color,
-                        )
+                _circle_arc_row(
+                    s,
+                    row * W,
+                    pcx,
+                    dy,
+                    pr2,
+                    pr_inner2,
+                    x0,
+                    x1,
+                    full_fill,
+                    outline_enabled,
+                    fill_enabled,
+                    fill_col,
+                    outline_col,
+                )
         else:
             # Same trick as the rotated rect branch above, adapted to a
             # quadratic: a device column maps to local space by `local0 +
