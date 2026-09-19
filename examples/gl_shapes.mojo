@@ -23,6 +23,7 @@ from create import *
 struct App(Program):
     var angle: Float64
     var logo: Sprite
+    var fps: Int
 
     @staticmethod
     def create(mut ctx: Context) raises -> App:
@@ -32,10 +33,11 @@ struct App(Program):
         ctx.design(800, 600)
         # Twice, below, from one interned image and so one GL upload.
         var logo = Sprite.load(script_dir() + "/sprite/assets/sprite.png")
-        return App(0.0, logo^)
+        return App(0.0, logo^, 0)
 
     def update(mut self, mut ctx: Context, input: Input) raises:
         self.angle += ctx.time.delta
+        self.fps = Int(ctx.framerate())
 
     def render(self, mut canvas: Canvas) raises:
         canvas.background(Color(0x20, 0x24, 0x2C))
@@ -122,6 +124,16 @@ struct App(Program):
 
         canvas.sprite(self.logo, 250, -170, 140, 140)
         canvas.sprite(self.logo, 90, -230, 70, 70)
+
+        with canvas.style():
+            canvas.font_size(20)
+            canvas.text_color(Color.WHITE)
+            canvas.text_align(Align.TOP_RIGHT)
+            canvas.text(
+                "fps: " + String(self.fps),
+                canvas.right() - 12,
+                canvas.top() - 12,
+            )
 
 
 def main() raises:

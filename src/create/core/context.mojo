@@ -87,6 +87,16 @@ struct Context(Movable):
         """Map a window pixel position into screen space."""
         return self.view.to_screen(x, y)
 
+    def framerate(self) -> Float64:
+        """Current frames per second, derived from the last frame's delta.
+
+        `0.0` on the first frame, where `delta` is still `0.0` and there is
+        no prior frame to measure against.
+        """
+        if self.time.delta == 0.0:
+            return 0.0
+        return 1.0 / self.time.delta
+
     def quit(mut self):
         """Ask the run loop to stop after the current frame.
 

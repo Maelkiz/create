@@ -219,5 +219,17 @@ def test_design_overrides_earlier_design() raises -> None:
     assert_equal(ctx.height, 500)
 
 
+def test_framerate_zero_before_first_tick() raises -> None:
+    var ctx = Context()
+    assert_equal(ctx.framerate(), 0.0)
+
+
+def test_framerate_is_inverse_of_delta() raises -> None:
+    var ctx = Context()
+    ctx.time._start(0)
+    ctx.time._tick(20)
+    assert_almost_equal(ctx.framerate(), 50.0)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
