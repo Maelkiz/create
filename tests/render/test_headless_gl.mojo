@@ -20,7 +20,7 @@ struct GPURect(Program):
 
     def render(self, mut canvas: Canvas) raises:
         canvas.background(Color(10, 20, 30))
-        canvas.no_stroke()
+        canvas.outline(enabled=False)
         canvas.fill(Color.RED)
         canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 
@@ -50,7 +50,7 @@ struct GPUMover(Program):
 
     def render(self, mut canvas: Canvas) raises:
         canvas.background(Color(10, 20, 30))
-        canvas.no_stroke()
+        canvas.outline(enabled=False)
         canvas.fill(Color.RED)
         canvas.rectangle(self.x, 0.0, 16.0, 16.0)
 

@@ -33,7 +33,7 @@ struct Draw:
 
         if self.drawing:
             with canvas.style():
-                canvas.no_stroke()
+                canvas.outline(enabled=False)
                 canvas.fill(Color(240, 200, 90))
                 canvas.circle(self.pen, 14.0)
 

@@ -1,7 +1,7 @@
 """What a transform means to a rasteriser, independent of which one.
 
 Three questions every backend asks of a `DrawCommand`'s matrix — is it
-axis-aligned, how many pixels is a world unit, how thick is a stroke — and one
+axis-aligned, how many pixels is a world unit, how thick is an outline — and one
 answer each, so the CPU replay and the GL tessellator cannot disagree about
 them. They lived in `_backend.mojo` until the GL backend needed them too;
 importing them from there would have closed a cycle, since `_backend` reaches

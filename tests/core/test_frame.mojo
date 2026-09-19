@@ -22,7 +22,7 @@ struct Painter(Program):
 
     def render(self, mut canvas: Canvas) raises:
         canvas.background(Color.BLUE)
-        canvas.no_stroke()
+        canvas.outline(enabled=False)
         canvas.fill(Color.RED)
         canvas.rectangle(0.0, 0.0, 10.0, 10.0)
 

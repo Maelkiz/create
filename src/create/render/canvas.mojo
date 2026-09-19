@@ -1,3 +1,5 @@
+from std.collections import Optional
+
 from .color import Color
 from .align import Align
 from .autoscale import AutoScale
@@ -37,7 +39,8 @@ struct PersistentCanvasState(Movable):
     fonts, the glyph cache and the interned sprite images — is moved out at the
     end of one frame and into the next. The transform stack and the style are
     deliberately absent: both start fresh every frame by construction, so a
-    missing pop or a forgotten `no_stroke` cannot leak into the next frame.
+    missing pop or a forgotten `outline(enabled=False)` cannot leak into the
+    next frame.
     """
 
     var backend: Backend
@@ -114,7 +117,7 @@ struct Canvas:
     device pixels. A style is resolved at record time, so a later `fill()`
     cannot reach back and change what an earlier command paints.
 
-    Every pixel write blends source-over, so a fill, stroke, sprite, glyph or
+    Every pixel write blends source-over, so a fill, outline, sprite, glyph or
     `background` with `a < 255` composites with what is already there.
     """
 
@@ -232,10 +235,11 @@ struct Canvas:
         return TransformGuard[origin_of(self)](self)
 
     def style(mut self) -> StyleGuard[origin_of(self)]:
-        """Scope the fill, stroke and font settings to a `with` block.
+        """Scope the fill, outline and font settings to a `with` block.
 
         For helpers that set style before drawing: without this, a callee's
-        `no_stroke()` silently applies to whatever the caller draws next.
+        `outline(enabled=False)` silently applies to whatever the caller
+        draws next.
         """
         return StyleGuard[origin_of(self)](self)
 
@@ -267,34 +271,36 @@ struct Canvas:
         transform's frame."""
         return mat_apply(self._user_inv, x, y)
 
-    def fill(mut self, color: Color):
-        """Paint the inside of shapes in `color`, and re-enable filling.
+    def fill(mut self, color: Optional[Color] = None, enabled: Bool = True):
+        """Paint the inside of shapes. `color` left unset keeps the current
+        fill color — a plain `fill()` only re-enables it.
 
         Holds until changed or until the frame ends — every frame starts from
         the `Style` defaults, so nothing set here leaks into the next one.
         """
-        self._style.fill = color
-        self._style.fill_enabled = True
+        if color:
+            self._style.fill = color.value()
+        self._style.fill_enabled = enabled
 
-    def no_fill(mut self):
-        """Draw only the outline of shapes from here on."""
-        self._style.fill_enabled = False
+    def outline(
+        mut self,
+        color: Optional[Color] = None,
+        thickness: Optional[Int] = None,
+        enabled: Bool = True,
+    ):
+        """Outline shapes. `color`/`thickness` left unset keep their current
+        values — a plain `outline()` only re-enables it. Worth knowing outline
+        is *on* by default, in black, 1 unit thick — a `rectangle` drawn
+        without `outline(enabled=False)` gets one nobody asked for.
 
-    def stroke(mut self, color: Color):
-        """Outline shapes in `color`, and re-enable stroking."""
-        self._style.outline = color
-        self._style.outline_enabled = True
-
-    def no_stroke(mut self):
-        """Drop the outline. Worth knowing that stroke is *on* by default, in
-        black — a `rectangle` drawn without this gets an outline nobody asked for.
+        Thickness is in world units, scaled by autoscale like every other
+        coordinate, and never rendered thinner than one pixel.
         """
-        self._style.outline_enabled = False
-
-    def stroke_width(mut self, w: Int):
-        """Outline thickness in world units, scaled by autoscale like every
-        other coordinate, and never rendered thinner than one pixel."""
-        self._style.outline_thickness = w
+        if color:
+            self._style.outline = color.value()
+        if thickness:
+            self._style.outline_thickness = thickness.value()
+        self._style.outline_enabled = enabled
 
     def background(mut self, color: Color):
         """Paint the whole framebuffer — the usual first call in `render`.

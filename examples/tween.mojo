@@ -94,15 +94,14 @@ struct App(Program):
     def render(self, mut canvas: Canvas) raises:
         canvas.background(Color(18, 18, 24))
 
-        # Tracks first, while stroke is still enabled — the dots below turn it
+        # Tracks first, while outline is still enabled — the dots below turn it
         # off and a line drawn after that would not appear.
-        canvas.stroke(Color(44, 44, 58))
-        canvas.stroke_width(3)
+        canvas.outline(Color(44, 44, 58), thickness=3)
         canvas.line((-420.0, 300.0), (420.0, 300.0))
         for i in range(len(self.curves)):
             canvas.line((-360.0, self._row_y(i)), (580.0, self._row_y(i)))
 
-        canvas.no_stroke()
+        canvas.outline(enabled=False)
 
         # The hero: a point moved by lerping between two positions with the
         # tween's eased value. OUT_BACK and OUT_ELASTIC leave 0..1 mid-run, so

@@ -20,7 +20,7 @@ struct OverflowingRect(Program):
 
     def render(self, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.no_stroke()
+        canvas.outline(enabled=False)
         canvas.fill(Color.GREEN)
         # Far larger than the 100x50 design — if the raster loop didn't
         # already clip to the framebuffer, this alone would prove nothing, so

@@ -60,7 +60,7 @@ struct App(Program):
         canvas.background(Color(0x14, 0x1C, 0x26))
 
         with canvas.style():
-            canvas.no_stroke()
+            canvas.outline(enabled=False)
             with canvas.transform(rotate(self.angle)):
                 canvas.fill(Color(0xE0, 0x50, 0x50))
                 canvas.rectangle((0, 0), 220, 220)

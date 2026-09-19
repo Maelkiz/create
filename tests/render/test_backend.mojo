@@ -408,7 +408,7 @@ struct RotatedRect(Program):
 
     def render(self, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.no_stroke()
+        canvas.outline(enabled=False)
         canvas.fill(Color.RED)
         with canvas.transform(rotate(_ANGLE)):
             canvas.rectangle(12.0, 6.0, _RECT_W, _RECT_H)

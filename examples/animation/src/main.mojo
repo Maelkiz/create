@@ -92,7 +92,7 @@ struct Game(Program):
     def render(self, mut canvas: Canvas) raises:
         canvas.background(Color(24, 26, 34))
 
-        canvas.no_stroke()
+        canvas.outline(enabled=False)
 
         # The ground runs from its surface all the way to the bottom edge, so
         # it never floats over the background however tall the window is.

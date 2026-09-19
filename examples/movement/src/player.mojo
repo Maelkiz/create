@@ -61,8 +61,8 @@ struct Player:
 
     def draw(self, mut canvas: Canvas) raises:
         # Scoped, because this is a callee: without the guard the caller's
-        # next draw would silently inherit this fill and no_stroke.
+        # next draw would silently inherit this fill and outline(enabled=False).
         with canvas.style():
             canvas.fill(Color(220, 80, 80))
-            canvas.no_stroke()
+            canvas.outline(enabled=False)
             canvas.rectangle(self.x, self.y, self.width, self.height)

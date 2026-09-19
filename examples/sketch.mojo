@@ -9,7 +9,7 @@ struct Sketch(Program):
 
     def render(self, mut canvas: Canvas) raises:
         canvas.background(Color.WHITE)
-        canvas.stroke(Color.GREEN)
+        canvas.outline(Color.GREEN)
 
         canvas.fill(Color.RED)
         canvas.rectangle((-250, 150), 100, 100)
@@ -20,7 +20,7 @@ struct Sketch(Program):
         canvas.fill(Color.BLACK)
         canvas.triangle((0, -100), (50, -250), (150, -150))
 
-        canvas.stroke_width(3)
+        canvas.outline(thickness=3)
         canvas.line((-200, 100), (0, -100))
 
         canvas.fill(Color.BLACK)
