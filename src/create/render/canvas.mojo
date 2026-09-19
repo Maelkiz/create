@@ -5,6 +5,7 @@ from .align import Align
 from .autoscale import AutoScale
 from .font import Font
 from .viewport import Viewport
+from .camera import Camera
 from create.math.geometry import Rectangle, Circle, Line, Triangle
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
@@ -66,6 +67,41 @@ struct TransformGuard[origin: Origin[mut=True]](Movable):
 
     def __exit__(mut self):
         self._canvas[]._pop_transform()
+
+
+struct OverlayGuard[origin: Origin[mut=True]](Movable):
+    """Restores the camera and transform `canvas.overlay` suspended, on scope
+    exit."""
+
+    var _canvas: Pointer[Canvas, Self.origin]
+    var _saved_camera: Camera
+    var _saved_user: Matrix[3, 3]
+    var _saved_user_inv: Matrix[3, 3]
+    var _saved_transform: Matrix[3, 3]
+    var _saved_transform_inv: Matrix[3, 3]
+
+    def __init__(out self, ref[Self.origin] canvas: Canvas):
+        self._saved_camera = canvas._camera.copy()
+        self._saved_user = canvas._user.copy()
+        self._saved_user_inv = canvas._user_inv.copy()
+        self._saved_transform = canvas._transform.copy()
+        self._saved_transform_inv = canvas._transform_inv.copy()
+        canvas._camera = Camera()
+        canvas._user = identity[3]()
+        canvas._user_inv = identity[3]()
+        canvas._transform = canvas._base.copy()
+        canvas._transform_inv = canvas._base_inv.copy()
+        self._canvas = Pointer(to=canvas)
+
+    def __enter__(mut self):
+        pass
+
+    def __exit__(mut self):
+        self._canvas[]._camera = self._saved_camera.copy()
+        self._canvas[]._user = self._saved_user
+        self._canvas[]._user_inv = self._saved_user_inv
+        self._canvas[]._transform = self._saved_transform
+        self._canvas[]._transform_inv = self._saved_transform_inv
 
 
 struct StyleGuard[origin: Origin[mut=True]](Movable):
@@ -134,10 +170,15 @@ struct Canvas:
     var _style: Style
     var _base: Matrix[3, 3]
     var _base_inv: Matrix[3, 3]
+    # Camera is per-frame too, and for the same reason as style: it resets to
+    # identity every frame, so `render` sets one explicitly each time it wants
+    # one rather than it leaking from the last frame that set it.
+    var _camera: Camera
     # `_user` is the composition of the matrices the program pushed, mapping
-    # local coordinates to world. `_base` maps world to pixels. Drawing uses
-    # the product; `to_world`/`to_local` use `_user` alone, so a program never
-    # sees the pixel mapping it did not ask for.
+    # local coordinates to world. `_base` maps screen to pixels, `_camera`
+    # world to screen. Drawing uses the full product; `to_world`/`to_local`
+    # use `_user` alone, so a program never sees the mapping below world space
+    # it did not ask for.
     var _user: Matrix[3, 3]
     var _user_inv: Matrix[3, 3]
     var _transform: Matrix[3, 3]
@@ -156,6 +197,7 @@ struct Canvas:
         self._style = Style()
         self._base = view.base_matrix()
         self._base_inv = inverse(self._base)
+        self._camera = Camera()
         # The stack starts empty, so the base mapping is the current transform;
         # user transforms compose on top of it.
         self._user = identity[3]()
@@ -175,14 +217,14 @@ struct Canvas:
         return state^
 
     def left(self) -> Float64:
-        """World x of the left edge — negative, since the origin is centred."""
+        """Screen x of the left edge — negative, since the origin is centred."""
         return self.view.left()
 
     def right(self) -> Float64:
         return self.view.right()
 
     def bottom(self) -> Float64:
-        """World y of the bottom edge — negative, since y grows upward."""
+        """Screen y of the bottom edge — negative, since y grows upward."""
         return self.view.bottom()
 
     def top(self) -> Float64:
@@ -259,17 +301,45 @@ struct Canvas:
 
     def _sync_transform(mut self):
         self._user_inv = inverse(self._user)
-        self._transform = self._base @ self._user
-        self._transform_inv = self._user_inv @ self._base_inv
+        var cam_m = self._camera.matrix()
+        self._transform = self._base @ cam_m @ self._user
+        self._transform_inv = self._user_inv @ inverse(cam_m) @ self._base_inv
 
     def to_world(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
         """Map a point from the current transform's frame into world space."""
         return mat_apply(self._user, x, y)
 
     def to_local(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
-        """Map a world-space point — a mouse position, say — into the current
-        transform's frame."""
+        """Map a world-space point — a mouse position already converted
+        through `Camera.to_world`, say — into the current transform's frame.
+        """
         return mat_apply(self._user_inv, x, y)
+
+    def camera(mut self, cam: Camera):
+        """Set the active camera. Applies to every draw call and every nested
+        `transform()` from here on, until changed again or `canvas.overlay()`
+        suspends it — and resets to identity next frame, like the rest of the
+        transform state.
+
+        ```mojo
+        canvas.camera(self.cam)
+        canvas.sprite(self.player.pos, ...)  # world-space coordinates
+        with canvas.overlay():
+            canvas.text("Score: " + str(self.score), (0, ctx.top() - 20))
+        ```
+        """
+        self._camera = cam.copy()
+        self._sync_transform()
+
+    def overlay(mut self) -> OverlayGuard[origin_of(self)]:
+        """Suspend the camera and any active transform for a `with` block, so
+        what's drawn inside lands in screen space regardless of where the
+        camera looks — for a HUD or other UI that must stay put.
+
+        Pops back to whatever camera and transform were active on exit,
+        including on an early return or a raise.
+        """
+        return OverlayGuard[origin_of(self)](self)
 
     def fill(mut self, color: Optional[Color] = None, enabled: Bool = True):
         """Paint the inside of shapes. `color` left unset keeps the current

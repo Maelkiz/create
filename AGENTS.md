@@ -63,6 +63,7 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 | `src/create/render/_gl_backend.mojo` | `GLRenderer` — the shader, the vertex buffer, the glyph atlas and sprite textures, and the batching that replays a frame in one draw call where it can |
 | `src/create/core/_run_gl.mojo` | `run_gl[T]` — the GPU run loop: a `GLWindow`, the same `step`, `present_gpu` plus a buffer swap |
 | `src/create/render/viewport.mojo` | `Viewport` — the design-space-to-pixel mapping, autoscale arithmetic, base matrix |
+| `src/create/render/camera.mojo` | `Camera` — position and zoom mapping world space onto screen space; `canvas.camera()`/`canvas.overlay()` are its `Canvas`-side surface |
 | `src/create/render/autoscale.mojo` | `AutoScale` — the `FIT`/`EXTEND`/`OFF` mode constants |
 | `src/create/render/_style.mojo` | `Style` — fill, outline, font settings; rebuilt fresh each frame, scoped by `canvas.style()` |
 | `src/create/render/_text.mojo` | `TextRenderer` — font loading, glyph cache, text layout |
@@ -207,7 +208,7 @@ line. Every example and every test uses it.
 Each subpackage exports the names it owns and nothing from a layer below:
 
 - `from create.core import *` — `Program`, `run`, `run_headless`, `Context`, `Time`, `Input`, `MouseButton`, `Key`, `script_dir`.
-- `from create.render import *` — `Canvas` and its guards, `Surface`/`MemorySurface`, `Viewport`, `Color`, `Font`/`FontWeight`, `Align`, `AutoScale`, `RenderBackend`.
+- `from create.render import *` — `Canvas` and its guards, `Camera`, `Surface`/`MemorySurface`, `Viewport`, `Color`, `Font`/`FontWeight`, `Align`, `AutoScale`, `RenderBackend`.
 - `from create.math import *` — `Point2D`, `Vector2D`/`Vector3D`, `Matrix` and its constructors, the geometry shapes and `overlaps`, `Random`, `Easing`/`ease`/`Tween`, the util functions, and a re-export of `std.math` (`sin`, `cos`, `sqrt`, `clamp`, `pi`, `tau`, …).
 - `from create.sprite import *` — `Sprite`, `SpriteAnimation`, `SpriteAnimator`.
 - `from create.audio import *` — `Sound`, `Audio`.
@@ -430,7 +431,7 @@ with canvas.style():
     canvas.rectangle(self.pos, 40, 40)
 ```
 
-**Coordinate system is not Processing's.** The origin is the **middle** of the design area and **y grows upward**. World `x` runs `[-width/2, +width/2]`, `y` runs `[-height/2, +height/2]`; `(0, 0)` is the centre of the screen and negative `y` is below it.
+**Coordinate system is not Processing's.** The origin is the **middle** of the screen area and **y grows upward**. Screen `x` runs `[-width/2, +width/2]`, `y` runs `[-height/2, +height/2]`; `(0, 0)` is the centre of the screen and negative `y` is below it.
 
 `Context` and `Canvas` both expose `left()`, `right()`, `bottom()`, `top()` as the edges — use those rather than `width`/`height` arithmetic, and note `left()` and `bottom()` are negative. `Rectangle.top()` is `y + h/2`.
 
@@ -439,7 +440,20 @@ Consequences worth internalising:
 - `rotate(angle)` turns **counter-clockwise**, the mathematical convention.
 - Downward motion is negative: gravity is a negative `vel_y`, a jump is positive. See [examples/movement/src/player.mojo](examples/movement/src/player.mojo).
 - Glyphs and sprites are **not** flipped — only their anchor point is mapped.
-- `input.mouse` is delivered in world coordinates, so it can be negative.
+- `input.mouse` is delivered in screen coordinates, so it can be negative — camera-independent, since `Input` is filled before that frame's `Camera` exists. See Camera below.
+
+**Camera** is what maps world space onto screen space, for content bigger than the screen — a sidescroller, a top-down level, anything that scrolls. `canvas.camera(cam)` sets the active one, and it applies to every draw call and every nested `transform()` from there on, exactly like `Style`: reset to identity each frame, so `render` sets it explicitly each frame it wants one. `Camera` is a field the program owns and moves on its own schedule (`self.cam.position = self.player.pos`, or a `Tween` over it for smoothing) — it is not fed by the run loop, so it costs `Program`, `Context` and `run.mojo` nothing, same reason adding `Audio` did not touch them. `Camera.to_world`/`to_screen` convert a point between the two spaces — `self.cam.to_world(input.mouse)` for picking against world-space entities.
+
+`canvas.overlay()` is the escape hatch: a `with` block that suspends the active camera (and any nested transform) so what's drawn inside lands in screen space regardless of where the camera looks — HUD, score, anything that must stay fixed on screen.
+
+```mojo
+canvas.camera(self.cam)
+canvas.sprite(self.player.pos, ...)          # world-space coordinates
+with canvas.overlay():
+    canvas.text("Score: " + str(self.score), (0, ctx.top() - 20))  # screen space
+```
+
+Nothing below `Canvas` knows a camera exists: `_command.mojo`, `_backend.mojo`, `_tessellate.mojo` and the GL path all just replay `DrawCommand.transform`, which already carries the full composition — camera support cost them nothing.
 
 **All shapes are center-positioned** (unlike Processing). `canvas.rectangle((x, y), w, h)` draws a rectangle centered at `(x, y)`, same as `canvas.circle()`, `canvas.sprite()`, etc. `Rectangle.x/y` is the center, not the top-left corner. Position arguments are `Point2D` and extents are `Vector2D` — a location versus a width/height pair — and both types' tuple constructors are `@implicit`, so a bare tuple works everywhere either is taken.
 
@@ -563,7 +577,9 @@ docstring; this table is not an API reference and must not grow into one.
 | Term | Meaning |
 |---|---|
 | `Program` | Full interactive program: `create` + `update` + `render`. No event callbacks — input arrives as `update`'s `Input` parameter |
-| World space | The coordinate space programs draw in — origin centred, y up (see Coordinate system above). `Canvas` maps it to framebuffer pixels through a single base matrix built by `Viewport.base_matrix()` |
+| Screen space | The fixed coordinate space `Context`/`Input` describe — origin centred, y up (see Coordinate system above). Camera-independent: `ctx.left`/`right`/`bottom`/`top` and `input.mouse` live here, and `Viewport.base_matrix()` maps it straight to framebuffer pixels |
+| World space | The camera-relative space a program draws in once it sets a `Camera` — effectively unbounded, since panning or zooming the camera just changes which part of it lands on screen. `Canvas._user`/`to_local`/`to_world` operate here; with no camera set (the default), world space and screen space coincide |
+| `Camera` | What maps world space onto screen space: `position` (world point centred on screen) and `zoom`. A field the program owns and moves on its own schedule, like `Sprite` — not fed by the run loop. `canvas.camera(cam)` applies it to every draw call and nested `transform()` until changed or `canvas.overlay()` suspends it; resets to identity every frame, like `Style`. `canvas.overlay()` is the escape hatch for a HUD or other UI that must stay in screen space regardless of the camera |
 | Design resolution | The size passed to `run` (default 1280x720, or pinned by `ctx.design()`) — the space a program is authored in, and the factor `ctx.autoscale` scales by. See Autoscale above |
 | `DrawCommand` | One recorded draw: local-space geometry, the transform at record time, and the resolved `Style`. What `Canvas` appends instead of touching pixels — see [_command.mojo](src/create/render/_command.mojo) |
 | `Backend` | Owns the fonts, glyph cache and interned sprite images, and replays a frame's `DrawCommand`s — onto a `Surface` at `present` (CPU, the one caller of `_raster.mojo`) or through `GLRenderer` at `present_gpu` (GPU). Which one is a `kind` field, not a trait object |
@@ -571,7 +587,7 @@ docstring; this table is not an API reference and must not grow into one.
 | `save_image` / `save_screenshot` | The two captures, and they answer different questions. `canvas.save_image(path, scale, transparent)` is what the program *drew*: design resolution times `scale`, no letterbox bars, CPU-replayed from the recorded commands under **both** backends, so it is reproducible across machines and window sizes. `canvas.save_screenshot(path)` is what the user *saw*: the drawable's own resolution, bars included, drawn by whichever rasteriser drew the frame, hence machine-dependent by design. Neither is a fallback for the other |
 | `Viewport` | The design-space-to-pixel mapping: design size, autoscale mode, scale factor, offsets, base matrix. Owns no window and no pixels, so it is pure arithmetic; `Context` forwards to it |
 | `PersistentCanvasState` | What survives the frame boundary — the `Backend` (hence fonts, glyph cache, sprite images) and the letterbox colour — moved into each frame's `Canvas` and back out again by `_release`. Style is *not* in it: `Canvas` is reachable only from `render`, so nothing could seed a style outside a frame, and carrying one forward would preserve only a forgotten setting |
-| `TransformGuard` / `StyleGuard` | RAII wrappers from `canvas.transform(m)` and `canvas.style()` — pop the matrix, restore the style, on scope exit |
+| `TransformGuard` / `StyleGuard` / `OverlayGuard` | RAII wrappers from `canvas.transform(m)`, `canvas.style()` and `canvas.overlay()` — pop the matrix, restore the style, restore the camera and transform, on scope exit |
 | Asset vs. playhead | `SpriteAnimation` and `Sound` are immutable artwork, shared by `ArcPointer`; `SpriteAnimator` and an `Audio` voice are one entity's position in it. The rate (`fps`) belongs to the asset, not the playhead |
 | `Easing` / `Tween` | An `Easing` is the *shape* of a motion — a pure function of a 0-to-1 fraction, so `ease(curve, t)` needs no state. A `Tween` is a playhead that walks that fraction over a duration and reads out a value. A tween has no shared asset to split off the way an animation does: its whole definition is four numbers, so each entity owns its own |
 | `Point2D` / `Vector2D` | The position/direction split, and which one a signature takes is decided by role, not by convenience. A **location** is a `Point2D`: `canvas.circle(pos, r)`, `Rectangle.center()`, `input.mouse`. An **extent or a displacement** is a `Vector2D`: `Rectangle.size()`, `translate(delta)`, `input.wheel`, a velocity. `Point2D` carries only what a position admits — subtraction to a `Vector2D`, translation by one, `dist`, `lerp` — and refuses `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`, which is the whole point of it: `pos.normalize()` used to compile and mean nothing. `.xy()`/`.xyz()` is the visible step between them (`Vector2D(p.xy())` is the escape hatch), and a bare tuple binds into either, so the distinction costs a call site nothing |

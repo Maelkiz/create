@@ -22,10 +22,12 @@ struct Input(Movable):
     one in and calls `step` directly, driving click- or key-driven behaviour
     with no window involved.
 
-    `mouse` is in world coordinates, so it is negative left of and below the
-    origin. It and `mouse_press_pos` are `Point2D` because they are
-    locations; `wheel` stays a `Vector2D` because a scroll delta is a
-    displacement.
+    `mouse` is in screen coordinates, so it is negative left of and below the
+    origin — camera-independent, since `Input` is filled before a program's
+    `Canvas` (and any `Camera` it sets) exists for the frame. Convert with
+    `Camera.to_world` where a program uses one. It and `mouse_press_pos` are
+    `Point2D` because they are locations; `wheel` stays a `Vector2D` because a
+    scroll delta is a displacement.
     """
 
     var mouse_x: Int
@@ -78,11 +80,11 @@ struct Input(Movable):
         self._released_buttons = 0
 
     def _set_mouse(mut self, x: Float64, y: Float64):
-        """Record a world-space pointer position.
+        """Record a screen-space pointer position.
 
         The single writer of `mouse`, `mouse_x` and `mouse_y`, so the three
         event arms that report a position cannot disagree about which of them
-        a position updates. World space is centred, so both coordinates go
+        a position updates. Screen space is centred, so both coordinates go
         negative and the Int forms floor rather than truncate — truncation
         would round the left and bottom halves of the screen the wrong way.
         """

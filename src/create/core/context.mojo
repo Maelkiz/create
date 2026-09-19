@@ -8,10 +8,12 @@ struct Context(Movable):
     """Per-frame state the run loop hands the program, and the dials it can
     turn back.
 
-    `width`/`height` are the world extent and `left`/`right`/`bottom`/`top` its
-    edges — use those rather than width arithmetic, since the origin is centred
-    and two of them are negative. `time` is the frame clock, `scale` the
-    autoscale factor, `view` the mapping they all come from.
+    `width`/`height` are the screen extent and `left`/`right`/`bottom`/`top`
+    its edges — use those rather than width arithmetic, since the origin is
+    centred and two of them are negative. `time` is the frame clock, `scale`
+    the autoscale factor, `view` the mapping they all come from. Screen space
+    is camera-independent — `Context` and `Input` don't know a `Camera`
+    exists, since a program sets one on `Canvas`, not on either of these.
 
     Written from both sides, which is why it is a `mut` parameter: the loop
     refreshes the geometry and the clock each frame, and the program sets
@@ -64,26 +66,26 @@ struct Context(Movable):
         self.scale = self.view.scale
 
     def left(self) -> Float64:
-        """World x of the left edge — negative, since the origin is centred."""
+        """Screen x of the left edge — negative, since the origin is centred."""
         return self.view.left()
 
     def right(self) -> Float64:
         return self.view.right()
 
     def bottom(self) -> Float64:
-        """World y of the bottom edge — negative, since y grows upward."""
+        """Screen y of the bottom edge — negative, since y grows upward."""
         return self.view.bottom()
 
     def top(self) -> Float64:
         return self.view.top()
 
     def _base_matrix(self) -> Matrix[3, 3]:
-        """The world-to-pixel mapping: origin centred, y up."""
+        """The screen-to-pixel mapping: origin centred, y up."""
         return self.view.base_matrix()
 
-    def to_world(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
-        """Map a window pixel position into world space."""
-        return self.view.to_world(x, y)
+    def to_screen(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
+        """Map a window pixel position into screen space."""
+        return self.view.to_screen(x, y)
 
     def quit(mut self):
         """Ask the run loop to stop after the current frame.

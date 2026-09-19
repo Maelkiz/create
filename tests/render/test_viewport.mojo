@@ -86,14 +86,14 @@ def test_edges_straddle_the_origin() raises -> None:
     assert_almost_equal(v.top(), 300.0)
 
 
-def test_to_world_inverts_the_y_axis() raises -> None:
+def test_to_screen_inverts_the_y_axis() raises -> None:
     var v = Viewport()
     v.set_size(1024, 768)
     # A pixel above the centre row is positive world y.
-    var p = v.to_world(512.0, 284.0)
+    var p = v.to_screen(512.0, 284.0)
     assert_almost_equal(p[0], 0.0)
     assert_almost_equal(p[1], 100.0)
-    var q = v.to_world(512.0, 484.0)
+    var q = v.to_screen(512.0, 484.0)
     assert_almost_equal(q[1], -100.0)
 
 
@@ -108,14 +108,14 @@ def test_base_matrix_puts_positive_y_in_lower_rows() raises -> None:
 
 
 def _assert_base_round_trips(v: Viewport, x: Float64, y: Float64) raises:
-    """`base_matrix` maps world to pixels; `to_world` is its inverse."""
-    var w = v.to_world(x, y)
+    """`base_matrix` maps screen to pixels; `to_screen` is its inverse."""
+    var w = v.to_screen(x, y)
     var back = apply(v.base_matrix(), w[0], w[1])
     assert_almost_equal(back[0], x)
     assert_almost_equal(back[1], y)
 
 
-def test_base_matrix_inverts_to_world() raises -> None:
+def test_base_matrix_inverts_to_screen() raises -> None:
     var off = Viewport()
     off.set_size(1024, 768)
     _assert_base_round_trips(off, 0.0, 0.0)

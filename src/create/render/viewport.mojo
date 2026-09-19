@@ -97,36 +97,41 @@ struct Viewport(Copyable, Movable):
         return self.scale != 1.0 or self.offset_x != 0.0 or self.offset_y != 0.0
 
     def left(self) -> Float64:
-        """World x of the left edge — negative, since the origin is centred."""
+        """Screen x of the left edge — negative, since the origin is centred."""
         return -Float64(self.width) / 2.0
 
     def right(self) -> Float64:
         return Float64(self.width) / 2.0
 
     def bottom(self) -> Float64:
-        """World y of the bottom edge — negative, since y grows upward."""
+        """Screen y of the bottom edge — negative, since y grows upward."""
         return -Float64(self.height) / 2.0
 
     def top(self) -> Float64:
         return Float64(self.height) / 2.0
 
     def base_matrix(self) -> Matrix[3, 3]:
-        """The world-to-pixel mapping: origin centred, y up.
+        """The screen-to-pixel mapping: origin centred, y up.
 
         Anchoring on the framebuffer centre covers all three autoscale modes
         at once — `offset_x + scale * width / 2` equals `pixel_w / 2` for
         `OFF`, `FIT` and `EXTEND` alike — and avoids the rounding `EXTEND`
         introduces when it stores the extended size as an Int.
+
+        Screen space, not world space: this knows nothing of `Camera`, which
+        sits between the two and is `Canvas`'s concern, not `Viewport`'s.
         """
         return mat_translate(
             Float64(self.pixel_w) / 2.0, Float64(self.pixel_h) / 2.0
         ) @ mat_scale(self.scale, -self.scale)
 
-    def to_world(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
-        """Map a window pixel position into world space.
+    def to_screen(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
+        """Map a window pixel position into screen space.
 
         The inverse of `base_matrix`, done in arithmetic: pointer positions
-        reach the program in the same space it draws in.
+        reach the program in the same space `ctx.left`/`right`/`bottom`/`top`
+        describe. Camera-independent, like the rest of `Viewport` — a program
+        using a `Camera` converts on top with `Camera.to_world`.
         """
         return (
             (x - Float64(self.pixel_w) / 2.0) / self.scale,

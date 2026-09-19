@@ -61,14 +61,15 @@ def apply_events(
             input._just_released.set(keycode)
         elif event.isa[MouseMoved]():
             var e = event[MouseMoved]
-            # Pointer positions reach the program in the same space it draws in.
-            var p = ctx.to_world(
+            # Pointer positions reach the program in screen space — the same
+            # camera-independent space `ctx.left`/`right`/`bottom`/`top` use.
+            var p = ctx.to_screen(
                 Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
             )
             input._set_mouse(p[0], p[1])
         elif event.isa[MouseButtonDown]():
             var e = event[MouseButtonDown]
-            var p = ctx.to_world(
+            var p = ctx.to_screen(
                 Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
             )
             input.mouse_pressed = True
@@ -79,7 +80,7 @@ def apply_events(
             input._pressed_buttons |= 1 << e.button
         elif event.isa[MouseButtonUp]():
             var e = event[MouseButtonUp]
-            var p = ctx.to_world(
+            var p = ctx.to_screen(
                 Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
             )
             input.mouse_pressed = False
