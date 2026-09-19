@@ -7,9 +7,9 @@ struct Player:
     # the same at any frame rate. y grows upward, so gravity is negative and a
     # jump is positive.
     comptime GRAVITY: Float64 = -5400.0  # units/s^2
-    comptime JUMP_FORCE: Float64 = 1800.0  # units/s
+    comptime JUMP_FORCE: Float64 = 1400.0  # units/s
     comptime JUMP_HOLD_FORCE: Float64 = 1080.0  # units/s^2
-    comptime SPEED: Float64 = 840.0  # units/s
+    comptime SPEED: Float64 = 540.0  # units/s
 
     var x: Float64
     var y: Float64
@@ -37,13 +37,7 @@ struct Player:
         self.vel_y += self.GRAVITY * dt
         self.y += self.vel_y * dt
 
-        var half_w = self.width / 2
         var half_h = self.height / 2
-
-        if self.x - half_w < ctx.left():
-            self.x = ctx.left() + half_w
-        if self.x + half_w > ctx.right():
-            self.x = ctx.right() - half_w
 
         # Ceiling: moving up and past the top edge.
         if self.y + half_h > ctx.top():

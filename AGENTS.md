@@ -200,7 +200,7 @@ file minimal: it builds on every commit, and its cost must not grow with the exa
 
 ## Code Conventions
 
-**Defining a program:** implement `Program` (`create` + `render`, optional `update`) and pass it to `run[T]`. See [examples/movement/src/main.mojo](examples/movement/src/main.mojo) for the full shape, or [tests/core/test_smoke.mojo](tests/core/test_smoke.mojo) for the minimum. Both are compile-gated, so neither can go stale.
+**Defining a program:** implement `Program` (`create` + `render`, optional `update`) and pass it to `run[T]`. See [examples/sidescroller/src/main.mojo](examples/sidescroller/src/main.mojo) for the full shape, or [tests/core/test_smoke.mojo](tests/core/test_smoke.mojo) for the minimum. Both are compile-gated, so neither can go stale.
 
 **Imports: `from create import *` is what a program writes.** It is the whole public surface in one
 line. Every example and every test uses it.
@@ -438,7 +438,7 @@ with canvas.style():
 Consequences worth internalising:
 
 - `rotate(angle)` turns **counter-clockwise**, the mathematical convention.
-- Downward motion is negative: gravity is a negative `vel_y`, a jump is positive. See [examples/movement/src/player.mojo](examples/movement/src/player.mojo).
+- Downward motion is negative: gravity is a negative `vel_y`, a jump is positive. See [examples/sidescroller/src/player.mojo](examples/sidescroller/src/player.mojo).
 - Glyphs and sprites are **not** flipped — only their anchor point is mapped.
 - `input.mouse` is delivered in screen coordinates, so it can be negative — camera-independent, since `Input` is filled before that frame's `Camera` exists. See Camera below.
 
