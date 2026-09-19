@@ -23,7 +23,7 @@ struct Style(Copyable, Movable):
     var text_align: Align
 
     def __init__(out self):
-        self.fill_color = Color.WHITE
+        self.fill_color = Color.TRANSPARENT
         self.fill_enabled = True
         self.outline_color = Color.BLACK
         self.outline_thickness = 1
