@@ -100,7 +100,8 @@ comptime _SHAPE_SPRITE = 5
 comptime _SHAPE_TEXT = 6
 comptime _SHAPE_ROTATED_RECT = 7
 comptime _SHAPE_ROUNDED_RECT = 8
-comptime _SHAPE_COUNT = 9
+comptime _SHAPE_ROUNDED_TRIANGLE = 9
+comptime _SHAPE_COUNT = 10
 
 
 def _shape_name(shape: Int) -> String:
@@ -120,8 +121,10 @@ def _shape_name(shape: Int) -> String:
         return "text"
     elif shape == _SHAPE_ROTATED_RECT:
         return "rotated rect"
-    else:
+    elif shape == _SHAPE_ROUNDED_RECT:
         return "rounded rect"
+    else:
+        return "rounded triangle"
 
 
 @fieldwise_init
@@ -189,7 +192,7 @@ struct _Parity(Program):
                 canvas.fill(Color(0x60, 0xE0, 0x90))
                 with canvas.transform(rotate(0.5)):
                     canvas.rectangle((30, -70), 40, 20)
-        else:
+        elif self.shape == _SHAPE_ROUNDED_RECT:
             # Filled and outlined, so both the fill's cross decomposition and
             # the outline's inset ring get exercised on both backends.
             with canvas.style():
@@ -197,6 +200,15 @@ struct _Parity(Program):
                 canvas.outline(Color.BLACK, thickness=4)
                 canvas.corner_radius(10)
                 canvas.rectangle((-70, 40), 44, 30)
+        else:
+            # Scalene (one acute, one obtuse vertex) and outlined, so both
+            # the per-vertex `pi - theta` span math and the centred-outline
+            # convention are exercised against the CPU's.
+            with canvas.style():
+                canvas.fill(Color(0x50, 0xA0, 0xD0))
+                canvas.outline(Color.BLACK, thickness=4)
+                canvas.corner_radius(9)
+                canvas.triangle((40, 5), (95, 15), (65, 70))
 
 
 def _mask(pixels: List[UInt8]) -> List[Bool]:

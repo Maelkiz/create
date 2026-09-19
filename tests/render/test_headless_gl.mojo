@@ -129,5 +129,44 @@ def test_the_gpu_backend_rounds_rectangle_corners() raises -> None:
     assert_equal(m.pixel(50, 50), Color.RED, "interior")
 
 
+@fieldwise_init
+struct GPURoundedTriangle(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut ctx: Context) raises -> GPURoundedTriangle:
+        return GPURoundedTriangle(0)
+
+    def render(self, mut canvas: Canvas) raises:
+        canvas.background(Color(10, 20, 30))
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(8)
+        canvas.triangle((-20, -20), (20, -20), (-20, 20))
+
+
+def test_the_gpu_backend_rounds_triangle_corners() raises -> None:
+    """Parity alone would not catch a GPU path that skipped rounding
+    entirely — a corner fillet is too small a fraction of the shape's area
+    to move the structural tolerances. This checks the corner directly."""
+    var m: MemorySurface
+    try:
+        m = run_headless[GPURoundedTriangle](
+            100, 100, backend=RenderBackend.GPU
+        )
+    except e:
+        print("SKIP — no GL context:", e)
+        return
+
+    # The right-angle vertex sits at world (-20, -20), device (30, 70).
+    # A radius-8 fillet erodes it back along both edges, so the naive
+    # sharp corner is background if rounding actually happened.
+    assert_equal(m.pixel(30, 70), Color(10, 20, 30), "naive sharp corner")
+    # Just inside the fillet arc, close to the vertex.
+    assert_equal(m.pixel(33, 67), Color.RED, "inside the fillet arc")
+    # Deep interior, unaffected by rounding either way.
+    assert_equal(m.pixel(45, 55), Color.RED, "interior")
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

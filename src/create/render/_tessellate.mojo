@@ -29,7 +29,7 @@ from std.math import abs, ceil, cos, max, min, sin, sqrt, pi
 from create.math.matrix import Matrix, apply as mat_apply
 
 from ._command import DrawCommand
-from ._fillet import rect_corner_radius
+from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
 from ._transform import pixel_scale, outline_thickness_px
 from .color import Color
 
@@ -210,13 +210,17 @@ def _corner_fan(
     ccy: Float64,
     r: Float64,
     angle0: Float64,
+    span: Float64,
     n: Int,
     color: Color,
 ):
-    """A solid quarter-circle fan, `n` segments from `angle0` to `angle0 +
-    pi/2`, every vertex mapped individually so a sheared corner still comes
-    out as a genuine ellipse arc."""
-    var step = (pi / 2.0) / Float64(n)
+    """A solid fan of `n` segments sweeping `span` radians from `angle0`,
+    every vertex mapped individually so a sheared corner still comes out as
+    a genuine ellipse arc. The rect's corners always sweep a fixed quarter
+    turn (`span = pi/2`); the triangle's sweep `pi - theta` per vertex, so
+    `span` is a parameter here rather than the quarter turn this used to
+    hardcode."""
+    var step = span / Float64(n)
     var centre = mat_apply(m, ccx, ccy)
     for i in range(n):
         var a0 = angle0 + Float64(i) * step
@@ -241,7 +245,7 @@ def _corner_ring_fan(
     degenerates to a solid `_corner_fan` when the inset radius has
     collapsed, matching `emit_circle`'s own solid-disc fallback."""
     if r_inner <= 0.0:
-        _corner_fan(vb, m, ccx, ccy, r_outer, angle0, n, color)
+        _corner_fan(vb, m, ccx, ccy, r_outer, angle0, pi / 2.0, n, color)
         return
     var step = (pi / 2.0) / Float64(n)
     for i in range(n):
@@ -273,10 +277,10 @@ def _rounded_rect_fill(
     _mapped_quad(vb, m, x0, y0 + r, x0 + r, y1 - r, color)
     _mapped_quad(vb, m, x1 - r, y0 + r, x1, y1 - r, color)
     var n = _arc_segments(r * sf, pi / 2.0)
-    _corner_fan(vb, m, x0 + r, y0 + r, r, pi, n, color)
-    _corner_fan(vb, m, x1 - r, y0 + r, r, 3.0 * pi / 2.0, n, color)
-    _corner_fan(vb, m, x1 - r, y1 - r, r, 0.0, n, color)
-    _corner_fan(vb, m, x0 + r, y1 - r, r, pi / 2.0, n, color)
+    _corner_fan(vb, m, x0 + r, y0 + r, r, pi, pi / 2.0, n, color)
+    _corner_fan(vb, m, x1 - r, y0 + r, r, 3.0 * pi / 2.0, pi / 2.0, n, color)
+    _corner_fan(vb, m, x1 - r, y1 - r, r, 0.0, pi / 2.0, n, color)
+    _corner_fan(vb, m, x0 + r, y1 - r, r, pi / 2.0, pi / 2.0, n, color)
 
 
 def _rounded_rect_ring(
@@ -488,26 +492,222 @@ def emit_line(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     )
 
 
+def _fillet_arc_span(
+    f: Tuple[
+        Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64
+    ]
+) -> Float64:
+    """The signed sweep from a fillet's `angle_in` to its `angle_out`,
+    normalised to `[-pi, pi]` — matches `_backend.mojo::_draw_fillet_arc`'s
+    own normalisation so the two backends walk the identical arc."""
+    var delta = f[7] - f[6]
+    if delta > pi:
+        delta -= 2.0 * pi
+    if delta < -pi:
+        delta += 2.0 * pi
+    return delta
+
+
+def _rounded_triangle_fill(
+    mut vb: VertexBuffer,
+    m: Matrix[3, 3],
+    cx: Float64,
+    cy: Float64,
+    f0: Tuple[
+        Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64
+    ],
+    f1: Tuple[
+        Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64
+    ],
+    f2: Tuple[
+        Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64
+    ],
+    r: Float64,
+    sf: Float64,
+    color: Color,
+):
+    """The eroded hexagon (a centroid fan over the six tangent points) union
+    a corner fan per vertex — the same (eroded triangle) union (3 fillet
+    discs) decomposition `_backend.mojo::_triangle`'s uniform branch uses,
+    cheap here because every vertex is mapped individually anyway. Full
+    size, not inset — the fill is unaffected by whether an outline is
+    drawn, exactly as the unrounded triangle's own fill is."""
+    var centre = mat_apply(m, cx, cy)
+    var tx0 = f0[2]
+    var ty0 = f0[3]
+    var tx1 = f0[4]
+    var ty1 = f0[5]
+    var tx2 = f1[2]
+    var ty2 = f1[3]
+    var tx3 = f1[4]
+    var ty3 = f1[5]
+    var tx4 = f2[2]
+    var ty4 = f2[3]
+    var tx5 = f2[4]
+    var ty5 = f2[5]
+    var hx = List[Float64]()
+    var hy = List[Float64]()
+    hx.append(tx0)
+    hy.append(ty0)
+    hx.append(tx1)
+    hy.append(ty1)
+    hx.append(tx2)
+    hy.append(ty2)
+    hx.append(tx3)
+    hy.append(ty3)
+    hx.append(tx4)
+    hy.append(ty4)
+    hx.append(tx5)
+    hy.append(ty5)
+    for i in range(6):
+        var j = (i + 1) % 6
+        var pa = mat_apply(m, hx[i], hy[i])
+        var pb = mat_apply(m, hx[j], hy[j])
+        vb.triangle(centre[0], centre[1], pa[0], pa[1], pb[0], pb[1], color)
+
+    var span0 = _fillet_arc_span(f0)
+    var span1 = _fillet_arc_span(f1)
+    var span2 = _fillet_arc_span(f2)
+    _corner_fan(
+        vb,
+        m,
+        f0[0],
+        f0[1],
+        r,
+        f0[6],
+        span0,
+        _arc_segments(r * sf, span0),
+        color,
+    )
+    _corner_fan(
+        vb,
+        m,
+        f1[0],
+        f1[1],
+        r,
+        f1[6],
+        span1,
+        _arc_segments(r * sf, span1),
+        color,
+    )
+    _corner_fan(
+        vb,
+        m,
+        f2[0],
+        f2[1],
+        r,
+        f2[6],
+        span2,
+        _arc_segments(r * sf, span2),
+        color,
+    )
+
+
+def _rounded_triangle_corner_outline(
+    mut vb: VertexBuffer,
+    m: Matrix[3, 3],
+    f: Tuple[
+        Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64
+    ],
+    r: Float64,
+    sf: Float64,
+    width: Float64,
+    color: Color,
+):
+    """One rounded corner's outline arc as a fan of thick segments between
+    mapped arc samples, mirroring `_backend.mojo::_draw_fillet_arc_mapped`'s
+    centred device-space band exactly — not a filled sector, so it matches
+    the straight edge bands' own convention rather than the rounded rect's
+    inset ring."""
+    var cx = f[0]
+    var cy = f[1]
+    var angle_in = f[6]
+    var span = _fillet_arc_span(f)
+    var n = _arc_segments(r * sf, span)
+    var prev = mat_apply(m, cx + r * cos(angle_in), cy + r * sin(angle_in))
+    for i in range(1, n + 1):
+        var t = Float64(i) / Float64(n)
+        var ang = angle_in + span * t
+        var cur = mat_apply(m, cx + r * cos(ang), cy + r * sin(ang))
+        _segment_quad(vb, prev[0], prev[1], cur[0], cur[1], width, color)
+        prev = cur
+
+
 def emit_triangle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     """The mapped triangle, plus a quad per edge when outlined.
 
     The outline is three edge quads rather than an inset triangle, matching the
     CPU replay, which outlines a triangle with three `line_pixels` calls.
+
+    Rounded corners need no uniform/non-uniform split like
+    `_backend.mojo::_triangle` does: every vertex here is already mapped
+    individually, so a sheared rounded corner comes out as the ellipse arc
+    it should be for free, exactly as `emit_rect` already relies on.
     """
     var m = c.transform
-    var p1 = mat_apply(m, c.geom[0], c.geom[1])
-    var p2 = mat_apply(m, c.geom[2], c.geom[3])
-    var p3 = mat_apply(m, c.geom[4], c.geom[5])
+    var lx1 = c.geom[0]
+    var ly1 = c.geom[1]
+    var lx2 = c.geom[2]
+    var ly2 = c.geom[3]
+    var lx3 = c.geom[4]
+    var ly3 = c.geom[5]
+    var r = triangle_corner_radius(
+        Float64(c.style.corner_radius), lx1, ly1, lx2, ly2, lx3, ly3
+    )
+
+    if r <= 0.0:
+        var p1 = mat_apply(m, lx1, ly1)
+        var p2 = mat_apply(m, lx2, ly2)
+        var p3 = mat_apply(m, lx3, ly3)
+        if c.style.fill_enabled:
+            vb.triangle(
+                p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], c.style.fill_color
+            )
+        if c.style.outline_visible():
+            var w = Float64(outline_thickness_px(c.style, m, scale))
+            var sc = c.style.outline_color
+            _segment_quad(vb, p1[0], p1[1], p2[0], p2[1], w, sc)
+            _segment_quad(vb, p2[0], p2[1], p3[0], p3[1], w, sc)
+            _segment_quad(vb, p3[0], p3[1], p1[0], p1[1], w, sc)
+        return
+
+    # Corner `i`'s prev/next follow the winding order `p1 -> p2 -> p3 ->
+    # p1`, matching `_backend.mojo::_triangle`'s own layout exactly, so the
+    # two backends cannot disagree on which tangent point sits on which
+    # edge.
+    var f0 = corner_fillet(lx1, ly1, lx3, ly3, lx2, ly2, r)
+    var f1 = corner_fillet(lx2, ly2, lx1, ly1, lx3, ly3, r)
+    var f2 = corner_fillet(lx3, ly3, lx2, ly2, lx1, ly1, r)
+    var cx = (lx1 + lx2 + lx3) / 3.0
+    var cy = (ly1 + ly2 + ly3) / 3.0
+    var sf = pixel_scale(m, scale)
+
     if c.style.fill_enabled:
-        vb.triangle(
-            p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], c.style.fill_color
+        _rounded_triangle_fill(
+            vb, m, cx, cy, f0, f1, f2, r, sf, c.style.fill_color
         )
+
     if c.style.outline_visible():
         var w = Float64(outline_thickness_px(c.style, m, scale))
         var sc = c.style.outline_color
-        _segment_quad(vb, p1[0], p1[1], p2[0], p2[1], w, sc)
-        _segment_quad(vb, p2[0], p2[1], p3[0], p3[1], w, sc)
-        _segment_quad(vb, p3[0], p3[1], p1[0], p1[1], w, sc)
+        var t_f0_out = mat_apply(m, f0[4], f0[5])
+        var t_f1_in = mat_apply(m, f1[2], f1[3])
+        var t_f1_out = mat_apply(m, f1[4], f1[5])
+        var t_f2_in = mat_apply(m, f2[2], f2[3])
+        var t_f2_out = mat_apply(m, f2[4], f2[5])
+        var t_f0_in = mat_apply(m, f0[2], f0[3])
+        _segment_quad(
+            vb, t_f0_out[0], t_f0_out[1], t_f1_in[0], t_f1_in[1], w, sc
+        )
+        _segment_quad(
+            vb, t_f1_out[0], t_f1_out[1], t_f2_in[0], t_f2_in[1], w, sc
+        )
+        _segment_quad(
+            vb, t_f2_out[0], t_f2_out[1], t_f0_in[0], t_f0_in[1], w, sc
+        )
+        _rounded_triangle_corner_outline(vb, m, f0, r, sf, w, sc)
+        _rounded_triangle_corner_outline(vb, m, f1, r, sf, w, sc)
+        _rounded_triangle_corner_outline(vb, m, f2, r, sf, w, sc)
 
 
 def emit_letterbox(
