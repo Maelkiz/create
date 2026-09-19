@@ -241,6 +241,8 @@ struct Color(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             _mix(a.a, b.a, tt),
         )
 
+    comptime TRANSPARENT = Color(0, 0, 0, 0)
+
     comptime BLACK = Color(0)
     comptime WHITE = Color(255)
 
@@ -257,3 +259,6 @@ struct Color(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     comptime YELLOW = Color(255, 255, 0)
 
     comptime ORANGE = Color(255, 128, 0)
+    comptime PINK = Color(255, 128, 192)
+    comptime PURPLE = Color(128, 0, 255)
+    comptime BROWN = Color(128, 64, 0)
