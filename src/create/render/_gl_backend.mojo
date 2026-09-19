@@ -474,7 +474,7 @@ struct GLRenderer(Movable):
         self.draw_calls = 0
         for ref c in cmds:
             if c.kind == CMD_CLEAR:
-                self._clear(c.style.fill, width, height)
+                self._clear(c.style.fill_color, width, height)
             elif c.kind == CMD_RECT:
                 emit_rect(self.vertices, c, scale)
             elif c.kind == CMD_CIRCLE:
@@ -565,7 +565,7 @@ struct GLRenderer(Movable):
                 Float64(r.y) * inv,
                 Float64(r.x + r.w) * inv,
                 Float64(r.y + r.h) * inv,
-                c.style.fill,
+                c.style.text_color,
             )
 
     def _pack(

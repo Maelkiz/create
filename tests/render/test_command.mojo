@@ -26,8 +26,8 @@ from create.math.matrix import identity, translate, rotate
 
 def _styled() -> Style:
     var s = Style()
-    s.fill = Color(10, 20, 30)
-    s.outline = Color(40, 50, 60)
+    s.fill_color = Color(10, 20, 30)
+    s.outline_color = Color(40, 50, 60)
     s.outline_thickness = 3
     s.font_size = 21
     return s^
@@ -89,8 +89,8 @@ def test_text_owns_its_string() raises -> None:
 def test_clear_carries_its_colour_in_the_fill() raises -> None:
     var c = clear_command(Color(1, 2, 3, 4))
     assert_equal(c.kind, CMD_CLEAR)
-    assert_equal(c.style.fill.r, 1)
-    assert_equal(c.style.fill.a, 4)
+    assert_equal(c.style.fill_color.r, 1)
+    assert_equal(c.style.fill_color.a, 4)
     assert_true(c.style.fill_enabled)
 
 
@@ -99,7 +99,7 @@ def test_letterbox_carries_the_device_content_rect() raises -> None:
     assert_equal(c.kind, CMD_LETTERBOX)
     assert_equal(c.geom[0], 10.0)
     assert_equal(c.geom[3], 220.0)
-    assert_equal(c.style.fill.g, 9)
+    assert_equal(c.style.fill_color.g, 9)
 
 
 def test_the_transform_is_kept_whole_not_applied() raises -> None:
@@ -118,9 +118,9 @@ def test_the_style_is_resolved_at_record_time() raises -> None:
     var s = _styled()
     var c = rect_command(identity[3](), s, 0.0, 0.0, 1.0, 1.0)
     # Mutating the style afterwards must not reach the recorded command.
-    s.fill = Color(200, 200, 200)
+    s.fill_color = Color(200, 200, 200)
     s.outline_thickness = 99
-    assert_equal(c.style.fill.r, 10)
+    assert_equal(c.style.fill_color.r, 10)
     assert_equal(c.style.outline_thickness, 3)
     assert_equal(c.style.font_size, 21)
 

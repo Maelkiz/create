@@ -23,7 +23,7 @@ struct Sketch(Program):
         canvas.outline(thickness=3)
         canvas.line((-200, 100), (0, -100))
 
-        canvas.fill(Color.BLACK)
+        canvas.text_color(Color.BLACK)
         canvas.font_size(54)
         canvas.text("Create!", 50, 100)
 

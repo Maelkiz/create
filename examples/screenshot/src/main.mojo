@@ -67,7 +67,7 @@ struct App(Program):
                 canvas.fill(Color(0x50, 0xC0, 0xE0))
                 canvas.circle((0, 0), 70)
 
-        canvas.fill(Color.WHITE)
+        canvas.text_color(Color.WHITE)
         canvas.text_align(Align.TOP)
         canvas.font_size(26)
         canvas.text("S - screenshot     I - image     Shift+I - 2x", 0, 220)

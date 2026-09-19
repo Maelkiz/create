@@ -200,7 +200,7 @@ def emit_rect(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
 
     if not c.style.outline_visible():
         if c.style.fill_enabled:
-            _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.fill)
+            _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.fill_color)
         return
 
     # The ring is built in local units so it follows a rotated edge, but its
@@ -214,13 +214,13 @@ def emit_rect(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     var iy1 = ly1 - sw
     if ix0 >= ix1 or iy0 >= iy1:
         # Thicker than the rectangle: all outline, no interior left to fill.
-        _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.outline)
+        _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.outline_color)
         return
 
     if c.style.fill_enabled:
         # Inset, not full-size: see the module docstring on double blending.
-        _mapped_quad(vb, m, ix0, iy0, ix1, iy1, c.style.fill)
-    var sc = c.style.outline
+        _mapped_quad(vb, m, ix0, iy0, ix1, iy1, c.style.fill_color)
+    var sc = c.style.outline_color
     _mapped_quad(vb, m, lx0, ly0, lx1, iy0, sc)
     _mapped_quad(vb, m, lx0, iy1, lx1, ly1, sc)
     _mapped_quad(vb, m, lx0, iy0, ix0, iy1, sc)
@@ -249,11 +249,11 @@ def emit_circle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     # a fill wins the whole disc and no ring is drawn at all.
     var solid_all = c.style.outline_visible() and inner <= 0.0
     var fill_r = inner if outlined else r
-    var fill_c = c.style.fill
+    var fill_c = c.style.fill_color
     var fill_on = c.style.fill_enabled
     if solid_all and not fill_on:
         fill_on = True
-        fill_c = c.style.outline
+        fill_c = c.style.outline_color
         fill_r = r
 
     var centre = mat_apply(m, cx, cy)
@@ -284,7 +284,7 @@ def emit_circle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
                 o1[1],
                 i1[0],
                 i1[1],
-                c.style.outline,
+                c.style.outline_color,
             )
 
 
@@ -302,7 +302,7 @@ def emit_line(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
         p1[0],
         p1[1],
         Float64(outline_thickness_px(c.style, m, scale)),
-        c.style.outline,
+        c.style.outline_color,
     )
 
 
@@ -317,10 +317,12 @@ def emit_triangle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     var p2 = mat_apply(m, c.geom[2], c.geom[3])
     var p3 = mat_apply(m, c.geom[4], c.geom[5])
     if c.style.fill_enabled:
-        vb.triangle(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], c.style.fill)
+        vb.triangle(
+            p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], c.style.fill_color
+        )
     if c.style.outline_visible():
         var w = Float64(outline_thickness_px(c.style, m, scale))
-        var sc = c.style.outline
+        var sc = c.style.outline_color
         _segment_quad(vb, p1[0], p1[1], p2[0], p2[1], w, sc)
         _segment_quad(vb, p2[0], p2[1], p3[0], p3[1], w, sc)
         _segment_quad(vb, p3[0], p3[1], p1[0], p1[1], w, sc)
@@ -342,7 +344,7 @@ def emit_letterbox(
     var cy1 = c.geom[3]
     var w = Float64(width)
     var h = Float64(height)
-    var col = c.style.fill
+    var col = c.style.fill_color
     if cy0 > 0.0:
         vb.quad(0.0, 0.0, w, 0.0, w, cy0, 0.0, cy0, col)
     if cy1 < h:

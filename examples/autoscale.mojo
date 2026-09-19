@@ -55,7 +55,7 @@ struct App(Program):
         canvas.fill(Color.BLUE)
         canvas.rectangle((0, 0), 200, 120)
 
-        canvas.fill(Color.BLACK)
+        canvas.text_color(Color.BLACK)
         canvas.font_size(28)
         canvas.text_align(Align.TOP)
         canvas.text("Autoscale Mode: " + _mode_name(canvas.autoscale), 0, -140)

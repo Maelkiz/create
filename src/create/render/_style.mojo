@@ -11,21 +11,23 @@ struct Style(Copyable, Movable):
     never a useful one.
     """
 
-    var fill: Color
+    var fill_color: Color
     var fill_enabled: Bool
-    var outline: Color
+    var outline_color: Color
     var outline_thickness: Int
     var outline_enabled: Bool
+    var text_color: Color
     var font_size: Int
     var font_weight: Int
     var text_align: Align
 
     def __init__(out self):
-        self.fill = Color.WHITE
+        self.fill_color = Color.WHITE
         self.fill_enabled = True
-        self.outline = Color.BLACK
+        self.outline_color = Color.BLACK
         self.outline_thickness = 1
         self.outline_enabled = True
+        self.text_color = Color.BLACK
         self.font_size = 16
         self.font_weight = FontWeight.REGULAR
         self.text_align = Align.TOP_LEFT
@@ -39,6 +41,6 @@ struct Style(Copyable, Movable):
         """
         return (
             self.outline_enabled
-            and self.outline.a > 0
+            and self.outline_color.a > 0
             and self.outline_thickness > 0
         )

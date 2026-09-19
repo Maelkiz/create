@@ -132,7 +132,7 @@ def _shape_style(alpha: Bool) -> Style:
     var st = Style()
     st.fill_enabled = True
     st.outline_enabled = False
-    st.fill = Color(200, 60, 60, 192) if alpha else Color(200, 60, 60)
+    st.fill_color = Color(200, 60, 60, 192) if alpha else Color(200, 60, 60)
     return st^
 
 

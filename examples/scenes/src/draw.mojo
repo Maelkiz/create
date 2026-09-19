@@ -38,7 +38,7 @@ struct Draw:
                 canvas.circle(self.pen, 14.0)
 
         with canvas.style():
-            canvas.fill(Color(180, 180, 190))
+            canvas.text_color(Color(180, 180, 190))
             canvas.font_size(18)
             # Align.BOTTOM anchors the text box's bottom edge at y, so it
             # grows upward from the margin instead of downward past it — the

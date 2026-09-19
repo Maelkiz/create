@@ -3,7 +3,7 @@ from ._style import Style
 from create.math.matrix import Matrix, identity
 
 comptime CMD_CLEAR = 0
-"""Paint the whole framebuffer. `style.fill` is the colour."""
+"""Paint the whole framebuffer. `style.fill_color` is the colour."""
 comptime CMD_RECT = 1
 comptime CMD_CIRCLE = 2
 comptime CMD_LINE = 3
@@ -11,7 +11,7 @@ comptime CMD_TRIANGLE = 4
 comptime CMD_SPRITE = 5
 comptime CMD_TEXT = 6
 comptime CMD_LETTERBOX = 7
-"""Paint the four bars outside the design area. `style.fill` is the colour and
+"""Paint the four bars outside the design area. `style.fill_color` is the colour and
 `geom` is the *device* content rect — the one command whose geometry is
 already in pixels, because it is the frame's clip rather than something a
 program drew."""
@@ -105,7 +105,7 @@ def clear_command(color: Color) -> DrawCommand:
     """Paint the whole framebuffer. Carries no transform — it covers the
     framebuffer, not the design area, so no mapping applies."""
     var s = Style()
-    s.fill = color
+    s.fill_color = color
     s.fill_enabled = True
     return DrawCommand(CMD_CLEAR, identity[3](), s)
 
@@ -203,6 +203,6 @@ def letterbox_command(
     the edges of the design area.
     """
     var s = Style()
-    s.fill = color
+    s.fill_color = color
     s.fill_enabled = True
     return DrawCommand(CMD_LETTERBOX, identity[3](), s, cx0, cy0, cx1, cy1)

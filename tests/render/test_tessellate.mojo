@@ -53,7 +53,7 @@ def _plain() -> Style:
     """Fill only — the outline that `Style()` enables by default would double
     every vertex count these tests are asserting on."""
     var s = Style()
-    s.fill = Color.RED
+    s.fill_color = Color.RED
     s.fill_enabled = True
     s.outline_enabled = False
     return s^
@@ -219,7 +219,7 @@ def test_a_line_is_one_quad_of_the_outline_thickness() raises -> None:
     var s = _plain()
     s.outline_enabled = True
     s.outline_thickness = 4
-    s.outline = Color.BLUE
+    s.outline_color = Color.BLUE
     emit_line(
         vb, line_command(v.base_matrix(), s, -10.0, 0.0, 10.0, 0.0), v.scale
     )
@@ -361,7 +361,7 @@ def test_a_vertex_carries_its_colour_and_mode() raises -> None:
     var vb = VertexBuffer()
     var v = _viewport(100, 100)
     var s = _plain()
-    s.fill = Color(255, 0, 0, 128)
+    s.fill_color = Color(255, 0, 0, 128)
     emit_rect(vb, rect_command(v.base_matrix(), s, 0.0, 0.0, 4.0, 4.0), v.scale)
     assert_equal(vb.data[4], Float32(1.0))
     assert_equal(vb.data[5], Float32(0.0))

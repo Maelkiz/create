@@ -228,7 +228,7 @@ struct TextRenderer(Movable):
     ) raises:
         """Blit `s` through `layout`, so the CPU and GL paths place a glyph
         with one function rather than two that have to agree."""
-        var c = style.fill
+        var c = style.text_color
         for ref p in self.layout(s, tx, ty, style, pixel_scale):
             ref g = self._glyphs[p.key]
             blit_glyph(surf, g, p.x, p.y, c)

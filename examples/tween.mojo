@@ -118,7 +118,7 @@ struct App(Program):
             var t = ease(self.curves[i], self.clock.progress)
             canvas.circle((lerp(-360.0, 580.0, t), self._row_y(i)), 11)
 
-        canvas.fill(Color(200, 200, 212))
+        canvas.text_color(Color(200, 200, 212))
         canvas.font_size(30)
         canvas.text_align(Align.TOP)
         canvas.text("Easing and Tweens", 0, 362)
@@ -131,9 +131,9 @@ struct App(Program):
         canvas.text_align(Align.LEFT)
         for i in range(len(self.curves)):
             if i == self.pick:
-                canvas.fill(Color(235, 120, 70))
+                canvas.text_color(Color(235, 120, 70))
             else:
-                canvas.fill(Color(140, 140, 155))
+                canvas.text_color(Color(140, 140, 155))
             canvas.text(self.names[i], -614.0, self._row_y(i))
 
 

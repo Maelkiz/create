@@ -115,7 +115,7 @@ struct Bench(Program):
 
         with canvas.style():
             canvas.outline(enabled=False)
-            canvas.fill(Color.WHITE)
+            canvas.text_color(Color.WHITE)
             canvas.font_size(22)
             canvas.text_align(Align.TOP_LEFT)
             canvas.text(

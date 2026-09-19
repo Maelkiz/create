@@ -37,7 +37,7 @@ def _ink_box(m: MemorySurface) -> Tuple[Int, Int, Int, Int]:
 
 def _style(align: Align) -> Style:
     var s = Style()
-    s.fill = Color.WHITE
+    s.text_color = Color.WHITE
     s.font_size = 24
     s.text_align = align
     return s^
@@ -155,11 +155,12 @@ def test_style_defaults() raises -> None:
     # boundary — a wrong default here silently changes the first draw call of
     # every render that doesn't set that field.
     var s = Style()
-    assert_equal(s.fill, Color.WHITE)
+    assert_equal(s.fill_color, Color.WHITE)
     assert_true(s.fill_enabled)
-    assert_equal(s.outline, Color.BLACK)
+    assert_equal(s.outline_color, Color.BLACK)
     assert_equal(s.outline_thickness, 1)
     assert_true(s.outline_enabled)
+    assert_equal(s.text_color, Color.BLACK)
     assert_equal(s.font_size, 16)
     assert_equal(s.font_weight, FontWeight.REGULAR)
     assert_true(s.text_align == Align.TOP_LEFT)

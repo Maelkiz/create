@@ -13,6 +13,7 @@ struct MyApp(Program):
     def render(self, mut canvas: Canvas) raises:
         # Also executes once per frame, canvas.rectangle(), canvas.circle(), etc.
         canvas.background(Color.BLACK)
+        canvas.text_color(Color.WHITE)
         canvas.text_align(Align.CENTER)
         canvas.text("Hello World!", 0, 0)
 

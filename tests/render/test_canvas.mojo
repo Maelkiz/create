@@ -720,7 +720,7 @@ struct TextThroughCanvas(Program):
 
     def render(self, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.fill(Color.WHITE)
+        canvas.text_color(Color.WHITE)
         canvas.font_size(24)
         canvas.text_align(Align.TOP_LEFT)
         canvas.text("Hi", 0.0, 0.0)
@@ -739,22 +739,57 @@ def test_text_draws_below_and_right_of_a_top_left_anchor() raises -> None:
 
 
 @fieldwise_init
-struct NoFillText(Program):
+struct TransparentText(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> NoFillText:
-        return NoFillText(0)
+    def create(mut ctx: Context) raises -> TransparentText:
+        return TransparentText(0)
 
     def render(self, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.fill(enabled=False)
+        canvas.text_color(Color(255, 255, 255, 0))
         canvas.text("Hi", 0.0, 0.0)
 
 
-def test_no_fill_suppresses_text() raises -> None:
-    var m = run_headless[NoFillText](200, 200)
+def test_a_transparent_text_color_suppresses_text() raises -> None:
+    var m = run_headless[TransparentText](200, 200)
     assert_equal(_non_background_box(m, Color.BLACK)[2], -1)
+
+
+@fieldwise_init
+struct TextBesideShape(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut ctx: Context) raises -> TextBesideShape:
+        return TextBesideShape(0)
+
+    def render(self, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.rectangle((-60.0, 0.0), 40.0, 40.0)
+        canvas.text_color(Color.GREEN)
+        canvas.font_size(48)
+        canvas.text_align(Align.CENTER)
+        canvas.text("Hi", 40.0, 0.0)
+
+
+def test_text_color_is_independent_of_fill() raises -> None:
+    # Both in one frame: the shape keeps the fill, the glyphs take the text
+    # colour, so neither setting reaches the other.
+    var m = run_headless[TextBesideShape](200, 200)
+    assert_equal(m.pixel(40, 100), Color.RED)  # inside the rectangle
+    var ink_is_green = False
+    for x in range(120, 190):
+        for y in range(70, 130):
+            var c = m.pixel(x, y)
+            if c != Color.BLACK:
+                assert_equal(c.r, 0)
+                assert_equal(c.b, 0)
+                ink_is_green = True
+    assert_true(ink_is_green, "no glyph ink was drawn")
 
 
 @fieldwise_init
@@ -767,7 +802,7 @@ struct SmallText(Program):
 
     def render(self, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.fill(Color.WHITE)
+        canvas.text_color(Color.WHITE)
         canvas.font_size(12)
         canvas.text_align(Align.TOP_LEFT)
         canvas.text("Hi", 0.0, 0.0)
@@ -783,7 +818,7 @@ struct BigText(Program):
 
     def render(self, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.fill(Color.WHITE)
+        canvas.text_color(Color.WHITE)
         canvas.font_size(48)
         canvas.text_align(Align.TOP_LEFT)
         canvas.text("Hi", 0.0, 0.0)

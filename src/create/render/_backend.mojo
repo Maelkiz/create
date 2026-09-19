@@ -481,7 +481,7 @@ struct Backend(Movable):
         # to remember to do it.
         var m = pre @ c.transform
         if c.kind == CMD_CLEAR:
-            fill_all(s, c.style.fill)
+            fill_all(s, c.style.fill_color)
         elif c.kind == CMD_RECT:
             self._rect(s, c, scale, m)
         elif c.kind == CMD_CIRCLE:
@@ -525,10 +525,10 @@ struct Backend(Movable):
             var iw = Int(abs(p1[0] - p0[0]))
             var ih = Int(abs(p1[1] - p0[1]))
             if c.style.fill_enabled:
-                fill_pixels(s, x0, y0, x0 + iw, y0 + ih, c.style.fill)
+                fill_pixels(s, x0, y0, x0 + iw, y0 + ih, c.style.fill_color)
             if c.style.outline_visible():
                 var sw = outline_thickness_px(c.style, m, scale)
-                var sc = c.style.outline
+                var sc = c.style.outline_color
                 fill_pixels(s, x0, y0, x0 + iw, y0 + sw, sc)
                 fill_pixels(s, x0, y0 + ih - sw, x0 + iw, y0 + ih, sc)
                 fill_pixels(s, x0, y0 + sw, x0 + sw, y0 + ih - sw, sc)
@@ -557,8 +557,8 @@ struct Backend(Movable):
             var inv_step_y = 1.0 / step_y if step_y != 0.0 else 0.0
             var fill_enabled = c.style.fill_enabled
             var outline_enabled = c.style.outline_visible()
-            var fill_col = c.style.fill
-            var outline_col = c.style.outline
+            var fill_col = c.style.fill_color
+            var outline_col = c.style.outline_color
             for row in range(b[1], b[3]):
                 var local0 = mat_apply(minv, Float64(b[0]), Float64(row))
                 var A = local0[0]
@@ -683,7 +683,9 @@ struct Backend(Movable):
                     continue
                 var row_off = row * W
                 if full_fill:
-                    fill_span(s, (row_off + ol) * 4, oh - ol + 1, c.style.fill)
+                    fill_span(
+                        s, (row_off + ol) * 4, oh - ol + 1, c.style.fill_color
+                    )
                 elif c.style.outline_visible():
                     var inner = _circle_row_span(pcx, dy, pr_inner2, ol, oh + 1)
                     var il = inner[0]
@@ -691,22 +693,31 @@ struct Backend(Movable):
                     if il <= ih:
                         if c.style.fill_enabled:
                             fill_span(
-                                s, (row_off + il) * 4, ih - il + 1, c.style.fill
+                                s,
+                                (row_off + il) * 4,
+                                ih - il + 1,
+                                c.style.fill_color,
                             )
                         if il > ol:
                             fill_span(
-                                s, (row_off + ol) * 4, il - ol, c.style.outline
+                                s,
+                                (row_off + ol) * 4,
+                                il - ol,
+                                c.style.outline_color,
                             )
                         if ih < oh:
                             fill_span(
                                 s,
                                 (row_off + ih + 1) * 4,
                                 oh - ih,
-                                c.style.outline,
+                                c.style.outline_color,
                             )
                     else:
                         fill_span(
-                            s, (row_off + ol) * 4, oh - ol + 1, c.style.outline
+                            s,
+                            (row_off + ol) * 4,
+                            oh - ol + 1,
+                            c.style.outline_color,
                         )
         else:
             # Same trick as the rotated rect branch above, adapted to a
@@ -725,8 +736,8 @@ struct Backend(Movable):
             var step_y = minv[1, 0]
             var fill_enabled = c.style.fill_enabled
             var outline_enabled = c.style.outline_visible()
-            var fill_col = c.style.fill
-            var outline_col = c.style.outline
+            var fill_col = c.style.fill_color
+            var outline_col = c.style.outline_color
             var full_fill = not outline_enabled or r_inner <= 0.0
             var a = step_x * step_x + step_y * step_y
             var inv_2a = 1.0 / (2.0 * a)
@@ -785,7 +796,7 @@ struct Backend(Movable):
             p0[1],
             p1[0],
             p1[1],
-            c.style.outline,
+            c.style.outline_color,
             outline_thickness_px(c.style, m, scale),
         )
 
@@ -803,11 +814,11 @@ struct Backend(Movable):
         var p3 = mat_apply(m, c.geom[4], c.geom[5])
         if c.style.fill_enabled:
             fill_triangle(
-                s, p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], c.style.fill
+                s, p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], c.style.fill_color
             )
         if c.style.outline_visible():
             var sw = outline_thickness_px(c.style, m, scale)
-            var sc = c.style.outline
+            var sc = c.style.outline_color
             line_pixels(s, p1[0], p1[1], p2[0], p2[1], sc, sw)
             line_pixels(s, p2[0], p2[1], p3[0], p3[1], sc, sw)
             line_pixels(s, p3[0], p3[1], p1[0], p1[1], sc, sw)
@@ -865,7 +876,7 @@ struct Backend(Movable):
         var cy0 = Int(c.geom[1])
         var cx1 = Int(c.geom[2])
         var cy1 = Int(c.geom[3])
-        var col = c.style.fill
+        var col = c.style.fill_color
         if cy0 > 0:
             fill_pixels(s, 0, 0, W, cy0, col)
         if cy1 < H:

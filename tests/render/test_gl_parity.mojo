@@ -165,7 +165,7 @@ struct _Parity(Program):
         elif self.shape == _SHAPE_TEXT:
             with canvas.style():
                 canvas.outline(enabled=False)
-                canvas.fill(Color.WHITE)
+                canvas.text_color(Color.WHITE)
                 canvas.font_size(16)
                 canvas.text_align(Align.CENTER)
                 canvas.text("parity", 0, 0)

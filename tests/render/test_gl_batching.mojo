@@ -82,7 +82,7 @@ struct TextAndSprite(Program):
         canvas.background(Color.BLACK)
         var img = Sprite.solid(2, 2, 255, 0, 0)
         canvas.sprite(img, -30, 0, 16, 16)
-        canvas.fill(Color.WHITE)
+        canvas.text_color(Color.WHITE)
         canvas.font_size(24)
         canvas.text_align(Align.TOP_LEFT)
         canvas.text("Hi", 0.0, 20.0)

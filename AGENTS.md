@@ -446,6 +446,14 @@ Consequences worth internalising:
 enabled, 1 unit thick** — a `rectangle` drawn without `outline(enabled=False)` gets an outline nobody
 asked for. The rest of the defaults are in [_style.mojo](src/create/render/_style.mojo).
 
+**Three colours, not two, and glyphs take their own.** `Style` carries `fill_color`,
+`outline_color` and `text_color` — the `_color` suffix on all three so a colour field never reads
+like the toggle beside it (`fill_enabled`, `outline_enabled`). `canvas.fill`/`canvas.outline` set
+the first two, `canvas.text_color` the third (`BLACK` by default, like the outline), and they do
+not reach each other: a shape colour and a
+label colour can stand at once, and `fill(enabled=False)` no longer silently suppresses text. Text is
+gated on its own alpha instead — `text_color(Color(..., 0))` draws nothing.
+
 **Autoscale** keeps the program in its design resolution while the window resizes. `ctx.width`/`height`, `input.mouse`, and all canvas coordinates stay in that design space; `canvas.scale` reports the factor, and font size, outline thickness, and sprite size scale with it. Three modes — `FIT` (default), `EXTEND`, `OFF` — documented in [autoscale.mojo](src/create/render/autoscale.mojo), with the launch-mode matrix on `run`. `ctx.design(w, h, mode)` pins the space from inside `create`. See [examples/autoscale.mojo](examples/autoscale.mojo), which cycles all three modes on space.
 
 The design size is a property of the program, not of the display: it is whatever `run` was passed, unchanged by a resize or by fullscreen. Under `EXTEND` the *reported* size grows with the window, so layout must anchor to the origin or to `ctx.left()`/`right()`/`bottom()`/`top()` rather than hardcoded design coordinates.

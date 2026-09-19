@@ -279,7 +279,7 @@ struct Canvas:
         the `Style` defaults, so nothing set here leaks into the next one.
         """
         if color:
-            self._style.fill = color.value()
+            self._style.fill_color = color.value()
         self._style.fill_enabled = enabled
 
     def outline(
@@ -297,7 +297,7 @@ struct Canvas:
         coordinate, and never rendered thinner than one pixel.
         """
         if color:
-            self._style.outline = color.value()
+            self._style.outline_color = color.value()
         if thickness:
             self._style.outline_thickness = thickness.value()
         self._style.outline_enabled = enabled
@@ -539,6 +539,12 @@ struct Canvas:
     def sprite(mut self, a: SpriteAnimator, pos: Point2D, w: Int, h: Int):
         self.sprite(a, pos.x, pos.y, w, h)
 
+    def text_color(mut self, color: Color):
+        """Paint glyphs in `color`. Separate from `fill`, so a shape colour and
+        a label colour do not have to be set in turn; a fully transparent one
+        skips the text entirely."""
+        self._style.text_color = color
+
     def font_size(mut self, size: Int):
         """Text height in world units, scaled by autoscale like a coordinate."""
         self._style.font_size = size
@@ -571,7 +577,7 @@ struct Canvas:
         self._state.backend.text.set_font(f^)
 
     def text(mut self, s: String, x: Float64, y: Float64) raises:
-        if not self._style.fill_enabled:
+        if self._style.text_color.a == 0:
             return
         # Deferred whole. Nothing about the layout is decided here: the
         # advances, the alignment and the baseline all come out of the font,

@@ -43,7 +43,7 @@ def _base(width: Int = _W, height: Int = _H) -> Matrix[3, 3]:
 
 def _solid(fill: Color) -> Style:
     var s = Style()
-    s.fill = fill
+    s.fill_color = fill
     s.fill_enabled = True
     s.outline_enabled = False
     return s^
@@ -93,7 +93,7 @@ def test_rect_above_the_origin_lands_above_it() raises -> None:
 def test_rect_outline_frames_the_fill() raises -> None:
     var st = _solid(Color.RED)
     st.outline_enabled = True
-    st.outline = Color.BLUE
+    st.outline_color = Color.BLUE
     st.outline_thickness = 2
     var cmds = List[DrawCommand]()
     cmds.append(clear_command(Color.BLACK))
@@ -109,7 +109,7 @@ def test_rect_outline_with_zero_alpha_matches_outline_disabled() raises -> None:
     # paint no outline colour anywhere.
     var st = _solid(Color.RED)
     st.outline_enabled = True
-    st.outline = Color(0, 0, 255, 0)
+    st.outline_color = Color(0, 0, 255, 0)
     st.outline_thickness = 2
     var cmds = List[DrawCommand]()
     cmds.append(clear_command(Color.BLACK))
@@ -127,7 +127,7 @@ def test_rect_outline_with_zero_thickness_matches_outline_disabled() raises -> (
 ):
     var st = _solid(Color.RED)
     st.outline_enabled = True
-    st.outline = Color.BLUE
+    st.outline_color = Color.BLUE
     st.outline_thickness = 0
     var cmds = List[DrawCommand]()
     cmds.append(clear_command(Color.BLACK))
@@ -189,9 +189,9 @@ def _brute_circle(
                     or pr_inner <= 0.0
                     or d2 <= pr_inner2
                 ):
-                    blend(s, off, style.fill)
+                    blend(s, off, style.fill_color)
                 elif style.outline_enabled and d2 > pr_inner2:
-                    blend(s, off, style.outline)
+                    blend(s, off, style.outline_color)
 
 
 def _check_circle_matches_brute_force(
@@ -204,9 +204,9 @@ def _check_circle_matches_brute_force(
 ) raises -> None:
     var m = _base()
     var st = Style()
-    st.fill = Color.RED
+    st.fill_color = Color.RED
     st.fill_enabled = fill_enabled
-    st.outline = Color.BLUE
+    st.outline_color = Color.BLUE
     st.outline_enabled = outline_enabled
     st.outline_thickness = outline_thickness
 
@@ -260,7 +260,7 @@ def test_line_replays_between_its_endpoints() raises -> None:
     var st = Style()
     st.fill_enabled = False
     st.outline_enabled = True
-    st.outline = Color.WHITE
+    st.outline_color = Color.WHITE
     st.outline_thickness = 1
     var cmds = List[DrawCommand]()
     cmds.append(clear_command(Color.BLACK))
@@ -343,6 +343,7 @@ def test_text_replays_through_the_backend_font() raises -> None:
     # Layout happens here, at replay, in the backend that owns the font — the
     # command carried nothing but the string and its anchor.
     var st = _solid(Color.WHITE)
+    st.text_color = Color.WHITE
     st.font_size = 24
     var cmds = List[DrawCommand]()
     cmds.append(clear_command(Color.BLACK))
@@ -356,9 +357,9 @@ def test_text_replays_through_the_backend_font() raises -> None:
     assert_true(lit > 0, "text drew no pixels")
 
 
-def test_text_with_fill_disabled_draws_nothing() raises -> None:
+def test_text_with_a_transparent_text_color_draws_nothing() raises -> None:
     var st = Style()
-    st.fill_enabled = False
+    st.text_color = Color(255, 255, 255, 0)
     var cmds = List[DrawCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(text_command(_base(), st, -40.0, 0.0, String("III")))
