@@ -643,9 +643,10 @@ struct StyleAcrossFrames(Program):
 
 def test_style_does_not_survive_the_frame_boundary() raises -> None:
     # Only the last frame's buffer comes back, so red here would mean frame
-    # 1's fill leaked forward.
+    # 1's fill leaked forward. Default fill is transparent, so frame 2's
+    # rectangle lets the black background show through.
     var m = run_headless[StyleAcrossFrames](100, 100, 2)
-    assert_equal(m.pixel(50, 50), Color.WHITE)
+    assert_equal(m.pixel(50, 50), Color.BLACK)
 
 
 @fieldwise_init
