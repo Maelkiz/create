@@ -83,6 +83,13 @@ comptime _COVERAGE_TOLERANCE = 0.10
 comptime _INTERIOR_ERROR_LIMIT = 2.0
 """Mean absolute channel error, out of 255, at pixels at least one pixel
 inside both backends' ink — i.e. nowhere near an edge disagreement."""
+comptime _INTERIOR_MARGIN = 3
+"""Pixels a candidate must stay clear of any ink/background disagreement.
+1 was enough while every shape's edges were straight, but a rounded
+corner's fill/outline boundary is itself a curve, and the GPU tessellator
+draws it as a fan of straight segments rather than the CPU rasteriser's
+exact circle test — the same kind of disagreement the outer edge is
+already allowed, just one pixel wider where two colours meet on an arc."""
 
 comptime _SHAPE_RECT = 0
 comptime _SHAPE_STROKED_RECT = 1
@@ -92,7 +99,8 @@ comptime _SHAPE_TRIANGLE = 4
 comptime _SHAPE_SPRITE = 5
 comptime _SHAPE_TEXT = 6
 comptime _SHAPE_ROTATED_RECT = 7
-comptime _SHAPE_COUNT = 8
+comptime _SHAPE_ROUNDED_RECT = 8
+comptime _SHAPE_COUNT = 9
 
 
 def _shape_name(shape: Int) -> String:
@@ -110,8 +118,10 @@ def _shape_name(shape: Int) -> String:
         return "sprite"
     elif shape == _SHAPE_TEXT:
         return "text"
-    else:
+    elif shape == _SHAPE_ROTATED_RECT:
         return "rotated rect"
+    else:
+        return "rounded rect"
 
 
 @fieldwise_init
@@ -169,7 +179,7 @@ struct _Parity(Program):
                 canvas.font_size(16)
                 canvas.text_align(Align.CENTER)
                 canvas.text("parity", 0, 0)
-        else:
+        elif self.shape == _SHAPE_ROTATED_RECT:
             # Rotation defeats the axis-aligned fast path on both backends,
             # so this exercises the CPU's non-uniform inverse-mapping branch
             # against the GL tessellator's per-vertex transform — the one
@@ -179,6 +189,14 @@ struct _Parity(Program):
                 canvas.fill(Color(0x60, 0xE0, 0x90))
                 with canvas.transform(rotate(0.5)):
                     canvas.rectangle((30, -70), 40, 20)
+        else:
+            # Filled and outlined, so both the fill's cross decomposition and
+            # the outline's inset ring get exercised on both backends.
+            with canvas.style():
+                canvas.fill(Color(0xE0, 0x90, 0x40))
+                canvas.outline(Color.BLACK, thickness=4)
+                canvas.corner_radius(10)
+                canvas.rectangle((-70, 40), 44, 30)
 
 
 def _mask(pixels: List[UInt8]) -> List[Bool]:
@@ -322,19 +340,20 @@ def _assert_interior_colour_matches(
     gpu_mask: List[Bool],
 ) raises:
     """Compares channels only at pixels that are ink in both masks and whose
-    eight neighbours are too — i.e. nowhere near an edge, where the two fill
-    rules (or, later, antialiasing) are entitled to disagree.
+    full `_INTERIOR_MARGIN`-radius neighbourhood is too — i.e. nowhere near
+    an edge, where the two fill rules (or, later, antialiasing) are entitled
+    to disagree.
     """
     var total = 0
     var count = 0
-    for y in range(1, _PIXEL_H - 1):
-        for x in range(1, _PIXEL_W - 1):
+    for y in range(_INTERIOR_MARGIN, _PIXEL_H - _INTERIOR_MARGIN):
+        for x in range(_INTERIOR_MARGIN, _PIXEL_W - _INTERIOR_MARGIN):
             var i = y * _PIXEL_W + x
             if not (cpu_mask[i] and gpu_mask[i]):
                 continue
             var interior = True
-            for dy in range(-1, 2):
-                for dx in range(-1, 2):
+            for dy in range(-_INTERIOR_MARGIN, _INTERIOR_MARGIN + 1):
+                for dx in range(-_INTERIOR_MARGIN, _INTERIOR_MARGIN + 1):
                     var j = (y + dy) * _PIXEL_W + (x + dx)
                     if not (cpu_mask[j] and gpu_mask[j]):
                         interior = False

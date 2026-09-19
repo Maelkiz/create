@@ -29,6 +29,7 @@ from std.math import abs, ceil, cos, max, min, sin, sqrt, pi
 from create.math.matrix import Matrix, apply as mat_apply
 
 from ._command import DrawCommand
+from ._fillet import rect_corner_radius
 from ._transform import pixel_scale, outline_thickness_px
 from .color import Color
 
@@ -202,41 +203,210 @@ def _segment_quad(
     )
 
 
+def _corner_fan(
+    mut vb: VertexBuffer,
+    m: Matrix[3, 3],
+    ccx: Float64,
+    ccy: Float64,
+    r: Float64,
+    angle0: Float64,
+    n: Int,
+    color: Color,
+):
+    """A solid quarter-circle fan, `n` segments from `angle0` to `angle0 +
+    pi/2`, every vertex mapped individually so a sheared corner still comes
+    out as a genuine ellipse arc."""
+    var step = (pi / 2.0) / Float64(n)
+    var centre = mat_apply(m, ccx, ccy)
+    for i in range(n):
+        var a0 = angle0 + Float64(i) * step
+        var a1 = angle0 + Float64(i + 1) * step
+        var p0 = mat_apply(m, ccx + cos(a0) * r, ccy + sin(a0) * r)
+        var p1 = mat_apply(m, ccx + cos(a1) * r, ccy + sin(a1) * r)
+        vb.triangle(centre[0], centre[1], p0[0], p0[1], p1[0], p1[1], color)
+
+
+def _corner_ring_fan(
+    mut vb: VertexBuffer,
+    m: Matrix[3, 3],
+    ccx: Float64,
+    ccy: Float64,
+    r_outer: Float64,
+    r_inner: Float64,
+    angle0: Float64,
+    n: Int,
+    color: Color,
+):
+    """A quarter annulus between `r_inner` and `r_outer`, same centre —
+    degenerates to a solid `_corner_fan` when the inset radius has
+    collapsed, matching `emit_circle`'s own solid-disc fallback."""
+    if r_inner <= 0.0:
+        _corner_fan(vb, m, ccx, ccy, r_outer, angle0, n, color)
+        return
+    var step = (pi / 2.0) / Float64(n)
+    for i in range(n):
+        var a0 = angle0 + Float64(i) * step
+        var a1 = angle0 + Float64(i + 1) * step
+        var o0 = mat_apply(m, ccx + cos(a0) * r_outer, ccy + sin(a0) * r_outer)
+        var o1 = mat_apply(m, ccx + cos(a1) * r_outer, ccy + sin(a1) * r_outer)
+        var i0 = mat_apply(m, ccx + cos(a0) * r_inner, ccy + sin(a0) * r_inner)
+        var i1 = mat_apply(m, ccx + cos(a1) * r_inner, ccy + sin(a1) * r_inner)
+        vb.quad(i0[0], i0[1], o0[0], o0[1], o1[0], o1[1], i1[0], i1[1], color)
+
+
+def _rounded_rect_fill(
+    mut vb: VertexBuffer,
+    m: Matrix[3, 3],
+    x0: Float64,
+    y0: Float64,
+    x1: Float64,
+    y1: Float64,
+    r: Float64,
+    sf: Float64,
+    color: Color,
+):
+    """The local-space cross decomposition: a full-height centre band, a
+    shorter band on each side, and a quarter-circle fan at each corner —
+    the same split `_backend.mojo::_rect`'s uniform branch uses, cheap here
+    because every vertex is mapped individually anyway."""
+    _mapped_quad(vb, m, x0 + r, y0, x1 - r, y1, color)
+    _mapped_quad(vb, m, x0, y0 + r, x0 + r, y1 - r, color)
+    _mapped_quad(vb, m, x1 - r, y0 + r, x1, y1 - r, color)
+    var n = _arc_segments(r * sf, pi / 2.0)
+    _corner_fan(vb, m, x0 + r, y0 + r, r, pi, n, color)
+    _corner_fan(vb, m, x1 - r, y0 + r, r, 3.0 * pi / 2.0, n, color)
+    _corner_fan(vb, m, x1 - r, y1 - r, r, 0.0, n, color)
+    _corner_fan(vb, m, x0 + r, y1 - r, r, pi / 2.0, n, color)
+
+
+def _rounded_rect_ring(
+    mut vb: VertexBuffer,
+    m: Matrix[3, 3],
+    x0: Float64,
+    y0: Float64,
+    x1: Float64,
+    y1: Float64,
+    ix0: Float64,
+    iy0: Float64,
+    ix1: Float64,
+    iy1: Float64,
+    r: Float64,
+    inner_r: Float64,
+    sf: Float64,
+    color: Color,
+):
+    """The outline ring's own cross decomposition: four straight bands
+    between the tangent points, plus a corner annulus fan at each corner.
+    Inner and outer corner centres coincide (insetting by `sw` shrinks the
+    radius by exactly `sw` too), so each corner is one concentric fan."""
+    _mapped_quad(vb, m, x0 + r, iy1, x1 - r, y1, color)
+    _mapped_quad(vb, m, x0 + r, y0, x1 - r, iy0, color)
+    _mapped_quad(vb, m, x0, y0 + r, ix0, y1 - r, color)
+    _mapped_quad(vb, m, ix1, y0 + r, x1, y1 - r, color)
+    var n = _arc_segments(r * sf, pi / 2.0)
+    _corner_ring_fan(vb, m, x0 + r, y0 + r, r, inner_r, pi, n, color)
+    _corner_ring_fan(
+        vb, m, x1 - r, y0 + r, r, inner_r, 3.0 * pi / 2.0, n, color
+    )
+    _corner_ring_fan(vb, m, x1 - r, y1 - r, r, inner_r, 0.0, n, color)
+    _corner_ring_fan(vb, m, x0 + r, y1 - r, r, inner_r, pi / 2.0, n, color)
+
+
 def emit_rect(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
-    """Fill quad plus, when outlined, a four-quad ring inset from the edge."""
+    """Fill quad plus, when outlined, a four-quad ring inset from the edge.
+
+    Rounded corners need no uniform/non-uniform split like
+    `_backend.mojo::_rect` does: every vertex here is already mapped
+    individually, so a sheared rounded corner comes out as the ellipse arc
+    it should be for free, exactly as `emit_circle` already relies on.
+    """
     var m = c.transform
     var lx0 = c.geom[0] - c.geom[2] / 2.0
     var ly0 = c.geom[1] - c.geom[3] / 2.0
     var lx1 = c.geom[0] + c.geom[2] / 2.0
     var ly1 = c.geom[1] + c.geom[3] / 2.0
+    var r = rect_corner_radius(
+        Float64(c.style.corner_radius), c.geom[2], c.geom[3]
+    )
 
-    if not c.style.outline_visible():
+    if r <= 0.0:
+        if not c.style.outline_visible():
+            if c.style.fill_enabled:
+                _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.fill_color)
+            return
+
+        # The ring is built in local units so it follows a rotated edge, but
+        # its thickness is decided in pixels so the CPU path's one-pixel
+        # floor holds.
+        var sw = Float64(outline_thickness_px(c.style, m, scale)) / pixel_scale(
+            m, scale
+        )
+        var ix0 = lx0 + sw
+        var iy0 = ly0 + sw
+        var ix1 = lx1 - sw
+        var iy1 = ly1 - sw
+        if ix0 >= ix1 or iy0 >= iy1:
+            # Thicker than the rectangle: all outline, nothing left to fill.
+            _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.outline_color)
+            return
+
         if c.style.fill_enabled:
-            _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.fill_color)
+            # Inset, not full-size: see the module docstring on double
+            # blending.
+            _mapped_quad(vb, m, ix0, iy0, ix1, iy1, c.style.fill_color)
+        var sc = c.style.outline_color
+        _mapped_quad(vb, m, lx0, ly0, lx1, iy0, sc)
+        _mapped_quad(vb, m, lx0, iy1, lx1, ly1, sc)
+        _mapped_quad(vb, m, lx0, iy0, ix0, iy1, sc)
+        _mapped_quad(vb, m, ix1, iy0, lx1, iy1, sc)
         return
 
-    # The ring is built in local units so it follows a rotated edge, but its
-    # thickness is decided in pixels so the CPU path's one-pixel floor holds.
-    var sw = Float64(outline_thickness_px(c.style, m, scale)) / pixel_scale(
-        m, scale
-    )
+    var sf = pixel_scale(m, scale)
+    if not c.style.outline_visible():
+        if c.style.fill_enabled:
+            _rounded_rect_fill(
+                vb, m, lx0, ly0, lx1, ly1, r, sf, c.style.fill_color
+            )
+        return
+
+    var sw = Float64(outline_thickness_px(c.style, m, scale)) / sf
     var ix0 = lx0 + sw
     var iy0 = ly0 + sw
     var ix1 = lx1 - sw
     var iy1 = ly1 - sw
     if ix0 >= ix1 or iy0 >= iy1:
-        # Thicker than the rectangle: all outline, no interior left to fill.
-        _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.outline_color)
+        # Thicker than the rectangle: all outline, nothing left to fill.
+        _rounded_rect_fill(
+            vb, m, lx0, ly0, lx1, ly1, r, sf, c.style.outline_color
+        )
         return
 
+    var inner_r = r - sw
     if c.style.fill_enabled:
-        # Inset, not full-size: see the module docstring on double blending.
-        _mapped_quad(vb, m, ix0, iy0, ix1, iy1, c.style.fill_color)
-    var sc = c.style.outline_color
-    _mapped_quad(vb, m, lx0, ly0, lx1, iy0, sc)
-    _mapped_quad(vb, m, lx0, iy1, lx1, ly1, sc)
-    _mapped_quad(vb, m, lx0, iy0, ix0, iy1, sc)
-    _mapped_quad(vb, m, ix1, iy0, lx1, iy1, sc)
+        if inner_r > 0.0:
+            _rounded_rect_fill(
+                vb, m, ix0, iy0, ix1, iy1, inner_r, sf, c.style.fill_color
+            )
+        else:
+            # The inset silhouette has collapsed: a sharp inner rect, same
+            # fallback `emit_rect`'s own sharp path takes at `ix0 >= ix1`.
+            _mapped_quad(vb, m, ix0, iy0, ix1, iy1, c.style.fill_color)
+    _rounded_rect_ring(
+        vb,
+        m,
+        lx0,
+        ly0,
+        lx1,
+        ly1,
+        ix0,
+        iy0,
+        ix1,
+        iy1,
+        r,
+        inner_r,
+        sf,
+        c.style.outline_color,
+    )
 
 
 def emit_circle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
