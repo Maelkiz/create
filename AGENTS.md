@@ -63,7 +63,7 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 | `src/create/core/_run_gl.mojo` | `run_gl[T]` — the GPU run loop: a `GLWindow`, the same `step`, `present_gpu` plus a buffer swap |
 | `src/create/render/viewport.mojo` | `Viewport` — the design-space-to-pixel mapping, autoscale arithmetic, base matrix |
 | `src/create/render/autoscale.mojo` | `AutoScale` — the `FIT`/`EXTEND`/`OFF` mode constants |
-| `src/create/render/_style.mojo` | `Style` — fill, stroke, font settings; rebuilt fresh each frame, scoped by `canvas.style()` |
+| `src/create/render/_style.mojo` | `Style` — fill, outline, font settings; rebuilt fresh each frame, scoped by `canvas.style()` |
 | `src/create/render/_text.mojo` | `TextRenderer` — font loading, glyph cache, text layout |
 | `src/create/render/font.mojo` | `Font`, `FontWeight`, and the paths of the two packaged Noto faces |
 | `src/create/render/align.mojo` | `Align` — the nine points of a box (`TOP_LEFT`/`TOP`/…/`CENTER`/…/`BOTTOM_RIGHT`), one value for both axes |
@@ -156,7 +156,7 @@ A file reports PASS/FAIL per test and exits non-zero if any failed. `pixi run te
 Rendering is tested for real. [`run_headless`](src/create/core/headless.mojo) drives a program over
 an owned `MemorySurface` and hands the buffer back; `MemorySurface.pixel(x, y)` reads one pixel out.
 So [tests/render/test_canvas.mojo](tests/render/test_canvas.mojo) asserts on centring, y-up
-orientation, alpha compositing, stroke scaling, letterbox bars and sprite blits instead of eyeballing
+orientation, alpha compositing, outline scaling, letterbox bars and sprite blits instead of eyeballing
 them, and [tests/core/test_frame.mojo](tests/core/test_frame.mojo) scripts an `Input` and calls `step`
 directly to drive click- and key-driven behaviour with no window.
 
@@ -399,7 +399,7 @@ the frame boundary lives in `PersistentCanvasState`, which holds the `Backend` (
 loaded fonts, glyph cache and interned sprite images) and the letterbox colour, moved in at
 construction and back out by `_release`. The transform stack and the style deliberately do **not**:
 every frame starts unrotated, untranslated and at the default style, so a missing pop or a forgotten
-`no_stroke` cannot leak into the next one. Nothing may hold a `Canvas` across frames; hold the
+`outline(enabled=False)` cannot leak into the next one. Nothing may hold a `Canvas` across frames; hold the
 `PersistentCanvasState` instead.
 
 Both loops share [_frame.mojo](src/create/core/_frame.mojo)'s `step` for the frame body, so the windowed
@@ -417,14 +417,14 @@ the `Surface` and so defeats the clipping every raster loop otherwise does.
 
 **Scope through the guards, never by hand.** `canvas.transform(m)` and `canvas.style()` both return
 a `with`-block guard that unwinds on exit; `canvas._push_transform` is the same push without the pop.
-Style is the subtler of the two: the bare mutators (`fill`, `no_stroke`, `font_size`, …) called
+Style is the subtler of the two: the bare mutators (`fill`, `outline`, `font_size`, …) called
 straight from `render` are the normal path, since the style resets next frame either way — the guard
-is for a *helper* that sets style before drawing, whose `no_stroke()` would otherwise apply to
+is for a *helper* that sets style before drawing, whose `outline(enabled=False)` would otherwise apply to
 whatever the caller draws next.
 
 ```mojo
 with canvas.style():
-    canvas.no_stroke()
+    canvas.outline(enabled=False)
     canvas.fill(Color(220, 80, 80))
     canvas.rectangle(self.pos, 40, 40)
 ```
@@ -442,11 +442,11 @@ Consequences worth internalising:
 
 **All shapes are center-positioned** (unlike Processing). `canvas.rectangle((x, y), w, h)` draws a rectangle centered at `(x, y)`, same as `canvas.circle()`, `canvas.sprite()`, etc. `Rectangle.x/y` is the center, not the top-left corner. Position arguments are `Point2D` and extents are `Vector2D` — a location versus a width/height pair — and both types' tuple constructors are `@implicit`, so a bare tuple works everywhere either is taken.
 
-**Style defaults are not blank:** every frame starts from `Style()`, which has **stroke `BLACK` and
-enabled** — a `rectangle` drawn without `no_stroke()` gets an outline nobody asked for. The rest of the
-defaults are in [_style.mojo](src/create/render/_style.mojo).
+**Style defaults are not blank:** every frame starts from `Style()`, which has **outline `BLACK`,
+enabled, 1 unit thick** — a `rectangle` drawn without `outline(enabled=False)` gets an outline nobody
+asked for. The rest of the defaults are in [_style.mojo](src/create/render/_style.mojo).
 
-**Autoscale** keeps the program in its design resolution while the window resizes. `ctx.width`/`height`, `input.mouse`, and all canvas coordinates stay in that design space; `canvas.scale` reports the factor, and font size, stroke width, and sprite size scale with it. Three modes — `FIT` (default), `EXTEND`, `OFF` — documented in [autoscale.mojo](src/create/render/autoscale.mojo), with the launch-mode matrix on `run`. `ctx.design(w, h, mode)` pins the space from inside `create`. See [examples/autoscale.mojo](examples/autoscale.mojo), which cycles all three modes on space.
+**Autoscale** keeps the program in its design resolution while the window resizes. `ctx.width`/`height`, `input.mouse`, and all canvas coordinates stay in that design space; `canvas.scale` reports the factor, and font size, outline thickness, and sprite size scale with it. Three modes — `FIT` (default), `EXTEND`, `OFF` — documented in [autoscale.mojo](src/create/render/autoscale.mojo), with the launch-mode matrix on `run`. `ctx.design(w, h, mode)` pins the space from inside `create`. See [examples/autoscale.mojo](examples/autoscale.mojo), which cycles all three modes on space.
 
 The design size is a property of the program, not of the display: it is whatever `run` was passed, unchanged by a resize or by fullscreen. Under `EXTEND` the *reported* size grows with the window, so layout must anchor to the origin or to `ctx.left()`/`right()`/`bottom()`/`top()` rather than hardcoded design coordinates.
 
