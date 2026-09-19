@@ -198,7 +198,7 @@ def emit_rect(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     var lx1 = c.geom[0] + c.geom[2] / 2.0
     var ly1 = c.geom[1] + c.geom[3] / 2.0
 
-    if not c.style.outline_enabled:
+    if not c.style.outline_visible():
         if c.style.fill_enabled:
             _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.fill)
         return
@@ -244,10 +244,10 @@ def emit_circle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     var step = 2.0 * pi / Float64(n)
 
     var inner = r - Float64(outline_thickness_px(c.style, m, scale)) / sf
-    var outlined = c.style.outline_enabled and inner > 0.0
+    var outlined = c.style.outline_visible() and inner > 0.0
     # Matching the CPU replay: with a outline at least as wide as the radius,
     # a fill wins the whole disc and no ring is drawn at all.
-    var solid_all = c.style.outline_enabled and inner <= 0.0
+    var solid_all = c.style.outline_visible() and inner <= 0.0
     var fill_r = inner if outlined else r
     var fill_c = c.style.fill
     var fill_on = c.style.fill_enabled
@@ -290,7 +290,7 @@ def emit_circle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
 
 def emit_line(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     """One quad. A line has no interior, so `fill` never applies."""
-    if not c.style.outline_enabled:
+    if not c.style.outline_visible():
         return
     var m = c.transform
     var p0 = mat_apply(m, c.geom[0], c.geom[1])
@@ -318,7 +318,7 @@ def emit_triangle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     var p3 = mat_apply(m, c.geom[4], c.geom[5])
     if c.style.fill_enabled:
         vb.triangle(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], c.style.fill)
-    if c.style.outline_enabled:
+    if c.style.outline_visible():
         var w = Float64(outline_thickness_px(c.style, m, scale))
         var sc = c.style.outline
         _segment_quad(vb, p1[0], p1[1], p2[0], p2[1], w, sc)

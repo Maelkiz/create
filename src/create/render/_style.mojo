@@ -29,3 +29,16 @@ struct Style(Copyable, Movable):
         self.font_size = 16
         self.font_weight = FontWeight.REGULAR
         self.text_align = Align.TOP_LEFT
+
+    def outline_visible(self) -> Bool:
+        """Whether the outline actually paints anything.
+
+        `outline_enabled` alone isn't enough — a fully transparent color or a
+        zero thickness paints nothing either, and every rasteriser gate
+        should skip that work rather than draw an invisible outline.
+        """
+        return (
+            self.outline_enabled
+            and self.outline.a > 0
+            and self.outline_thickness > 0
+        )

@@ -103,6 +103,43 @@ def test_rect_outline_frames_the_fill() raises -> None:
     assert_equal(m.pixel(50, 50), Color.RED)
 
 
+def test_rect_outline_with_zero_alpha_matches_outline_disabled() raises -> None:
+    # An outline nobody can see should skip rasterisation the same way an
+    # explicitly disabled one does — both must leave the fill untouched and
+    # paint no outline colour anywhere.
+    var st = _solid(Color.RED)
+    st.outline_enabled = True
+    st.outline = Color(0, 0, 255, 0)
+    st.outline_thickness = 2
+    var cmds = List[DrawCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(rect_command(_base(), st, 0.0, 0.0, 20.0, 20.0))
+    var m = _replay(cmds)
+    # Column 40 is where a visible outline this thick would land — see
+    # test_rect_outline_frames_the_fill's pixel(41, 50) with thickness 2.
+    assert_equal(m.pixel(40, 50), Color.RED)
+    assert_equal(m.pixel(50, 50), Color.RED)
+    assert_equal(m.pixel(30, 50), Color.BLACK)
+
+
+def test_rect_outline_with_zero_thickness_matches_outline_disabled() raises -> (
+    None
+):
+    var st = _solid(Color.RED)
+    st.outline_enabled = True
+    st.outline = Color.BLUE
+    st.outline_thickness = 0
+    var cmds = List[DrawCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(rect_command(_base(), st, 0.0, 0.0, 20.0, 20.0))
+    var m = _replay(cmds)
+    # outline_thickness_px floors at 1px, so a naive gate would still paint a
+    # 1px BLUE ring at column 40 — this is what catches that.
+    assert_equal(m.pixel(40, 50), Color.RED)
+    assert_equal(m.pixel(50, 50), Color.RED)
+    assert_equal(m.pixel(30, 50), Color.BLACK)
+
+
 def test_circle_replays_round() raises -> None:
     var cmds = List[DrawCommand]()
     cmds.append(clear_command(Color.BLACK))
