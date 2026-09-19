@@ -28,6 +28,7 @@ struct Context(Movable):
     var scale: Float64
     var view: Viewport
     var _quit: Bool
+    var _frame_cap_fps: Int
 
     def __init__(out self):
         self.time = Time()
@@ -38,6 +39,7 @@ struct Context(Movable):
         self.scale = 1.0
         self.view = Viewport()
         self._quit = False
+        self._frame_cap_fps = 0
 
     def design(mut self, width: Int, height: Int, mode: Int = AutoScale.FIT):
         """Author this program in a fixed world size, scaled to any window.
@@ -96,6 +98,19 @@ struct Context(Movable):
         if self.time.delta == 0.0:
             return 0.0
         return 1.0 / self.time.delta
+
+    def frame_cap(mut self, fps: Int) raises:
+        """Limit the loop to at most `fps` frames per second.
+
+        A cap tighter than the display's own pacing (vsync, or the CPU
+        backend's always-on vsync) slows the loop by sleeping at the end of
+        each frame; a cap looser than it does nothing, since presentation is
+        already waiting on the display. Not enforced by `run_headless`,
+        which has no wall clock to cap against.
+        """
+        if fps <= 0:
+            raise Error("frame_cap fps must be positive, got " + String(fps))
+        self._frame_cap_fps = fps
 
     def quit(mut self):
         """Ask the run loop to stop after the current frame.

@@ -15,6 +15,8 @@ Everything else — the event arms, the clock, `step` — is shared code, so the
 two loops cannot drift in what a frame is.
 """
 
+from std.time import sleep
+
 from window import GLWindow
 
 from create.render.render_backend import RenderBackend
@@ -72,6 +74,17 @@ def _wait_for_dimensions(mut win: GLWindow, mut ctx: Context) raises:
         _ = _update_dimensions(win, ctx)
 
 
+def _cap_frame_rate(mut win: GLWindow, ctx: Context, frame_start: Int) raises:
+    """Sleep off whatever is left of the target frame duration, if any."""
+    if ctx._frame_cap_fps <= 0:
+        return
+    var worked_ms = win.ticks() - frame_start
+    var target_ms = 1000.0 / Float64(ctx._frame_cap_fps)
+    var remaining_ms = target_ms - Float64(worked_ms)
+    if remaining_ms > 0.0:
+        sleep(remaining_ms / 1000.0)
+
+
 def _run_loop[
     P: Program
 ](mut program: P, mut win: GLWindow, mut ctx: Context, mut input: Input) raises:
@@ -82,13 +95,15 @@ def _run_loop[
         var px_per_point = _update_dimensions(win, ctx)
         if apply_events(win.events(), ctx, input, px_per_point):
             win.close()
-        ctx.time._tick(win.ticks())
+        var frame_start = win.ticks()
+        ctx.time._tick(frame_start)
         # Re-read after events: a resize this frame changed the drawable, and
         # the bars have to reach the edge of the *new* one.
         var drawable = win.drawable_size()
         state = step(program, ctx, input, state^)
         state.backend.present_gpu(drawable[0], drawable[1], ctx.view.scale)
         win.swap_buffers()
+        _cap_frame_rate(win, ctx, frame_start)
     # Rule 3 from `_gl.mojo`: the context owner must outlive the last GL call,
     # and the renderer inside `state` makes them when it is destroyed.
     _ = state^

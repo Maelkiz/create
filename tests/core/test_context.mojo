@@ -1,4 +1,9 @@
-from std.testing import TestSuite, assert_equal, assert_almost_equal
+from std.testing import (
+    TestSuite,
+    assert_equal,
+    assert_almost_equal,
+    assert_raises,
+)
 from create.render.autoscale import AutoScale
 from create.math.matrix import apply
 from create.core.context import Context
@@ -229,6 +234,20 @@ def test_framerate_is_inverse_of_delta() raises -> None:
     ctx.time._start(0)
     ctx.time._tick(20)
     assert_almost_equal(ctx.framerate(), 50.0)
+
+
+def test_frame_cap_stores_the_target_fps() raises -> None:
+    var ctx = Context()
+    ctx.frame_cap(30)
+    assert_equal(ctx._frame_cap_fps, 30)
+
+
+def test_frame_cap_rejects_non_positive_fps() raises -> None:
+    var ctx = Context()
+    with assert_raises(contains="fps must be positive"):
+        ctx.frame_cap(0)
+    with assert_raises(contains="fps must be positive"):
+        ctx.frame_cap(-5)
 
 
 def main() raises:

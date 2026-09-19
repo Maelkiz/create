@@ -1,3 +1,5 @@
+from std.time import sleep
+
 from window.window import Window
 from create.render.render_backend import RenderBackend
 from create.render.canvas import PersistentCanvasState
@@ -29,6 +31,17 @@ def _process_events(mut win: Window, mut ctx: Context, mut input: Input) raises:
         win.close()
 
 
+def _cap_frame_rate(mut win: Window, ctx: Context, frame_start: Int) raises:
+    """Sleep off whatever is left of the target frame duration, if any."""
+    if ctx._frame_cap_fps <= 0:
+        return
+    var worked_ms = win.ticks() - frame_start
+    var target_ms = 1000.0 / Float64(ctx._frame_cap_fps)
+    var remaining_ms = target_ms - Float64(worked_ms)
+    if remaining_ms > 0.0:
+        sleep(remaining_ms / 1000.0)
+
+
 def _run_loop[
     P: Program
 ](mut program: P, mut win: Window, mut ctx: Context, mut input: Input) raises:
@@ -44,7 +57,8 @@ def _run_loop[
         # mapped with this frame's scale, not the previous one's.
         _update_dimensions(win, ctx)
         _process_events(win, ctx, input)
-        ctx.time._tick(win.ticks())
+        var frame_start = win.ticks()
+        ctx.time._tick(frame_start)
         # The Surface is taken here, after events, because Window._resize
         # reallocates the pixel buffer: one taken before them could point at
         # freed memory. Its extent comes from the window rather than the
@@ -58,6 +72,7 @@ def _run_loop[
             Surface(win.pixels(), pixel_w, pixel_h), ctx.view.scale
         )
         win.present()
+        _cap_frame_rate(win, ctx, frame_start)
 
 
 def run[
