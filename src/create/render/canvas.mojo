@@ -539,6 +539,13 @@ struct Canvas:
     def sprite(mut self, a: SpriteAnimator, pos: Point2D, w: Int, h: Int):
         self.sprite(a, pos.x, pos.y, w, h)
 
+    def corner_radius(mut self, radius: Int):
+        """Round the corners of rectangles and triangles, in world units,
+        scaled by autoscale like every other coordinate. A radius wider than
+        a shape permits is clamped down at draw time so corners never
+        self-intersect."""
+        self._style.corner_radius = radius
+
     def text_color(mut self, color: Color):
         """Paint glyphs in `color`. Separate from `fill`, so a shape colour and
         a label colour do not have to be set in turn; a fully transparent one

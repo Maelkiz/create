@@ -16,6 +16,7 @@ struct Style(Copyable, Movable):
     var outline_color: Color
     var outline_thickness: Int
     var outline_enabled: Bool
+    var corner_radius: Int
     var text_color: Color
     var font_size: Int
     var font_weight: Int
@@ -27,6 +28,7 @@ struct Style(Copyable, Movable):
         self.outline_color = Color.BLACK
         self.outline_thickness = 1
         self.outline_enabled = True
+        self.corner_radius = 0
         self.text_color = Color.BLACK
         self.font_size = 16
         self.font_weight = FontWeight.REGULAR
