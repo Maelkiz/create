@@ -21,6 +21,7 @@ struct Style(Copyable, Movable):
     var font_size: Int
     var font_weight: Int
     var text_align: Align
+    var opacity: Float64
 
     def __init__(out self):
         self.fill_color = Color.TRANSPARENT
@@ -33,6 +34,7 @@ struct Style(Copyable, Movable):
         self.font_size = 16
         self.font_weight = FontWeight.REGULAR
         self.text_align = Align.TOP_LEFT
+        self.opacity = 1.0
 
     def outline_visible(self) -> Bool:
         """Whether the outline actually paints anything.

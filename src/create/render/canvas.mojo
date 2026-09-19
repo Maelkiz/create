@@ -631,6 +631,14 @@ struct Canvas:
         faces are variable, so this interpolates rather than swapping files."""
         self._style.font_weight = weight
 
+    def opacity(mut self, value: Float64):
+        """Multiply the alpha of fill, outline and text color for whatever is
+        drawn next. `1.0` (the default) leaves colors untouched; `0.0` draws
+        nothing visible. Resolved into the color at record time, like every
+        other style setting — it cannot reach back and fade what was already
+        drawn."""
+        self._style.opacity = value
+
     def text_align(mut self, align: Align):
         """Anchor the next text at one of the nine points of its box.
 

@@ -20,6 +20,12 @@ comptime _GEOM_SLOTS = 6
 """Widest geometry any kind needs: a triangle's three vertices."""
 
 
+def _scaled_alpha(color: Color, opacity: Float64) -> Color:
+    """`color` with its alpha multiplied by `opacity`, clamped to `UInt8`."""
+    var a = Float64(color.a) * opacity
+    return Color(color.r, color.g, color.b, UInt8(max(0.0, min(255.0, a))))
+
+
 struct DrawCommand(Copyable, Movable):
     """One recorded draw, everything a backend needs to replay it.
 
@@ -95,6 +101,17 @@ struct DrawCommand(Copyable, Movable):
         self.geom[5] = g5
         self.transform = transform
         self.style = style.copy()
+        if self.style.opacity != 1.0:
+            self.style.fill_color = _scaled_alpha(
+                self.style.fill_color, self.style.opacity
+            )
+            self.style.outline_color = _scaled_alpha(
+                self.style.outline_color, self.style.opacity
+            )
+            self.style.text_color = _scaled_alpha(
+                self.style.text_color, self.style.opacity
+            )
+            self.style.opacity = 1.0
         self.text = String("")
         self.image = 0
         self.image_w = 0
