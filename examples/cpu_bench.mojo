@@ -131,7 +131,7 @@ def _fill_bench():
 def _shape_style(alpha: Bool) -> Style:
     var st = Style()
     st.fill_enabled = True
-    st.stroke_enabled = False
+    st.outline_enabled = False
     st.fill = Color(200, 60, 60, 192) if alpha else Color(200, 60, 60)
     return st^
 
