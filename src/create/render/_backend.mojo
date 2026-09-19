@@ -1,6 +1,6 @@
 from std.collections import Dict, Optional
 from std.memory import unsafe_memcpy
-from std.math import max, min, abs, sqrt, ceil, floor
+from std.math import max, min, abs, sqrt, ceil, floor, cos, sin, pi
 
 from create.math.matrix import Matrix, identity, inverse, apply as mat_apply
 
@@ -28,7 +28,8 @@ from ._gl_backend import GLRenderer
 from ._image import _Image
 from ._style import Style
 from ._transform import pixel_scale, outline_thickness_px, uniform
-from ._fillet import rect_corner_radius
+from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
+from ._tessellate import _arc_segments
 from ._png import write_png
 from .surface import MemorySurface, Surface, _force_opaque
 from ._text import TextRenderer
@@ -440,6 +441,235 @@ def _rounded_rect_row_span(
             hi = max(hi, dr[1])
 
     return (lo, hi)
+
+
+def _halfplane_row_span(
+    nx: Float64,
+    ny: Float64,
+    d: Float64,
+    A0: Float64,
+    B0: Float64,
+    step_x: Float64,
+    step_y: Float64,
+    col0: Int,
+    col_lo: Int,
+    col_hi: Int,
+) -> Tuple[Int, Int]:
+    """Integer columns in `[col_lo, col_hi)` where `nx*lx + ny*ly <= d`, with
+    `(lx, ly) = (A0, B0) + (col - col0) * (step_x, step_y)` — one edge of a
+    convex polygon in whichever coordinate space the caller works in (device
+    space directly for `_triangle`'s uniform branch, local space via the
+    inverse matrix for its non-uniform branch), generalising
+    `_affine_row_span`'s axis-aligned test to an edge at an arbitrary angle.
+    Unlike a rect's two-sided range, one half-plane only bounds the row on
+    one side, so the caller intersects several of these (one per polygon
+    edge) rather than reading a single call's result as the whole span.
+    """
+    if col_lo >= col_hi:
+        return (col_lo, col_lo - 1)
+    var coef = nx * step_x + ny * step_y
+    var rhs = d - nx * A0 - ny * B0
+    if abs(coef) < 1e-12:
+        if rhs < 0.0:
+            return (col_lo, col_lo - 1)
+        return (col_lo, col_hi - 1)
+    var t = rhs / coef
+    if coef > 0.0:
+        return (col_lo, min(Int(floor(t)) + col0, col_hi - 1))
+    return (max(Int(ceil(t)) + col0, col_lo), col_hi - 1)
+
+
+def _edge_halfplane(
+    x1: Float64,
+    y1: Float64,
+    x2: Float64,
+    y2: Float64,
+    ref_x: Float64,
+    ref_y: Float64,
+) -> Tuple[Float64, Float64, Float64]:
+    """The inward-facing half-plane of the line through `(x1,y1)`-`(x2,y2)`,
+    oriented so that `(ref_x, ref_y)` — a point already known to lie inside
+    the shape, such as a triangle's centroid — satisfies it. Returns `(nx,
+    ny, d)` for `nx*x + ny*y <= d`, normalised to a unit normal so several
+    of these (original edges and corner-cutting chords alike) compare on the
+    same footing when intersected in `_rounded_triangle_row_span`.
+    """
+    var ex = x2 - x1
+    var ey = y2 - y1
+    var elen = sqrt(ex * ex + ey * ey)
+    var nx = -ey / elen
+    var ny = ex / elen
+    var d = nx * x1 + ny * y1
+    if nx * ref_x + ny * ref_y > d:
+        nx = -nx
+        ny = -ny
+        d = -d
+    return (nx, ny, d)
+
+
+def _rounded_triangle_row_span(
+    A0: Float64,
+    B0: Float64,
+    col0: Int,
+    step_x: Float64,
+    step_y: Float64,
+    a: Float64,
+    inv_2a: Float64,
+    planes: List[Tuple[Float64, Float64, Float64]],
+    centers: List[Tuple[Float64, Float64]],
+    r2: Float64,
+    col_lo: Int,
+    col_hi: Int,
+) -> Tuple[Int, Int]:
+    """One row's covered columns for a rounded triangle.
+
+    A rounded triangle's filled interior is the original triangle truncated
+    at each corner by the chord between that corner's two tangent points,
+    unioned with a full disc at each corner's fillet centre — the chord cut
+    alone would miss the straight edge bands away from the corners, and the
+    three discs alone would miss the same bands from the other side, so both
+    are needed together. `planes` is the truncated body's six half-planes
+    (three original edges, three chords) intersected by successive
+    `_halfplane_row_span` calls each narrowing the running `[lo, hi]`;
+    `centers` is the three fillet centres, sharing one radius-squared `r2`
+    since a triangle's corner radius is a single style value, not one per
+    corner. Merging the truncated body with the three discs by min/max of
+    endpoints, mirroring `_rounded_rect_row_span`'s own band merge, is valid
+    because the whole rounded triangle is convex — a row's true covered set
+    is always one contiguous interval no matter how many of these sub-solves
+    come back empty.
+    """
+    if col_lo >= col_hi:
+        return (col_lo, col_lo - 1)
+    var lo = col_lo
+    var hi = col_hi - 1
+    for ref plane in planes:
+        var pr = _halfplane_row_span(
+            plane[0],
+            plane[1],
+            plane[2],
+            A0,
+            B0,
+            step_x,
+            step_y,
+            col0,
+            lo,
+            hi + 1,
+        )
+        lo = pr[0]
+        hi = pr[1]
+        if lo > hi:
+            break
+
+    var out_lo = col_hi
+    var out_hi = col_lo - 1
+    if lo <= hi:
+        out_lo = lo
+        out_hi = hi
+    for ref center in centers:
+        var dr = _fillet_disc_row_span(
+            a,
+            inv_2a,
+            step_x,
+            step_y,
+            A0,
+            B0,
+            center[0],
+            center[1],
+            r2,
+            col0,
+            col_lo,
+            col_hi,
+        )
+        if dr[0] <= dr[1]:
+            out_lo = min(out_lo, dr[0])
+            out_hi = max(out_hi, dr[1])
+    return (out_lo, out_hi)
+
+
+def _draw_fillet_arc[
+    o: Origin[mut=True]
+](
+    s: Surface[o],
+    f: Tuple[
+        Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64
+    ],
+    r: Float64,
+    c: Color,
+    sw: Int,
+):
+    """Stroke one rounded triangle corner's arc in device space, as a fan of
+    `line_pixels` segments between its tangent points.
+
+    `_triangle`'s outline is drawn as a separate pass over the fill, in
+    centred device-space bands — the same convention its sharp-corner
+    outline already used and deliberately different from the rounded
+    rect's inset ring, so this walks the arc rather than reusing any
+    rect-style inner/outer span.
+    """
+    var cx = f[0]
+    var cy = f[1]
+    var angle_in = f[6]
+    var angle_out = f[7]
+    var delta = angle_out - angle_in
+    if delta > pi:
+        delta -= 2.0 * pi
+    if delta < -pi:
+        delta += 2.0 * pi
+    var segs = _arc_segments(r, delta)
+    var prev_x = f[2]
+    var prev_y = f[3]
+    for i in range(1, segs + 1):
+        var t = Float64(i) / Float64(segs)
+        var ang = angle_in + delta * t
+        var cur_x = cx + r * cos(ang)
+        var cur_y = cy + r * sin(ang)
+        line_pixels(s, prev_x, prev_y, cur_x, cur_y, c, sw)
+        prev_x = cur_x
+        prev_y = cur_y
+
+
+def _draw_fillet_arc_mapped[
+    o: Origin[mut=True]
+](
+    s: Surface[o],
+    m: Matrix[3, 3],
+    scale: Float64,
+    f: Tuple[
+        Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64
+    ],
+    r: Float64,
+    c: Color,
+    sw: Int,
+):
+    """`_draw_fillet_arc`'s non-uniform counterpart.
+
+    The fillet's circle is only genuinely a circle in local space — under a
+    rotation or non-uniform scale it becomes an ellipse, so there is no
+    single device-space arc formula to walk. Instead the arc is sampled in
+    local space (where `f`'s centre, tangents and angles were computed) and
+    each sample point is mapped through `m` individually before stroking.
+    """
+    var cx = f[0]
+    var cy = f[1]
+    var angle_in = f[6]
+    var angle_out = f[7]
+    var delta = angle_out - angle_in
+    if delta > pi:
+        delta -= 2.0 * pi
+    if delta < -pi:
+        delta += 2.0 * pi
+    var segs = _arc_segments(r * pixel_scale(m, scale), delta)
+    var prev = mat_apply(m, cx + r * cos(angle_in), cy + r * sin(angle_in))
+    var prev_x = prev[0]
+    var prev_y = prev[1]
+    for i in range(1, segs + 1):
+        var t = Float64(i) / Float64(segs)
+        var ang = angle_in + delta * t
+        var cur = mat_apply(m, cx + r * cos(ang), cy + r * sin(ang))
+        line_pixels(s, prev_x, prev_y, cur[0], cur[1], c, sw)
+        prev_x = cur[0]
+        prev_y = cur[1]
 
 
 @fieldwise_init
@@ -1256,19 +1486,200 @@ struct Backend(Movable):
         scale: Float64,
         m: Matrix[3, 3],
     ):
-        var p1 = mat_apply(m, c.geom[0], c.geom[1])
-        var p2 = mat_apply(m, c.geom[2], c.geom[3])
-        var p3 = mat_apply(m, c.geom[4], c.geom[5])
-        if c.style.fill_enabled:
-            fill_triangle(
-                s, p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], c.style.fill_color
-            )
-        if c.style.outline_visible():
-            var sw = outline_thickness_px(c.style, m, scale)
-            var sc = c.style.outline_color
-            line_pixels(s, p1[0], p1[1], p2[0], p2[1], sc, sw)
-            line_pixels(s, p2[0], p2[1], p3[0], p3[1], sc, sw)
-            line_pixels(s, p3[0], p3[1], p1[0], p1[1], sc, sw)
+        var lx1 = c.geom[0]
+        var ly1 = c.geom[1]
+        var lx2 = c.geom[2]
+        var ly2 = c.geom[3]
+        var lx3 = c.geom[4]
+        var ly3 = c.geom[5]
+        var p1 = mat_apply(m, lx1, ly1)
+        var p2 = mat_apply(m, lx2, ly2)
+        var p3 = mat_apply(m, lx3, ly3)
+
+        var r_local = triangle_corner_radius(
+            Float64(c.style.corner_radius), lx1, ly1, lx2, ly2, lx3, ly3
+        )
+
+        if r_local <= 0.0:
+            if c.style.fill_enabled:
+                fill_triangle(
+                    s,
+                    p1[0],
+                    p1[1],
+                    p2[0],
+                    p2[1],
+                    p3[0],
+                    p3[1],
+                    c.style.fill_color,
+                )
+            if c.style.outline_visible():
+                var sw = outline_thickness_px(c.style, m, scale)
+                var sc = c.style.outline_color
+                line_pixels(s, p1[0], p1[1], p2[0], p2[1], sc, sw)
+                line_pixels(s, p2[0], p2[1], p3[0], p3[1], sc, sw)
+                line_pixels(s, p3[0], p3[1], p1[0], p1[1], sc, sw)
+            return
+
+        var fill_enabled = c.style.fill_enabled
+        var outline_enabled = c.style.outline_visible()
+        var fill_col = c.style.fill_color
+        var outline_col = c.style.outline_color
+        var W = s.width
+        var x_min = max(Int(floor(min(min(p1[0], p2[0]), p3[0]))), 0)
+        var x_max = min(Int(ceil(max(max(p1[0], p2[0]), p3[0]))) + 1, s.width)
+        var y_min = max(Int(floor(min(min(p1[1], p2[1]), p3[1]))), 0)
+        var y_max = min(Int(ceil(max(max(p1[1], p2[1]), p3[1]))) + 1, s.height)
+
+        # Corner `i`'s prev/next follow the winding order `p1 -> p2 -> p3 ->
+        # p1`, so `f0`'s incoming tangent sits on edge p3-p1 and its outgoing
+        # tangent on edge p1-p2 — the straight outline bands below connect
+        # `fI`'s outgoing tangent to `fJ`'s incoming one along each original
+        # edge, matching `corner_fillet`'s own docstring.
+        if uniform(m):
+            var pr = r_local * pixel_scale(m, scale)
+            var f0 = corner_fillet(p1[0], p1[1], p3[0], p3[1], p2[0], p2[1], pr)
+            var f1 = corner_fillet(p2[0], p2[1], p1[0], p1[1], p3[0], p3[1], pr)
+            var f2 = corner_fillet(p3[0], p3[1], p2[0], p2[1], p1[0], p1[1], pr)
+            var cx = (p1[0] + p2[0] + p3[0]) / 3.0
+            var cy = (p1[1] + p2[1] + p3[1]) / 3.0
+            var planes = List[Tuple[Float64, Float64, Float64]]()
+            planes.append(_edge_halfplane(p1[0], p1[1], p2[0], p2[1], cx, cy))
+            planes.append(_edge_halfplane(p2[0], p2[1], p3[0], p3[1], cx, cy))
+            planes.append(_edge_halfplane(p3[0], p3[1], p1[0], p1[1], cx, cy))
+            planes.append(_edge_halfplane(f0[2], f0[3], f0[4], f0[5], cx, cy))
+            planes.append(_edge_halfplane(f1[2], f1[3], f1[4], f1[5], cx, cy))
+            planes.append(_edge_halfplane(f2[2], f2[3], f2[4], f2[5], cx, cy))
+            var centers = List[Tuple[Float64, Float64]]()
+            centers.append((f0[0], f0[1]))
+            centers.append((f1[0], f1[1]))
+            centers.append((f2[0], f2[1]))
+            var r2 = pr * pr
+
+            if fill_enabled:
+                for row in range(y_min, y_max):
+                    var span = _rounded_triangle_row_span(
+                        Float64(x_min),
+                        Float64(row),
+                        x_min,
+                        1.0,
+                        0.0,
+                        1.0,
+                        0.5,
+                        planes,
+                        centers,
+                        r2,
+                        x_min,
+                        x_max,
+                    )
+                    if span[0] <= span[1]:
+                        fill_span(
+                            s,
+                            (row * W + span[0]) * 4,
+                            span[1] - span[0] + 1,
+                            fill_col,
+                        )
+
+            if outline_enabled:
+                var sw = outline_thickness_px(c.style, m, scale)
+                line_pixels(s, f0[4], f0[5], f1[2], f1[3], outline_col, sw)
+                line_pixels(s, f1[4], f1[5], f2[2], f2[3], outline_col, sw)
+                line_pixels(s, f2[4], f2[5], f0[2], f0[3], outline_col, sw)
+                _draw_fillet_arc(s, f0, pr, outline_col, sw)
+                _draw_fillet_arc(s, f1, pr, outline_col, sw)
+                _draw_fillet_arc(s, f2, pr, outline_col, sw)
+        else:
+            var minv = inverse(m)
+            var step_x = minv[0, 0]
+            var step_y = minv[1, 0]
+            var f0 = corner_fillet(lx1, ly1, lx3, ly3, lx2, ly2, r_local)
+            var f1 = corner_fillet(lx2, ly2, lx1, ly1, lx3, ly3, r_local)
+            var f2 = corner_fillet(lx3, ly3, lx2, ly2, lx1, ly1, r_local)
+            var cx = (lx1 + lx2 + lx3) / 3.0
+            var cy = (ly1 + ly2 + ly3) / 3.0
+            var planes = List[Tuple[Float64, Float64, Float64]]()
+            planes.append(_edge_halfplane(lx1, ly1, lx2, ly2, cx, cy))
+            planes.append(_edge_halfplane(lx2, ly2, lx3, ly3, cx, cy))
+            planes.append(_edge_halfplane(lx3, ly3, lx1, ly1, cx, cy))
+            planes.append(_edge_halfplane(f0[2], f0[3], f0[4], f0[5], cx, cy))
+            planes.append(_edge_halfplane(f1[2], f1[3], f1[4], f1[5], cx, cy))
+            planes.append(_edge_halfplane(f2[2], f2[3], f2[4], f2[5], cx, cy))
+            var centers = List[Tuple[Float64, Float64]]()
+            centers.append((f0[0], f0[1]))
+            centers.append((f1[0], f1[1]))
+            centers.append((f2[0], f2[1]))
+            var r2 = r_local * r_local
+            var a = step_x * step_x + step_y * step_y
+            var inv_2a = 1.0 / (2.0 * a) if abs(a) >= 1e-18 else 0.0
+
+            if fill_enabled:
+                for row in range(y_min, y_max):
+                    var local0 = mat_apply(minv, Float64(x_min), Float64(row))
+                    var span = _rounded_triangle_row_span(
+                        local0[0],
+                        local0[1],
+                        x_min,
+                        step_x,
+                        step_y,
+                        a,
+                        inv_2a,
+                        planes,
+                        centers,
+                        r2,
+                        x_min,
+                        x_max,
+                    )
+                    if span[0] <= span[1]:
+                        fill_span(
+                            s,
+                            (row * W + span[0]) * 4,
+                            span[1] - span[0] + 1,
+                            fill_col,
+                        )
+
+            if outline_enabled:
+                var sw = outline_thickness_px(c.style, m, scale)
+                var t_f0_out = mat_apply(m, f0[4], f0[5])
+                var t_f1_in = mat_apply(m, f1[2], f1[3])
+                var t_f1_out = mat_apply(m, f1[4], f1[5])
+                var t_f2_in = mat_apply(m, f2[2], f2[3])
+                var t_f2_out = mat_apply(m, f2[4], f2[5])
+                var t_f0_in = mat_apply(m, f0[2], f0[3])
+                line_pixels(
+                    s,
+                    t_f0_out[0],
+                    t_f0_out[1],
+                    t_f1_in[0],
+                    t_f1_in[1],
+                    outline_col,
+                    sw,
+                )
+                line_pixels(
+                    s,
+                    t_f1_out[0],
+                    t_f1_out[1],
+                    t_f2_in[0],
+                    t_f2_in[1],
+                    outline_col,
+                    sw,
+                )
+                line_pixels(
+                    s,
+                    t_f2_out[0],
+                    t_f2_out[1],
+                    t_f0_in[0],
+                    t_f0_in[1],
+                    outline_col,
+                    sw,
+                )
+                _draw_fillet_arc_mapped(
+                    s, m, scale, f0, r_local, outline_col, sw
+                )
+                _draw_fillet_arc_mapped(
+                    s, m, scale, f1, r_local, outline_col, sw
+                )
+                _draw_fillet_arc_mapped(
+                    s, m, scale, f2, r_local, outline_col, sw
+                )
 
     def _sprite[
         o: Origin[mut=True]

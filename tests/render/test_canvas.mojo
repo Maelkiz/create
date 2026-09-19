@@ -410,6 +410,163 @@ def test_rect_corner_radius_under_rotation() raises -> None:
     assert_equal(m.pixel(46, 46), Color.YELLOW)
 
 
+@fieldwise_init
+struct SharpTriangle(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut ctx: Context) raises -> SharpTriangle:
+        return SharpTriangle(0)
+
+    def render(self, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(0)
+        # Right angle at world (-20, -20), legs of length 20 along +x and +y.
+        canvas.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
+
+
+def test_corner_radius_zero_matches_sharp_triangle() raises -> None:
+    # The right-angle vertex maps to device pixel (30, 70). corner_radius(0)
+    # must leave it square, same as the untouched sharp path.
+    var m = run_headless[SharpTriangle](100, 100)
+    assert_equal(m.pixel(30, 70), Color.RED)
+    assert_equal(m.pixel(37, 63), Color.RED)
+
+
+@fieldwise_init
+struct RoundedTriangle(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut ctx: Context) raises -> RoundedTriangle:
+        return RoundedTriangle(0)
+
+    def render(self, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(5)
+        # Right angle at world (-20, -20), legs of length 20 along +x and +y —
+        # same corner shape as corner_fillet's own known right-angle test.
+        # The other two vertices are 45 degrees, which clamp the requested
+        # radius 5 down to `10 * tan(pi / 8)` (about 4.14, via
+        # triangle_corner_radius), so the right angle's own fillet centre
+        # ends up at world (-15.86, -15.86), device pixel (34, 66) — offset
+        # from the vertex by the clamped radius, not the requested one.
+        canvas.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
+
+
+def test_triangle_corner_radius_rounds_the_corner() raises -> None:
+    var m = run_headless[RoundedTriangle](100, 100)
+    # Right at the sharp triangle's own vertex — distance from the fillet
+    # centre is the clamped radius times sqrt(2), about 5.86, well outside
+    # the disc.
+    assert_equal(m.pixel(30, 70), Color.BLACK)
+    # Close to the fillet's own centre — inside the disc, so still filled.
+    assert_equal(m.pixel(35, 65), Color.RED)
+    # Deep interior, far from the rounded corner: unaffected by rounding.
+    assert_equal(m.pixel(35, 62), Color.RED)
+
+
+@fieldwise_init
+struct RoundedTriangleOutlined(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut ctx: Context) raises -> RoundedTriangleOutlined:
+        return RoundedTriangleOutlined(0)
+
+    def render(self, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.BLUE, thickness=4)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(5)
+        canvas.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
+
+
+def test_triangle_corner_radius_outline_is_centred() raises -> None:
+    # Same fillet as RoundedTriangle (radius clamped to about 4.14), with a
+    # 4-unit outline. The outline band is centred on the arc (unlike a
+    # rect's inset ring), so it straddles both sides of the fillet boundary
+    # — bleeding outward, past the arc, into the wedge that was cut away
+    # from the original sharp corner. A rect-style inset outline would
+    # leave that whole wedge as bare background instead.
+    var m = run_headless[RoundedTriangleOutlined](100, 100)
+    # On the arc itself, toward the old sharp vertex.
+    assert_equal(m.pixel(31, 69), Color.BLUE)
+    # Further out along the same direction, past the arc — in the cut-away
+    # wedge — but still within the centred band's outward half.
+    assert_equal(m.pixel(30, 68), Color.BLUE)
+    # Past the old sharp vertex and past the outline band entirely: plain
+    # background.
+    assert_equal(m.pixel(25, 71), Color.BLACK)
+    # Well inside the fillet disc: fill, not outline.
+    assert_equal(m.pixel(35, 65), Color.RED)
+
+
+@fieldwise_init
+struct ThinRoundedTriangle(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut ctx: Context) raises -> ThinRoundedTriangle:
+        return ThinRoundedTriangle(0)
+
+    def render(self, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        # A requested radius far larger than this sliver triangle could ever
+        # support — triangle_corner_radius must clamp it, not let the
+        # fillets balloon past the triangle's own edges.
+        canvas.corner_radius(1000)
+        canvas.triangle(0.0, 20.0, -30.0, -20.0, 30.0, -21.0)
+
+
+def test_triangle_corner_radius_clamps_to_incircle() raises -> None:
+    var m = run_headless[ThinRoundedTriangle](100, 100)
+    # Centroid: still filled, so the clamp didn't collapse the shape.
+    assert_equal(m.pixel(50, 57), Color.RED)
+    # Just outside the sliver's own sharp hull, near an end tip — an
+    # unclamped radius would have ballooned a fillet disc out past the
+    # triangle's own edges and painted here; the clamp must keep it BLACK.
+    assert_equal(m.pixel(20, 60), Color.BLACK)
+    assert_equal(m.pixel(80, 60), Color.BLACK)
+
+
+@fieldwise_init
+struct RotatedRoundedTriangle(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut ctx: Context) raises -> RotatedRoundedTriangle:
+        return RotatedRoundedTriangle(0)
+
+    def render(self, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.YELLOW)
+        canvas.corner_radius(6)
+        with canvas.transform(rotate(pi / 4.0)):
+            canvas.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
+
+
+def test_triangle_corner_radius_under_rotation() raises -> None:
+    # Same right triangle as RoundedTriangle, rotated 45 degrees — this
+    # takes the non-uniform (local-space) branch of the rounded-triangle
+    # fill, since a pure rotation still has off-diagonal matrix terms.
+    var m = run_headless[RotatedRoundedTriangle](100, 100)
+    # Deep interior: unaffected by rounding or rotation.
+    assert_equal(m.pixel(50, 68), Color.YELLOW)
+    # Local (-20, -20) is the right-angle vertex being rounded away. Rotated
+    # 45 degrees it lands at world (0, -28.28) — device pixel (50, 78),
+    # which the sharp (unrounded) version of this same triangle does fill,
+    # but the rounded corner cuts away.
+    assert_equal(m.pixel(50, 78), Color.BLACK)
+
+
 struct SpriteBlit(Program):
     var sprite: Sprite
 

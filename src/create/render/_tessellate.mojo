@@ -24,7 +24,7 @@ one-pixel floor is shared with the CPU path) and converted back to local units
 where the ring has to follow a rotated edge.
 """
 
-from std.math import ceil, cos, max, min, sin, sqrt, pi
+from std.math import abs, ceil, cos, max, min, sin, sqrt, pi
 
 from create.math.matrix import Matrix, apply as mat_apply
 
@@ -59,6 +59,18 @@ def circle_segments(radius_px: Float64) -> Int:
     return max(
         _MIN_CIRCLE_SEGMENTS, min(_MAX_CIRCLE_SEGMENTS, Int(ceil(radius_px)))
     )
+
+
+def _arc_segments(radius_px: Float64, span: Float64) -> Int:
+    """How many segments one fillet arc is worth.
+
+    `circle_segments` prorated by how much of a full turn the arc actually
+    sweeps, with the same floor so a tiny sliver still reads as a curve
+    rather than a corner cut off with a single straight edge.
+    """
+    var full = circle_segments(radius_px)
+    var frac = abs(span) / (2.0 * pi)
+    return max(_MIN_CIRCLE_SEGMENTS // 4, Int(ceil(Float64(full) * frac)))
 
 
 struct VertexBuffer(Movable):
