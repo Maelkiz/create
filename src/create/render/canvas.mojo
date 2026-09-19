@@ -212,8 +212,8 @@ struct Canvas:
             letterbox_command(self.letterbox, cx0, cy0, cx1, cy1)
         )
 
-    # `_uniform`, `_pixel_scale`, `_device_bounds` and `_stroke_width_px` used
-    # to live here. They are properties of a matrix, not of a canvas, and only
+    # `_uniform`, `_pixel_scale`, `_device_bounds` and `_outline_thickness_px`
+    # used to live here. They are properties of a matrix, not of a canvas, and only
     # the replay needs them now — see `_backend.mojo`.
 
     def transform(mut self, m: Matrix[3, 3]) -> TransformGuard[origin_of(self)]:
@@ -282,19 +282,19 @@ struct Canvas:
 
     def stroke(mut self, color: Color):
         """Outline shapes in `color`, and re-enable stroking."""
-        self._style.stroke = color
-        self._style.stroke_enabled = True
+        self._style.outline = color
+        self._style.outline_enabled = True
 
     def no_stroke(mut self):
         """Drop the outline. Worth knowing that stroke is *on* by default, in
         black — a `rectangle` drawn without this gets an outline nobody asked for.
         """
-        self._style.stroke_enabled = False
+        self._style.outline_enabled = False
 
     def stroke_width(mut self, w: Int):
         """Outline thickness in world units, scaled by autoscale like every
         other coordinate, and never rendered thinner than one pixel."""
-        self._style.stroke_width = w
+        self._style.outline_thickness = w
 
     def background(mut self, color: Color):
         """Paint the whole framebuffer — the usual first call in `render`.
@@ -384,9 +384,10 @@ struct Canvas:
         )
 
     def line(mut self, x0: Float64, y0: Float64, x1: Float64, y1: Float64):
-        # Recorded only when it would draw: a stroke-less line is the one shape
-        # with nothing left to paint, so the command would be pure overhead.
-        if not self._style.stroke_enabled:
+        # Recorded only when it would draw: an outline-less line is the one
+        # shape with nothing left to paint, so the command would be pure
+        # overhead.
+        if not self._style.outline_enabled:
             return
         self._state.backend.record(
             line_command(self._transform, self._style, x0, y0, x1, y1)

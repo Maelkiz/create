@@ -12,7 +12,7 @@ from create.render.viewport import Viewport
 from create.render._style import Style
 from create.render._backend import Backend
 from create.render._raster import blend
-from create.render._transform import pixel_scale, stroke_width_px
+from create.render._transform import pixel_scale, outline_thickness_px
 from create.render._command import (
     CMD_CLEAR,
     CMD_LETTERBOX,
@@ -45,7 +45,7 @@ def _solid(fill: Color) -> Style:
     var s = Style()
     s.fill = fill
     s.fill_enabled = True
-    s.stroke_enabled = False
+    s.outline_enabled = False
     return s^
 
 
@@ -90,11 +90,11 @@ def test_rect_above_the_origin_lands_above_it() raises -> None:
     assert_equal(m.pixel(50, 70), Color.BLACK)
 
 
-def test_rect_stroke_frames_the_fill() raises -> None:
+def test_rect_outline_frames_the_fill() raises -> None:
     var st = _solid(Color.RED)
-    st.stroke_enabled = True
-    st.stroke = Color.BLUE
-    st.stroke_width = 2
+    st.outline_enabled = True
+    st.outline = Color.BLUE
+    st.outline_thickness = 2
     var cmds = List[DrawCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(rect_command(_base(), st, 0.0, 0.0, 20.0, 20.0))
@@ -134,7 +134,7 @@ def _brute_circle(
     var pcy = p[1]
     var pr = r * pixel_scale(m, scale)
     var pr2 = pr * pr
-    var pr_inner = pr - Float64(stroke_width_px(style, m, scale))
+    var pr_inner = pr - Float64(outline_thickness_px(style, m, scale))
     var pr_inner2 = pr_inner * pr_inner
     var x0 = max(Int(pcx - pr), 0)
     var y0 = max(Int(pcy - pr), 0)
@@ -148,13 +148,13 @@ def _brute_circle(
             if d2 <= pr2:
                 var off = (row * W + col) * 4
                 if style.fill_enabled and (
-                    not style.stroke_enabled
+                    not style.outline_enabled
                     or pr_inner <= 0.0
                     or d2 <= pr_inner2
                 ):
                     blend(s, off, style.fill)
-                elif style.stroke_enabled and d2 > pr_inner2:
-                    blend(s, off, style.stroke)
+                elif style.outline_enabled and d2 > pr_inner2:
+                    blend(s, off, style.outline)
 
 
 def _check_circle_matches_brute_force(
@@ -162,16 +162,16 @@ def _check_circle_matches_brute_force(
     cy: Float64,
     r: Float64,
     fill_enabled: Bool,
-    stroke_enabled: Bool,
-    stroke_width: Int,
+    outline_enabled: Bool,
+    outline_thickness: Int,
 ) raises -> None:
     var m = _base()
     var st = Style()
     st.fill = Color.RED
     st.fill_enabled = fill_enabled
-    st.stroke = Color.BLUE
-    st.stroke_enabled = stroke_enabled
-    st.stroke_width = stroke_width
+    st.outline = Color.BLUE
+    st.outline_enabled = outline_enabled
+    st.outline_thickness = outline_thickness
 
     var want = MemorySurface(_W, _H)
     _brute_circle(want, m, st, cx, cy, r, 1.0)
@@ -193,11 +193,11 @@ def test_circle_span_matches_brute_force_fill_only() raises -> None:
     _check_circle_matches_brute_force(0.0, 0.0, 20.0, True, False, 1)
 
 
-def test_circle_span_matches_brute_force_stroke_only() raises -> None:
+def test_circle_span_matches_brute_force_outline_only() raises -> None:
     _check_circle_matches_brute_force(0.0, 0.0, 20.0, False, True, 3)
 
 
-def test_circle_span_matches_brute_force_fill_and_stroke() raises -> None:
+def test_circle_span_matches_brute_force_fill_and_outline() raises -> None:
     _check_circle_matches_brute_force(0.0, 0.0, 20.0, True, True, 3)
 
 
@@ -208,7 +208,7 @@ def test_circle_span_matches_brute_force_radius_under_one_pixel() raises -> (
     _check_circle_matches_brute_force(10.0, -8.0, 0.6, True, False, 1)
 
 
-def test_circle_span_matches_brute_force_stroke_wider_than_radius() raises -> (
+def test_circle_span_matches_brute_force_outline_wider_than_radius() raises -> (
     None
 ):
     _check_circle_matches_brute_force(-15.0, 5.0, 12.0, True, True, 40)
@@ -222,9 +222,9 @@ def test_circle_span_matches_brute_force_pr_inner_exactly_zero() raises -> None:
 def test_line_replays_between_its_endpoints() raises -> None:
     var st = Style()
     st.fill_enabled = False
-    st.stroke_enabled = True
-    st.stroke = Color.WHITE
-    st.stroke_width = 1
+    st.outline_enabled = True
+    st.outline = Color.WHITE
+    st.outline_thickness = 1
     var cmds = List[DrawCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(line_command(_base(), st, -20.0, 0.0, 20.0, 0.0))
@@ -234,9 +234,9 @@ def test_line_replays_between_its_endpoints() raises -> None:
     assert_equal(m.pixel(50, 40), Color.BLACK)
 
 
-def test_line_with_stroke_disabled_draws_nothing() raises -> None:
+def test_line_with_outline_disabled_draws_nothing() raises -> None:
     var st = Style()
-    st.stroke_enabled = False
+    st.outline_enabled = False
     var cmds = List[DrawCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(line_command(_base(), st, -20.0, 0.0, 20.0, 0.0))

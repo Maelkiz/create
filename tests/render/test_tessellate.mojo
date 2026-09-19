@@ -50,12 +50,12 @@ def _viewport(design: Int, pixels: Int) -> Viewport:
 
 
 def _plain() -> Style:
-    """Fill only — the stroke that `Style()` enables by default would double
+    """Fill only — the outline that `Style()` enables by default would double
     every vertex count these tests are asserting on."""
     var s = Style()
     s.fill = Color.RED
     s.fill_enabled = True
-    s.stroke_enabled = False
+    s.outline_enabled = False
     return s^
 
 
@@ -139,12 +139,12 @@ def test_the_scale_factor_reaches_the_vertices() raises -> None:
     assert_equal(max_x - min_x, 20.0)
 
 
-def test_a_stroked_rect_emits_a_fill_and_a_four_quad_ring() raises -> None:
+def test_an_outlined_rect_emits_a_fill_and_a_four_quad_ring() raises -> None:
     var vb = VertexBuffer()
     var v = _viewport(100, 100)
     var s = _plain()
-    s.stroke_enabled = True
-    s.stroke_width = 2
+    s.outline_enabled = True
+    s.outline_thickness = 2
     emit_rect(
         vb, rect_command(v.base_matrix(), s, 0.0, 0.0, 20.0, 20.0), v.scale
     )
@@ -152,30 +152,30 @@ def test_a_stroked_rect_emits_a_fill_and_a_four_quad_ring() raises -> None:
     assert_equal(vb.count(), 30)
 
 
-def test_a_stroke_wider_than_the_rect_leaves_no_fill() raises -> None:
+def test_an_outline_wider_than_the_rect_leaves_no_fill() raises -> None:
     var vb = VertexBuffer()
     var v = _viewport(100, 100)
     var s = _plain()
-    s.stroke_enabled = True
-    s.stroke_width = 40
+    s.outline_enabled = True
+    s.outline_thickness = 40
     emit_rect(
         vb, rect_command(v.base_matrix(), s, 0.0, 0.0, 10.0, 10.0), v.scale
     )
     assert_equal(vb.count(), 6)
 
 
-def test_a_stroked_rect_fill_is_inset_not_full_size() raises -> None:
-    # The fill stops at the stroke's inner edge so a translucent shape is not
+def test_an_outlined_rect_fill_is_inset_not_full_size() raises -> None:
+    # The fill stops at the outline's inner edge so a translucent shape is not
     # blended twice where the outline overlaps it.
     var v = _viewport(100, 100)
     var s = _plain()
-    s.stroke_enabled = True
-    s.stroke_width = 2
+    s.outline_enabled = True
+    s.outline_thickness = 2
     var vb = VertexBuffer()
     emit_rect(
         vb, rect_command(v.base_matrix(), s, 0.0, 0.0, 20.0, 20.0), v.scale
     )
-    # The fill quad is emitted first: its corners are inset by the 2px stroke.
+    # The fill quad is emitted first: its corners are inset by the 2px outline.
     var min_x = _x(vb, 0)
     var max_x = _x(vb, 0)
     for i in range(1, 6):
@@ -213,13 +213,13 @@ def test_a_circle_reaches_its_radius_in_pixels() raises -> None:
     assert_equal(max_x, 80.0)
 
 
-def test_a_line_is_one_quad_of_the_stroke_width() raises -> None:
+def test_a_line_is_one_quad_of_the_outline_thickness() raises -> None:
     var vb = VertexBuffer()
     var v = _viewport(100, 100)
     var s = _plain()
-    s.stroke_enabled = True
-    s.stroke_width = 4
-    s.stroke = Color.BLUE
+    s.outline_enabled = True
+    s.outline_thickness = 4
+    s.outline = Color.BLUE
     emit_line(
         vb, line_command(v.base_matrix(), s, -10.0, 0.0, 10.0, 0.0), v.scale
     )
@@ -232,7 +232,7 @@ def test_a_line_is_one_quad_of_the_stroke_width() raises -> None:
     assert_equal(max_y - min_y, 4.0)
 
 
-def test_an_unstroked_line_emits_nothing() raises -> None:
+def test_an_unoutlined_line_emits_nothing() raises -> None:
     # A line has no interior, so a fill-only style has nothing to draw.
     var vb = VertexBuffer()
     var v = _viewport(100, 100)
@@ -248,7 +248,7 @@ def test_a_triangle_is_one_triangle_plus_three_edge_quads() raises -> None:
     var vb = VertexBuffer()
     var v = _viewport(100, 100)
     var s = _plain()
-    s.stroke_enabled = True
+    s.outline_enabled = True
     emit_triangle(
         vb,
         triangle_command(

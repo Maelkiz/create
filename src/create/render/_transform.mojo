@@ -40,17 +40,21 @@ def uniform(m: Matrix[3, 3]) -> Bool:
 def pixel_scale(m: Matrix[3, 3], fallback: Float64) -> Float64:
     """Pixels per world unit along `m`.
 
-    Stroke width, font size and sprite extents are authored in world units but
-    rasterised in pixels, so they all scale by this. `fallback` is the frame's
-    autoscale factor, used when `m` is not uniform and no single factor exists.
+    Outline thickness, font size and sprite extents are authored in world
+    units but rasterised in pixels, so they all scale by this. `fallback` is
+    the frame's autoscale factor, used when `m` is not uniform and no single
+    factor exists.
     """
     if uniform(m):
         return abs(m[0, 0])
     return fallback
 
 
-def stroke_width_px(style: Style, m: Matrix[3, 3], fallback: Float64) -> Int:
-    """Stroke width in framebuffer pixels, never thinner than one."""
+def outline_thickness_px(
+    style: Style, m: Matrix[3, 3], fallback: Float64
+) -> Int:
+    """Outline thickness in framebuffer pixels, never thinner than one."""
     return max(
-        Int(Float64(style.stroke_width) * pixel_scale(m, fallback) + 0.5), 1
+        Int(Float64(style.outline_thickness) * pixel_scale(m, fallback) + 0.5),
+        1,
     )

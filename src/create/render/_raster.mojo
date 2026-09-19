@@ -180,12 +180,12 @@ def line_pixels[
     x1: Float64,
     y1: Float64,
     c: Color,
-    stroke_width: Int,
+    outline_thickness: Int,
 ):
-    """Bresenham line in device space, `stroke_width` pixels thick.
+    """Bresenham line in device space, `outline_thickness` pixels thick.
 
     One Bresenham step per column (dx >= dy) or per row (dy > dx), each
-    covering the stroke's perpendicular extent exactly once — not the box
+    covering the line's perpendicular extent exactly once — not the box
     the naive version stamps at every step, which re-blends most pixels
     along the line once per neighbouring step and so darkens them further
     each time under alpha, on top of the wasted work. A mostly-vertical
@@ -198,7 +198,7 @@ def line_pixels[
         return
     var W = s.width
     var H = s.height
-    var sw = stroke_width
+    var sw = outline_thickness
     var half = sw // 2
     var ix0 = Int(x0)
     var iy0 = Int(y0)

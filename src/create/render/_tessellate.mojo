@@ -13,13 +13,13 @@ the batching exists to remove. Applying it on the CPU with the same
 cannot drift geometrically: a vertex here and a scanned pixel there come from
 one function.
 
-**Fill stops where the stroke starts.** The CPU replay decides per pixel — a
-pixel is fill *or* stroke, never blended twice — so a translucent shape does
+**Fill stops where the outline starts.** The CPU replay decides per pixel — a
+pixel is fill *or* outline, never blended twice — so a translucent shape does
 not darken under its own outline. Overlaying a full-size fill quad with a
-stroke ring would blend twice and diverge on every alpha edge, so a stroked
-shape's fill is emitted inset to the stroke's inner edge instead.
+outline ring would blend twice and diverge on every alpha edge, so a outlined
+shape's fill is emitted inset to the outline's inner edge instead.
 
-Stroke width is resolved in device pixels through `stroke_width_px` (so the
+Outline width is resolved in device pixels through `outline_thickness_px` (so the
 one-pixel floor is shared with the CPU path) and converted back to local units
 where the ring has to follow a rotated edge.
 """
@@ -29,7 +29,7 @@ from std.math import ceil, cos, max, min, sin, sqrt, pi
 from create.math.matrix import Matrix, apply as mat_apply
 
 from ._command import DrawCommand
-from ._transform import pixel_scale, stroke_width_px
+from ._transform import pixel_scale, outline_thickness_px
 from .color import Color
 
 comptime _VERTEX_FLOATS = 9
@@ -166,8 +166,8 @@ def _segment_quad(
 ):
     """A `width`-thick quad along the device segment `(x0, y0)`-`(x1, y1)`.
 
-    Device space, because a stroked *edge* is a pixel-width band about a
-    mapped line — unlike a stroked box's ring, which has to follow the shape
+    Device space, because a outlined *edge* is a pixel-width band about a
+    mapped line — unlike a outlined box's ring, which has to follow the shape
     in local space to survive a rotation.
     """
     var dx = x1 - x0
@@ -191,34 +191,36 @@ def _segment_quad(
 
 
 def emit_rect(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
-    """Fill quad plus, when stroked, a four-quad ring inset from the edge."""
+    """Fill quad plus, when outlined, a four-quad ring inset from the edge."""
     var m = c.transform
     var lx0 = c.geom[0] - c.geom[2] / 2.0
     var ly0 = c.geom[1] - c.geom[3] / 2.0
     var lx1 = c.geom[0] + c.geom[2] / 2.0
     var ly1 = c.geom[1] + c.geom[3] / 2.0
 
-    if not c.style.stroke_enabled:
+    if not c.style.outline_enabled:
         if c.style.fill_enabled:
             _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.fill)
         return
 
     # The ring is built in local units so it follows a rotated edge, but its
     # thickness is decided in pixels so the CPU path's one-pixel floor holds.
-    var sw = Float64(stroke_width_px(c.style, m, scale)) / pixel_scale(m, scale)
+    var sw = Float64(outline_thickness_px(c.style, m, scale)) / pixel_scale(
+        m, scale
+    )
     var ix0 = lx0 + sw
     var iy0 = ly0 + sw
     var ix1 = lx1 - sw
     var iy1 = ly1 - sw
     if ix0 >= ix1 or iy0 >= iy1:
-        # Thicker than the rectangle: all stroke, no interior left to fill.
-        _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.stroke)
+        # Thicker than the rectangle: all outline, no interior left to fill.
+        _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.outline)
         return
 
     if c.style.fill_enabled:
         # Inset, not full-size: see the module docstring on double blending.
         _mapped_quad(vb, m, ix0, iy0, ix1, iy1, c.style.fill)
-    var sc = c.style.stroke
+    var sc = c.style.outline
     _mapped_quad(vb, m, lx0, ly0, lx1, iy0, sc)
     _mapped_quad(vb, m, lx0, iy1, lx1, ly1, sc)
     _mapped_quad(vb, m, lx0, iy0, ix0, iy1, sc)
@@ -226,7 +228,7 @@ def emit_rect(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
 
 
 def emit_circle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
-    """A fan for the fill and a ring of quads for the stroke.
+    """A fan for the fill and a ring of quads for the outline.
 
     Both are generated in local space and mapped per vertex, so a non-uniform
     transform turns the circle into the ellipse it should be.
@@ -241,17 +243,17 @@ def emit_circle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     var n = circle_segments(r * sf)
     var step = 2.0 * pi / Float64(n)
 
-    var inner = r - Float64(stroke_width_px(c.style, m, scale)) / sf
-    var stroked = c.style.stroke_enabled and inner > 0.0
-    # Matching the CPU replay: with a stroke at least as wide as the radius,
+    var inner = r - Float64(outline_thickness_px(c.style, m, scale)) / sf
+    var outlined = c.style.outline_enabled and inner > 0.0
+    # Matching the CPU replay: with a outline at least as wide as the radius,
     # a fill wins the whole disc and no ring is drawn at all.
-    var solid_all = c.style.stroke_enabled and inner <= 0.0
-    var fill_r = inner if stroked else r
+    var solid_all = c.style.outline_enabled and inner <= 0.0
+    var fill_r = inner if outlined else r
     var fill_c = c.style.fill
     var fill_on = c.style.fill_enabled
     if solid_all and not fill_on:
         fill_on = True
-        fill_c = c.style.stroke
+        fill_c = c.style.outline
         fill_r = r
 
     var centre = mat_apply(m, cx, cy)
@@ -268,7 +270,7 @@ def emit_circle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
             vb.triangle(
                 centre[0], centre[1], p0[0], p0[1], p1[0], p1[1], fill_c
             )
-        if stroked:
+        if outlined:
             var o0 = mat_apply(m, cx + c0 * r, cy + s0 * r)
             var o1 = mat_apply(m, cx + c1 * r, cy + s1 * r)
             var i0 = mat_apply(m, cx + c0 * inner, cy + s0 * inner)
@@ -282,13 +284,13 @@ def emit_circle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
                 o1[1],
                 i1[0],
                 i1[1],
-                c.style.stroke,
+                c.style.outline,
             )
 
 
 def emit_line(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     """One quad. A line has no interior, so `fill` never applies."""
-    if not c.style.stroke_enabled:
+    if not c.style.outline_enabled:
         return
     var m = c.transform
     var p0 = mat_apply(m, c.geom[0], c.geom[1])
@@ -299,16 +301,16 @@ def emit_line(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
         p0[1],
         p1[0],
         p1[1],
-        Float64(stroke_width_px(c.style, m, scale)),
-        c.style.stroke,
+        Float64(outline_thickness_px(c.style, m, scale)),
+        c.style.outline,
     )
 
 
 def emit_triangle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
-    """The mapped triangle, plus a quad per edge when stroked.
+    """The mapped triangle, plus a quad per edge when outlined.
 
-    The stroke is three edge quads rather than an inset triangle, matching the
-    CPU replay, which strokes a triangle with three `line_pixels` calls.
+    The outline is three edge quads rather than an inset triangle, matching the
+    CPU replay, which outlines a triangle with three `line_pixels` calls.
     """
     var m = c.transform
     var p1 = mat_apply(m, c.geom[0], c.geom[1])
@@ -316,9 +318,9 @@ def emit_triangle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     var p3 = mat_apply(m, c.geom[4], c.geom[5])
     if c.style.fill_enabled:
         vb.triangle(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], c.style.fill)
-    if c.style.stroke_enabled:
-        var w = Float64(stroke_width_px(c.style, m, scale))
-        var sc = c.style.stroke
+    if c.style.outline_enabled:
+        var w = Float64(outline_thickness_px(c.style, m, scale))
+        var sc = c.style.outline
         _segment_quad(vb, p1[0], p1[1], p2[0], p2[1], w, sc)
         _segment_quad(vb, p2[0], p2[1], p3[0], p3[1], w, sc)
         _segment_quad(vb, p3[0], p3[1], p1[0], p1[1], w, sc)

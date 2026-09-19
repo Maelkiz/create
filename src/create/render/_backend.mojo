@@ -27,7 +27,7 @@ from ._raster import (
 from ._gl_backend import GLRenderer
 from ._image import _Image
 from ._style import Style
-from ._transform import pixel_scale, stroke_width_px, uniform
+from ._transform import pixel_scale, outline_thickness_px, uniform
 from ._png import write_png
 from .surface import MemorySurface, Surface, _force_opaque
 from ._text import TextRenderer
@@ -526,9 +526,9 @@ struct Backend(Movable):
             var ih = Int(abs(p1[1] - p0[1]))
             if c.style.fill_enabled:
                 fill_pixels(s, x0, y0, x0 + iw, y0 + ih, c.style.fill)
-            if c.style.stroke_enabled:
-                var sw = stroke_width_px(c.style, m, scale)
-                var sc = c.style.stroke
+            if c.style.outline_enabled:
+                var sw = outline_thickness_px(c.style, m, scale)
+                var sc = c.style.outline
                 fill_pixels(s, x0, y0, x0 + iw, y0 + sw, sc)
                 fill_pixels(s, x0, y0 + ih - sw, x0 + iw, y0 + ih, sc)
                 fill_pixels(s, x0, y0 + sw, x0 + sw, y0 + ih - sw, sc)
@@ -541,24 +541,24 @@ struct Backend(Movable):
             # inside `[lx0,lx1]`, `ly` inside `[ly0,ly1]`), and each is linear
             # in `col`, so `_affine_row_span` solves the qualifying column
             # range directly per axis instead of walking pixels; the row's
-            # covered run is their intersection. A stroke splits that run
-            # into an inner fill span (same solve, shrunk by the stroke
-            # width) and up to two stroke spans flanking it, mirroring the
+            # covered run is their intersection. A outline splits that run
+            # into an inner fill span (same solve, shrunk by the outline
+            # width) and up to two outline spans flanking it, mirroring the
             # uniform circle branch below. Not bit-exact with the old
             # per-pixel test — an edge pixel may land one column off — which
             # this phase's exactness policy accepts and `test_gl_parity.mojo`
             # gates.
             var minv = inverse(m)
             var b = device_bounds(m, lx0, ly0, lx1, ly1, s.width, s.height)
-            var sw_f = Float64(c.style.stroke_width)
+            var sw_f = Float64(c.style.outline_thickness)
             var step_x = minv[0, 0]
             var step_y = minv[1, 0]
             var inv_step_x = 1.0 / step_x if step_x != 0.0 else 0.0
             var inv_step_y = 1.0 / step_y if step_y != 0.0 else 0.0
             var fill_enabled = c.style.fill_enabled
-            var stroke_enabled = c.style.stroke_enabled
+            var outline_enabled = c.style.outline_enabled
             var fill_col = c.style.fill
-            var stroke_col = c.style.stroke
+            var outline_col = c.style.outline
             for row in range(b[1], b[3]):
                 var local0 = mat_apply(minv, Float64(b[0]), Float64(row))
                 var A = local0[0]
@@ -574,7 +574,7 @@ struct Backend(Movable):
                 var outer_hi = min(xr[1], yr[1])
                 if outer_lo > outer_hi:
                     continue
-                if not stroke_enabled:
+                if not outline_enabled:
                     if fill_enabled:
                         fill_span(
                             s,
@@ -618,21 +618,21 @@ struct Backend(Movable):
                             s,
                             (row_off + outer_lo) * 4,
                             inner_lo - outer_lo,
-                            stroke_col,
+                            outline_col,
                         )
                     if inner_hi < outer_hi:
                         fill_span(
                             s,
                             (row_off + inner_hi + 1) * 4,
                             outer_hi - inner_hi,
-                            stroke_col,
+                            outline_col,
                         )
                 else:
                     fill_span(
                         s,
                         (row_off + outer_lo) * 4,
                         outer_hi - outer_lo + 1,
-                        stroke_col,
+                        outline_col,
                     )
 
     def _circle[
@@ -650,7 +650,7 @@ struct Backend(Movable):
         var cy = c.geom[1]
         var r = c.geom[2]
         var r2 = r * r
-        var r_inner = r - Float64(c.style.stroke_width)
+        var r_inner = r - Float64(c.style.outline_thickness)
         var r_inner2 = r_inner * r_inner
 
         if uniform(m):
@@ -661,18 +661,18 @@ struct Backend(Movable):
             var pcy = p[1]
             var pr = r * pixel_scale(m, scale)
             var pr2 = pr * pr
-            var pr_inner = pr - Float64(stroke_width_px(c.style, m, scale))
+            var pr_inner = pr - Float64(outline_thickness_px(c.style, m, scale))
             var pr_inner2 = pr_inner * pr_inner
             var x0 = max(Int(pcx - pr), 0)
             var y0 = max(Int(pcy - pr), 0)
             var x1 = min(Int(pcx + pr) + 1, W)
             var y1 = min(Int(pcy + pr) + 1, H)
-            # Whether a row's *entire* outer span is fill, with no stroke ever
+            # Whether a row's *entire* outer span is fill, with no outline ever
             # drawn — matches the per-pixel `if`'s "or pr_inner <= 0.0" arm,
             # which shortcuts to true regardless of `d2` and so never leaves
             # the `elif` reachable.
             var full_fill = c.style.fill_enabled and (
-                not c.style.stroke_enabled or pr_inner <= 0.0
+                not c.style.outline_enabled or pr_inner <= 0.0
             )
             for row in range(y0, y1):
                 var dy = Float64(row) - pcy
@@ -684,7 +684,7 @@ struct Backend(Movable):
                 var row_off = row * W
                 if full_fill:
                     fill_span(s, (row_off + ol) * 4, oh - ol + 1, c.style.fill)
-                elif c.style.stroke_enabled:
+                elif c.style.outline_enabled:
                     var inner = _circle_row_span(pcx, dy, pr_inner2, ol, oh + 1)
                     var il = inner[0]
                     var ih = inner[1]
@@ -695,18 +695,18 @@ struct Backend(Movable):
                             )
                         if il > ol:
                             fill_span(
-                                s, (row_off + ol) * 4, il - ol, c.style.stroke
+                                s, (row_off + ol) * 4, il - ol, c.style.outline
                             )
                         if ih < oh:
                             fill_span(
                                 s,
                                 (row_off + ih + 1) * 4,
                                 oh - ih,
-                                c.style.stroke,
+                                c.style.outline,
                             )
                     else:
                         fill_span(
-                            s, (row_off + ol) * 4, oh - ol + 1, c.style.stroke
+                            s, (row_off + ol) * 4, oh - ol + 1, c.style.outline
                         )
         else:
             # Same trick as the rotated rect branch above, adapted to a
@@ -715,19 +715,19 @@ struct Backend(Movable):
             # r^2` turns the row's containment test into `a*col^2 + b*col +
             # c <= 0` with `a = step_x^2 + step_y^2` constant across the
             # whole shape. `_ellipse_row_span` solves that directly instead
-            # of walking pixels; stroke handling mirrors the uniform branch
+            # of walking pixels; outline handling mirrors the uniform branch
             # above (outer span, then a shrunk inner span for the fill,
-            # flanked by up to two stroke spans). Not bit-exact with the old
+            # flanked by up to two outline spans). Not bit-exact with the old
             # per-pixel walk, which this phase's exactness policy accepts.
             var minv = inverse(m)
             var b = device_bounds(m, cx - r, cy - r, cx + r, cy + r, W, H)
             var step_x = minv[0, 0]
             var step_y = minv[1, 0]
             var fill_enabled = c.style.fill_enabled
-            var stroke_enabled = c.style.stroke_enabled
+            var outline_enabled = c.style.outline_enabled
             var fill_col = c.style.fill
-            var stroke_col = c.style.stroke
-            var full_fill = not stroke_enabled or r_inner <= 0.0
+            var outline_col = c.style.outline
+            var full_fill = not outline_enabled or r_inner <= 0.0
             var a = step_x * step_x + step_y * step_y
             var inv_2a = 1.0 / (2.0 * a)
             for row in range(b[1], b[3]):
@@ -758,13 +758,13 @@ struct Backend(Movable):
                     if fill_enabled:
                         fill_span(s, (row_off + il) * 4, ih - il + 1, fill_col)
                     if il > ol:
-                        fill_span(s, (row_off + ol) * 4, il - ol, stroke_col)
+                        fill_span(s, (row_off + ol) * 4, il - ol, outline_col)
                     if ih < oh:
                         fill_span(
-                            s, (row_off + ih + 1) * 4, oh - ih, stroke_col
+                            s, (row_off + ih + 1) * 4, oh - ih, outline_col
                         )
                 else:
-                    fill_span(s, (row_off + ol) * 4, oh - ol + 1, stroke_col)
+                    fill_span(s, (row_off + ol) * 4, oh - ol + 1, outline_col)
 
     def _line[
         o: Origin[mut=True]
@@ -775,7 +775,7 @@ struct Backend(Movable):
         scale: Float64,
         m: Matrix[3, 3],
     ):
-        if not c.style.stroke_enabled:
+        if not c.style.outline_enabled:
             return
         var p0 = mat_apply(m, c.geom[0], c.geom[1])
         var p1 = mat_apply(m, c.geom[2], c.geom[3])
@@ -785,8 +785,8 @@ struct Backend(Movable):
             p0[1],
             p1[0],
             p1[1],
-            c.style.stroke,
-            stroke_width_px(c.style, m, scale),
+            c.style.outline,
+            outline_thickness_px(c.style, m, scale),
         )
 
     def _triangle[
@@ -805,9 +805,9 @@ struct Backend(Movable):
             fill_triangle(
                 s, p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], c.style.fill
             )
-        if c.style.stroke_enabled:
-            var sw = stroke_width_px(c.style, m, scale)
-            var sc = c.style.stroke
+        if c.style.outline_enabled:
+            var sw = outline_thickness_px(c.style, m, scale)
+            var sc = c.style.outline
             line_pixels(s, p1[0], p1[1], p2[0], p2[1], sc, sw)
             line_pixels(s, p2[0], p2[1], p3[0], p3[1], sc, sw)
             line_pixels(s, p3[0], p3[1], p1[0], p1[1], sc, sw)

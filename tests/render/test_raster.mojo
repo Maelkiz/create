@@ -104,7 +104,7 @@ def test_line_pixels_covers_both_endpoints() raises -> None:
     assert_equal(mem.pixel(7, 1).a, 0)
 
 
-def test_line_pixels_thickens_with_stroke_width() raises -> None:
+def test_line_pixels_thickens_with_outline_thickness() raises -> None:
     var mem = MemorySurface(8, 8)
     line_pixels(mem.surface(), 1.0, 4.0, 6.0, 4.0, Color.WHITE, 3)
     # half = 3 // 2 = 1, so rows 3..5 around the line.
