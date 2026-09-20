@@ -45,4 +45,4 @@ struct App(Program):
 
 
 def main() raises:
-    run[App]("Scenes", 800, 600)
+    run[App]("Scenes", width=800, height=600)

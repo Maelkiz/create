@@ -93,10 +93,10 @@ def run[
     P: Program
 ](
     title: String,
+    mode: WindowMode = WindowMode.WINDOWED,
     width: Int = 1280,
     height: Int = 720,
-    mode: Int = WindowMode.WINDOWED,
-    backend: Int = RenderBackend.CPU,
+    backend: RenderBackend = RenderBackend.CPU,
     resizable: Bool = True,
 ) raises:
     """Open a window and run `P` in it until it quits.
@@ -112,11 +112,11 @@ def run[
     The scaling is `AutoScale.FIT` unless `create` sets `frame.autoscale`, so
     a program keeps its layout on any display:
 
-    | call                                         | FIT / EXTEND             | OFF            |
-    |----------------------------------------------|--------------------------|----------------|
-    | `run("T", 1000, 1000)`                       | design 1000x1000, scaled | world = window |
-    | `run("T", 1000, 1000, WindowMode.FULLSCREEN)` | design 1000x1000, scaled | world = monitor|
-    | `run("T", mode=WindowMode.FULLSCREEN)`       | design 1280x720, scaled  | world = monitor|
+    | call                                          | FIT / EXTEND             | OFF            |
+    |-----------------------------------------------|--------------------------|----------------|
+    | `run("T", width=1000, height=1000)`           | design 1000x1000, scaled | world = window |
+    | `run("T", FULLSCREEN, width=1000, height=1000)`| design 1000x1000, scaled | world = monitor|
+    | `run("T", WindowMode.FULLSCREEN)`             | design 1280x720, scaled  | world = monitor|
 
     `AutoScale.OFF` is the opt-out, and the only way the size here stops
     meaning anything: the design resolution goes unused and coordinates become
@@ -138,9 +138,9 @@ def run[
     if backend == RenderBackend.GPU:
         run_gl[P](
             title,
+            mode,
             width,
             height,
-            mode,
             resizable=resizable,
         )
         return

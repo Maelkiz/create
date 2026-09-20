@@ -1,9 +1,10 @@
 """How the window presents itself at launch.
 
-A mode selector, not a typed value passed around structurally — `run`'s
-`mode` parameter stays a plain `Int`, compared with `==`, the same shape as
-`AutoScale`/`RenderBackend`. A struct instead of free constants because this
-file is public surface and the library doesn't scatter top-level constants.
+A mode selector with a type of its own: `run`'s `mode` parameter is a
+`WindowMode`, compared with `==`, the same shape as `RenderBackend`. The type
+is what lets `mode` sit ahead of `width`/`height` in `run`'s signature — an
+`Int` there would have made `run("T", 800)` a silently valid mode. The
+constructor is deliberately not `@implicit` for the same reason.
 
 `FULLSCREEN`, `BORDERLESS` and `MAXIMIZED` are mutually exclusive by
 construction — one `Int` can only equal one constant — which independent
@@ -12,8 +13,19 @@ sized window.
 """
 
 
-struct WindowMode:
-    comptime WINDOWED = 0
-    comptime FULLSCREEN = 1
-    comptime BORDERLESS = 2
-    comptime MAXIMIZED = 3
+struct WindowMode(Copyable, Equatable, ImplicitlyCopyable, Movable):
+    var value: Int
+
+    comptime WINDOWED = WindowMode(0)
+    comptime FULLSCREEN = WindowMode(1)
+    comptime BORDERLESS = WindowMode(2)
+    comptime MAXIMIZED = WindowMode(3)
+
+    def __init__(out self, value: Int):
+        self.value = value
+
+    def __eq__(self, other: WindowMode) -> Bool:
+        return self.value == other.value
+
+    def __ne__(self, other: WindowMode) -> Bool:
+        return self.value != other.value

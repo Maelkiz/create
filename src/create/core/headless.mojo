@@ -23,7 +23,7 @@ def run_headless[
     frames: Int = 1,
     pixel_width: Int = 0,
     pixel_height: Int = 0,
-    backend: Int = RenderBackend.CPU,
+    backend: RenderBackend = RenderBackend.CPU,
 ) raises -> MemorySurface:
     """Run `P` for `frames` frames over an owned buffer and return it.
 

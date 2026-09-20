@@ -65,4 +65,4 @@ struct App(Program):
 
 
 def main() raises:
-    run[App]("Autoscale", 800, 600, WindowMode.FULLSCREEN)
+    run[App]("Autoscale", WindowMode.FULLSCREEN, width=800, height=600)

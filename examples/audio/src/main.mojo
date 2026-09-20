@@ -45,4 +45,4 @@ struct AudioDemo(Program):
 
 
 def main() raises:
-    run[AudioDemo]("Audio", 480, 240)
+    run[AudioDemo]("Audio", width=480, height=240)

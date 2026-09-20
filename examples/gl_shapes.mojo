@@ -136,4 +136,10 @@ struct App(Program):
 
 
 def main() raises:
-    run[App]("GL Shapes", 1280, 720, WindowMode.FULLSCREEN, RenderBackend.GPU)
+    run[App](
+        "GL Shapes",
+        WindowMode.FULLSCREEN,
+        width=1280,
+        height=720,
+        backend=RenderBackend.GPU,
+    )

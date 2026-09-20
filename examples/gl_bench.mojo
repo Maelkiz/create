@@ -130,6 +130,6 @@ def main() raises:
         if argv()[i] == "cpu":
             cpu = True
     if cpu:
-        run[Bench]("Bench (CPU)", 1920, 1080)
+        run[Bench]("Bench (CPU)", width=1920, height=1080)
     else:
-        run_gl[Bench]("Bench (GPU)", 1920, 1080, vsync=False)
+        run_gl[Bench]("Bench (GPU)", width=1920, height=1080, vsync=False)

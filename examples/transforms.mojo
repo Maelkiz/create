@@ -83,4 +83,4 @@ struct Transforms(Program):
 
 
 def main() raises:
-    run[Transforms]("Transform Demo", 800, 600)
+    run[Transforms]("Transform Demo", width=800, height=600)

@@ -34,4 +34,4 @@ struct Sketch(Program):
 
 
 def main() raises:
-    run[Sketch]("Example Sketch", 800, 600)
+    run[Sketch]("Example Sketch", width=800, height=600)

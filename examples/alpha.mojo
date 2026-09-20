@@ -42,4 +42,4 @@ struct App(Program):
 
 
 def main() raises:
-    run[App]("Alpha", 800, 600)
+    run[App]("Alpha", width=800, height=600)

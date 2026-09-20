@@ -68,7 +68,7 @@ struct PersistentFrameState(Movable):
     var _fps_cap: Int
     var _quit: Bool
 
-    def __init__(out self, kind: Int = RenderBackend.CPU) raises:
+    def __init__(out self, kind: RenderBackend = RenderBackend.CPU) raises:
         """`kind` picks the backend that will present the frames — a GPU one
         builds its GL resources now, so a context must already be current."""
         self.backend = Backend(kind)

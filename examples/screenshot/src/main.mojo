@@ -69,4 +69,4 @@ struct App(Program):
 
 
 def main() raises:
-    run[App]("Saving the frame", _DESIGN_W, _DESIGN_H)
+    run[App]("Saving the frame", width=_DESIGN_W, height=_DESIGN_H)

@@ -706,7 +706,7 @@ struct Backend(Movable):
     of both.
     """
 
-    var kind: Int
+    var kind: RenderBackend
     var text: TextRenderer
     var images: Dict[Int, _Image]
     var gl: Optional[GLRenderer]
@@ -740,7 +740,7 @@ struct Backend(Movable):
     allocation is reused frame to frame instead of being rebuilt per frame.
     """
 
-    def __init__(out self, kind: Int = RenderBackend.CPU) raises:
+    def __init__(out self, kind: RenderBackend = RenderBackend.CPU) raises:
         """A GPU backend builds its GL resources here, so a current context
         is a precondition of `RenderBackend.GPU` — the GL run loop opens its window
         first for exactly that reason."""

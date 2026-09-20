@@ -40,7 +40,7 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 | File | Purpose |
 |---|---|
 | `src/create/core/program.mojo` | Defines the `Program` trait |
-| `src/create/core/run.mojo` | `run[T](title, width, height, mode, backend, resizable)` — the windowed entry point; `width`/`height` are the design resolution, not a window size (see its docstring); dispatches to the GPU loop when `backend == RenderBackend.GPU` |
+| `src/create/core/run.mojo` | `run[T](title, mode, width, height, backend, resizable)` — the windowed entry point; `mode` and `backend` are the typed selectors `WindowMode`/`RenderBackend`, which is what lets `mode` precede the size without a keyword; `width`/`height` are the design resolution, not a window size (see its docstring); dispatches to the GPU loop when `backend == RenderBackend.GPU` |
 | `src/create/core/_step.mojo` | `step[P]` — one frame: update, letterbox, release. The one copy, shared by both loops. Also `create_program[P]`, whose frame is built and then discarded |
 | `src/create/core/headless.mojo` | `run_headless[T](width, height, frames, pixel_width, pixel_height, backend)` — same loop, owned buffer, no window; dispatches to `_headless_gl.mojo` when `backend == RenderBackend.GPU` |
 | `src/create/core/_headless_gl.mojo` | `_run_headless_gl[T]` — `run_headless`'s GPU counterpart: the same frames through the GL backend into an offscreen `_GLTarget`, read back once at the end |
@@ -562,7 +562,7 @@ it. The biggest trap in the animation API is documented on
    root, or `script_dir() + "/../fixtures/"` — so the suite must be run from the root either way,
    which `pixi run test` guarantees.
 
-3. **A window does not report its real size immediately.** In fullscreen SDL fires a bogus `(1, 1)` `Resized` before reporting real dimensions, so `_wait_for_dimensions` pumps events until width > 1 and height > 1. On Wayland the fullscreen transition is asynchronous on top of that: `run[T]("t", 1000, 1000, mode=WindowMode.FULLSCREEN)` reports the requested 1000x1000 for frame 1 and the display size from frame 2 on. The run loop refreshes dimensions every frame, so this self-corrects — but don't cache pixel dimensions from `create` or the first frame.
+3. **A window does not report its real size immediately.** In fullscreen SDL fires a bogus `(1, 1)` `Resized` before reporting real dimensions, so `_wait_for_dimensions` pumps events until width > 1 and height > 1. On Wayland the fullscreen transition is asynchronous on top of that: `run[T]("t", WindowMode.FULLSCREEN, width=1000, height=1000)` reports the requested 1000x1000 for frame 1 and the display size from frame 2 on. The run loop refreshes dimensions every frame, so this self-corrects — but don't cache pixel dimensions from `create` or the first frame.
 
 4. **One origin limit in this Mojo version shapes the API.** Nothing can return a reference to a
    `List` element, so `SpriteAnimation` has **no `frame()` accessor** — see its

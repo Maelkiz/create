@@ -137,4 +137,4 @@ struct App(Program):
 
 
 def main() raises:
-    run[App]("Easing and Tweens", 1280, 800)
+    run[App]("Easing and Tweens", width=1280, height=800)

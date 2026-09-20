@@ -28,8 +28,11 @@ struct MyApp(Program):
 
 
 def main() raises:
-    run[MyApp]("Example Sketch", mode=WindowMode.FULLSCREEN)
+    run[MyApp]("Example Sketch", WindowMode.FULLSCREEN)
 ```
+
+`mode` comes right after the title because `WindowMode.FULLSCREEN` names itself; `width`/`height`
+are keyword arguments because two bare integers do not.
 
 `run`'s `width`/`height` (default 1280x720) are the resolution the program is *authored* in, not a
 window size: a windowed launch opens at that size because the two coincide, while a fullscreen one

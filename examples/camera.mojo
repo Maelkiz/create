@@ -52,4 +52,4 @@ struct CameraDemo(Program):
 
 
 def main() raises:
-    run[CameraDemo]("Camera Demo", 800, 600)
+    run[CameraDemo]("Camera Demo", width=800, height=600)

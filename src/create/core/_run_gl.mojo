@@ -39,9 +39,9 @@ creation outright, so the caller retries once without it."""
 
 def _open_window(
     title: String,
+    mode: WindowMode,
     width: Int,
     height: Int,
-    mode: Int,
     resizable: Bool,
 ) raises -> GLWindow:
     """A multisampled GL window, falling back to none if the driver refuses.
@@ -150,9 +150,9 @@ def run_gl[
     P: Program
 ](
     title: String,
+    mode: WindowMode = WindowMode.WINDOWED,
     width: Int = 1280,
     height: Int = 720,
-    mode: Int = WindowMode.WINDOWED,
     vsync: Bool = True,
     resizable: Bool = True,
 ) raises:
@@ -171,7 +171,7 @@ def run_gl[
     both the window size and the space the program is authored in, scaled to
     the window by `AutoScale.FIT` unless `create` says otherwise.
     """
-    var win = _open_window(title, width, height, mode, resizable)
+    var win = _open_window(title, mode, width, height, resizable)
     win.set_swap_interval(1 if vsync else 0)
     # Built after the window because its GL resources need a current context;
     # the state now carries the viewport too, so it has to exist before
