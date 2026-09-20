@@ -37,7 +37,11 @@ creation outright, so the caller retries once without it."""
 
 
 def _open_window(
-    title: String, width: Int, height: Int, fullscreen: Bool
+    title: String,
+    width: Int,
+    height: Int,
+    fullscreen: Bool,
+    resizable: Bool,
 ) raises -> GLWindow:
     """A multisampled GL window, falling back to none if the driver refuses.
 
@@ -47,10 +51,17 @@ def _open_window(
     """
     try:
         return GLWindow(
-            title, width, height, msaa=_MSAA_SAMPLES, fullscreen=fullscreen
+            title,
+            width,
+            height,
+            msaa=_MSAA_SAMPLES,
+            fullscreen=fullscreen,
+            resizable=resizable,
         )
     except:
-        return GLWindow(title, width, height, fullscreen=fullscreen)
+        return GLWindow(
+            title, width, height, fullscreen=fullscreen, resizable=resizable
+        )
 
 
 def _update_dimensions(mut win: GLWindow, mut ctx: Context) raises -> Float64:
@@ -118,6 +129,7 @@ def run_gl[
     height: Int = 720,
     fullscreen: Bool = False,
     vsync: Bool = True,
+    resizable: Bool = True,
 ) raises:
     """Open a GL window and run `P` on the GPU backend until it quits.
 
@@ -133,7 +145,7 @@ def run_gl[
     both the window size and the space the program is authored in, scaled to
     the window by `AutoScale.FIT` unless `create` says otherwise.
     """
-    var win = _open_window(title, width, height, fullscreen)
+    var win = _open_window(title, width, height, fullscreen, resizable)
     win.set_swap_interval(1 if vsync else 0)
     var ctx = Context()
     ctx.view.set_design(width, height)

@@ -83,6 +83,7 @@ def run[
     height: Int = 720,
     fullscreen: Bool = False,
     backend: Int = RenderBackend.CPU,
+    resizable: Bool = True,
 ) raises:
     """Open a window and run `P` in it until it quits.
 
@@ -111,9 +112,9 @@ def run[
     dynamic trait dispatch, which is also why `Backend` switches on a `kind`.
     """
     if backend == RenderBackend.GPU:
-        run_gl[P](title, width, height, fullscreen)
+        run_gl[P](title, width, height, fullscreen, resizable=resizable)
         return
-    var win = Window(title, width, height, fullscreen)
+    var win = Window(title, width, height, fullscreen, resizable=resizable)
     var ctx = Context()
     # The size the program is authored against is always what the caller asked
     # for, never what the display handed back. In fullscreen SDL ignores the
