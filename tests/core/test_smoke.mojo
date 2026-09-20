@@ -19,11 +19,13 @@ struct Smoke(Program):
     var audio: Audio
 
     @staticmethod
-    def create(mut frame: Frame) raises -> Smoke:
-        frame.quit_on_escape = True
+    def create(mut options: Options) raises -> Smoke:
+        options.quit_on_escape = True
         return Smoke(0.0, Audio())
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.audio.update()
         if input.is_key_down("right"):
             self.x += 100.0 * frame.time.delta

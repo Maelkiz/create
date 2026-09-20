@@ -4,10 +4,12 @@ from create import *
 @fieldwise_init
 struct Sketch(Program):
     @staticmethod
-    def create(mut frame: Frame) raises -> Sketch:
+    def create(mut options: Options) raises -> Sketch:
         return Sketch()
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.WHITE)
         frame.outline(Color.GREEN, thickness=3)
         frame.corner_radius(10)

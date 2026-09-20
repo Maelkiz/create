@@ -7,13 +7,15 @@ struct App(Program):
     var mouse: Circle
 
     @staticmethod
-    def create(mut frame: Frame) raises -> App:
+    def create(mut options: Options) raises -> App:
         return App(
             center=Circle(0, 0, 100),
             mouse=Circle(0, 0, 100),
         )
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.mouse.move_to(input.mouse)
 
         if overlaps(self.center, self.mouse):

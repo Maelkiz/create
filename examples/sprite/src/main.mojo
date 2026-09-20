@@ -8,13 +8,15 @@ struct Game(Program):
     var y: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> Game:
+    def create(mut options: Options) raises -> Game:
         var sprite = Sprite.load(
             script_dir() + "/../assets/sprite.jpeg", 120, 120
         )
         return Game(sprite^, 0, 0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         var speed = 15
         if input.is_key_down("w"):
             self.y += speed

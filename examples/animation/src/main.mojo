@@ -26,7 +26,7 @@ struct Game(Program):
     var spinning: Bool
 
     @staticmethod
-    def create(mut frame: Frame) raises -> Game:
+    def create(mut options: Options) raises -> Game:
         var sheet = Sprite.load(script_dir() + "/../assets/character.png")
 
         # Row-major: the first four cells are the idle cycle, the next four
@@ -52,7 +52,9 @@ struct Game(Program):
         animator.loop()
         return Game(idle^, run^, spin^, animator^, 0.0, False)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         var speed = 240.0 * frame.time.delta
 
         if input.just_pressed("space") and not self.spinning:

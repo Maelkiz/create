@@ -1,9 +1,8 @@
-from std.collections import Optional
-
 from create.render.autoscale import AutoScale
 from create.render.frame import PersistentFrameState
+from create.render.options import Options
 from create.render.render_backend import RenderBackend
-from ._step import create_program, step
+from ._step import step
 from ._headless_gl import _run_headless_gl
 from .input import Input
 from .program import Program
@@ -51,22 +50,19 @@ def run_headless[
     var ph = pixel_height if pixel_height > 0 else height
     var mem = MemorySurface(pw, ph)
     var state = PersistentFrameState()
-    state.view.set_design(width, height)
-    state.autoscale = AutoScale.FIT
-    state._set_viewport(pw, ph)
-    var created = Optional[P]()
-    state = create_program[P](state^, created)
-    var program = created.take()
-    # create() may have pinned its own design size or changed the mode.
-    state._set_viewport(pw, ph)
+    var options = Options()
+    options.design_resolution(width, height, AutoScale.FIT)
+    var program = P.create(options)
+    # After create(), which may have pinned its own design size or mode.
+    state._set_viewport(options, pw, ph)
     var input = Input()
     var now = 0
     state.time._start(now)
     for _ in range(frames):
-        if state._quit:
+        if options._quit:
             break
         now += _FRAME_MILLIS
         state.time._tick(now)
-        state = step(program, input, state^)
+        state = step(program, options, input, state^)
         state.backend.present(mem.surface(), state.view.scale)
     return mem^

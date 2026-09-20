@@ -13,13 +13,15 @@ struct Game(Program):
     var cam: Camera
 
     @staticmethod
-    def create(mut frame: Frame) raises -> Game:
-        frame.autoscale = AutoScale.FIT
+    def create(mut options: Options) raises -> Game:
+        options.autoscale = AutoScale.FIT
         var w: Float64 = 60
         var h: Float64 = 80
         return Game(Player(0.0, 0.0, w, h, 0.0, False, 2), Camera())
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.player.update(frame, input)
 
         var half_w = self.player.width / 2

@@ -15,10 +15,12 @@ struct OverflowingRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> OverflowingRect:
+    def create(mut options: Options) raises -> OverflowingRect:
         return OverflowingRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.GREEN)
@@ -46,10 +48,12 @@ struct ScaledSprite(Program):
         self.sprite = sprite^
 
     @staticmethod
-    def create(mut frame: Frame) raises -> ScaledSprite:
+    def create(mut options: Options) raises -> ScaledSprite:
         return ScaledSprite(Sprite.load("tests/fixtures/test_2x2.bmp"))
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.sprite(self.sprite, 0.0, 0.0, 8, 8)
 

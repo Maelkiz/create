@@ -44,8 +44,8 @@ struct Bench(Program):
     var worst: Float64
 
     @staticmethod
-    def create(mut frame: Frame) raises -> Bench:
-        frame.autoscale = AutoScale.OFF
+    def create(mut options: Options) raises -> Bench:
+        options.autoscale = AutoScale.OFF
         return Bench(
             0.0,
             Sprite.load(script_dir() + "/sprite/assets/sprite.png"),
@@ -54,7 +54,9 @@ struct Bench(Program):
             0.0,
         )
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.t += frame.time.delta
         self.frames += 1
         self.elapsed += frame.time.delta

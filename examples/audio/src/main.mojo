@@ -12,8 +12,8 @@ struct AudioDemo(Program):
     var looping: Bool
 
     @staticmethod
-    def create(mut frame: Frame) raises -> AudioDemo:
-        frame.quit_on_escape = True
+    def create(mut options: Options) raises -> AudioDemo:
+        options.quit_on_escape = True
         var audio = Audio()
         var chime = ArcPointer(
             Sound.load(script_dir() + "/../assets/chime.wav")
@@ -23,7 +23,9 @@ struct AudioDemo(Program):
         )
         return AudioDemo(audio^, chime, ambience, 0, False)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.audio.update()
 
         if input.just_pressed("space"):

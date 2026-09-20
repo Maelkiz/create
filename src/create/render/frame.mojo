@@ -5,6 +5,7 @@ from .align import Align
 from .autoscale import AutoScale
 from .font import Font
 from .viewport import Viewport
+from .options import Options
 from .time import Time
 from .camera import Camera
 from create.math.geometry import Rectangle, Circle, Line, Triangle
@@ -43,64 +44,42 @@ struct PersistentFrameState(Movable):
     start fresh every frame by construction, so a missing pop or a forgotten
     `outline(enabled=False)` cannot leak into the next frame.
 
-    It also owns what the run loop needs *before* a `Frame` exists. Event
-    processing maps pointer positions through `view`, and reads
-    `quit_on_escape`, both of which happen before the frame is built; the
-    dimension wait reads `view.width`/`height` before the first frame exists at
-    all. Those cannot live only on `Frame` for that reason, so the state is the
-    authority and each frame takes a view of it.
+    Machinery, not dials. What the *program* sets between frames lives in
+    `Options`, which the loop carries beside this and never hands to a
+    `Frame` to own — that is what lets `update` be given both at once.
+
+    It also owns what the run loop needs *before* a `Frame` exists: event
+    processing maps pointer positions through `view`, and the dimension wait
+    reads `view.width`/`height` before the first frame exists at all.
     """
 
     var backend: Backend
-    var letterbox: Color
     var view: Viewport
     """The authoritative design-to-pixel mapping, re-derived by the loop every
-    frame. A `Frame` copies it; `Frame._release` deliberately does not write it
-    back, which would undo the loop's own resize handling."""
+    frame from `Options`. A `Frame` copies it; `Frame._release` deliberately
+    does not write it back, which would undo the loop's own resize handling."""
     var time: Time
     """The frame clock. The loop is its only writer — a `Frame` carries a
     read-only snapshot taken at construction."""
-    var autoscale: Int
-    var quit_on_escape: Bool
-    var autoclear: Bool
-    """Whether each frame opens with a clear to `clear_color`."""
-    var clear_color: Color
-    var _fps_cap: Int
-    var _quit: Bool
 
     def __init__(out self, kind: RenderBackend = RenderBackend.CPU) raises:
         """`kind` picks the backend that will present the frames — a GPU one
         builds its GL resources now, so a context must already be current."""
         self.backend = Backend(kind)
-        self.letterbox = Color(0x22)
         self.view = Viewport()
         self.time = Time()
-        self.autoscale = AutoScale.OFF
-        self.quit_on_escape = True
-        self.autoclear = True
-        self.clear_color = Color(200)
-        self._fps_cap = 0
-        self._quit = False
 
-    def _set_viewport(mut self, pixel_w: Int, pixel_h: Int):
-        """Remap onto a framebuffer of this size.
+    def _set_viewport(mut self, options: Options, pixel_w: Int, pixel_h: Int):
+        """Remap onto a framebuffer of this size, under `options`.
 
-        `autoscale` may have been written by the frame that just ended, so it
-        is pushed into the viewport before remapping. The reported size and
-        scale are then read straight off `view` — there is no second copy to
-        keep in sync, which is what the old `Context` spent its `_set_viewport`
-        doing.
+        The design size and the autoscale mode are pushed in from `Options`
+        rather than stored here, so there is one authority for both and a
+        dial the last frame turned is picked up at exactly one place — the
+        top of the next frame.
         """
-        self.view.autoscale = self.autoscale
+        self.view.autoscale = options.autoscale
+        self.view.set_design(options._design_w, options._design_h)
         self.view.set_size(pixel_w, pixel_h)
-
-    def to_screen(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
-        """Map a window pixel position into screen space.
-
-        Here as well as on `Frame` because the event arms run before the
-        frame is built.
-        """
-        return self.view.to_screen(x, y)
 
 
 struct TransformGuard[origin: Origin[mut=True]](Movable):
@@ -175,9 +154,9 @@ struct StyleGuard[origin: Origin[mut=True]](Movable):
 
 
 struct Frame:
-    """One frame: the geometry, the clock, the loop dials and the drawing API.
+    """One frame: the geometry, the clock and the drawing API.
 
-    This is the single object a program is handed per frame. `width`/`height`
+    This is the object a program is handed to draw a frame with. `width`/`height`
     are the screen extent and `left`/`right`/`bottom`/`top` its edges — use
     those rather than width arithmetic, since the origin is centred and two of
     them are negative. `time` is the frame clock, `scale` the autoscale factor,
@@ -185,20 +164,21 @@ struct Frame:
     these and `Input` don't know a `Camera` exists, since a program sets one on
     the frame's transform, not on the geometry it reports.
 
-    Written from both sides, which is why it is a `mut` parameter: the loop
-    fills in the geometry and the clock, and the program sets `autoscale` or
-    `quit_on_escape`, calls `design_resolution`, `frame_cap` and `quit`, and draws.
+    A `mut` parameter because the program draws on it, and the recording it
+    appends to is the frame's whole output. What it does *not* carry is a
+    setting: everything that outlives a frame is in `Options`, handed to
+    `update` beside it. A `Frame` that carried a dial would be offering to
+    change something it is not around to see the effect of.
 
-    Built fresh each frame and dropped before the frame is presented. State
-    that must survive the frame goes in and out through
+    Built fresh each frame and dropped before the frame is presented. The
+    machinery that must survive the frame goes in and out through
     `PersistentFrameState`.
 
     **It takes no parameters, and holds no `Surface`.** It used to need one
     origin parameter for the framebuffer it borrowed, which constrained the
     whole API: a second parameter would have broken every
-    `Program.update(self, mut frame: Frame, input: Input)` signature at
-    once, and pointing
-    an existing `Frame` at a new framebuffer could not compile at all. Both
+    `Program.update` signature at once, and pointing an existing `Frame` at a
+    new framebuffer could not compile at all. Both
     limits are gone because a `Frame` no longer touches pixels — it records,
     and the backend replays onto a `Surface` the frame never sees. Don't
     reintroduce a `Surface` field or a parameter to hold one.
@@ -221,9 +201,7 @@ struct Frame:
 
     var width: Int
     var height: Int
-    var autoscale: Int
     var scale: Float64
-    var letterbox: Color
     var view: Viewport
     var time: Time
     """This frame's clock, a snapshot taken at construction.
@@ -232,19 +210,10 @@ struct Frame:
     is its only writer — the program reads `delta` and `frame_count` here and
     cannot desynchronise the loop by touching them.
     """
-    var quit_on_escape: Bool
-    var autoclear: Bool
-    """Whether each frame opens with a clear to `clear_color`.
-
-    **Deferred**, like `design_resolution`: this frame's clear is already recorded by the
-    time `update` runs, so turning it off takes effect on the next frame. Set
-    it in `create` to keep frame one unclear.
-    """
-    var clear_color: Color
-    """What `autoclear` clears to. Persistent, like `letterbox` — set once in
-    `create` rather than every frame."""
-    var _quit: Bool
-    var _fps_cap: Int
+    var _letterbox: Color
+    """This frame's bar colour, snapshotted from `Options` at construction —
+    the frame is drawn under one set of dials, whatever `update` does to them
+    for the next."""
     var _state: PersistentFrameState
     # Style is per-frame, not carried in `_state`: `Frame` is only reachable
     # from `render`, so nothing can seed a style outside a frame and carrying
@@ -267,25 +236,19 @@ struct Frame:
     var _transform_inv: Matrix[3, 3]
     var _transform_stack: List[Matrix[3, 3]]
 
-    def __init__(out self, var state: PersistentFrameState):
-        """Adopt the carried-over state and this frame's mapping from it.
+    def __init__(out self, var state: PersistentFrameState, options: Options):
+        """Adopt the carried-over state, and this frame's mapping and dials.
 
-        Every dial the program can turn is copied out of the state here and
-        written back by `_release`, so a program sets them on the frame it was
-        handed and the loop picks them up at the frame boundary.
+        `options` is read here and not held: the frame is drawn under the
+        dials as they stood when it began, so a program turning one mid-frame
+        changes the next frame rather than this one halfway through.
         """
         self.view = state.view.copy()
         self.width = state.view.width
         self.height = state.view.height
-        self.autoscale = state.view.autoscale
         self.scale = state.view.scale
-        self.letterbox = state.letterbox
         self.time = state.time.copy()
-        self.quit_on_escape = state.quit_on_escape
-        self.autoclear = state.autoclear
-        self.clear_color = state.clear_color
-        self._quit = state._quit
-        self._fps_cap = state._fps_cap
+        self._letterbox = options.letterbox
         self._state = state^
         self._style = Style()
         self._base = self.view.base_matrix()
@@ -298,52 +261,23 @@ struct Frame:
         self._transform = self._base
         self._transform_inv = self._base_inv
         self._transform_stack = List[Matrix[3, 3]]()
-        # Recorded here rather than by the loop so both loops and the
-        # never-presented `create` frame get it from one place, and so a
-        # program's own `background()` can coalesce with it.
-        if self.autoclear:
-            self._state.backend.record_clear(clear_command(self.clear_color))
+        # Recorded here rather than by the loop so both loops get it from one
+        # place, and so a program's own `background()` can coalesce with it.
+        if options.autoclear:
+            self._state.backend.record_clear(clear_command(options.clear_color))
 
     def _release(deinit self) -> PersistentFrameState:
         """Hand back the state the next frame's `Frame` should start from.
 
-        Consumes the frame, so the borrow on the framebuffer ends here — the
-        run loop cannot present while a `Frame` is still alive.
+        Consumes the frame, so the recording is complete before the loop
+        presents it — nothing can append to a frame that is being replayed.
 
-        Writes back exactly the dials the program may have turned. `view` and
-        `time` are deliberately *not* among them: `self.view` is this frame's
-        mapping, while `_state.view` is the authority the loop re-derives each
-        frame, so writing it back would silently undo the loop's own resize
-        handling — and the loop is the only writer of the clock.
+        Nothing is written back. `self.view` is this frame's copy of a mapping
+        the loop re-derives every frame, the loop is the only writer of the
+        clock, and the dials a program turns are in `Options`, which a `Frame`
+        never owned — so there is no merge to get wrong here.
         """
-        var state = self._state^
-        state.letterbox = self.letterbox
-        state.autoscale = self.autoscale
-        state.quit_on_escape = self.quit_on_escape
-        state.autoclear = self.autoclear
-        state.clear_color = self.clear_color
-        state._fps_cap = self._fps_cap
-        state._quit = self._quit
-        return state^
-
-    def design_resolution(
-        mut self, width: Int, height: Int, mode: Int = AutoScale.FIT
-    ):
-        """Author this program in a fixed world size, scaled to any window.
-
-        Overrides the size passed to `run`, so a program can pin its own
-        coordinate space no matter how it is launched — including fullscreen,
-        where the window size is the display's rather than the caller's.
-
-        **Deferred**: it writes the persistent viewport and takes effect on the
-        next frame, leaving this frame's already-recorded commands and reported
-        geometry alone — one frame cannot record under two different mappings.
-        From `create` there is no current frame, so it still applies to frame
-        one. This is also what `autoscale` has always done, so the two dials
-        now agree.
-        """
-        self._state.view.set_design(width, height)
-        self.autoscale = mode
+        return self._state^
 
     def to_screen(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
         """Map a window pixel position into screen space."""
@@ -358,27 +292,6 @@ struct Frame:
         if self.time.delta == 0.0:
             return 0.0
         return 1.0 / self.time.delta
-
-    def frame_cap(mut self, fps: Int) raises:
-        """Limit the loop to at most `fps` frames per second.
-
-        A cap tighter than the display's own pacing (vsync, or the CPU
-        backend's always-on vsync) slows the loop by sleeping at the end of
-        each frame; a cap looser than it does nothing, since presentation is
-        already waiting on the display. Not enforced by `run_headless`,
-        which has no wall clock to cap against.
-        """
-        if fps <= 0:
-            raise Error("frame_cap fps must be positive, got " + String(fps))
-        self._fps_cap = fps
-
-    def quit(mut self):
-        """Ask the run loop to stop after the current frame.
-
-        Unwinds normally, so the window tears down cleanly and program
-        destructors run — unlike `std.sys.exit`, which aborts the process.
-        """
-        self._quit = True
 
     def left(self) -> Float64:
         """Screen x of the left edge — negative, since the origin is centred."""
@@ -407,7 +320,7 @@ struct Frame:
         frame's clip rather than something the program drew, so no transform
         applies to it.
         """
-        if not self.view.scaled() or self.autoscale == AutoScale.EXTEND:
+        if not self.view.scaled() or self.view.autoscale == AutoScale.EXTEND:
             return
         var cx0 = Float64(Int(self.view.offset_x))
         var cy0 = Float64(Int(self.view.offset_y))
@@ -418,7 +331,7 @@ struct Frame:
             Int(self.view.offset_y + Float64(self.height) * self.scale + 0.5)
         )
         self._state.backend.record(
-            letterbox_command(self.letterbox, cx0, cy0, cx1, cy1)
+            letterbox_command(self._letterbox, cx0, cy0, cx1, cy1)
         )
 
     # `_uniform`, `_pixel_scale`, `_device_bounds` and `_outline_thickness_px`
@@ -542,13 +455,13 @@ struct Frame:
         A translucent color blends instead of clearing, which is how motion
         trails are drawn: `frame.background(Color(0x11, 0x11, 0x11, 24))`
         fades the previous frame a little further each time. Trails need
-        `autoclear = False` set in `create`, or the frame's own clear wipes
+        `options.autoclear = False` set in `create`, or the frame's own clear wipes
         what they were fading.
 
-        An opaque color replaces `autoclear`'s clear rather than stacking on
+        An opaque color replaces `options.autoclear`'s clear rather than stacking on
         it, so opening `update` with this costs one clear, not two. It does
-        not change `clear_color`: this paints now, at the point it is called,
-        while `clear_color` is what every frame starts from.
+        not change `options.clear_color`: this paints now, at the point it is
+        called, while `options.clear_color` is what every frame starts from.
         """
         self._state.backend.record_clear(clear_command(color))
 

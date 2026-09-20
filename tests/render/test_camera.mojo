@@ -13,10 +13,12 @@ struct IdentityCameraRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> IdentityCameraRect:
+    def create(mut options: Options) raises -> IdentityCameraRect:
         return IdentityCameraRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.camera(Camera())
         frame.outline(enabled=False)
@@ -39,10 +41,12 @@ struct PannedCameraRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> PannedCameraRect:
+    def create(mut options: Options) raises -> PannedCameraRect:
         return PannedCameraRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.camera(Camera(Point2D(20.0, 0.0), 1.0))
         frame.outline(enabled=False)
@@ -63,10 +67,12 @@ struct ZoomedCameraRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> ZoomedCameraRect:
+    def create(mut options: Options) raises -> ZoomedCameraRect:
         return ZoomedCameraRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.camera(Camera(Point2D(0.0, 0.0), 2.0))
         frame.outline(enabled=False)
@@ -87,10 +93,12 @@ struct OverlayIgnoresCamera(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> OverlayIgnoresCamera:
+    def create(mut options: Options) raises -> OverlayIgnoresCamera:
         return OverlayIgnoresCamera(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.camera(Camera(Point2D(50.0, 0.0), 1.0))
         frame.outline(enabled=False)
@@ -112,10 +120,12 @@ struct OverlayRestoresCamera(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> OverlayRestoresCamera:
+    def create(mut options: Options) raises -> OverlayRestoresCamera:
         return OverlayRestoresCamera(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.camera(Camera(Point2D(20.0, 0.0), 1.0))
         frame.outline(enabled=False)

@@ -24,12 +24,14 @@ struct App(Program):
     var saved: String
 
     @staticmethod
-    def create(mut frame: Frame) raises -> App:
-        frame.autoscale = AutoScale.FIT
-        frame.design_resolution(_DESIGN_W, _DESIGN_H)
+    def create(mut options: Options) raises -> App:
+        options.autoscale = AutoScale.FIT
+        options.design_resolution(_DESIGN_W, _DESIGN_H)
         return App(0.0, "")
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.angle += 0.6 * frame.time.delta
 
         # Filed the moment the key is read, and written at `present` — the

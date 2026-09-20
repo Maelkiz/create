@@ -6,13 +6,15 @@ struct App(Program):
     var t: Float64
 
     @staticmethod
-    def create(mut frame: Frame) raises -> App:
+    def create(mut options: Options) raises -> App:
         # The trails below are drawn by fading the *previous* frame, so the
         # per-frame clear has to be off — it would wipe what they fade.
-        frame.autoclear = False
+        options.autoclear = False
         return App(0.0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.t = frame.time.elapsed
 
         # A translucent background fades the previous frame instead of

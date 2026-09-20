@@ -28,10 +28,12 @@ struct Background(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> Background:
+    def create(mut options: Options) raises -> Background:
         return Background(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color(10, 20, 30))
 
 
@@ -50,10 +52,12 @@ struct CentredRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> CentredRect:
+    def create(mut options: Options) raises -> CentredRect:
         return CentredRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -78,10 +82,12 @@ struct HighRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> HighRect:
+    def create(mut options: Options) raises -> HighRect:
         return HighRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.GREEN)
@@ -102,10 +108,12 @@ struct CentredCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> CentredCircle:
+    def create(mut options: Options) raises -> CentredCircle:
         return CentredCircle(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.CYAN)
@@ -131,10 +139,12 @@ struct UprightTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> UprightTriangle:
+    def create(mut options: Options) raises -> UprightTriangle:
         return UprightTriangle(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.MAGENTA)
@@ -159,10 +169,12 @@ struct AlphaOverRed(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> AlphaOverRed:
+    def create(mut options: Options) raises -> AlphaOverRed:
         return AlphaOverRed(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.RED)
         frame.outline(enabled=False)
         frame.fill(Color(0, 0, 255, 128))
@@ -180,10 +192,12 @@ struct ThickLine(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> ThickLine:
+    def create(mut options: Options) raises -> ThickLine:
         return ThickLine(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(Color.WHITE, thickness=3)
         frame.line(-10.0, 0.0, 10.0, 0.0)
@@ -204,10 +218,12 @@ struct FitBars(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> FitBars:
+    def create(mut options: Options) raises -> FitBars:
         return FitBars(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLUE)
 
 
@@ -216,11 +232,13 @@ struct ExtendNoBars(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> ExtendNoBars:
-        frame.autoscale = AutoScale.EXTEND
+    def create(mut options: Options) raises -> ExtendNoBars:
+        options.autoscale = AutoScale.EXTEND
         return ExtendNoBars(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLUE)
 
 
@@ -245,10 +263,12 @@ struct RotatedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> RotatedRect:
+    def create(mut options: Options) raises -> RotatedRect:
         return RotatedRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.YELLOW)
@@ -272,10 +292,12 @@ struct SharpRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> SharpRect:
+    def create(mut options: Options) raises -> SharpRect:
         return SharpRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -296,10 +318,12 @@ struct RoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> RoundedRect:
+    def create(mut options: Options) raises -> RoundedRect:
         return RoundedRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -322,10 +346,12 @@ struct RoundedRectOutlined(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> RoundedRectOutlined:
+    def create(mut options: Options) raises -> RoundedRectOutlined:
         return RoundedRectOutlined(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(Color.BLUE, thickness=2)
         frame.fill(Color.RED)
@@ -361,10 +387,12 @@ struct ScaledRoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> ScaledRoundedRect:
+    def create(mut options: Options) raises -> ScaledRoundedRect:
         return ScaledRoundedRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -386,10 +414,12 @@ struct RotatedRoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> RotatedRoundedRect:
+    def create(mut options: Options) raises -> RotatedRoundedRect:
         return RotatedRoundedRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.YELLOW)
@@ -415,10 +445,12 @@ struct SharpTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> SharpTriangle:
+    def create(mut options: Options) raises -> SharpTriangle:
         return SharpTriangle(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -440,10 +472,12 @@ struct RoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> RoundedTriangle:
+    def create(mut options: Options) raises -> RoundedTriangle:
         return RoundedTriangle(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -475,10 +509,12 @@ struct RoundedTriangleOutlined(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> RoundedTriangleOutlined:
+    def create(mut options: Options) raises -> RoundedTriangleOutlined:
         return RoundedTriangleOutlined(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(Color.BLUE, thickness=4)
         frame.fill(Color.RED)
@@ -511,10 +547,12 @@ struct ThinRoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> ThinRoundedTriangle:
+    def create(mut options: Options) raises -> ThinRoundedTriangle:
         return ThinRoundedTriangle(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -541,10 +579,12 @@ struct RotatedRoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> RotatedRoundedTriangle:
+    def create(mut options: Options) raises -> RotatedRoundedTriangle:
         return RotatedRoundedTriangle(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.YELLOW)
@@ -574,10 +614,12 @@ struct SpriteBlit(Program):
         self.sprite = sprite^
 
     @staticmethod
-    def create(mut frame: Frame) raises -> SpriteBlit:
+    def create(mut options: Options) raises -> SpriteBlit:
         return SpriteBlit(Sprite.load("tests/fixtures/test_2x2.bmp"))
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.sprite(self.sprite, 0.0, 0.0)
 
@@ -600,10 +642,12 @@ struct PngSpriteBlit(Program):
         self.sprite = sprite^
 
     @staticmethod
-    def create(mut frame: Frame) raises -> PngSpriteBlit:
+    def create(mut options: Options) raises -> PngSpriteBlit:
         return PngSpriteBlit(Sprite.load("tests/fixtures/test_2x2.png"))
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.sprite(self.sprite, 0.0, 0.0)
 
@@ -626,10 +670,12 @@ struct StyleAcrossFrames(Program):
     var frame: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> StyleAcrossFrames:
+    def create(mut options: Options) raises -> StyleAcrossFrames:
         return StyleAcrossFrames(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.frame = frame.time.frame_count
 
         frame.background(Color.BLACK)
@@ -653,10 +699,12 @@ struct GuardedStyle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> GuardedStyle:
+    def create(mut options: Options) raises -> GuardedStyle:
         return GuardedStyle(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -677,10 +725,12 @@ struct StrokedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> StrokedRect:
+    def create(mut options: Options) raises -> StrokedRect:
         return StrokedRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.fill(Color.RED)
         frame.outline(Color.BLUE, thickness=4)
@@ -703,10 +753,12 @@ struct StrokedCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> StrokedCircle:
+    def create(mut options: Options) raises -> StrokedCircle:
         return StrokedCircle(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.fill(Color.GREEN)
         frame.outline(Color.WHITE, thickness=4)
@@ -726,10 +778,12 @@ struct StrokedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> StrokedTriangle:
+    def create(mut options: Options) raises -> StrokedTriangle:
         return StrokedTriangle(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.fill(Color.ORANGE)
         frame.outline(Color.WHITE, thickness=4)
@@ -748,10 +802,12 @@ struct NoFillRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> NoFillRect:
+    def create(mut options: Options) raises -> NoFillRect:
         return NoFillRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.fill(enabled=False)
         frame.outline(Color.WHITE, thickness=4)
@@ -769,10 +825,12 @@ struct NoFillCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> NoFillCircle:
+    def create(mut options: Options) raises -> NoFillCircle:
         return NoFillCircle(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.fill(enabled=False)
         frame.outline(Color.WHITE, thickness=4)
@@ -790,10 +848,12 @@ struct RotatedCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> RotatedCircle:
+    def create(mut options: Options) raises -> RotatedCircle:
         return RotatedCircle(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.CYAN)
@@ -821,10 +881,12 @@ struct QuarterTurnRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> QuarterTurnRect:
+    def create(mut options: Options) raises -> QuarterTurnRect:
         return QuarterTurnRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.YELLOW)
@@ -837,10 +899,12 @@ struct SwappedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> SwappedRect:
+    def create(mut options: Options) raises -> SwappedRect:
         return SwappedRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.YELLOW)
@@ -867,10 +931,12 @@ struct GeometryOverloads(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> GeometryOverloads:
+    def create(mut options: Options) raises -> GeometryOverloads:
         return GeometryOverloads(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
 
         frame.outline(enabled=False)
@@ -929,10 +995,12 @@ struct ToWorldRoundTrip(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> ToWorldRoundTrip:
+    def create(mut options: Options) raises -> ToWorldRoundTrip:
         return ToWorldRoundTrip(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         with frame.transform(translate(10.0, 20.0)):
             var origin = frame.to_local(10.0, 20.0)
@@ -960,10 +1028,12 @@ struct ThickLineUnderNonUniformScale(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> ThickLineUnderNonUniformScale:
+    def create(mut options: Options) raises -> ThickLineUnderNonUniformScale:
         return ThickLineUnderNonUniformScale(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(Color.WHITE, thickness=3)
         with frame.transform(scale(3.0, 1.0)):
@@ -1015,10 +1085,12 @@ struct TextThroughFrame(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> TextThroughFrame:
+    def create(mut options: Options) raises -> TextThroughFrame:
         return TextThroughFrame(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.text_color(Color.WHITE)
         frame.font_size(24)
@@ -1043,10 +1115,12 @@ struct TransparentText(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> TransparentText:
+    def create(mut options: Options) raises -> TransparentText:
         return TransparentText(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.text_color(Color(255, 255, 255, 0))
         frame.text("Hi", 0.0, 0.0)
@@ -1062,10 +1136,12 @@ struct TextBesideShape(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> TextBesideShape:
+    def create(mut options: Options) raises -> TextBesideShape:
         return TextBesideShape(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -1097,10 +1173,12 @@ struct SmallText(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> SmallText:
+    def create(mut options: Options) raises -> SmallText:
         return SmallText(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.text_color(Color.WHITE)
         frame.font_size(12)
@@ -1113,10 +1191,12 @@ struct BigText(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> BigText:
+    def create(mut options: Options) raises -> BigText:
         return BigText(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.text_color(Color.WHITE)
         frame.font_size(48)
@@ -1142,13 +1222,15 @@ struct QuitOnFrameTwo(Program):
         self.frame = 0
 
     @staticmethod
-    def create(mut frame: Frame) raises -> QuitOnFrameTwo:
+    def create(mut options: Options) raises -> QuitOnFrameTwo:
         return QuitOnFrameTwo()
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.frame = frame.time.frame_count
         if self.frame == 2:
-            frame.quit()
+            options.quit()
 
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
@@ -1191,7 +1273,7 @@ struct AnimatorBlit(Program):
         self.animator = animator^
 
     @staticmethod
-    def create(mut frame: Frame) raises -> AnimatorBlit:
+    def create(mut options: Options) raises -> AnimatorBlit:
         var frames = List[Sprite]()
         for i in range(8):
             frames.append(Sprite.solid(2, 2, UInt8(i * 20), 0, 0))
@@ -1199,7 +1281,9 @@ struct AnimatorBlit(Program):
         a.play()
         return AnimatorBlit(a^)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.animator.update(frame.time.delta)
 
         frame.background(Color.BLACK)
@@ -1229,14 +1313,16 @@ struct AnimatorSized(Program):
         self.animator = animator^
 
     @staticmethod
-    def create(mut frame: Frame) raises -> AnimatorSized:
+    def create(mut options: Options) raises -> AnimatorSized:
         var frames = List[Sprite]()
         frames.append(Sprite.solid(2, 2, 255, 0, 0))
         return AnimatorSized(
             SpriteAnimator(ArcPointer(SpriteAnimation(frames^)))
         )
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.sprite(self.animator, Point2D(0.0, 0.0), 40, 40)
 
@@ -1266,14 +1352,16 @@ struct AnimatorEveryOverload(Program):
         self.animator = animator^
 
     @staticmethod
-    def create(mut frame: Frame) raises -> AnimatorEveryOverload:
+    def create(mut options: Options) raises -> AnimatorEveryOverload:
         var frames = List[Sprite]()
         frames.append(Sprite.solid(2, 2, 255, 0, 0))
         return AnimatorEveryOverload(
             SpriteAnimator(ArcPointer(SpriteAnimation(frames^)))
         )
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         # Top row: the unsized overloads, at 1:1 so the 2x2 frame covers its
         # own anchor pixel.
@@ -1341,10 +1429,12 @@ struct SaveImage(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> SaveImage:
+    def create(mut options: Options) raises -> SaveImage:
         return SaveImage(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         _scene(frame)
         frame.save_image(_IMG_1X)
 
@@ -1354,10 +1444,12 @@ struct SaveImage2x(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> SaveImage2x:
+    def create(mut options: Options) raises -> SaveImage2x:
         return SaveImage2x(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         _scene(frame)
         frame.save_image(_IMG_2X, scale=2.0)
 
@@ -1367,10 +1459,12 @@ struct SaveImageTransparent(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> SaveImageTransparent:
+    def create(mut options: Options) raises -> SaveImageTransparent:
         return SaveImageTransparent(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         _scene(frame)
         frame.save_image(_IMG_ALPHA, transparent=True)
 
@@ -1436,10 +1530,12 @@ struct SaveScreenshot(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> SaveScreenshot:
+    def create(mut options: Options) raises -> SaveScreenshot:
         return SaveScreenshot(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         _scene(frame)
         frame.save_screenshot(_SHOT)
 
@@ -1449,10 +1545,12 @@ struct SaveBoth(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> SaveBoth:
+    def create(mut options: Options) raises -> SaveBoth:
         return SaveBoth(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         _scene(frame)
         frame.save_screenshot(_BOTH_SHOT)
         frame.save_image(_BOTH_IMG)

@@ -8,10 +8,12 @@ struct Transforms(Program):
     var mouse_y: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> Transforms:
+    def create(mut options: Options) raises -> Transforms:
         return Transforms(elapsed=0.0, mouse_x=0, mouse_y=0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.elapsed = frame.time.elapsed
         self.mouse_x = input.mouse_x
         self.mouse_y = input.mouse_y

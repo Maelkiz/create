@@ -1,11 +1,11 @@
-from std.collections import Optional
 from std.time import sleep
 
 from window.window import Window
 from create.render.render_backend import RenderBackend
 from create.render.frame import PersistentFrameState
+from create.render.options import Options
 from ._events import apply_events
-from ._step import create_program, step
+from ._step import step
 from create.render.surface import Surface
 from .input import Input
 from create.render.autoscale import AutoScale
@@ -14,36 +14,39 @@ from .window_mode import WindowMode
 from ._run_gl import run_gl
 
 
-def _update_dimensions(mut win: Window, mut state: PersistentFrameState) raises:
-    state._set_viewport(win.width(), win.height())
+def _update_dimensions(
+    mut win: Window, mut state: PersistentFrameState, options: Options
+) raises:
+    state._set_viewport(options, win.width(), win.height())
 
 
 def _wait_for_dimensions(
-    mut win: Window, mut state: PersistentFrameState
+    mut win: Window, mut state: PersistentFrameState, options: Options
 ) raises:
     # For fullscreen, SDL fires a bogus (1, 1) Resized before reporting real
     # dimensions — pump events until the window reports a usable size.
-    _update_dimensions(win, state)
+    _update_dimensions(win, state, options)
     while state.view.width <= 1 or state.view.height <= 1:
         _ = win.events()
-        _update_dimensions(win, state)
+        _update_dimensions(win, state, options)
 
 
 def _process_events(
-    mut win: Window, mut state: PersistentFrameState, mut input: Input
+    mut win: Window,
+    state: PersistentFrameState,
+    options: Options,
+    mut input: Input,
 ) raises:
-    if apply_events(win.events(), state, input):
+    if apply_events(win.events(), state.view, options, input):
         win.close()
 
 
-def _cap_frame_rate(
-    mut win: Window, state: PersistentFrameState, frame_start: Int
-) raises:
+def _cap_frame_rate(mut win: Window, options: Options, frame_start: Int) raises:
     """Sleep off whatever is left of the target frame duration, if any."""
-    if state._fps_cap <= 0:
+    if options._fps_cap <= 0:
         return
     var worked_ms = win.ticks() - frame_start
-    var target_ms = 1000.0 / Float64(state._fps_cap)
+    var target_ms = 1000.0 / Float64(options._fps_cap)
     var remaining_ms = target_ms - Float64(worked_ms)
     if remaining_ms > 0.0:
         sleep(remaining_ms / 1000.0)
@@ -55,22 +58,23 @@ def _run_loop[
     mut program: P,
     mut win: Window,
     var state: PersistentFrameState,
+    mut options: Options,
     mut input: Input,
 ) raises:
     # Seeded here rather than in run() so the program's create() — which may
     # load fonts or decode audio — does not land in the first frame's delta.
     state.time._start(win.ticks())
-    while win.is_open() and not state._quit:
+    while win.is_open() and not options._quit:
         # Dimensions are refreshed before events so pointer positions are
         # mapped with this frame's scale, not the previous one's.
-        _update_dimensions(win, state)
-        _process_events(win, state, input)
+        _update_dimensions(win, state, options)
+        _process_events(win, state, options, input)
         # Re-derive after events: a resize this frame reallocated the pixel
         # buffer, so the mapping taken above is one frame stale while the
         # framebuffer is already the new size. Drawing that frame against the
         # old mapping puts it in a corner of the new buffer — one crooked
         # frame, and a permanent ghost in a program that never clears.
-        _update_dimensions(win, state)
+        _update_dimensions(win, state, options)
         var frame_start = win.ticks()
         state.time._tick(frame_start)
         # The Surface is taken here, after events, because Window._resize
@@ -81,12 +85,12 @@ def _run_loop[
         # buffer.
         var pixel_w = win.width()
         var pixel_h = win.height()
-        state = step(program, input, state^)
+        state = step(program, options, input, state^)
         state.backend.present(
             Surface(win.pixels(), pixel_w, pixel_h), state.view.scale
         )
         win.present()
-        _cap_frame_rate(win, state, frame_start)
+        _cap_frame_rate(win, options, frame_start)
 
 
 def run[
@@ -109,7 +113,7 @@ def run[
     its work area and the design is scaled onto it. `mode=FULLSCREEN` with a
     size therefore means *author at that size, present fullscreen*.
 
-    The scaling is `AutoScale.FIT` unless `create` sets `frame.autoscale`, so
+    The scaling is `AutoScale.FIT` unless `create` sets `options.autoscale`, so
     a program keeps its layout on any display:
 
     | call                                          | FIT / EXTEND             | OFF            |
@@ -123,7 +127,7 @@ def run[
     the window's own pixels, which is how a program authors against the
     display rather than against a fixed space.
 
-    `frame.design_resolution(w, h, mode)` pins the same space from inside `create`, which
+    `options.design_resolution(w, h, mode)` pins the same space from inside `create`, which
     is where a program with an opinion of its own states it. The size here is
     the shorthand for the common case where the window and the design agree.
 
@@ -161,19 +165,16 @@ def run[
     # for, never what the display handed back. In fullscreen SDL ignores the
     # requested size, so seeding this from the window would make the design
     # space a property of the user's monitor rather than of the program.
-    state.view.set_design(width, height)
-    # Scaling the design to the window is the default because the alternative
+    #
+    # Scaling that design to the window is the default because the alternative
     # punishes the obvious way to write a program: laid-out coordinates that
     # break on a display the author never had. `create` can opt back out with
-    # `frame.autoscale = AutoScale.OFF`.
-    state.autoscale = AutoScale.FIT
-    _wait_for_dimensions(win, state)
-    var created = Optional[P]()
-    state = create_program[P](state^, created)
-    var program = created.take()
+    # `options.autoscale = AutoScale.OFF`.
+    var options = Options()
+    options.design_resolution(width, height, AutoScale.FIT)
+    var program = P.create(options)
     # create() may have changed the mode or pinned its own design size, so the
-    # mapping derived above is stale by the time it returns — re-derive it
-    # before the first frame.
-    _update_dimensions(win, state)
+    # mapping is derived from `options` only once it has returned.
+    _wait_for_dimensions(win, state, options)
     var input = Input()
-    _run_loop(program, win, state^, input)
+    _run_loop(program, win, state^, options, input)

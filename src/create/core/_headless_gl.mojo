@@ -11,8 +11,6 @@ Does **not** cover the drawable-size-versus-logical-size distinction that
 window manager to disagree with it. That stays a windowed-only concern.
 """
 
-from std.collections import Optional
-
 from window import GLWindow
 
 from create.render._gl import GL
@@ -20,9 +18,10 @@ from create.render._gl_target import _GLTarget
 from create.render.render_backend import RenderBackend
 from create.render.autoscale import AutoScale
 from create.render.frame import PersistentFrameState
+from create.render.options import Options
 from create.render.surface import MemorySurface
 
-from ._step import create_program, step
+from ._step import step
 from .headless import _FRAME_MILLIS
 from .input import Input
 from .program import Program
@@ -76,23 +75,20 @@ def _run_headless_gl[
 
     # After the window: its GL resources need a current context.
     var state = PersistentFrameState(RenderBackend.GPU)
-    state.view.set_design(width, height)
-    state.autoscale = AutoScale.FIT
-    state._set_viewport(pw, ph)
-    var created = Optional[P]()
-    state = create_program[P](state^, created)
-    var program = created.take()
-    # create() may have pinned its own design size or changed the mode.
-    state._set_viewport(pw, ph)
+    var options = Options()
+    options.design_resolution(width, height, AutoScale.FIT)
+    var program = P.create(options)
+    # After create(), which may have pinned its own design size or mode.
+    state._set_viewport(options, pw, ph)
     var input = Input()
     var now = 0
     state.time._start(now)
     for _ in range(frames):
-        if state._quit:
+        if options._quit:
             break
         now += _FRAME_MILLIS
         state.time._tick(now)
-        state = step(program, input, state^)
+        state = step(program, options, input, state^)
         state.backend.present_gpu(pw, ph, state.view.scale)
 
     var pixels = state.backend.gl.value().read_frame(pw, ph)

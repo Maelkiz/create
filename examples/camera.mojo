@@ -7,10 +7,12 @@ struct CameraDemo(Program):
     var elapsed: Float64
 
     @staticmethod
-    def create(mut frame: Frame) raises -> CameraDemo:
+    def create(mut options: Options) raises -> CameraDemo:
         return CameraDemo(Camera(), 0.0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.elapsed = frame.time.elapsed
         var speed = 300.0 * frame.time.delta
         if input.is_key_down("right"):

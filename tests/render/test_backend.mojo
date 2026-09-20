@@ -438,13 +438,15 @@ struct RotatedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> RotatedRect:
+    def create(mut options: Options) raises -> RotatedRect:
         return RotatedRect(0)
 
     def __init__(out self, unused: Int):
         self._unused = unused
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)

@@ -6,7 +6,7 @@ struct Draw:
     """The drawing scene. Left-drag paints, right-click returns to the menu.
 
     Deliberately never calls `frame.background()` per frame — `App.create`
-    turns `frame.autoclear` off, so skipping the clear here is what lets ink
+    turns `options.autoclear` off, so skipping the clear here is what lets ink
     accumulate frame to frame. `enter()` is the one exception: it's a plain method, not
     part of `Program`, that `App` calls the frame it switches in, so this
     scene gets a one-shot clear instead of showing the menu bleeding through

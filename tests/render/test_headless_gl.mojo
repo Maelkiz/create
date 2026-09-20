@@ -15,10 +15,12 @@ struct GPURect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> GPURect:
+    def create(mut options: Options) raises -> GPURect:
         return GPURect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color(10, 20, 30))
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -42,10 +44,12 @@ struct GPUMover(Program):
     var x: Float64
 
     @staticmethod
-    def create(mut frame: Frame) raises -> GPUMover:
+    def create(mut options: Options) raises -> GPUMover:
         return GPUMover(-20.0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.x += 20.0
 
         frame.background(Color(10, 20, 30))
@@ -96,10 +100,12 @@ struct GPURoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> GPURoundedRect:
+    def create(mut options: Options) raises -> GPURoundedRect:
         return GPURoundedRect(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color(10, 20, 30))
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -133,10 +139,12 @@ struct GPURoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> GPURoundedTriangle:
+    def create(mut options: Options) raises -> GPURoundedTriangle:
         return GPURoundedTriangle(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color(10, 20, 30))
         frame.outline(enabled=False)
         frame.fill(Color.RED)

@@ -6,12 +6,11 @@
 # the parity test — and shares its one `GLWindow`, built once per file
 # rather than once per case.
 
-from std.collections import Optional
 
 from window import GLWindow
 
 from create import *
-from create.core._step import create_program, step
+from create.core._step import step
 from create.core.input import Input
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
@@ -41,10 +40,12 @@ struct ClearMidFrame(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> ClearMidFrame:
+    def create(mut options: Options) raises -> ClearMidFrame:
         return ClearMidFrame(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.BLUE)
@@ -61,10 +62,12 @@ struct TwoSprites(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> TwoSprites:
+    def create(mut options: Options) raises -> TwoSprites:
         return TwoSprites(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         var a = Sprite.solid(2, 2, 255, 0, 255)
         var b = Sprite.solid(2, 2, 0, 255, 255)
@@ -77,10 +80,12 @@ struct TextAndSprite(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> TextAndSprite:
+    def create(mut options: Options) raises -> TextAndSprite:
         return TextAndSprite(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         var img = Sprite.solid(2, 2, 255, 0, 0)
         frame.sprite(img, -30, 0, 16, 16)
@@ -95,10 +100,12 @@ struct ManyShapes(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> ManyShapes:
+    def create(mut options: Options) raises -> ManyShapes:
         return ManyShapes(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         for gy in range(_GRID):
@@ -129,20 +136,17 @@ def _gpu_frame[
     var target = _GLTarget(GL(), width, height)
 
     var state = PersistentFrameState(RenderBackend.GPU)
-    state.view.set_design(width, height)
-    state.autoscale = AutoScale.FIT
-    state._set_viewport(width, height)
-    var created = Optional[P]()
-    state = create_program[P](state^, created)
-    var program = created.take()
-    state._set_viewport(width, height)
+    var options = Options()
+    options.design_resolution(width, height)
+    var program = P.create(options)
+    state._set_viewport(options, width, height)
     var input = Input()
     var now = 0
     state.time._start(now)
     for _ in range(frames):
         now += 16
         state.time._tick(now)
-        state = step(program, input, state^)
+        state = step(program, options, input, state^)
         state.backend.present_gpu(width, height, state.view.scale)
 
     var pixels = state.backend.gl.value().read_frame(width, height)

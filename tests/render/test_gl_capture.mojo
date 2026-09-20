@@ -47,10 +47,12 @@ struct GPUScreenshot(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> GPUScreenshot:
+    def create(mut options: Options) raises -> GPUScreenshot:
         return GPUScreenshot(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         _scene(frame)
         frame.save_screenshot(_SHOT)
 
@@ -85,10 +87,12 @@ struct CaptureImageCPU(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> CaptureImageCPU:
+    def create(mut options: Options) raises -> CaptureImageCPU:
         return CaptureImageCPU(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         _scene(frame)
         frame.save_image(_IMG_CPU)
 
@@ -98,10 +102,12 @@ struct CaptureImageGPU(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> CaptureImageGPU:
+    def create(mut options: Options) raises -> CaptureImageGPU:
         return CaptureImageGPU(0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         _scene(frame)
         frame.save_image(_IMG_GPU)
 

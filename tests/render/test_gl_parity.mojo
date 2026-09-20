@@ -40,7 +40,6 @@ when `DISPLAY`, `WAYLAND_DISPLAY` and `XDG_RUNTIME_DIR` are all unset — this
 test only skips if `GLWindow` construction itself raises.
 """
 
-from std.collections import Optional
 from std.math import abs, max, min
 from std.testing import TestSuite, assert_true
 
@@ -49,7 +48,7 @@ from create.core._step import step
 from create.render.render_backend import RenderBackend
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
-from create.render.frame import Frame, PersistentFrameState
+from create.render.frame import PersistentFrameState
 from window import GLWindow
 
 comptime _DESIGN_W = 200
@@ -136,16 +135,17 @@ struct _Parity(Program):
     var shape: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> _Parity:
-        return _Parity.create(frame, _SHAPE_RECT)
+    def create(mut options: Options) raises -> _Parity:
+        return _Parity.create(options, _SHAPE_RECT)
 
     @staticmethod
-    def create(mut frame: Frame, shape: Int) raises -> _Parity:
-        frame.autoscale = AutoScale.FIT
-        frame.design_resolution(_DESIGN_W, _DESIGN_H)
+    def create(mut options: Options, shape: Int) raises -> _Parity:
+        options.design_resolution(_DESIGN_W, _DESIGN_H)
         return _Parity(Sprite.load("tests/fixtures/test_2x2.png"), shape)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         frame.background(_BACKGROUND)
 
         if self.shape == _SHAPE_RECT:
@@ -392,28 +392,18 @@ def _assert_interior_colour_matches(
 
 
 def _create(
-    var state: PersistentFrameState,
-    shape: Int,
-    mut program: Optional[_Parity],
-) raises -> PersistentFrameState:
-    """`_Parity.create` against a throwaway frame, as `create_program` does.
+    mut options: Options, mut state: PersistentFrameState, shape: Int
+) raises -> _Parity:
+    """`_Parity.create` with the extra `shape` argument, then the mapping.
 
-    Hand-rolled rather than `create_program[_Parity]` because the trait's
-    `create` takes only the frame, and this one needs the extra `shape`
-    argument to pick which command it records. The program comes back through
-    an out-parameter for the same reason `create_program`'s does: a move-only
-    value cannot be unpacked out of a returned tuple.
+    Hand-rolled rather than the trait's own `create` because this one needs
+    `shape` to pick which command it records. The viewport is derived after
+    it returns, exactly as the loops do it — `create` is where the design
+    resolution is pinned.
     """
-    state.view.set_design(_DESIGN_W, _DESIGN_H)
-    state.autoscale = AutoScale.FIT
-    state._set_viewport(_PIXEL_W, _PIXEL_H)
-    var frame = Frame(state^)
-    program = Optional(_Parity.create(frame, shape))
-    var out_state = frame^._release()
-    out_state.backend._discard_recording()
-    # create() may have pinned its own design size or changed the mode.
-    out_state._set_viewport(_PIXEL_W, _PIXEL_H)
-    return out_state^
+    var program = _Parity.create(options, shape)
+    state._set_viewport(options, _PIXEL_W, _PIXEL_H)
+    return program^
 
 
 def _cpu_frame(shape: Int) raises -> MemorySurface:
@@ -425,13 +415,12 @@ def _cpu_frame(shape: Int) raises -> MemorySurface:
     """
     var mem = MemorySurface(_PIXEL_W, _PIXEL_H)
     var state = PersistentFrameState()
-    var created = Optional[_Parity]()
-    state = _create(state^, shape, created)
-    var program = created.take()
+    var options = Options()
+    var program = _create(options, state, shape)
     var input = Input()
     state.time._start(0)
     state.time._tick(16)
-    state = step(program, input, state^)
+    state = step(program, options, input, state^)
     state.backend.present(mem.surface(), state.view.scale)
     return mem^
 
@@ -450,13 +439,12 @@ def _gpu_frame(mut win: GLWindow, shape: Int) raises -> List[UInt8]:
     var target = _GLTarget(GL(), _PIXEL_W, _PIXEL_H)
 
     var state = PersistentFrameState(RenderBackend.GPU)
-    var created = Optional[_Parity]()
-    state = _create(state^, shape, created)
-    var program = created.take()
+    var options = Options()
+    var program = _create(options, state, shape)
     var input = Input()
     state.time._start(0)
     state.time._tick(16)
-    state = step(program, input, state^)
+    state = step(program, options, input, state^)
     state.backend.present_gpu(_PIXEL_W, _PIXEL_H, state.view.scale)
 
     # The same readback `save_screenshot` uses, so the parity test and the

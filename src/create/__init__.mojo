@@ -2,8 +2,8 @@
 interactive graphics.
 
 `from create import *` is the import a program needs. It brings in the whole
-public surface: the `Program` trait and the run loops, `Frame` and the drawing
-types, the vector and matrix maths, sprites, audio, and a re-export of
+public surface: the `Program` trait and the run loops, `Options`, `Frame` and the
+drawing types, the vector and matrix maths, sprites, audio, and a re-export of
 `std.math` so `sin`, `cos` and `pi` are there without a second import.
 
 ```mojo
@@ -15,17 +15,19 @@ struct Sketch(Program):
     var angle: Float64
 
     @staticmethod
-    def create(mut frame: Frame) raises -> Self:
+    def create(mut options: Options) raises -> Self:
         return Self(0.0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.angle += frame.time.delta
         frame.background(Color.BLACK)
         frame.circle((100 * cos(self.angle), 100 * sin(self.angle)), 20)
 
 
 def main() raises:
-    run[Sketch]("Sketch", 1280, 720)
+    run[Sketch]("Sketch", width=1280, height=720)
 ```
 
 The subpackages stay importable on their own — `from create.render import *`

@@ -26,16 +26,18 @@ struct App(Program):
     var fps: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> App:
+    def create(mut options: Options) raises -> App:
         # FIT with a 4:3 design in a 16:9 window, so the letterbox bars are
         # on screen from the first frame.
-        frame.autoscale = AutoScale.FIT
-        frame.design_resolution(800, 600)
+        options.autoscale = AutoScale.FIT
+        options.design_resolution(800, 600)
         # Twice, below, from one interned image and so one GL upload.
         var logo = Sprite.load(script_dir() + "/sprite/assets/sprite.png")
         return App(0.0, logo^, 0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         self.angle += frame.time.delta
         self.fps = Int(frame.framerate())
 

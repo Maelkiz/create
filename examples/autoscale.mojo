@@ -15,7 +15,7 @@ struct App(Program):
     var dir: Float64
 
     @staticmethod
-    def create(mut frame: Frame) raises -> App:
+    def create(mut options: Options) raises -> App:
         # Everything below is authored against the 1280x720 passed to run().
         # Space cycles the three modes:
         #   FIT     resize and the whole scene scales, letterboxed
@@ -25,17 +25,19 @@ struct App(Program):
         #           the scene stays put while the space around it grows
         # The origin is the middle of the design area and y grows upward, so
         # the labels below centre sit at negative y.
-        frame.autoscale = AutoScale.FIT
+        options.autoscale = AutoScale.FIT
         return App(100.0, 1.0)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         if input.just_pressed("space"):
-            if frame.autoscale == AutoScale.FIT:
-                frame.autoscale = AutoScale.EXTEND
-            elif frame.autoscale == AutoScale.EXTEND:
-                frame.autoscale = AutoScale.OFF
+            if options.autoscale == AutoScale.FIT:
+                options.autoscale = AutoScale.EXTEND
+            elif options.autoscale == AutoScale.EXTEND:
+                options.autoscale = AutoScale.OFF
             else:
-                frame.autoscale = AutoScale.FIT
+                options.autoscale = AutoScale.FIT
         self.x += self.dir * 200.0 * frame.time.delta
         # Set the sign rather than flip it: under EXTEND/OFF a shrinking
         # window can move frame.right()/left() past the ball between frames,
@@ -57,7 +59,7 @@ struct App(Program):
         frame.text_color(Color.BLACK)
         frame.font_size(28)
         frame.text_align(Align.TOP)
-        frame.text("Autoscale Mode: " + _mode_name(frame.autoscale), 0, -140)
+        frame.text("Autoscale Mode: " + _mode_name(options.autoscale), 0, -140)
         frame.font_size(20)
         frame.text("(space to cycle)", 0, -180)
         frame.font_size(28)

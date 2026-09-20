@@ -2,12 +2,12 @@ struct AutoScale:
     """How the program's design resolution maps onto the window.
 
     The design resolution is the coordinate space a program is authored in --
-    the size passed to `run`, or pinned by `frame.design`. It is a property of
+    the size passed to `run`, or pinned by `options.design_resolution`. It is a property of
     the program, not of the display, and a resize or a fullscreen toggle never
     changes it. What changes is how it lands on the window:
 
     - `FIT` scales uniformly by `min(w, h)`, centres the design, and paints the
-      leftover with `frame.letterbox` after the frame is drawn -- which also
+      leftover with `options.letterbox` after the frame is drawn -- which also
       clips anything drawn past the design bounds. `frame.width`/`height` never
       move, so a layout written against them survives any window size.
     - `EXTEND` uses the same scale factor but anchors at the origin and paints
@@ -21,7 +21,7 @@ struct AutoScale:
 
     `run` starts programs in `FIT`, because `OFF` punishes the obvious way to
     write a program: coordinates laid out against the size the author had,
-    silently rearranged on any other display. `create` can set `frame.autoscale`
+    silently rearranged on any other display. `create` can set `options.autoscale`
     to either other mode.
 
     `FIT` pins `frame.width`/`height` to the design size, so a rectangle at a

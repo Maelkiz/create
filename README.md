@@ -16,12 +16,13 @@ from create import *
 @fieldwise_init
 struct MyApp(Program):
     @staticmethod
-    def create(mut frame: Frame) raises -> MyApp:
-        # Build the program's initial state, and load anything it owns,
-        # e.g., sprites, fonts, sounds. This frame is never presented.
-        return MyApp()  # Set initial application state here
+    def create(mut options: Options) raises -> MyApp:
+        # Set initial application state here
+        return MyApp()  
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
+    def update(
+        mut self, mut options: Options, mut frame: Frame, input: Input
+    ) raises:
         # Called once per frame: handle input, advance state, and render to the screen
         frame.text_align(Align.CENTER)
         frame.text("Hello World!", 0, 0)
@@ -36,8 +37,8 @@ are keyword arguments because two bare integers do not.
 
 `run`'s `width`/`height` (default 1280x720) are the resolution the program is *authored* in, not a
 window size: a windowed launch opens at that size because the two coincide, while a fullscreen one
-covers the display and scales the design onto it. `frame.design_resolution(w, h)` pins the same space from
-inside `create`, and `frame.autoscale = AutoScale.OFF` opts out of the design space entirely, making
+covers the display and scales the design onto it. `options.design_resolution(w, h)` pins the same space from
+inside `create`, and `options.autoscale = AutoScale.OFF` opts out of the design space entirely, making
 coordinates the window's own pixels.
 
 Rendering runs on the CPU by default. `backend=RenderBackend.GPU` runs the same program through an
