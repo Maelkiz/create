@@ -15,7 +15,7 @@ struct App(Program):
     var dir: Float64
 
     @staticmethod
-    def create(mut ctx: Context) raises -> App:
+    def create(mut frame: Frame) raises -> App:
         # Everything below is authored against the 1280x720 passed to run().
         # Space cycles the three modes:
         #   FIT     resize and the whole scene scales, letterboxed
@@ -25,25 +25,25 @@ struct App(Program):
         #           the scene stays put while the space around it grows
         # The origin is the middle of the design area and y grows upward, so
         # the labels below centre sit at negative y.
-        ctx.autoscale = AutoScale.FIT
+        frame.autoscale = AutoScale.FIT
         return App(100.0, 1.0)
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         if input.just_pressed("space"):
-            if ctx.autoscale == AutoScale.FIT:
-                ctx.autoscale = AutoScale.EXTEND
-            elif ctx.autoscale == AutoScale.EXTEND:
-                ctx.autoscale = AutoScale.OFF
+            if frame.autoscale == AutoScale.FIT:
+                frame.autoscale = AutoScale.EXTEND
+            elif frame.autoscale == AutoScale.EXTEND:
+                frame.autoscale = AutoScale.OFF
             else:
-                ctx.autoscale = AutoScale.FIT
-        self.x += self.dir * 200.0 * ctx.time.delta
+                frame.autoscale = AutoScale.FIT
+        self.x += self.dir * 200.0 * frame.time.delta
         # Set the sign rather than flip it: under EXTEND/OFF a shrinking
-        # window can move ctx.right()/left() past the ball between frames,
+        # window can move frame.right()/left() past the ball between frames,
         # and a flip on an already-true condition alternates forever instead
         # of turning the ball back inward.
-        if self.x > ctx.right() - 40.0:
+        if self.x > frame.right() - 40.0:
             self.dir = -1.0
-        elif self.x < ctx.left() + 40.0:
+        elif self.x < frame.left() + 40.0:
             self.dir = 1.0
 
     def render(self, mut frame: Frame) raises:

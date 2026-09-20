@@ -11,7 +11,7 @@ struct Menu:
 
     var start_pressed: Bool
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         self.start_pressed = input.mouse_just_pressed()
 
     def render(self, mut frame: Frame) raises:

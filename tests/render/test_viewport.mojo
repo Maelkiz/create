@@ -142,5 +142,95 @@ def test_set_design_overrides_an_earlier_one() raises -> None:
     assert_equal(v.height, 500)
 
 
+def test_fit_shrinks_below_the_design_size() raises -> None:
+    var v = _design(800, 600, AutoScale.FIT)
+    v.set_size(400, 300)
+    assert_almost_equal(v.scale, 0.5)
+    assert_equal(v.width, 800)
+    assert_equal(v.height, 600)
+
+
+def test_extend_heightens_the_world_instead_of_letterboxing() raises -> None:
+    var v = _design(800, 600, AutoScale.EXTEND)
+    v.set_size(800, 1200)
+    assert_almost_equal(v.scale, 1.0)
+    assert_equal(v.width, 800)
+    assert_equal(v.height, 1200)
+    assert_equal(v.offset_x, 0.0)
+    assert_equal(v.offset_y, 0.0)
+
+
+def test_extend_matches_fit_when_the_aspect_matches() raises -> None:
+    var v = _design(800, 600, AutoScale.EXTEND)
+    v.set_size(1600, 1200)
+    assert_almost_equal(v.scale, 2.0)
+    assert_equal(v.width, 800)
+    assert_equal(v.height, 600)
+
+
+def test_extend_reports_the_slack_on_the_unconstrained_axis() raises -> None:
+    # Height constrains: 700/600 < 1000/800. The design height survives the
+    # round-trip through the scale, and the width picks up the slack.
+    var v = _design(800, 600, AutoScale.EXTEND)
+    v.set_size(1000, 700)
+    assert_almost_equal(v.scale, 700.0 / 600.0)
+    assert_equal(v.height, 600)
+    assert_equal(v.width, 857)
+
+
+def test_to_screen_centres_the_framebuffer_centre() raises -> None:
+    var v = Viewport()
+    v.set_size(1024, 768)
+    var c = v.to_screen(512.0, 384.0)
+    assert_equal(c[0], 0.0)
+    assert_equal(c[1], 0.0)
+    var p = v.to_screen(120.0, 40.0)
+    assert_equal(p[0], -392.0)
+    assert_equal(p[1], 344.0)
+
+
+def test_to_screen_maps_the_top_left_pixel_to_the_top_left_corner() raises -> (
+    None
+):
+    var v = Viewport()
+    v.set_size(1024, 768)
+    var p = v.to_screen(0.0, 0.0)
+    assert_almost_equal(p[0], v.left())
+    assert_almost_equal(p[1], v.top())
+
+
+def test_to_screen_maps_the_window_centre_to_the_origin_under_fit() raises -> (
+    None
+):
+    var v = _design(800, 600, AutoScale.FIT)
+    v.set_size(1600, 900)
+    var p = v.to_screen(800.0, 450.0)
+    assert_almost_equal(p[0], 0.0)
+    assert_almost_equal(p[1], 0.0)
+
+
+def test_to_screen_maps_a_letterboxed_corner_to_the_design_corner() raises -> (
+    None
+):
+    # 800x600 into 1600x600: scale 1, 400px bars either side. The inner edge of
+    # the left bar is the design area's left edge.
+    var v = _design(800, 600, AutoScale.FIT)
+    v.set_size(1600, 600)
+    var p = v.to_screen(400.0, 0.0)
+    assert_almost_equal(p[0], v.left())
+    assert_almost_equal(p[1], v.top())
+
+
+def test_to_screen_corners_under_extend() raises -> None:
+    var v = _design(800, 600, AutoScale.EXTEND)
+    v.set_size(1600, 1200)
+    var origin = v.to_screen(0.0, 0.0)
+    assert_almost_equal(origin[0], v.left())
+    assert_almost_equal(origin[1], v.top())
+    var p = v.to_screen(1200.0, 800.0)
+    assert_almost_equal(p[0], 200.0)
+    assert_almost_equal(p[1], -100.0)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

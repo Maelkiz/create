@@ -26,7 +26,7 @@ struct Game(Program):
     var spinning: Bool
 
     @staticmethod
-    def create(mut ctx: Context) raises -> Game:
+    def create(mut frame: Frame) raises -> Game:
         var sheet = Sprite.load(script_dir() + "/../assets/character.png")
 
         # Row-major: the first four cells are the idle cycle, the next four
@@ -52,8 +52,8 @@ struct Game(Program):
         animator.loop()
         return Game(idle^, run^, spin^, animator^, 0.0, False)
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
-        var speed = 240.0 * ctx.time.delta
+    def update(mut self, mut frame: Frame, input: Input) raises:
+        var speed = 240.0 * frame.time.delta
 
         if input.just_pressed("space") and not self.spinning:
             # A one-shot: it holds its last frame and reports is_finished().
@@ -86,8 +86,8 @@ struct Game(Program):
                 self.animator.resume()
 
         var margin = Float64(_SIZE) / 2.0
-        self.x = clamp(self.x, ctx.left() + margin, ctx.right() - margin)
-        self.animator.update(ctx.time.delta)
+        self.x = clamp(self.x, frame.left() + margin, frame.right() - margin)
+        self.animator.update(frame.time.delta)
 
     def render(self, mut frame: Frame) raises:
         frame.background(Color(24, 26, 34))

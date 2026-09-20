@@ -1,43 +1,49 @@
+from std.collections import Optional
 from std.time import sleep
 
 from window.window import Window
 from create.render.render_backend import RenderBackend
 from create.render.frame import PersistentFrameState
 from ._events import apply_events
-from ._step import step
+from ._step import create_program, step
 from create.render.surface import Surface
 from .input import Input
-from .context import Context
 from create.render.autoscale import AutoScale
 from .program import Program
 from .window_mode import WindowMode
 from ._run_gl import run_gl
 
 
-def _update_dimensions(mut win: Window, mut ctx: Context) raises:
-    ctx._set_viewport(win.width(), win.height())
+def _update_dimensions(mut win: Window, mut state: PersistentFrameState) raises:
+    state._set_viewport(win.width(), win.height())
 
 
-def _wait_for_dimensions(mut win: Window, mut ctx: Context) raises:
+def _wait_for_dimensions(
+    mut win: Window, mut state: PersistentFrameState
+) raises:
     # For fullscreen, SDL fires a bogus (1, 1) Resized before reporting real
     # dimensions — pump events until the window reports a usable size.
-    _update_dimensions(win, ctx)
-    while ctx.width <= 1 or ctx.height <= 1:
+    _update_dimensions(win, state)
+    while state.view.width <= 1 or state.view.height <= 1:
         _ = win.events()
-        _update_dimensions(win, ctx)
+        _update_dimensions(win, state)
 
 
-def _process_events(mut win: Window, mut ctx: Context, mut input: Input) raises:
-    if apply_events(win.events(), ctx, input):
+def _process_events(
+    mut win: Window, mut state: PersistentFrameState, mut input: Input
+) raises:
+    if apply_events(win.events(), state, input):
         win.close()
 
 
-def _cap_frame_rate(mut win: Window, ctx: Context, frame_start: Int) raises:
+def _cap_frame_rate(
+    mut win: Window, state: PersistentFrameState, frame_start: Int
+) raises:
     """Sleep off whatever is left of the target frame duration, if any."""
-    if ctx._fps_cap <= 0:
+    if state._fps_cap <= 0:
         return
     var worked_ms = win.ticks() - frame_start
-    var target_ms = 1000.0 / Float64(ctx._fps_cap)
+    var target_ms = 1000.0 / Float64(state._fps_cap)
     var remaining_ms = target_ms - Float64(worked_ms)
     if remaining_ms > 0.0:
         sleep(remaining_ms / 1000.0)
@@ -45,21 +51,22 @@ def _cap_frame_rate(mut win: Window, ctx: Context, frame_start: Int) raises:
 
 def _run_loop[
     P: Program
-](mut program: P, mut win: Window, mut ctx: Context, mut input: Input) raises:
-    # Style and loaded fonts live here rather than in the Frame, which is
-    # rebuilt every frame; the transform stack deliberately does not, so each
-    # frame starts unrotated and untranslated.
-    var state = PersistentFrameState()
+](
+    mut program: P,
+    mut win: Window,
+    var state: PersistentFrameState,
+    mut input: Input,
+) raises:
     # Seeded here rather than in run() so the program's create() — which may
     # load fonts or decode audio — does not land in the first frame's delta.
-    ctx.time._start(win.ticks())
-    while win.is_open() and not ctx._quit:
+    state.time._start(win.ticks())
+    while win.is_open() and not state._quit:
         # Dimensions are refreshed before events so pointer positions are
         # mapped with this frame's scale, not the previous one's.
-        _update_dimensions(win, ctx)
-        _process_events(win, ctx, input)
+        _update_dimensions(win, state)
+        _process_events(win, state, input)
         var frame_start = win.ticks()
-        ctx.time._tick(frame_start)
+        state.time._tick(frame_start)
         # The Surface is taken here, after events, because Window._resize
         # reallocates the pixel buffer: one taken before them could point at
         # freed memory. Its extent comes from the window rather than the
@@ -68,12 +75,12 @@ def _run_loop[
         # buffer.
         var pixel_w = win.width()
         var pixel_h = win.height()
-        state = step(program, ctx, input, state^)
+        state = step(program, input, state^)
         state.backend.present(
-            Surface(win.pixels(), pixel_w, pixel_h), ctx.view.scale
+            Surface(win.pixels(), pixel_w, pixel_h), state.view.scale
         )
         win.present()
-        _cap_frame_rate(win, ctx, frame_start)
+        _cap_frame_rate(win, state, frame_start)
 
 
 def run[
@@ -94,7 +101,7 @@ def run[
     shapes the design space there.
 
     The design is scaled to the window (`AutoScale.FIT`) unless `create` sets
-    `ctx.autoscale` otherwise, so a program keeps its layout on any display.
+    `frame.autoscale` otherwise, so a program keeps its layout on any display.
     The two jobs of the size stay independent once the window is open:
 
     | call                                   | FIT / EXTEND             | OFF            |
@@ -134,22 +141,27 @@ def run[
         borderless=borderless,
         maximized=maximized,
     )
-    var ctx = Context()
+    # Style and loaded fonts live here rather than in the Frame, which is
+    # rebuilt every frame; the transform stack deliberately does not, so each
+    # frame starts unrotated and untranslated.
+    var state = PersistentFrameState()
     # The size the program is authored against is always what the caller asked
     # for, never what the display handed back. In fullscreen SDL ignores the
     # requested size, so seeding this from the window would make the design
     # space a property of the user's monitor rather than of the program.
-    ctx.view.set_design(width, height)
+    state.view.set_design(width, height)
     # Scaling the design to the window is the default because the alternative
     # punishes the obvious way to write a program: laid-out coordinates that
     # break on a display the author never had. `create` can opt back out with
-    # `ctx.autoscale = AutoScale.OFF`.
-    ctx.autoscale = AutoScale.FIT
-    _wait_for_dimensions(win, ctx)
-    var program = P.create(ctx)
+    # `frame.autoscale = AutoScale.OFF`.
+    state.autoscale = AutoScale.FIT
+    _wait_for_dimensions(win, state)
+    var created = Optional[P]()
+    state = create_program[P](state^, created)
+    var program = created.take()
     # create() may have changed the mode or pinned its own design size, so the
     # mapping derived above is stale by the time it returns — re-derive it
     # before the first frame.
-    _update_dimensions(win, ctx)
+    _update_dimensions(win, state)
     var input = Input()
-    _run_loop(program, win, ctx, input)
+    _run_loop(program, win, state^, input)

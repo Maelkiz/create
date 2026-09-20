@@ -1,5 +1,4 @@
 from create.render.frame import Frame
-from .context import Context
 from .input import Input
 
 
@@ -16,19 +15,22 @@ trait Program(Deinitable, Movable):
     """
 
     @staticmethod
-    def create(mut ctx: Context) raises -> Self:
+    def create(mut frame: Frame) raises -> Self:
         """Build the program, before the first frame.
 
         Where resources the program drives on its own schedule are
         constructed — sprites, fonts, sounds, an `Audio` device — and where
-        `ctx.design` or `ctx.autoscale` is set if the defaults don't suit.
+        `frame.design` or `frame.autoscale` is set if the defaults don't suit.
+
+        This frame is **never presented**: it exists so `create` can read the
+        geometry and turn the dials, and whatever it draws is discarded.
         """
         ...
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         """Advance the program by one frame.
 
-        `ctx` is mutable because the program writes back to it — `quit()`,
+        `frame` is mutable because the program writes back to it — `quit()`,
         `autoscale`, `quit_on_escape`. `input` is not: the run loop is its only
         writer, so borrowing it read-only makes that one-way flow a compile
         error to violate rather than a convention to remember.

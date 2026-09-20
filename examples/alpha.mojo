@@ -6,11 +6,11 @@ struct App(Program):
     var t: Float64
 
     @staticmethod
-    def create(mut ctx: Context) raises -> App:
+    def create(mut frame: Frame) raises -> App:
         return App(0.0)
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
-        self.t = ctx.time.elapsed
+    def update(mut self, mut frame: Frame, input: Input) raises:
+        self.t = frame.time.elapsed
 
     def render(self, mut frame: Frame) raises:
         # A translucent background fades the previous frame instead of

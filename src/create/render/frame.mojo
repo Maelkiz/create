@@ -5,6 +5,7 @@ from .align import Align
 from .autoscale import AutoScale
 from .font import Font
 from .viewport import Viewport
+from .time import Time
 from .camera import Camera
 from create.math.geometry import Rectangle, Circle, Line, Triangle
 from create.math.point2d import Point2D
@@ -35,23 +36,66 @@ from ._style import Style
 struct PersistentFrameState(Movable):
     """The part of a `Frame` that outlives the frame it was drawn in.
 
-    A `Frame` is built fresh over each frame's framebuffer, so anything it
-    must remember between frames — the backend, and through it the loaded
-    fonts, the glyph cache and the interned sprite images — is moved out at the
-    end of one frame and into the next. The transform stack and the style are
-    deliberately absent: both start fresh every frame by construction, so a
-    missing pop or a forgotten `outline(enabled=False)` cannot leak into the
-    next frame.
+    A `Frame` is built fresh each frame, so anything it must remember between
+    frames — the backend, and through it the loaded fonts, the glyph cache and
+    the interned sprite images — is moved out at the end of one frame and into
+    the next. The transform stack and the style are deliberately absent: both
+    start fresh every frame by construction, so a missing pop or a forgotten
+    `outline(enabled=False)` cannot leak into the next frame.
+
+    It also owns what the run loop needs *before* a `Frame` exists. Event
+    processing maps pointer positions through `view`, and reads
+    `quit_on_escape`, both of which happen before the frame is built; the
+    dimension wait reads `view.width`/`height` before the first frame exists at
+    all. Those cannot live only on `Frame` for that reason, so the state is the
+    authority and each frame takes a view of it.
     """
 
     var backend: Backend
     var letterbox: Color
+    var view: Viewport
+    """The authoritative design-to-pixel mapping, re-derived by the loop every
+    frame. A `Frame` copies it; `Frame._release` deliberately does not write it
+    back, which would undo the loop's own resize handling."""
+    var time: Time
+    """The frame clock. The loop is its only writer — a `Frame` carries a
+    read-only snapshot taken at construction."""
+    var autoscale: Int
+    var quit_on_escape: Bool
+    var _fps_cap: Int
+    var _quit: Bool
 
     def __init__(out self, kind: Int = RenderBackend.CPU) raises:
         """`kind` picks the backend that will present the frames — a GPU one
         builds its GL resources now, so a context must already be current."""
         self.backend = Backend(kind)
         self.letterbox = Color(0x22)
+        self.view = Viewport()
+        self.time = Time()
+        self.autoscale = AutoScale.OFF
+        self.quit_on_escape = True
+        self._fps_cap = 0
+        self._quit = False
+
+    def _set_viewport(mut self, pixel_w: Int, pixel_h: Int):
+        """Remap onto a framebuffer of this size.
+
+        `autoscale` may have been written by the frame that just ended, so it
+        is pushed into the viewport before remapping. The reported size and
+        scale are then read straight off `view` — there is no second copy to
+        keep in sync, which is what the old `Context` spent its `_set_viewport`
+        doing.
+        """
+        self.view.autoscale = self.autoscale
+        self.view.set_size(pixel_w, pixel_h)
+
+    def to_screen(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
+        """Map a window pixel position into screen space.
+
+        Here as well as on `Frame` because the event arms run before the
+        frame is built.
+        """
+        return self.view.to_screen(x, y)
 
 
 struct TransformGuard[origin: Origin[mut=True]](Movable):
@@ -126,7 +170,19 @@ struct StyleGuard[origin: Origin[mut=True]](Movable):
 
 
 struct Frame:
-    """A drawing surface for one frame.
+    """One frame: the geometry, the clock, the loop dials and the drawing API.
+
+    This is the single object a program is handed per frame. `width`/`height`
+    are the screen extent and `left`/`right`/`bottom`/`top` its edges — use
+    those rather than width arithmetic, since the origin is centred and two of
+    them are negative. `time` is the frame clock, `scale` the autoscale factor,
+    `view` the mapping they all come from. Screen space is camera-independent:
+    these and `Input` don't know a `Camera` exists, since a program sets one on
+    the frame's transform, not on the geometry it reports.
+
+    Written from both sides, which is why it is a `mut` parameter: the loop
+    fills in the geometry and the clock, and the program sets `autoscale` or
+    `quit_on_escape`, calls `design`, `frame_cap` and `quit`, and draws.
 
     Built fresh each frame and dropped before the frame is presented. State
     that must survive the frame goes in and out through
@@ -163,6 +219,16 @@ struct Frame:
     var scale: Float64
     var letterbox: Color
     var view: Viewport
+    var time: Time
+    """This frame's clock, a snapshot taken at construction.
+
+    A copy rather than a reference because the run loop owns the real one and
+    is its only writer — the program reads `delta` and `frame_count` here and
+    cannot desynchronise the loop by touching them.
+    """
+    var quit_on_escape: Bool
+    var _quit: Bool
+    var _fps_cap: Int
     var _state: PersistentFrameState
     # Style is per-frame, not carried in `_state`: `Frame` is only reachable
     # from `render`, so nothing can seed a style outside a frame and carrying
@@ -185,17 +251,26 @@ struct Frame:
     var _transform_inv: Matrix[3, 3]
     var _transform_stack: List[Matrix[3, 3]]
 
-    def __init__(out self, view: Viewport, var state: PersistentFrameState):
-        """Adopt this frame's mapping and carried-over state."""
-        self.view = view.copy()
-        self.width = view.width
-        self.height = view.height
-        self.autoscale = view.autoscale
-        self.scale = view.scale
+    def __init__(out self, var state: PersistentFrameState):
+        """Adopt the carried-over state and this frame's mapping from it.
+
+        Every dial the program can turn is copied out of the state here and
+        written back by `_release`, so a program sets them on the frame it was
+        handed and the loop picks them up at the frame boundary.
+        """
+        self.view = state.view.copy()
+        self.width = state.view.width
+        self.height = state.view.height
+        self.autoscale = state.view.autoscale
+        self.scale = state.view.scale
         self.letterbox = state.letterbox
+        self.time = state.time.copy()
+        self.quit_on_escape = state.quit_on_escape
+        self._quit = state._quit
+        self._fps_cap = state._fps_cap
         self._state = state^
         self._style = Style()
-        self._base = view.base_matrix()
+        self._base = self.view.base_matrix()
         self._base_inv = inverse(self._base)
         self._camera = Camera()
         # The stack starts empty, so the base mapping is the current transform;
@@ -211,10 +286,72 @@ struct Frame:
 
         Consumes the frame, so the borrow on the framebuffer ends here — the
         run loop cannot present while a `Frame` is still alive.
+
+        Writes back exactly the dials the program may have turned. `view` and
+        `time` are deliberately *not* among them: `self.view` is this frame's
+        mapping, while `_state.view` is the authority the loop re-derives each
+        frame, so writing it back would silently undo the loop's own resize
+        handling — and the loop is the only writer of the clock.
         """
         var state = self._state^
         state.letterbox = self.letterbox
+        state.autoscale = self.autoscale
+        state.quit_on_escape = self.quit_on_escape
+        state._fps_cap = self._fps_cap
+        state._quit = self._quit
         return state^
+
+    def design(mut self, width: Int, height: Int, mode: Int = AutoScale.FIT):
+        """Author this program in a fixed world size, scaled to any window.
+
+        Overrides the size passed to `run`, so a program can pin its own
+        coordinate space no matter how it is launched — including fullscreen,
+        where the window size is the display's rather than the caller's.
+
+        **Deferred**: it writes the persistent viewport and takes effect on the
+        next frame, leaving this frame's already-recorded commands and reported
+        geometry alone — one frame cannot record under two different mappings.
+        From `create` there is no current frame, so it still applies to frame
+        one. This is also what `autoscale` has always done, so the two dials
+        now agree.
+        """
+        self._state.view.set_design(width, height)
+        self.autoscale = mode
+
+    def to_screen(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
+        """Map a window pixel position into screen space."""
+        return self.view.to_screen(x, y)
+
+    def framerate(self) -> Float64:
+        """Current frames per second, derived from the last frame's delta.
+
+        `0.0` on the first frame, where `delta` is still `0.0` and there is
+        no prior frame to measure against.
+        """
+        if self.time.delta == 0.0:
+            return 0.0
+        return 1.0 / self.time.delta
+
+    def frame_cap(mut self, fps: Int) raises:
+        """Limit the loop to at most `fps` frames per second.
+
+        A cap tighter than the display's own pacing (vsync, or the CPU
+        backend's always-on vsync) slows the loop by sleeping at the end of
+        each frame; a cap looser than it does nothing, since presentation is
+        already waiting on the display. Not enforced by `run_headless`,
+        which has no wall clock to cap against.
+        """
+        if fps <= 0:
+            raise Error("frame_cap fps must be positive, got " + String(fps))
+        self._fps_cap = fps
+
+    def quit(mut self):
+        """Ask the run loop to stop after the current frame.
+
+        Unwinds normally, so the window tears down cleanly and program
+        destructors run — unlike `std.sys.exit`, which aborts the process.
+        """
+        self._quit = True
 
     def left(self) -> Float64:
         """Screen x of the left edge — negative, since the origin is centred."""

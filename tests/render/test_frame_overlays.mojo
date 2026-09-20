@@ -15,7 +15,7 @@ struct OverflowingRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> OverflowingRect:
+    def create(mut frame: Frame) raises -> OverflowingRect:
         return OverflowingRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -46,7 +46,7 @@ struct ScaledSprite(Program):
         self.sprite = sprite^
 
     @staticmethod
-    def create(mut ctx: Context) raises -> ScaledSprite:
+    def create(mut frame: Frame) raises -> ScaledSprite:
         return ScaledSprite(Sprite.load("tests/fixtures/test_2x2.bmp"))
 
     def render(self, mut frame: Frame) raises:

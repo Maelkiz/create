@@ -47,7 +47,7 @@ struct GPUScreenshot(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> GPUScreenshot:
+    def create(mut frame: Frame) raises -> GPUScreenshot:
         return GPUScreenshot(0)
 
     def render(self, mut frame: Frame) raises:
@@ -85,7 +85,7 @@ struct CaptureImageCPU(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> CaptureImageCPU:
+    def create(mut frame: Frame) raises -> CaptureImageCPU:
         return CaptureImageCPU(0)
 
     def render(self, mut frame: Frame) raises:
@@ -98,7 +98,7 @@ struct CaptureImageGPU(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> CaptureImageGPU:
+    def create(mut frame: Frame) raises -> CaptureImageGPU:
         return CaptureImageGPU(0)
 
     def render(self, mut frame: Frame) raises:

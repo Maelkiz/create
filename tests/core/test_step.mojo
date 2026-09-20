@@ -17,7 +17,7 @@ struct Painter(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> Painter:
+    def create(mut frame: Frame) raises -> Painter:
         return Painter(0)
 
     def render(self, mut frame: Frame) raises:
@@ -33,15 +33,15 @@ def _mismatched() raises -> MemorySurface:
     64x64 viewport, 200x200 buffer — the shape a grown window produces between
     the measurement and the resize.
     """
-    var ctx = Context()
-    ctx.view.set_design(64, 64)
-    ctx.autoscale = AutoScale.FIT
-    ctx._set_viewport(64, 64)
+    var start = PersistentFrameState()
+    start.view.set_design(64, 64)
+    start.autoscale = AutoScale.FIT
+    start._set_viewport(64, 64)
     var program = Painter(0)
     var input = Input()
     var mem = MemorySurface(200, 200)
-    var state = step(program, ctx, input, PersistentFrameState())
-    state.backend.present(mem.surface(), ctx.view.scale)
+    var state = step(program, input, start^)
+    state.backend.present(mem.surface(), state.view.scale)
     _ = state^
     return mem^
 
@@ -80,10 +80,10 @@ struct ClickPainter(Program):
     var clicked: Bool
 
     @staticmethod
-    def create(mut ctx: Context) raises -> ClickPainter:
+    def create(mut frame: Frame) raises -> ClickPainter:
         return ClickPainter(False)
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         self.clicked = input.mouse_just_pressed()
 
     def render(self, mut frame: Frame) raises:
@@ -91,25 +91,27 @@ struct ClickPainter(Program):
 
 
 def test_scripted_click_drives_render() raises -> None:
-    var ctx = Context()
-    ctx.view.set_design(32, 32)
-    ctx.autoscale = AutoScale.FIT
-    ctx._set_viewport(32, 32)
     var mem = MemorySurface(32, 32)
 
+    var idle_start = PersistentFrameState()
+    idle_start.view.set_design(32, 32)
+    idle_start.autoscale = AutoScale.FIT
+    idle_start._set_viewport(32, 32)
     var idle_program = ClickPainter(False)
-    var idle_state = step(idle_program, ctx, Input(), PersistentFrameState())
-    idle_state.backend.present(mem.surface(), ctx.view.scale)
+    var idle_state = step(idle_program, Input(), idle_start^)
+    idle_state.backend.present(mem.surface(), idle_state.view.scale)
     assert_equal(mem.pixel(16, 16), Color.BLUE)
     _ = idle_state^
 
+    var clicked_start = PersistentFrameState()
+    clicked_start.view.set_design(32, 32)
+    clicked_start.autoscale = AutoScale.FIT
+    clicked_start._set_viewport(32, 32)
     var clicked_program = ClickPainter(False)
     var clicked_input = Input()
     clicked_input._pressed_buttons |= 1 << 1
-    var clicked_state = step(
-        clicked_program, ctx, clicked_input, PersistentFrameState()
-    )
-    clicked_state.backend.present(mem.surface(), ctx.view.scale)
+    var clicked_state = step(clicked_program, clicked_input, clicked_start^)
+    clicked_state.backend.present(mem.surface(), clicked_state.view.scale)
     assert_equal(mem.pixel(16, 16), Color.RED)
     _ = clicked_state^
 

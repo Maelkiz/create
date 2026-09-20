@@ -28,7 +28,7 @@ struct Background(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> Background:
+    def create(mut frame: Frame) raises -> Background:
         return Background(0)
 
     def render(self, mut frame: Frame) raises:
@@ -50,7 +50,7 @@ struct CentredRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> CentredRect:
+    def create(mut frame: Frame) raises -> CentredRect:
         return CentredRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -78,7 +78,7 @@ struct HighRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> HighRect:
+    def create(mut frame: Frame) raises -> HighRect:
         return HighRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -102,7 +102,7 @@ struct CentredCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> CentredCircle:
+    def create(mut frame: Frame) raises -> CentredCircle:
         return CentredCircle(0)
 
     def render(self, mut frame: Frame) raises:
@@ -131,7 +131,7 @@ struct UprightTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> UprightTriangle:
+    def create(mut frame: Frame) raises -> UprightTriangle:
         return UprightTriangle(0)
 
     def render(self, mut frame: Frame) raises:
@@ -159,7 +159,7 @@ struct AlphaOverRed(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> AlphaOverRed:
+    def create(mut frame: Frame) raises -> AlphaOverRed:
         return AlphaOverRed(0)
 
     def render(self, mut frame: Frame) raises:
@@ -180,7 +180,7 @@ struct ThickLine(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> ThickLine:
+    def create(mut frame: Frame) raises -> ThickLine:
         return ThickLine(0)
 
     def render(self, mut frame: Frame) raises:
@@ -204,7 +204,7 @@ struct FitBars(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> FitBars:
+    def create(mut frame: Frame) raises -> FitBars:
         return FitBars(0)
 
     def render(self, mut frame: Frame) raises:
@@ -216,8 +216,8 @@ struct ExtendNoBars(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> ExtendNoBars:
-        ctx.autoscale = AutoScale.EXTEND
+    def create(mut frame: Frame) raises -> ExtendNoBars:
+        frame.autoscale = AutoScale.EXTEND
         return ExtendNoBars(0)
 
     def render(self, mut frame: Frame) raises:
@@ -245,7 +245,7 @@ struct RotatedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> RotatedRect:
+    def create(mut frame: Frame) raises -> RotatedRect:
         return RotatedRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -272,7 +272,7 @@ struct SharpRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> SharpRect:
+    def create(mut frame: Frame) raises -> SharpRect:
         return SharpRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -296,7 +296,7 @@ struct RoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> RoundedRect:
+    def create(mut frame: Frame) raises -> RoundedRect:
         return RoundedRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -322,7 +322,7 @@ struct RoundedRectOutlined(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> RoundedRectOutlined:
+    def create(mut frame: Frame) raises -> RoundedRectOutlined:
         return RoundedRectOutlined(0)
 
     def render(self, mut frame: Frame) raises:
@@ -361,7 +361,7 @@ struct ScaledRoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> ScaledRoundedRect:
+    def create(mut frame: Frame) raises -> ScaledRoundedRect:
         return ScaledRoundedRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -386,7 +386,7 @@ struct RotatedRoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> RotatedRoundedRect:
+    def create(mut frame: Frame) raises -> RotatedRoundedRect:
         return RotatedRoundedRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -415,7 +415,7 @@ struct SharpTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> SharpTriangle:
+    def create(mut frame: Frame) raises -> SharpTriangle:
         return SharpTriangle(0)
 
     def render(self, mut frame: Frame) raises:
@@ -440,7 +440,7 @@ struct RoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> RoundedTriangle:
+    def create(mut frame: Frame) raises -> RoundedTriangle:
         return RoundedTriangle(0)
 
     def render(self, mut frame: Frame) raises:
@@ -475,7 +475,7 @@ struct RoundedTriangleOutlined(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> RoundedTriangleOutlined:
+    def create(mut frame: Frame) raises -> RoundedTriangleOutlined:
         return RoundedTriangleOutlined(0)
 
     def render(self, mut frame: Frame) raises:
@@ -511,7 +511,7 @@ struct ThinRoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> ThinRoundedTriangle:
+    def create(mut frame: Frame) raises -> ThinRoundedTriangle:
         return ThinRoundedTriangle(0)
 
     def render(self, mut frame: Frame) raises:
@@ -541,7 +541,7 @@ struct RotatedRoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> RotatedRoundedTriangle:
+    def create(mut frame: Frame) raises -> RotatedRoundedTriangle:
         return RotatedRoundedTriangle(0)
 
     def render(self, mut frame: Frame) raises:
@@ -574,7 +574,7 @@ struct SpriteBlit(Program):
         self.sprite = sprite^
 
     @staticmethod
-    def create(mut ctx: Context) raises -> SpriteBlit:
+    def create(mut frame: Frame) raises -> SpriteBlit:
         return SpriteBlit(Sprite.load("tests/fixtures/test_2x2.bmp"))
 
     def render(self, mut frame: Frame) raises:
@@ -600,7 +600,7 @@ struct PngSpriteBlit(Program):
         self.sprite = sprite^
 
     @staticmethod
-    def create(mut ctx: Context) raises -> PngSpriteBlit:
+    def create(mut frame: Frame) raises -> PngSpriteBlit:
         return PngSpriteBlit(Sprite.load("tests/fixtures/test_2x2.png"))
 
     def render(self, mut frame: Frame) raises:
@@ -626,11 +626,11 @@ struct StyleAcrossFrames(Program):
     var frame: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> StyleAcrossFrames:
+    def create(mut frame: Frame) raises -> StyleAcrossFrames:
         return StyleAcrossFrames(0)
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
-        self.frame = ctx.time.frame_count
+    def update(mut self, mut frame: Frame, input: Input) raises:
+        self.frame = frame.time.frame_count
 
     def render(self, mut frame: Frame) raises:
         frame.background(Color.BLACK)
@@ -654,7 +654,7 @@ struct GuardedStyle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> GuardedStyle:
+    def create(mut frame: Frame) raises -> GuardedStyle:
         return GuardedStyle(0)
 
     def render(self, mut frame: Frame) raises:
@@ -678,7 +678,7 @@ struct StrokedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> StrokedRect:
+    def create(mut frame: Frame) raises -> StrokedRect:
         return StrokedRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -704,7 +704,7 @@ struct StrokedCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> StrokedCircle:
+    def create(mut frame: Frame) raises -> StrokedCircle:
         return StrokedCircle(0)
 
     def render(self, mut frame: Frame) raises:
@@ -727,7 +727,7 @@ struct StrokedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> StrokedTriangle:
+    def create(mut frame: Frame) raises -> StrokedTriangle:
         return StrokedTriangle(0)
 
     def render(self, mut frame: Frame) raises:
@@ -749,7 +749,7 @@ struct NoFillRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> NoFillRect:
+    def create(mut frame: Frame) raises -> NoFillRect:
         return NoFillRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -770,7 +770,7 @@ struct NoFillCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> NoFillCircle:
+    def create(mut frame: Frame) raises -> NoFillCircle:
         return NoFillCircle(0)
 
     def render(self, mut frame: Frame) raises:
@@ -791,7 +791,7 @@ struct RotatedCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> RotatedCircle:
+    def create(mut frame: Frame) raises -> RotatedCircle:
         return RotatedCircle(0)
 
     def render(self, mut frame: Frame) raises:
@@ -822,7 +822,7 @@ struct QuarterTurnRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> QuarterTurnRect:
+    def create(mut frame: Frame) raises -> QuarterTurnRect:
         return QuarterTurnRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -838,7 +838,7 @@ struct SwappedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> SwappedRect:
+    def create(mut frame: Frame) raises -> SwappedRect:
         return SwappedRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -868,7 +868,7 @@ struct GeometryOverloads(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> GeometryOverloads:
+    def create(mut frame: Frame) raises -> GeometryOverloads:
         return GeometryOverloads(0)
 
     def render(self, mut frame: Frame) raises:
@@ -930,7 +930,7 @@ struct ToWorldRoundTrip(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> ToWorldRoundTrip:
+    def create(mut frame: Frame) raises -> ToWorldRoundTrip:
         return ToWorldRoundTrip(0)
 
     def render(self, mut frame: Frame) raises:
@@ -961,7 +961,7 @@ struct ThickLineUnderNonUniformScale(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> ThickLineUnderNonUniformScale:
+    def create(mut frame: Frame) raises -> ThickLineUnderNonUniformScale:
         return ThickLineUnderNonUniformScale(0)
 
     def render(self, mut frame: Frame) raises:
@@ -1016,7 +1016,7 @@ struct TextThroughCanvas(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> TextThroughCanvas:
+    def create(mut frame: Frame) raises -> TextThroughCanvas:
         return TextThroughCanvas(0)
 
     def render(self, mut frame: Frame) raises:
@@ -1044,7 +1044,7 @@ struct TransparentText(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> TransparentText:
+    def create(mut frame: Frame) raises -> TransparentText:
         return TransparentText(0)
 
     def render(self, mut frame: Frame) raises:
@@ -1063,7 +1063,7 @@ struct TextBesideShape(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> TextBesideShape:
+    def create(mut frame: Frame) raises -> TextBesideShape:
         return TextBesideShape(0)
 
     def render(self, mut frame: Frame) raises:
@@ -1098,7 +1098,7 @@ struct SmallText(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> SmallText:
+    def create(mut frame: Frame) raises -> SmallText:
         return SmallText(0)
 
     def render(self, mut frame: Frame) raises:
@@ -1114,7 +1114,7 @@ struct BigText(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> BigText:
+    def create(mut frame: Frame) raises -> BigText:
         return BigText(0)
 
     def render(self, mut frame: Frame) raises:
@@ -1143,13 +1143,13 @@ struct QuitOnFrameTwo(Program):
         self.frame = 0
 
     @staticmethod
-    def create(mut ctx: Context) raises -> QuitOnFrameTwo:
+    def create(mut frame: Frame) raises -> QuitOnFrameTwo:
         return QuitOnFrameTwo()
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
-        self.frame = ctx.time.frame_count
+    def update(mut self, mut frame: Frame, input: Input) raises:
+        self.frame = frame.time.frame_count
         if self.frame == 2:
-            ctx.quit()
+            frame.quit()
 
     def render(self, mut frame: Frame) raises:
         frame.background(Color.BLACK)
@@ -1163,8 +1163,8 @@ struct QuitOnFrameTwo(Program):
         frame.rectangle(0.0, 0.0, 100.0, 100.0)
 
 
-def test_ctx_quit_stops_the_loop() raises -> None:
-    # update() quits on frame 2; run_headless checks ctx._quit before each
+def test_frame_quit_stops_the_loop() raises -> None:
+    # update() quits on frame 2; run_headless checks frame._quit before each
     # iteration, so frames 3-5 must never run. If they did, the buffer would
     # show frame 5's blue rather than frame 2's green.
     var m = run_headless[QuitOnFrameTwo](50, 50, 5)
@@ -1193,7 +1193,7 @@ struct AnimatorBlit(Program):
         self.animator = animator^
 
     @staticmethod
-    def create(mut ctx: Context) raises -> AnimatorBlit:
+    def create(mut frame: Frame) raises -> AnimatorBlit:
         var frames = List[Sprite]()
         for i in range(8):
             frames.append(Sprite.solid(2, 2, UInt8(i * 20), 0, 0))
@@ -1201,8 +1201,8 @@ struct AnimatorBlit(Program):
         a.play()
         return AnimatorBlit(a^)
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
-        self.animator.update(ctx.time.delta)
+    def update(mut self, mut frame: Frame, input: Input) raises:
+        self.animator.update(frame.time.delta)
 
     def render(self, mut frame: Frame) raises:
         frame.background(Color.BLACK)
@@ -1232,7 +1232,7 @@ struct AnimatorSized(Program):
         self.animator = animator^
 
     @staticmethod
-    def create(mut ctx: Context) raises -> AnimatorSized:
+    def create(mut frame: Frame) raises -> AnimatorSized:
         var frames = List[Sprite]()
         frames.append(Sprite.solid(2, 2, 255, 0, 0))
         return AnimatorSized(
@@ -1269,7 +1269,7 @@ struct AnimatorEveryOverload(Program):
         self.animator = animator^
 
     @staticmethod
-    def create(mut ctx: Context) raises -> AnimatorEveryOverload:
+    def create(mut frame: Frame) raises -> AnimatorEveryOverload:
         var frames = List[Sprite]()
         frames.append(Sprite.solid(2, 2, 255, 0, 0))
         return AnimatorEveryOverload(
@@ -1344,7 +1344,7 @@ struct SaveImage(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> SaveImage:
+    def create(mut frame: Frame) raises -> SaveImage:
         return SaveImage(0)
 
     def render(self, mut frame: Frame) raises:
@@ -1357,7 +1357,7 @@ struct SaveImage2x(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> SaveImage2x:
+    def create(mut frame: Frame) raises -> SaveImage2x:
         return SaveImage2x(0)
 
     def render(self, mut frame: Frame) raises:
@@ -1370,7 +1370,7 @@ struct SaveImageTransparent(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> SaveImageTransparent:
+    def create(mut frame: Frame) raises -> SaveImageTransparent:
         return SaveImageTransparent(0)
 
     def render(self, mut frame: Frame) raises:
@@ -1439,7 +1439,7 @@ struct SaveScreenshot(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> SaveScreenshot:
+    def create(mut frame: Frame) raises -> SaveScreenshot:
         return SaveScreenshot(0)
 
     def render(self, mut frame: Frame) raises:
@@ -1452,7 +1452,7 @@ struct SaveBoth(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> SaveBoth:
+    def create(mut frame: Frame) raises -> SaveBoth:
         return SaveBoth(0)
 
     def render(self, mut frame: Frame) raises:

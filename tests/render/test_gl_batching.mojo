@@ -6,10 +6,12 @@
 # the parity test — and shares its one `GLWindow`, built once per file
 # rather than once per case.
 
+from std.collections import Optional
+
 from window import GLWindow
 
 from create import *
-from create.core._step import step
+from create.core._step import create_program, step
 from create.core.input import Input
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
@@ -39,7 +41,7 @@ struct ClearMidFrame(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> ClearMidFrame:
+    def create(mut frame: Frame) raises -> ClearMidFrame:
         return ClearMidFrame(0)
 
     def render(self, mut frame: Frame) raises:
@@ -59,7 +61,7 @@ struct TwoSprites(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> TwoSprites:
+    def create(mut frame: Frame) raises -> TwoSprites:
         return TwoSprites(0)
 
     def render(self, mut frame: Frame) raises:
@@ -75,7 +77,7 @@ struct TextAndSprite(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> TextAndSprite:
+    def create(mut frame: Frame) raises -> TextAndSprite:
         return TextAndSprite(0)
 
     def render(self, mut frame: Frame) raises:
@@ -93,7 +95,7 @@ struct ManyShapes(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> ManyShapes:
+    def create(mut frame: Frame) raises -> ManyShapes:
         return ManyShapes(0)
 
     def render(self, mut frame: Frame) raises:
@@ -126,21 +128,22 @@ def _gpu_frame[
     """
     var target = _GLTarget(GL(), width, height)
 
-    var ctx = Context()
-    ctx.view.set_design(width, height)
-    ctx.autoscale = AutoScale.FIT
-    ctx._set_viewport(width, height)
-    var program = P.create(ctx)
-    ctx._set_viewport(width, height)
-    var input = Input()
     var state = PersistentFrameState(RenderBackend.GPU)
+    state.view.set_design(width, height)
+    state.autoscale = AutoScale.FIT
+    state._set_viewport(width, height)
+    var created = Optional[P]()
+    state = create_program[P](state^, created)
+    var program = created.take()
+    state._set_viewport(width, height)
+    var input = Input()
     var now = 0
-    ctx.time._start(now)
+    state.time._start(now)
     for _ in range(frames):
         now += 16
-        ctx.time._tick(now)
-        state = step(program, ctx, input, state^)
-        state.backend.present_gpu(width, height, ctx.view.scale)
+        state.time._tick(now)
+        state = step(program, input, state^)
+        state.backend.present_gpu(width, height, state.view.scale)
 
     var pixels = state.backend.gl.value().read_frame(width, height)
     var mem = MemorySurface(width, height)

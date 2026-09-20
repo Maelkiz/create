@@ -8,13 +8,13 @@ struct Game(Program):
     var y: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> Game:
+    def create(mut frame: Frame) raises -> Game:
         var sprite = Sprite.load(
             script_dir() + "/../assets/sprite.jpeg", 120, 120
         )
         return Game(sprite^, 0, 0)
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         var speed = 15
         if input.is_key_down("w"):
             self.y += speed
@@ -27,8 +27,8 @@ struct Game(Program):
 
         var hw = (self.sprite.width) // 2
         var hh = (self.sprite.height) // 2
-        self.x = clamp(self.x, Int(ctx.left()) + hw, Int(ctx.right()) - hw)
-        self.y = clamp(self.y, Int(ctx.bottom()) + hh, Int(ctx.top()) - hh)
+        self.x = clamp(self.x, Int(frame.left()) + hw, Int(frame.right()) - hw)
+        self.y = clamp(self.y, Int(frame.bottom()) + hh, Int(frame.top()) - hh)
 
     def render(self, mut frame: Frame) raises:
         frame.background(Color(30, 30, 30))

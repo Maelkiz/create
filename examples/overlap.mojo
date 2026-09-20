@@ -7,13 +7,13 @@ struct App(Program):
     var mouse: Circle
 
     @staticmethod
-    def create(mut ctx: Context) raises -> App:
+    def create(mut frame: Frame) raises -> App:
         return App(
             center=Circle(0, 0, 100),
             mouse=Circle(0, 0, 100),
         )
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         self.mouse.move_to(input.mouse)
 
     def render(self, mut frame: Frame) raises:

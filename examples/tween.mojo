@@ -52,7 +52,7 @@ struct App(Program):
     var pick: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> App:
+    def create(mut frame: Frame) raises -> App:
         # Authored against the 1280x800 passed to run(): x runs -640..640 and
         # y runs -400..400, with y growing *upward*, so the gallery counts
         # down from +170.
@@ -77,11 +77,11 @@ struct App(Program):
             pick=_HERO,
         )
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         # Nothing else advances a tween. A tween never updated sits at its
         # start forever, exactly like an un-ticked SpriteAnimator.
-        self.clock.update(ctx.time.delta)
-        self.slide.update(ctx.time.delta)
+        self.clock.update(frame.time.delta)
+        self.slide.update(frame.time.delta)
 
         if input.just_pressed("space"):
             self.pick = (self.pick + 1) % len(self.curves)

@@ -1,5 +1,6 @@
+from std.collections import Optional
+
 from create.render.frame import Frame, PersistentFrameState
-from .context import Context
 from .input import Input
 from .program import Program
 
@@ -8,7 +9,6 @@ def step[
     P: Program
 ](
     mut program: P,
-    mut ctx: Context,
     input: Input,
     var state: PersistentFrameState,
 ) raises -> PersistentFrameState:
@@ -33,10 +33,35 @@ def step[
     know how to build; in the windowed case that is only valid after events
     have been pumped.
     """
-    program.update(ctx, input)
-    var frame = Frame(ctx.view, state^)
+    var frame = Frame(state^)
+    program.update(frame, input)
     program.render(frame)
     # Recorded last, so it doubles as the clip for anything drawn out of
     # bounds — the replay honours the buffer's order.
     frame._draw_letterbox()
     return frame^._release()
+
+
+def create_program[
+    P: Program
+](
+    var state: PersistentFrameState,
+    mut program: Optional[P],
+) raises -> PersistentFrameState:
+    """Build the program over a frame that is never presented.
+
+    Here beside `step`, and for the same reason: `create` is a frame body the
+    four loops must not each reimplement. Its one non-obvious step is the
+    discard — the frame handed to `create` is the only one the loop never
+    presents, so a draw call or a filed capture would otherwise leak into
+    frame one. See `Backend._discard_recording`.
+
+    The program leaves through `program` rather than a second return value
+    because a `Tuple` of move-only values cannot be unpacked in this Mojo
+    version; the state flows in and out exactly as it does through `step`.
+    """
+    var frame = Frame(state^)
+    program = Optional(P.create(frame))
+    var out_state = frame^._release()
+    out_state.backend._discard_recording()
+    return out_state^

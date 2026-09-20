@@ -3,7 +3,7 @@ from create import *
 
 @fieldwise_init
 struct Player:
-    # All rates are per second, integrated with ctx.time.delta so the feel is
+    # All rates are per second, integrated with frame.time.delta so the feel is
     # the same at any frame rate. y grows upward, so gravity is negative and a
     # jump is positive.
     comptime GRAVITY: Float64 = -5400.0  # units/s^2
@@ -19,8 +19,8 @@ struct Player:
     var on_ground: Bool
     var jumps_left: Int
 
-    def update(mut self, mut ctx: Context, input: Input):
-        var dt = ctx.time.delta
+    def update(mut self, mut frame: Frame, input: Input):
+        var dt = frame.time.delta
 
         if input.is_key_down("a"):
             self.x -= self.SPEED * dt
@@ -40,13 +40,13 @@ struct Player:
         var half_h = self.height / 2
 
         # Ceiling: moving up and past the top edge.
-        if self.y + half_h > ctx.top():
-            self.y = ctx.top() - half_h
+        if self.y + half_h > frame.top():
+            self.y = frame.top() - half_h
             if self.vel_y > 0:
                 self.vel_y = 0.0
 
-        if self.y - half_h <= ctx.bottom():
-            self.y = ctx.bottom() + half_h
+        if self.y - half_h <= frame.bottom():
+            self.y = frame.bottom() + half_h
             self.vel_y = 0.0
             self.on_ground = True
             self.jumps_left = 2

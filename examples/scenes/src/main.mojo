@@ -24,18 +24,18 @@ struct App(Program):
     var draw: Draw
 
     @staticmethod
-    def create(mut ctx: Context) raises -> App:
-        ctx.autoscale = AutoScale.FIT
+    def create(mut frame: Frame) raises -> App:
+        frame.autoscale = AutoScale.FIT
         return App(MENU, Menu(False), Draw(False, False, False, Point2D(0, 0)))
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         if self.scene == MENU:
-            self.menu.update(ctx, input)
+            self.menu.update(frame, input)
             if self.menu.start_pressed:
                 self.draw.enter()
                 self.scene = DRAWING
         else:
-            self.draw.update(ctx, input)
+            self.draw.update(frame, input)
             if self.draw.back_pressed:
                 self.scene = MENU
 

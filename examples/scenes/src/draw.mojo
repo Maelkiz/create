@@ -21,7 +21,7 @@ struct Draw:
     def enter(mut self):
         self._entering = True
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         self._entering = False
         self.back_pressed = input.mouse_just_pressed(MouseButton.RIGHT)
         self.drawing = input.is_mouse_down(MouseButton.LEFT)

@@ -11,6 +11,8 @@ Does **not** cover the drawable-size-versus-logical-size distinction that
 window manager to disagree with it. That stays a windowed-only concern.
 """
 
+from std.collections import Optional
+
 from window import GLWindow
 
 from create.render._gl import GL
@@ -20,8 +22,7 @@ from create.render.autoscale import AutoScale
 from create.render.frame import PersistentFrameState
 from create.render.surface import MemorySurface
 
-from ._step import step
-from .context import Context
+from ._step import create_program, step
 from .headless import _FRAME_MILLIS
 from .input import Input
 from .program import Program
@@ -73,25 +74,26 @@ def _run_headless_gl[
     var win = _open_headless_window(msaa)
     var target = _GLTarget(GL(), pw, ph)
 
-    var ctx = Context()
-    ctx.view.set_design(width, height)
-    ctx.autoscale = AutoScale.FIT
-    ctx._set_viewport(pw, ph)
-    var program = P.create(ctx)
-    # create() may have pinned its own design size or changed the mode.
-    ctx._set_viewport(pw, ph)
-    var input = Input()
     # After the window: its GL resources need a current context.
     var state = PersistentFrameState(RenderBackend.GPU)
+    state.view.set_design(width, height)
+    state.autoscale = AutoScale.FIT
+    state._set_viewport(pw, ph)
+    var created = Optional[P]()
+    state = create_program[P](state^, created)
+    var program = created.take()
+    # create() may have pinned its own design size or changed the mode.
+    state._set_viewport(pw, ph)
+    var input = Input()
     var now = 0
-    ctx.time._start(now)
+    state.time._start(now)
     for _ in range(frames):
-        if ctx._quit:
+        if state._quit:
             break
         now += _FRAME_MILLIS
-        ctx.time._tick(now)
-        state = step(program, ctx, input, state^)
-        state.backend.present_gpu(pw, ph, ctx.view.scale)
+        state.time._tick(now)
+        state = step(program, input, state^)
+        state.backend.present_gpu(pw, ph, state.view.scale)
 
     var pixels = state.backend.gl.value().read_frame(pw, ph)
     var mem = MemorySurface(pw, ph)

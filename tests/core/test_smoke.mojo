@@ -1,7 +1,7 @@
 # The consumer-side gate — a program built from outside the library.
 #
 # Type-checks the trait surface, `run[T]` instantiation, and the
-# Context/Input/Frame signatures, none of which `mojo precompile` sees. The
+# Frame/Input signatures, none of which `mojo precompile` sees. The
 # pre-commit hook builds this file; the suite also runs it, which the windowed
 # version could not do. Keep it minimal: it runs on every commit, and its cost
 # must not grow with the example count.
@@ -19,14 +19,14 @@ struct Smoke(Program):
     var audio: Audio
 
     @staticmethod
-    def create(mut ctx: Context) raises -> Smoke:
-        ctx.quit_on_escape = True
+    def create(mut frame: Frame) raises -> Smoke:
+        frame.quit_on_escape = True
         return Smoke(0.0, Audio())
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         self.audio.update()
         if input.is_key_down("right"):
-            self.x += 100.0 * ctx.time.delta
+            self.x += 100.0 * frame.time.delta
         if input.just_pressed("space"):
             _ = self.audio.play(
                 ArcPointer(Sound.from_pcm(List[Int16](length=1, fill=0)))

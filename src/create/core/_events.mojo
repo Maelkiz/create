@@ -1,4 +1,4 @@
-"""The one translation from SDL events to `Context` and `Input`.
+"""The one translation from SDL events to the frame state and `Input`.
 
 Both run loops pump events and both have to fold them into the same two
 places, so the arms live here rather than once per loop — a keycode handled in
@@ -25,17 +25,22 @@ from window.event import (
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
-from .context import Context
+from create.render.frame import PersistentFrameState
+
 from .input import Input
 
 
 def apply_events(
     events: List[Event],
-    mut ctx: Context,
+    mut state: PersistentFrameState,
     mut input: Input,
     px_per_point: Float64 = 1.0,
 ) -> Bool:
-    """Fold a frame's events into `ctx` and `input`; True means quit.
+    """Fold a frame's events into `state` and `input`; True means quit.
+
+    Takes the persistent state rather than the frame because this runs
+    *before* the frame is built — pointer positions have to be mapped with
+    this frame's viewport, which the loop has just re-derived onto the state.
 
     `px_per_point` converts a pointer position from SDL's logical window
     coordinates into the framebuffer pixels the viewport was built from. It is
@@ -50,7 +55,7 @@ def apply_events(
             quit = True
         elif event.isa[KeyDown]():
             var keycode = event[KeyDown].keycode
-            if keycode == 27 and ctx.quit_on_escape:
+            if keycode == 27 and state.quit_on_escape:
                 quit = True
             if not input.is_key_down(keycode):
                 input._held_keys.set(keycode)
@@ -62,14 +67,14 @@ def apply_events(
         elif event.isa[MouseMoved]():
             var e = event[MouseMoved]
             # Pointer positions reach the program in screen space — the same
-            # camera-independent space `ctx.left`/`right`/`bottom`/`top` use.
-            var p = ctx.to_screen(
+            # camera-independent space `frame.left`/`right`/`bottom`/`top` use.
+            var p = state.to_screen(
                 Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
             )
             input._set_mouse(p[0], p[1])
         elif event.isa[MouseButtonDown]():
             var e = event[MouseButtonDown]
-            var p = ctx.to_screen(
+            var p = state.to_screen(
                 Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
             )
             input.mouse_pressed = True
@@ -80,7 +85,7 @@ def apply_events(
             input._pressed_buttons |= 1 << e.button
         elif event.isa[MouseButtonUp]():
             var e = event[MouseButtonUp]
-            var p = ctx.to_screen(
+            var p = state.to_screen(
                 Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
             )
             input.mouse_pressed = False
@@ -91,5 +96,5 @@ def apply_events(
             var e = event[MouseWheel]
             input.wheel = Vector2D(Float64(e.x), Float64(e.y))
         elif event.isa[Resized]():
-            pass  # ctx.width/height are refreshed every frame regardless.
+            pass  # The viewport is re-derived every frame regardless.
     return quit

@@ -13,7 +13,7 @@ struct IdentityCameraRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> IdentityCameraRect:
+    def create(mut frame: Frame) raises -> IdentityCameraRect:
         return IdentityCameraRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -39,7 +39,7 @@ struct PannedCameraRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> PannedCameraRect:
+    def create(mut frame: Frame) raises -> PannedCameraRect:
         return PannedCameraRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -63,7 +63,7 @@ struct ZoomedCameraRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> ZoomedCameraRect:
+    def create(mut frame: Frame) raises -> ZoomedCameraRect:
         return ZoomedCameraRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -87,7 +87,7 @@ struct OverlayIgnoresCamera(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> OverlayIgnoresCamera:
+    def create(mut frame: Frame) raises -> OverlayIgnoresCamera:
         return OverlayIgnoresCamera(0)
 
     def render(self, mut frame: Frame) raises:
@@ -112,7 +112,7 @@ struct OverlayRestoresCamera(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> OverlayRestoresCamera:
+    def create(mut frame: Frame) raises -> OverlayRestoresCamera:
         return OverlayRestoresCamera(0)
 
     def render(self, mut frame: Frame) raises:

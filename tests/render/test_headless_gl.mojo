@@ -15,7 +15,7 @@ struct GPURect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> GPURect:
+    def create(mut frame: Frame) raises -> GPURect:
         return GPURect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -42,10 +42,10 @@ struct GPUMover(Program):
     var x: Float64
 
     @staticmethod
-    def create(mut ctx: Context) raises -> GPUMover:
+    def create(mut frame: Frame) raises -> GPUMover:
         return GPUMover(-20.0)
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         self.x += 20.0
 
     def render(self, mut frame: Frame) raises:
@@ -97,7 +97,7 @@ struct GPURoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> GPURoundedRect:
+    def create(mut frame: Frame) raises -> GPURoundedRect:
         return GPURoundedRect(0)
 
     def render(self, mut frame: Frame) raises:
@@ -134,7 +134,7 @@ struct GPURoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> GPURoundedTriangle:
+    def create(mut frame: Frame) raises -> GPURoundedTriangle:
         return GPURoundedTriangle(0)
 
     def render(self, mut frame: Frame) raises:

@@ -36,14 +36,14 @@ struct App(Program):
     var saved: String
 
     @staticmethod
-    def create(mut ctx: Context) raises -> App:
-        ctx.autoscale = AutoScale.FIT
-        ctx.design(_DESIGN_W, _DESIGN_H)
+    def create(mut frame: Frame) raises -> App:
+        frame.autoscale = AutoScale.FIT
+        frame.design(_DESIGN_W, _DESIGN_H)
         return App(0.0, _NONE, "")
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         self.request = _NONE
-        self.angle += 0.6 * ctx.time.delta
+        self.angle += 0.6 * frame.time.delta
 
         if input.just_pressed("s"):
             self.request = _SCREENSHOT

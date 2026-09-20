@@ -44,8 +44,8 @@ struct Bench(Program):
     var worst: Float64
 
     @staticmethod
-    def create(mut ctx: Context) raises -> Bench:
-        ctx.autoscale = AutoScale.OFF
+    def create(mut frame: Frame) raises -> Bench:
+        frame.autoscale = AutoScale.OFF
         return Bench(
             0.0,
             Sprite.load(script_dir() + "/sprite/assets/sprite.png"),
@@ -54,11 +54,11 @@ struct Bench(Program):
             0.0,
         )
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
-        self.t += ctx.time.delta
+    def update(mut self, mut frame: Frame, input: Input) raises:
+        self.t += frame.time.delta
         self.frames += 1
-        self.elapsed += ctx.time.delta
-        self.worst = max(self.worst, ctx.time.delta)
+        self.elapsed += frame.time.delta
+        self.worst = max(self.worst, frame.time.delta)
         if self.frames == _WINDOW:
             var mean_ms = self.elapsed / Float64(_WINDOW) * 1000.0
             print(
@@ -68,9 +68,9 @@ struct Bench(Program):
                 + " ms worst, "
                 + _round(1000.0 / mean_ms)
                 + " fps, "
-                + String(ctx.width)
+                + String(frame.width)
                 + "x"
-                + String(ctx.height)
+                + String(frame.height)
             )
             self.frames = 0
             self.elapsed = 0.0

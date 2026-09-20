@@ -438,7 +438,7 @@ struct RotatedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut ctx: Context) raises -> RotatedRect:
+    def create(mut frame: Frame) raises -> RotatedRect:
         return RotatedRect(0)
 
     def __init__(out self, unused: Int):

@@ -7,20 +7,20 @@ struct CameraDemo(Program):
     var elapsed: Float64
 
     @staticmethod
-    def create(mut ctx: Context) raises -> CameraDemo:
+    def create(mut frame: Frame) raises -> CameraDemo:
         return CameraDemo(Camera(), 0.0)
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
-        self.elapsed = ctx.time.elapsed
-        var speed = 300.0 * ctx.time.delta
+    def update(mut self, mut frame: Frame, input: Input) raises:
+        self.elapsed = frame.time.elapsed
+        var speed = 300.0 * frame.time.delta
         if input.is_key_down("right"):
             self.cam.position += Vector2D(speed, 0.0)
         if input.is_key_down("left"):
             self.cam.position += Vector2D(-speed, 0.0)
         if input.is_key_down("up"):
-            self.cam.zoom = min(3.0, self.cam.zoom + 1.0 * ctx.time.delta)
+            self.cam.zoom = min(3.0, self.cam.zoom + 1.0 * frame.time.delta)
         if input.is_key_down("down"):
-            self.cam.zoom = max(0.3, self.cam.zoom - 1.0 * ctx.time.delta)
+            self.cam.zoom = max(0.3, self.cam.zoom - 1.0 * frame.time.delta)
 
     def render(self, mut frame: Frame) raises:
         frame.background(Color(15, 15, 25))

@@ -766,6 +766,20 @@ struct Backend(Movable):
         """File a framebuffer-resolution capture of the frame being recorded."""
         self.pending_screenshot = Optional(path)
 
+    def _discard_recording(mut self):
+        """Throw away a recording that will never be presented.
+
+        `commands` is cleared only by `present`/`present_gpu`, and must stay
+        that way: the loop presents *after* the frame body has returned, so a
+        frame's draws have to survive `Frame._release`. The frame handed to
+        `Program.create` is the one frame that is never presented, so without
+        this its draws — and any `save_image` or `save_screenshot` it filed —
+        would be replayed and written as part of frame one.
+        """
+        self.commands.clear()
+        self.pending_image = Optional[_ImageRequest]()
+        self.pending_screenshot = Optional[String]()
+
     def _flush_screenshot[o: Origin[mut=True]](mut self, s: Surface[o]) raises:
         """Service a pending `save_screenshot` by copying the finished buffer.
 
