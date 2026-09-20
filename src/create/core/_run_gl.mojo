@@ -42,6 +42,7 @@ def _open_window(
     height: Int,
     fullscreen: Bool,
     resizable: Bool,
+    borderless: Bool,
 ) raises -> GLWindow:
     """A multisampled GL window, falling back to none if the driver refuses.
 
@@ -57,10 +58,16 @@ def _open_window(
             msaa=_MSAA_SAMPLES,
             fullscreen=fullscreen,
             resizable=resizable,
+            borderless=borderless,
         )
     except:
         return GLWindow(
-            title, width, height, fullscreen=fullscreen, resizable=resizable
+            title,
+            width,
+            height,
+            fullscreen=fullscreen,
+            resizable=resizable,
+            borderless=borderless,
         )
 
 
@@ -130,6 +137,7 @@ def run_gl[
     fullscreen: Bool = False,
     vsync: Bool = True,
     resizable: Bool = True,
+    borderless: Bool = False,
 ) raises:
     """Open a GL window and run `P` on the GPU backend until it quits.
 
@@ -145,7 +153,9 @@ def run_gl[
     both the window size and the space the program is authored in, scaled to
     the window by `AutoScale.FIT` unless `create` says otherwise.
     """
-    var win = _open_window(title, width, height, fullscreen, resizable)
+    var win = _open_window(
+        title, width, height, fullscreen, resizable, borderless
+    )
     win.set_swap_interval(1 if vsync else 0)
     var ctx = Context()
     ctx.view.set_design(width, height)
