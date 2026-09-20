@@ -76,7 +76,6 @@ struct Bench(Program):
             self.elapsed = 0.0
             self.worst = 0.0
 
-    def render(self, mut frame: Frame) raises:
         frame.background(Color(0x10, 0x12, 0x18))
 
         # One generator re-seeded every frame, so the layout is identical from

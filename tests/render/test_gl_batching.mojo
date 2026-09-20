@@ -44,7 +44,7 @@ struct ClearMidFrame(Program):
     def create(mut frame: Frame) raises -> ClearMidFrame:
         return ClearMidFrame(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.BLUE)
@@ -64,7 +64,7 @@ struct TwoSprites(Program):
     def create(mut frame: Frame) raises -> TwoSprites:
         return TwoSprites(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color.BLACK)
         var a = Sprite.solid(2, 2, 255, 0, 255)
         var b = Sprite.solid(2, 2, 0, 255, 255)
@@ -80,7 +80,7 @@ struct TextAndSprite(Program):
     def create(mut frame: Frame) raises -> TextAndSprite:
         return TextAndSprite(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color.BLACK)
         var img = Sprite.solid(2, 2, 255, 0, 0)
         frame.sprite(img, -30, 0, 16, 16)
@@ -98,7 +98,7 @@ struct ManyShapes(Program):
     def create(mut frame: Frame) raises -> ManyShapes:
         return ManyShapes(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         for gy in range(_GRID):

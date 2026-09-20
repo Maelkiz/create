@@ -3,11 +3,15 @@ from .input import Input
 
 
 trait Program(Deinitable, Movable):
-    """What `run` and `run_headless` drive: `create`, then `update` and
-    `render` once per frame.
+    """What `run` and `run_headless` drive: `create`, then `update` once per
+    frame.
 
-    Only `create` and `render` have to be written — `update` defaults to doing
-    nothing, which is enough for a program that only draws.
+    One per-frame method, not two. A separate `render` would have to be handed
+    a frame it may not write to and no `Input` at all, which is what forced a
+    program to smuggle a decision from one into the other through a field —
+    reading a key in `update` to file a screenshot in `render`, or caching a
+    framerate reading to draw it. Deciding and drawing are the same frame's
+    work, so they are the same method's.
 
     There are no event callbacks. Input arrives as `update`'s parameter and
     nothing else, so there is one place a frame's decisions are made and no
@@ -28,20 +32,15 @@ trait Program(Deinitable, Movable):
         ...
 
     def update(mut self, mut frame: Frame, input: Input) raises:
-        """Advance the program by one frame.
+        """Advance the program by one frame, and draw it.
 
-        `frame` is mutable because the program writes back to it — `quit()`,
-        `autoscale`, `quit_on_escape`. `input` is not: the run loop is its only
-        writer, so borrowing it read-only makes that one-way flow a compile
-        error to violate rather than a convention to remember.
+        `frame` is mutable because the program both draws on it and writes
+        back to it — `quit()`, `autoscale`, `quit_on_escape`. `input` is not:
+        the run loop is its only writer, so borrowing it read-only makes that
+        one-way flow a compile error to violate rather than a convention to
+        remember.
+
+        The `frame` is built fresh for this frame and dropped after, so it
+        must not be stored anywhere.
         """
-        pass
-
-    def render(self, mut frame: Frame) raises:
-        """Draw one frame.
-
-        `self` is immutable: rendering reads the state `update` produced. The
-        `frame` is built fresh for this frame and dropped after, so it must
-        not be stored anywhere.
-        """
-        pass
+        ...

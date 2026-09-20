@@ -1,7 +1,7 @@
 # Multi-scene composition, not a scene machine.
 #
-# `Program` stays exactly `create`/`update`/`render`. A scene switch is
-# nothing more than an int field and an if/elif in `update` and `render` —
+# `Program` stays exactly `create`/`update`. A scene switch is nothing more
+# than an int field and an if/elif in `update` —
 # `Menu` and `Draw` are plain structs in the same shape as `Program`, not
 # `Program`s themselves, which is what lets them take a shared field
 # (nothing shared here, but see AGENTS.md's "Program can own Programs").
@@ -38,12 +38,6 @@ struct App(Program):
             self.draw.update(frame, input)
             if self.draw.back_pressed:
                 self.scene = MENU
-
-    def render(self, mut frame: Frame) raises:
-        if self.scene == MENU:
-            self.menu.render(frame)
-        else:
-            self.draw.render(frame)
 
 
 def main() raises:

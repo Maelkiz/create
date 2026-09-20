@@ -88,10 +88,6 @@ struct App(Program):
             self.slide.curve = self.curves[self.pick]
             self.slide.play()
 
-    def _row_y(self, i: Int) -> Float64:
-        return 170.0 - Float64(i) * 66.0
-
-    def render(self, mut frame: Frame) raises:
         frame.background(Color(18, 18, 24))
 
         # Tracks first, while outline is still enabled — the dots below turn it
@@ -135,6 +131,9 @@ struct App(Program):
             else:
                 frame.text_color(Color(140, 140, 155))
             frame.text(self.names[i], -614.0, self._row_y(i))
+
+    def _row_y(self, i: Int) -> Float64:
+        return 170.0 - Float64(i) * 66.0
 
 
 def main() raises:

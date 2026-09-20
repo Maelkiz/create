@@ -17,46 +17,38 @@ from create import *
 comptime _DESIGN_W = 800
 comptime _DESIGN_H = 500
 
-comptime _NONE = 0
-comptime _SCREENSHOT = 1
-comptime _IMAGE = 2
-comptime _IMAGE_2X = 3
-
 
 @fieldwise_init
 struct App(Program):
     var angle: Float64
-    var request: Int
-    """What `update` asked for this frame, for `render` to file.
-
-    The save calls live on `Frame`, which only `render` has — and `render`
-    cannot see `Input`. So the keypress is read here and acted on there, and
-    this is cleared at the top of every `update` so one press saves one file.
-    """
     var saved: String
 
     @staticmethod
     def create(mut frame: Frame) raises -> App:
         frame.autoscale = AutoScale.FIT
         frame.design(_DESIGN_W, _DESIGN_H)
-        return App(0.0, _NONE, "")
+        return App(0.0, "")
 
     def update(mut self, mut frame: Frame, input: Input) raises:
-        self.request = _NONE
         self.angle += 0.6 * frame.time.delta
 
+        # Filed the moment the key is read, and written at `present` — the
+        # file holds the whole frame however early in `update` it was asked
+        # for, so nothing has to be drawn before asking.
+        var dir = script_dir()
         if input.just_pressed("s"):
-            self.request = _SCREENSHOT
+            frame.save_screenshot(dir + "/../out/screenshot.png")
             self.saved = "screenshot.png — the window, bars included"
         elif input.just_pressed("i"):
             if input.is_key_down("shift"):
-                self.request = _IMAGE_2X
+                frame.save_image(
+                    dir + "/../out/image@2x.png", 2.0, transparent=True
+                )
                 self.saved = "image@2x.png — 1600x1000, transparent"
             else:
-                self.request = _IMAGE
+                frame.save_image(dir + "/../out/image.png")
                 self.saved = "image.png — 800x500, no bars"
 
-    def render(self, mut frame: Frame) raises:
         frame.background(Color(0x14, 0x1C, 0x26))
 
         with frame.style():
@@ -75,18 +67,6 @@ struct App(Program):
         if self.saved:
             frame.text("wrote " + self.saved, 0, -200)
 
-        # Filed here, written at `present` — the file holds the whole frame
-        # no matter how early in `render` the call is made.
-        var dir = script_dir()
-        if self.request == _SCREENSHOT:
-            frame.save_screenshot(dir + "/../out/screenshot.png")
-        elif self.request == _IMAGE:
-            frame.save_image(dir + "/../out/image.png")
-        elif self.request == _IMAGE_2X:
-            frame.save_image(
-                dir + "/../out/image@2x.png", 2.0, transparent=True
-            )
-
 
 def main() raises:
-    run[App]("Saving the canvas", _DESIGN_W, _DESIGN_H)
+    run[App]("Saving the frame", _DESIGN_W, _DESIGN_H)

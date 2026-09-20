@@ -10,7 +10,6 @@ struct MyApp(Program):
     def update(mut self, mut frame: Frame, input: Input) raises:
         pass  # Executes once per frame, handle input, update state, etc.
 
-    def render(self, mut frame: Frame) raises:
         # Also executes once per frame, frame.rectangle(), frame.circle(), etc.
         frame.background(Color.BLACK)
         frame.text_color(Color.WHITE)

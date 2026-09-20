@@ -39,7 +39,6 @@ struct App(Program):
         self.angle += frame.time.delta
         self.fps = Int(frame.framerate())
 
-    def render(self, mut frame: Frame) raises:
         frame.background(Color(0x20, 0x24, 0x2C))
 
         # A plain filled rect and an outlined one, side by side.

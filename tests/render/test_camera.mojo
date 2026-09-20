@@ -16,7 +16,7 @@ struct IdentityCameraRect(Program):
     def create(mut frame: Frame) raises -> IdentityCameraRect:
         return IdentityCameraRect(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color.BLACK)
         frame.camera(Camera())
         frame.outline(enabled=False)
@@ -42,7 +42,7 @@ struct PannedCameraRect(Program):
     def create(mut frame: Frame) raises -> PannedCameraRect:
         return PannedCameraRect(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color.BLACK)
         frame.camera(Camera(Point2D(20.0, 0.0), 1.0))
         frame.outline(enabled=False)
@@ -66,7 +66,7 @@ struct ZoomedCameraRect(Program):
     def create(mut frame: Frame) raises -> ZoomedCameraRect:
         return ZoomedCameraRect(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color.BLACK)
         frame.camera(Camera(Point2D(0.0, 0.0), 2.0))
         frame.outline(enabled=False)
@@ -90,7 +90,7 @@ struct OverlayIgnoresCamera(Program):
     def create(mut frame: Frame) raises -> OverlayIgnoresCamera:
         return OverlayIgnoresCamera(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color.BLACK)
         frame.camera(Camera(Point2D(50.0, 0.0), 1.0))
         frame.outline(enabled=False)
@@ -115,7 +115,7 @@ struct OverlayRestoresCamera(Program):
     def create(mut frame: Frame) raises -> OverlayRestoresCamera:
         return OverlayRestoresCamera(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color.BLACK)
         frame.camera(Camera(Point2D(20.0, 0.0), 1.0))
         frame.outline(enabled=False)

@@ -7,7 +7,7 @@ struct Sketch(Program):
     def create(mut frame: Frame) raises -> Sketch:
         return Sketch()
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color.WHITE)
         frame.outline(Color.GREEN, thickness=3)
         frame.corner_radius(10)

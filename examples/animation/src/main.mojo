@@ -89,7 +89,6 @@ struct Game(Program):
         self.x = clamp(self.x, frame.left() + margin, frame.right() - margin)
         self.animator.update(frame.time.delta)
 
-    def render(self, mut frame: Frame) raises:
         frame.background(Color(24, 26, 34))
 
         frame.outline(enabled=False)

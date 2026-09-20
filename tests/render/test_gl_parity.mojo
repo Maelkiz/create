@@ -145,7 +145,7 @@ struct _Parity(Program):
         frame.design(_DESIGN_W, _DESIGN_H)
         return _Parity(Sprite.load("tests/fixtures/test_2x2.png"), shape)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(_BACKGROUND)
 
         if self.shape == _SHAPE_RECT:

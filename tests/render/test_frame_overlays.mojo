@@ -18,7 +18,7 @@ struct OverflowingRect(Program):
     def create(mut frame: Frame) raises -> OverflowingRect:
         return OverflowingRect(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.GREEN)
@@ -49,7 +49,7 @@ struct ScaledSprite(Program):
     def create(mut frame: Frame) raises -> ScaledSprite:
         return ScaledSprite(Sprite.load("tests/fixtures/test_2x2.bmp"))
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color.BLACK)
         frame.sprite(self.sprite, 0.0, 0.0, 8, 8)
 

@@ -16,7 +16,6 @@ struct Transforms(Program):
         self.mouse_x = input.mouse_x
         self.mouse_y = input.mouse_y
 
-    def render(self, mut frame: Frame) raises:
         frame.background(Color(8, 8, 20))
 
         var planet_angle = self.elapsed * tau / 10.0

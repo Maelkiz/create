@@ -18,7 +18,7 @@ struct GPURect(Program):
     def create(mut frame: Frame) raises -> GPURect:
         return GPURect(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color(10, 20, 30))
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -48,7 +48,6 @@ struct GPUMover(Program):
     def update(mut self, mut frame: Frame, input: Input) raises:
         self.x += 20.0
 
-    def render(self, mut frame: Frame) raises:
         frame.background(Color(10, 20, 30))
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -100,7 +99,7 @@ struct GPURoundedRect(Program):
     def create(mut frame: Frame) raises -> GPURoundedRect:
         return GPURoundedRect(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color(10, 20, 30))
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -137,7 +136,7 @@ struct GPURoundedTriangle(Program):
     def create(mut frame: Frame) raises -> GPURoundedTriangle:
         return GPURoundedTriangle(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color(10, 20, 30))
         frame.outline(enabled=False)
         frame.fill(Color.RED)

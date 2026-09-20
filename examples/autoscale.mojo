@@ -46,7 +46,6 @@ struct App(Program):
         elif self.x < frame.left() + 40.0:
             self.dir = 1.0
 
-    def render(self, mut frame: Frame) raises:
         frame.background(Color(0x99))
 
         frame.fill(Color.RED)

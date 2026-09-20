@@ -12,7 +12,6 @@ struct App(Program):
     def update(mut self, mut frame: Frame, input: Input) raises:
         self.t = frame.time.elapsed
 
-    def render(self, mut frame: Frame) raises:
         # A translucent background fades the previous frame instead of
         # clearing it, leaving motion trails.
         frame.background(Color(0x11, 0x11, 0x11, 24))

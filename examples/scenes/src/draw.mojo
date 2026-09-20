@@ -22,14 +22,13 @@ struct Draw:
         self._entering = True
 
     def update(mut self, mut frame: Frame, input: Input) raises:
-        self._entering = False
         self.back_pressed = input.mouse_just_pressed(MouseButton.RIGHT)
         self.drawing = input.is_mouse_down(MouseButton.LEFT)
         self.pen = input.mouse
 
-    def render(self, mut frame: Frame) raises:
         if self._entering:
             frame.background(Color(24, 24, 28))
+            self._entering = False
 
         if self.drawing:
             with frame.style():

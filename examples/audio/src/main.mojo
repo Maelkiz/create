@@ -36,7 +36,6 @@ struct AudioDemo(Program):
             self.audio.stop(self.loop_id)
             self.looping = False
 
-    def render(self, mut frame: Frame) raises:
         frame.background(Color.WHITE)
         frame.text_color(Color.BLACK)
         frame.font_size(24)

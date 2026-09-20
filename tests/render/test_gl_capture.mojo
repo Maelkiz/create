@@ -50,7 +50,7 @@ struct GPUScreenshot(Program):
     def create(mut frame: Frame) raises -> GPUScreenshot:
         return GPUScreenshot(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         _scene(frame)
         frame.save_screenshot(_SHOT)
 
@@ -88,7 +88,7 @@ struct CaptureImageCPU(Program):
     def create(mut frame: Frame) raises -> CaptureImageCPU:
         return CaptureImageCPU(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         _scene(frame)
         frame.save_image(_IMG_CPU)
 
@@ -101,7 +101,7 @@ struct CaptureImageGPU(Program):
     def create(mut frame: Frame) raises -> CaptureImageGPU:
         return CaptureImageGPU(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         _scene(frame)
         frame.save_image(_IMG_GPU)
 

@@ -22,7 +22,6 @@ struct CameraDemo(Program):
         if input.is_key_down("down"):
             self.cam.zoom = max(0.3, self.cam.zoom - 1.0 * frame.time.delta)
 
-    def render(self, mut frame: Frame) raises:
         frame.background(Color(15, 15, 25))
         frame.camera(self.cam)
 

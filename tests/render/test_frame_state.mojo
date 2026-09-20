@@ -115,7 +115,7 @@ struct DrawsInCreate(Program):
         frame.save_image(_CREATE_IMG)
         return DrawsInCreate(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         pass
 
 

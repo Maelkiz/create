@@ -16,7 +16,6 @@ struct App(Program):
     def update(mut self, mut frame: Frame, input: Input) raises:
         self.mouse.move_to(input.mouse)
 
-    def render(self, mut frame: Frame) raises:
         if overlaps(self.center, self.mouse):
             frame.background(Color(40, 40, 60))
         else:

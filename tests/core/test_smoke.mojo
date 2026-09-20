@@ -32,7 +32,6 @@ struct Smoke(Program):
                 ArcPointer(Sound.from_pcm(List[Int16](length=1, fill=0)))
             )
 
-    def render(self, mut frame: Frame) raises:
         frame.background(Color.WHITE)
         frame.fill(Color.RED)
         frame.circle((self.x, 0.0), 20)

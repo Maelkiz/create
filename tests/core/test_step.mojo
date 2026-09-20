@@ -20,7 +20,7 @@ struct Painter(Program):
     def create(mut frame: Frame) raises -> Painter:
         return Painter(0)
 
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color.BLUE)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -86,11 +86,10 @@ struct ClickPainter(Program):
     def update(mut self, mut frame: Frame, input: Input) raises:
         self.clicked = input.mouse_just_pressed()
 
-    def render(self, mut frame: Frame) raises:
         frame.background(Color.RED if self.clicked else Color.BLUE)
 
 
-def test_scripted_click_drives_render() raises -> None:
+def test_scripted_click_drives_drawing() raises -> None:
     var mem = MemorySurface(32, 32)
 
     var idle_start = PersistentFrameState()

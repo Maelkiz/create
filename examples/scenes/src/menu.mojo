@@ -3,7 +3,7 @@ from create import *
 
 @fieldwise_init
 struct Menu:
-    """Not a `Program` — a plain struct in the same shape (`update`/`render`).
+    """Not a `Program` — a plain struct in the same shape (`update`).
 
     `App` reads `start_pressed` after calling `update`, the same way it
     would read any other field; that's the whole transition mechanism.
@@ -14,7 +14,6 @@ struct Menu:
     def update(mut self, mut frame: Frame, input: Input) raises:
         self.start_pressed = input.mouse_just_pressed()
 
-    def render(self, mut frame: Frame) raises:
         frame.background(Color(24, 24, 28))
         with frame.style():
             frame.text_color(Color.WHITE)

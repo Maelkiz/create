@@ -30,7 +30,6 @@ struct Game(Program):
         self.x = clamp(self.x, Int(frame.left()) + hw, Int(frame.right()) - hw)
         self.y = clamp(self.y, Int(frame.bottom()) + hh, Int(frame.top()) - hh)
 
-    def render(self, mut frame: Frame) raises:
         frame.background(Color(30, 30, 30))
         frame.sprite(self.sprite, self.x, self.y)
 

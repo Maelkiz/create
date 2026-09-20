@@ -32,7 +32,6 @@ struct Game(Program):
         # jumping doesn't move the camera vertically too.
         self.cam.position = Point2D(self.player.x, 0.0)
 
-    def render(self, mut frame: Frame) raises:
         frame.background(Color(30, 30, 30))
         frame.camera(self.cam)
 
