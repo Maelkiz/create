@@ -32,16 +32,14 @@ struct App(Program):
         options.autoclear = False
         return App(MENU, Menu(False), Draw(False, False, False, Point2D(0, 0)))
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         if self.scene == MENU:
-            self.menu.update(frame, input)
+            self.menu.update(frame)
             if self.menu.start_pressed:
                 self.draw.enter()
                 self.scene = DRAWING
         else:
-            self.draw.update(frame, input)
+            self.draw.update(frame)
             if self.draw.back_pressed:
                 self.scene = MENU
 

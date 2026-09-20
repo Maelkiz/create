@@ -4,7 +4,7 @@ from create.render.options import Options
 from create.render.render_backend import RenderBackend
 from ._step import step
 from ._headless_gl import _run_headless_gl
-from .input import Input
+from create.render.input import Input
 from .program import Program
 from create.render.surface import MemorySurface
 

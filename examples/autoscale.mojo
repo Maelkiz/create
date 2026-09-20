@@ -28,10 +28,8 @@ struct App(Program):
         options.autoscale = AutoScale.FIT
         return App(100.0, 1.0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
-        if input.just_pressed("space"):
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
+        if frame.input.just_pressed("space"):
             if options.autoscale == AutoScale.FIT:
                 options.autoscale = AutoScale.EXTEND
             elif options.autoscale == AutoScale.EXTEND:

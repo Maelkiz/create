@@ -8,6 +8,7 @@ from .viewport import Viewport
 from .options import Options
 from .time import Time
 from .camera import Camera
+from .input import Input
 from create.math.geometry import Rectangle, Circle, Line, Triangle
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
@@ -159,10 +160,11 @@ struct Frame:
     This is the object a program is handed to draw a frame with. `width`/`height`
     are the screen extent and `left`/`right`/`bottom`/`top` its edges — use
     those rather than width arithmetic, since the origin is centred and two of
-    them are negative. `time` is the frame clock, `scale` the autoscale factor,
-    `view` the mapping they all come from. Screen space is camera-independent:
-    these and `Input` don't know a `Camera` exists, since a program sets one on
-    the frame's transform, not on the geometry it reports.
+    them are negative. `time` is the frame clock, `input` this frame's keyboard
+    and mouse, `scale` the autoscale factor, `view` the mapping they all come
+    from. Screen space is camera-independent: these and `input` don't know a
+    `Camera` exists, since a program sets one on the frame's transform, not on
+    the geometry it reports.
 
     A `mut` parameter because the program draws on it, and the recording it
     appends to is the frame's whole output. What it does *not* carry is a
@@ -210,6 +212,14 @@ struct Frame:
     is its only writer — the program reads `delta` and `frame_count` here and
     cannot desynchronise the loop by touching them.
     """
+    var input: Input
+    """This frame's keyboard and mouse state, a snapshot taken at
+    construction, for the same reason and on the same terms as `time`.
+
+    The loop folds a frame's events into the input it owns before the frame is
+    built, so what a program reads here is settled for the whole frame — and
+    writing to it reaches nothing, since the copy dies with the frame.
+    """
     var _letterbox: Color
     """This frame's bar colour, snapshotted from `Options` at construction —
     the frame is drawn under one set of dials, whatever `update` does to them
@@ -236,18 +246,27 @@ struct Frame:
     var _transform_inv: Matrix[3, 3]
     var _transform_stack: List[Matrix[3, 3]]
 
-    def __init__(out self, var state: PersistentFrameState, options: Options):
-        """Adopt the carried-over state, and this frame's mapping and dials.
+    def __init__(
+        out self,
+        var state: PersistentFrameState,
+        options: Options,
+        input: Input,
+    ):
+        """Adopt the carried-over state, and this frame's mapping, dials and
+        input.
 
         `options` is read here and not held: the frame is drawn under the
         dials as they stood when it began, so a program turning one mid-frame
-        changes the next frame rather than this one halfway through.
+        changes the next frame rather than this one halfway through. `input`
+        is copied for the same reason — the loop owns the real one across
+        frames, and this frame reports the state it began with.
         """
         self.view = state.view.copy()
         self.width = state.view.width
         self.height = state.view.height
         self.scale = state.view.scale
         self.time = state.time.copy()
+        self.input = input.copy()
         self._letterbox = options.letterbox
         self._state = state^
         self._style = Style()

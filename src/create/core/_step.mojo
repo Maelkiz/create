@@ -1,6 +1,6 @@
 from create.render.frame import Frame, PersistentFrameState
 from create.render.options import Options
-from .input import Input
+from create.render.input import Input
 from .program import Program
 
 
@@ -24,6 +24,9 @@ def step[
     built for this frame and dropped before the frame is presented. `options`
     is borrowed rather than moved for the opposite reason — it is never a
     `Frame`'s to own, which is what lets `update` be handed both at once.
+    `input` is borrowed and copied onto the frame: the loop owns the one that
+    persists across frames, and the program reads this frame's snapshot as
+    `frame.input`.
 
     **The caller presents.** A frame ends with the recording complete and the
     state handed back; `state.backend.present(surface, scale)` is the caller's
@@ -34,8 +37,8 @@ def step[
     know how to build; in the windowed case that is only valid after events
     have been pumped.
     """
-    var frame = Frame(state^, options)
-    program.update(options, frame, input)
+    var frame = Frame(state^, options, input)
+    program.update(options, frame)
     # Recorded last, so it doubles as the clip for anything drawn out of
     # bounds — the replay honours the buffer's order.
     frame._draw_letterbox()

@@ -35,9 +35,7 @@ struct App(Program):
         var logo = Sprite.load(script_dir() + "/sprite/assets/sprite.png")
         return App(0.0, logo^, 0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         self.angle += frame.time.delta
         self.fps = Int(frame.framerate())
 

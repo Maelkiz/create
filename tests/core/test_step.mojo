@@ -20,9 +20,7 @@ struct Painter(Program):
     def create(mut options: Options) raises -> Painter:
         return Painter(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLUE)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -85,10 +83,8 @@ struct ClickPainter(Program):
     def create(mut options: Options) raises -> ClickPainter:
         return ClickPainter(False)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
-        self.clicked = input.mouse_just_pressed()
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
+        self.clicked = frame.input.mouse_just_pressed()
 
         frame.background(Color.RED if self.clicked else Color.BLUE)
 

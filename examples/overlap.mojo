@@ -13,10 +13,8 @@ struct App(Program):
             mouse=Circle(0, 0, 100),
         )
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
-        self.mouse.move_to(input.mouse)
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
+        self.mouse.move_to(frame.input.mouse)
 
         if overlaps(self.center, self.mouse):
             frame.background(Color(40, 40, 60))

@@ -19,10 +19,8 @@ struct Game(Program):
         var h: Float64 = 80
         return Game(Player(0.0, 0.0, w, h, 0.0, False, 2), Camera())
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
-        self.player.update(frame, input)
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
+        self.player.update(frame)
 
         var half_w = self.player.width / 2
         if self.player.x - half_w < self.WORLD_LEFT:

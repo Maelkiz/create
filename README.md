@@ -20,9 +20,7 @@ struct MyApp(Program):
         # Set initial application state here
         return MyApp()  
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         # Called once per frame: handle input, advance state, and render to the screen
         frame.text_align(Align.CENTER)
         frame.text("Hello World!", 0, 0)

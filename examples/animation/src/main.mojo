@@ -52,12 +52,10 @@ struct Game(Program):
         animator.loop()
         return Game(idle^, run^, spin^, animator^, 0.0, False)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         var speed = 240.0 * frame.time.delta
 
-        if input.just_pressed("space") and not self.spinning:
+        if frame.input.just_pressed("space") and not self.spinning:
             # A one-shot: it holds its last frame and reports is_finished().
             self.animator.play(self.spin.copy())
             self.spinning = True
@@ -67,9 +65,9 @@ struct Game(Program):
                 self.spinning = False
         else:
             var dx = 0.0
-            if input.is_key_down("a") or input.is_key_down("left"):
+            if frame.input.is_key_down("a") or frame.input.is_key_down("left"):
                 dx -= speed
-            if input.is_key_down("d") or input.is_key_down("right"):
+            if frame.input.is_key_down("d") or frame.input.is_key_down("right"):
                 dx += speed
             self.x += dx
 
@@ -81,7 +79,7 @@ struct Game(Program):
             else:
                 self.animator.loop(self.idle.copy())
 
-        if input.just_pressed("p"):
+        if frame.input.just_pressed("p"):
             if self.animator.is_playing():
                 self.animator.pause()
             else:

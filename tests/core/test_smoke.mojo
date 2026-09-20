@@ -23,13 +23,11 @@ struct Smoke(Program):
         options.quit_on_escape = True
         return Smoke(0.0, Audio())
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         self.audio.update()
-        if input.is_key_down("right"):
+        if frame.input.is_key_down("right"):
             self.x += 100.0 * frame.time.delta
-        if input.just_pressed("space"):
+        if frame.input.just_pressed("space"):
             _ = self.audio.play(
                 ArcPointer(Sound.from_pcm(List[Int16](length=1, fill=0)))
             )

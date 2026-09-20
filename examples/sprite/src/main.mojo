@@ -14,17 +14,15 @@ struct Game(Program):
         )
         return Game(sprite^, 0, 0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         var speed = 15
-        if input.is_key_down("w"):
+        if frame.input.is_key_down("w"):
             self.y += speed
-        if input.is_key_down("s"):
+        if frame.input.is_key_down("s"):
             self.y -= speed
-        if input.is_key_down("a"):
+        if frame.input.is_key_down("a"):
             self.x -= speed
-        if input.is_key_down("d"):
+        if frame.input.is_key_down("d"):
             self.x += speed
 
         var hw = (self.sprite.width) // 2

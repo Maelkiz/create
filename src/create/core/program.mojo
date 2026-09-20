@@ -1,6 +1,5 @@
 from create.render.frame import Frame
 from create.render.options import Options
-from .input import Input
 
 
 trait Program(Deinitable, Movable):
@@ -8,15 +7,16 @@ trait Program(Deinitable, Movable):
     frame.
 
     One per-frame method, not two. A separate `render` would have to be handed
-    a frame it may not write to and no `Input` at all, which is what forced a
+    a frame it may not write to and no input at all, which is what forced a
     program to smuggle a decision from one into the other through a field —
     reading a key in `update` to file a screenshot in `render`, or caching a
     framerate reading to draw it. Deciding and drawing are the same frame's
     work, so they are the same method's.
 
-    There are no event callbacks. Input arrives as `update`'s parameter and
-    nothing else, so there is one place a frame's decisions are made and no
-    ordering question between a callback and the frame body.
+    There are no event callbacks. Input arrives on the frame, as
+    `frame.input`, and nowhere else — so there is one place a frame's
+    decisions are made and no ordering question between a callback and the
+    frame body.
     """
 
     @staticmethod
@@ -37,17 +37,14 @@ trait Program(Deinitable, Movable):
         """
         ...
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         """Advance the program by one frame, and draw it.
 
-        The three parameters are three lifetimes, in that order. `options`
-        outlives the frame and is written for the *next* one — the autoscale
-        mode, the clear, `quit()`. `frame` is this frame alone: it is built
-        fresh, drawn on, and dropped before presentation, so it must not be
-        stored anywhere. `input` is read-only, because the run loop is its
-        only writer and borrowing it that way makes the one-way flow a
-        compile error to violate rather than a convention to remember.
+        Two parameters, two lifetimes. `options` outlives the frame and is
+        written for the *next* one — the autoscale mode, the clear, `quit()`.
+        `frame` is this frame alone: it is built fresh, drawn on, and dropped
+        before presentation, so it must not be stored anywhere. Keyboard and
+        mouse are `frame.input`, alongside `frame.time`, so a sketch that
+        reads neither names neither.
         """
         ...

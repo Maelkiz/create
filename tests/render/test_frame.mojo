@@ -31,9 +31,7 @@ struct Background(Program):
     def create(mut options: Options) raises -> Background:
         return Background(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color(10, 20, 30))
 
 
@@ -55,9 +53,7 @@ struct CentredRect(Program):
     def create(mut options: Options) raises -> CentredRect:
         return CentredRect(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -85,9 +81,7 @@ struct HighRect(Program):
     def create(mut options: Options) raises -> HighRect:
         return HighRect(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.GREEN)
@@ -111,9 +105,7 @@ struct CentredCircle(Program):
     def create(mut options: Options) raises -> CentredCircle:
         return CentredCircle(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.CYAN)
@@ -142,9 +134,7 @@ struct UprightTriangle(Program):
     def create(mut options: Options) raises -> UprightTriangle:
         return UprightTriangle(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.MAGENTA)
@@ -172,9 +162,7 @@ struct AlphaOverRed(Program):
     def create(mut options: Options) raises -> AlphaOverRed:
         return AlphaOverRed(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.RED)
         frame.outline(enabled=False)
         frame.fill(Color(0, 0, 255, 128))
@@ -195,9 +183,7 @@ struct ThickLine(Program):
     def create(mut options: Options) raises -> ThickLine:
         return ThickLine(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(Color.WHITE, thickness=3)
         frame.line(-10.0, 0.0, 10.0, 0.0)
@@ -221,9 +207,7 @@ struct FitBars(Program):
     def create(mut options: Options) raises -> FitBars:
         return FitBars(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLUE)
 
 
@@ -236,9 +220,7 @@ struct ExtendNoBars(Program):
         options.autoscale = AutoScale.EXTEND
         return ExtendNoBars(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLUE)
 
 
@@ -266,9 +248,7 @@ struct RotatedRect(Program):
     def create(mut options: Options) raises -> RotatedRect:
         return RotatedRect(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.YELLOW)
@@ -295,9 +275,7 @@ struct SharpRect(Program):
     def create(mut options: Options) raises -> SharpRect:
         return SharpRect(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -321,9 +299,7 @@ struct RoundedRect(Program):
     def create(mut options: Options) raises -> RoundedRect:
         return RoundedRect(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -349,9 +325,7 @@ struct RoundedRectOutlined(Program):
     def create(mut options: Options) raises -> RoundedRectOutlined:
         return RoundedRectOutlined(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(Color.BLUE, thickness=2)
         frame.fill(Color.RED)
@@ -390,9 +364,7 @@ struct ScaledRoundedRect(Program):
     def create(mut options: Options) raises -> ScaledRoundedRect:
         return ScaledRoundedRect(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -417,9 +389,7 @@ struct RotatedRoundedRect(Program):
     def create(mut options: Options) raises -> RotatedRoundedRect:
         return RotatedRoundedRect(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.YELLOW)
@@ -448,9 +418,7 @@ struct SharpTriangle(Program):
     def create(mut options: Options) raises -> SharpTriangle:
         return SharpTriangle(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -475,9 +443,7 @@ struct RoundedTriangle(Program):
     def create(mut options: Options) raises -> RoundedTriangle:
         return RoundedTriangle(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -512,9 +478,7 @@ struct RoundedTriangleOutlined(Program):
     def create(mut options: Options) raises -> RoundedTriangleOutlined:
         return RoundedTriangleOutlined(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(Color.BLUE, thickness=4)
         frame.fill(Color.RED)
@@ -550,9 +514,7 @@ struct ThinRoundedTriangle(Program):
     def create(mut options: Options) raises -> ThinRoundedTriangle:
         return ThinRoundedTriangle(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -582,9 +544,7 @@ struct RotatedRoundedTriangle(Program):
     def create(mut options: Options) raises -> RotatedRoundedTriangle:
         return RotatedRoundedTriangle(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.YELLOW)
@@ -617,9 +577,7 @@ struct SpriteBlit(Program):
     def create(mut options: Options) raises -> SpriteBlit:
         return SpriteBlit(Sprite.load("tests/fixtures/test_2x2.bmp"))
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.sprite(self.sprite, 0.0, 0.0)
 
@@ -645,9 +603,7 @@ struct PngSpriteBlit(Program):
     def create(mut options: Options) raises -> PngSpriteBlit:
         return PngSpriteBlit(Sprite.load("tests/fixtures/test_2x2.png"))
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.sprite(self.sprite, 0.0, 0.0)
 
@@ -673,9 +629,7 @@ struct StyleAcrossFrames(Program):
     def create(mut options: Options) raises -> StyleAcrossFrames:
         return StyleAcrossFrames(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         self.frame = frame.time.frame_count
 
         frame.background(Color.BLACK)
@@ -702,9 +656,7 @@ struct GuardedStyle(Program):
     def create(mut options: Options) raises -> GuardedStyle:
         return GuardedStyle(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -728,9 +680,7 @@ struct StrokedRect(Program):
     def create(mut options: Options) raises -> StrokedRect:
         return StrokedRect(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.fill(Color.RED)
         frame.outline(Color.BLUE, thickness=4)
@@ -756,9 +706,7 @@ struct StrokedCircle(Program):
     def create(mut options: Options) raises -> StrokedCircle:
         return StrokedCircle(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.fill(Color.GREEN)
         frame.outline(Color.WHITE, thickness=4)
@@ -781,9 +729,7 @@ struct StrokedTriangle(Program):
     def create(mut options: Options) raises -> StrokedTriangle:
         return StrokedTriangle(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.fill(Color.ORANGE)
         frame.outline(Color.WHITE, thickness=4)
@@ -805,9 +751,7 @@ struct NoFillRect(Program):
     def create(mut options: Options) raises -> NoFillRect:
         return NoFillRect(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.fill(enabled=False)
         frame.outline(Color.WHITE, thickness=4)
@@ -828,9 +772,7 @@ struct NoFillCircle(Program):
     def create(mut options: Options) raises -> NoFillCircle:
         return NoFillCircle(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.fill(enabled=False)
         frame.outline(Color.WHITE, thickness=4)
@@ -851,9 +793,7 @@ struct RotatedCircle(Program):
     def create(mut options: Options) raises -> RotatedCircle:
         return RotatedCircle(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.CYAN)
@@ -884,9 +824,7 @@ struct QuarterTurnRect(Program):
     def create(mut options: Options) raises -> QuarterTurnRect:
         return QuarterTurnRect(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.YELLOW)
@@ -902,9 +840,7 @@ struct SwappedRect(Program):
     def create(mut options: Options) raises -> SwappedRect:
         return SwappedRect(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.YELLOW)
@@ -934,9 +870,7 @@ struct GeometryOverloads(Program):
     def create(mut options: Options) raises -> GeometryOverloads:
         return GeometryOverloads(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
 
         frame.outline(enabled=False)
@@ -998,9 +932,7 @@ struct ToWorldRoundTrip(Program):
     def create(mut options: Options) raises -> ToWorldRoundTrip:
         return ToWorldRoundTrip(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         with frame.transform(translate(10.0, 20.0)):
             var origin = frame.to_local(10.0, 20.0)
@@ -1031,9 +963,7 @@ struct ThickLineUnderNonUniformScale(Program):
     def create(mut options: Options) raises -> ThickLineUnderNonUniformScale:
         return ThickLineUnderNonUniformScale(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(Color.WHITE, thickness=3)
         with frame.transform(scale(3.0, 1.0)):
@@ -1088,9 +1018,7 @@ struct TextThroughFrame(Program):
     def create(mut options: Options) raises -> TextThroughFrame:
         return TextThroughFrame(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.text_color(Color.WHITE)
         frame.font_size(24)
@@ -1118,9 +1046,7 @@ struct TransparentText(Program):
     def create(mut options: Options) raises -> TransparentText:
         return TransparentText(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.text_color(Color(255, 255, 255, 0))
         frame.text("Hi", 0.0, 0.0)
@@ -1139,9 +1065,7 @@ struct TextBesideShape(Program):
     def create(mut options: Options) raises -> TextBesideShape:
         return TextBesideShape(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)
@@ -1176,9 +1100,7 @@ struct SmallText(Program):
     def create(mut options: Options) raises -> SmallText:
         return SmallText(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.text_color(Color.WHITE)
         frame.font_size(12)
@@ -1194,9 +1116,7 @@ struct BigText(Program):
     def create(mut options: Options) raises -> BigText:
         return BigText(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.text_color(Color.WHITE)
         frame.font_size(48)
@@ -1225,9 +1145,7 @@ struct QuitOnFrameTwo(Program):
     def create(mut options: Options) raises -> QuitOnFrameTwo:
         return QuitOnFrameTwo()
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         self.frame = frame.time.frame_count
         if self.frame == 2:
             options.quit()
@@ -1281,9 +1199,7 @@ struct AnimatorBlit(Program):
         a.play()
         return AnimatorBlit(a^)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         self.animator.update(frame.time.delta)
 
         frame.background(Color.BLACK)
@@ -1320,9 +1236,7 @@ struct AnimatorSized(Program):
             SpriteAnimator(ArcPointer(SpriteAnimation(frames^)))
         )
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.sprite(self.animator, Point2D(0.0, 0.0), 40, 40)
 
@@ -1359,9 +1273,7 @@ struct AnimatorEveryOverload(Program):
             SpriteAnimator(ArcPointer(SpriteAnimation(frames^)))
         )
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         # Top row: the unsized overloads, at 1:1 so the 2x2 frame covers its
         # own anchor pixel.
@@ -1432,9 +1344,7 @@ struct SaveImage(Program):
     def create(mut options: Options) raises -> SaveImage:
         return SaveImage(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         _scene(frame)
         frame.save_image(_IMG_1X)
 
@@ -1447,9 +1357,7 @@ struct SaveImage2x(Program):
     def create(mut options: Options) raises -> SaveImage2x:
         return SaveImage2x(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         _scene(frame)
         frame.save_image(_IMG_2X, scale=2.0)
 
@@ -1462,9 +1370,7 @@ struct SaveImageTransparent(Program):
     def create(mut options: Options) raises -> SaveImageTransparent:
         return SaveImageTransparent(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         _scene(frame)
         frame.save_image(_IMG_ALPHA, transparent=True)
 
@@ -1533,9 +1439,7 @@ struct SaveScreenshot(Program):
     def create(mut options: Options) raises -> SaveScreenshot:
         return SaveScreenshot(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         _scene(frame)
         frame.save_screenshot(_SHOT)
 
@@ -1548,9 +1452,7 @@ struct SaveBoth(Program):
     def create(mut options: Options) raises -> SaveBoth:
         return SaveBoth(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         _scene(frame)
         frame.save_screenshot(_BOTH_SHOT)
         frame.save_image(_BOTH_IMG)

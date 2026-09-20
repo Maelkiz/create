@@ -77,15 +77,13 @@ struct App(Program):
             pick=_HERO,
         )
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         # Nothing else advances a tween. A tween never updated sits at its
         # start forever, exactly like an un-ticked SpriteAnimator.
         self.clock.update(frame.time.delta)
         self.slide.update(frame.time.delta)
 
-        if input.just_pressed("space"):
+        if frame.input.just_pressed("space"):
             self.pick = (self.pick + 1) % len(self.curves)
             self.slide.curve = self.curves[self.pick]
             self.slide.play()

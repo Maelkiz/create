@@ -444,9 +444,7 @@ struct RotatedRect(Program):
     def __init__(out self, unused: Int):
         self._unused = unused
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.RED)

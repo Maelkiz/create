@@ -7,7 +7,7 @@ from create.render.options import Options
 from ._events import apply_events
 from ._step import step
 from create.render.surface import Surface
-from .input import Input
+from create.render.input import Input
 from create.render.autoscale import AutoScale
 from .program import Program
 from .window_mode import WindowMode

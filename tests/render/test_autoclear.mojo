@@ -21,9 +21,7 @@ struct DrawsNothing(Program):
     def create(mut options: Options) raises -> DrawsNothing:
         return DrawsNothing(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         pass
 
 
@@ -36,9 +34,7 @@ struct NoAutoclear(Program):
         options.autoclear = False
         return NoAutoclear(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         pass
 
 
@@ -51,9 +47,7 @@ struct InkOnFirstFrameOnly(Program):
         options.autoclear = False
         return InkOnFirstFrameOnly(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         # `_tick` runs before `update`, so the first frame is count 1.
         if frame.time.frame_count > 1:
             return
@@ -70,9 +64,7 @@ struct OwnBackground(Program):
     def create(mut options: Options) raises -> OwnBackground:
         return OwnBackground(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLUE)
 
 
@@ -101,7 +93,7 @@ def test_an_opaque_background_replaces_the_autoclear() raises -> None:
     var options = Options()
     var state = PersistentFrameState()
     state._set_viewport(options, 200, 100)
-    var frame = Frame(state^, options)
+    var frame = Frame(state^, options, Input())
     frame.background(Color.BLUE)
     var out = frame^._release()
     assert_equal(len(out.backend.commands), 1)
@@ -112,7 +104,7 @@ def test_a_translucent_background_keeps_both() raises -> None:
     var options = Options()
     var state = PersistentFrameState()
     state._set_viewport(options, 200, 100)
-    var frame = Frame(state^, options)
+    var frame = Frame(state^, options, Input())
     frame.background(Color(0x11, 0x11, 0x11, 24))
     var out = frame^._release()
     assert_equal(len(out.backend.commands), 2)
@@ -123,7 +115,7 @@ def test_autoclear_records_nothing_when_off() raises -> None:
     options.autoclear = False
     var state = PersistentFrameState()
     state._set_viewport(options, 200, 100)
-    var frame = Frame(state^, options)
+    var frame = Frame(state^, options, Input())
     var out = frame^._release()
     assert_equal(len(out.backend.commands), 0)
 

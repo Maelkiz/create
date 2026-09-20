@@ -5,26 +5,31 @@ from create.math.vector2d import Vector2D
 from .key import Key, _KeyBits
 
 
-struct Input(Movable):
-    """Keyboard and mouse state for one frame, as `Program.update` sees it.
+struct Input(Copyable, Movable):
+    """Keyboard and mouse state for one frame, read as `frame.input`.
 
     The whole input surface — there are no event callbacks, because every
     window event either lands on a field here or is already reflected in
     `Frame` (`frame.width`/`height` are rebuilt every frame, so a resize needs
     no notification of its own).
 
-    A parameter of its own rather than a field on `Frame`, because it is the
-    one thing a program never writes: `frame` must be `mut` for `quit`,
-    `autoscale` and every draw call, so anything on it would inherit that
-    mutability and the one-way flow would stop being checkable.
+    A field on `Frame` rather than a parameter of its own, alongside `time`
+    and for the same reason: both are per-frame readings the loop takes, and
+    reaching them the same way is one thing less to remember. It costs the
+    checkable one-way flow a parameter gave — `frame` is `mut` for every draw
+    call, so `frame.input` is writable too, exactly as `frame.time` is — and
+    buys a sketch that reads neither naming neither. The copy is the
+    consolation: the loop owns the `Input` that persists across frames, this
+    one is a snapshot, and a program writing to it reaches nothing that
+    outlives the frame.
 
     Being a plain struct, it is also how input becomes scriptable: a test fills
     one in and calls `step` directly, driving click- or key-driven behaviour
     with no window involved.
 
     `mouse` is in screen coordinates, so it is negative left of and below the
-    origin — camera-independent, since `Input` is filled before a program's
-    `Frame` (and any `Camera` it sets) exists for the frame. Convert with
+    origin — camera-independent, since the loop folds a frame's events before
+    the `Frame` (and any `Camera` it sets) exists. Convert with
     `Camera.to_world` where a program uses one. It and `mouse_press_pos` are
     `Point2D` because they are locations; `wheel` stays a `Vector2D` because a
     scroll delta is a displacement.

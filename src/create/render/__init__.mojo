@@ -8,6 +8,8 @@ from .options import Options
 from .time import Time
 from .font import Font, FontWeight
 from .camera import Camera
+from .key import Key
+from .input import Input, MouseButton
 from .frame import (
     Frame,
     PersistentFrameState,

@@ -12,9 +12,7 @@ struct App(Program):
         options.autoclear = False
         return App(0.0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         self.t = frame.time.elapsed
 
         # A translucent background fades the previous frame instead of

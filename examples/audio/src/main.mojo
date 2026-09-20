@@ -23,18 +23,16 @@ struct AudioDemo(Program):
         )
         return AudioDemo(audio^, chime, ambience, 0, False)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         self.audio.update()
 
-        if input.just_pressed("space"):
+        if frame.input.just_pressed("space"):
             _ = self.audio.play(self.chime)
 
-        if input.just_pressed("h"):
+        if frame.input.just_pressed("h"):
             self.loop_id = self.audio.play(self.ambience, loop=True)
             self.looping = True
-        if input.just_released("h"):
+        if frame.input.just_released("h"):
             self.audio.stop(self.loop_id)
             self.looping = False
 

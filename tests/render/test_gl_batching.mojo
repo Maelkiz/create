@@ -11,7 +11,7 @@ from window import GLWindow
 
 from create import *
 from create.core._step import step
-from create.core.input import Input
+from create.render.input import Input
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.autoscale import AutoScale
@@ -43,9 +43,7 @@ struct ClearMidFrame(Program):
     def create(mut options: Options) raises -> ClearMidFrame:
         return ClearMidFrame(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         frame.fill(Color.BLUE)
@@ -65,9 +63,7 @@ struct TwoSprites(Program):
     def create(mut options: Options) raises -> TwoSprites:
         return TwoSprites(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         var a = Sprite.solid(2, 2, 255, 0, 255)
         var b = Sprite.solid(2, 2, 0, 255, 255)
@@ -83,9 +79,7 @@ struct TextAndSprite(Program):
     def create(mut options: Options) raises -> TextAndSprite:
         return TextAndSprite(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         var img = Sprite.solid(2, 2, 255, 0, 0)
         frame.sprite(img, -30, 0, 16, 16)
@@ -103,9 +97,7 @@ struct ManyShapes(Program):
     def create(mut options: Options) raises -> ManyShapes:
         return ManyShapes(0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(Color.BLACK)
         frame.outline(enabled=False)
         for gy in range(_GRID):

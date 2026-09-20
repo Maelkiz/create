@@ -29,20 +29,18 @@ struct App(Program):
         options.design_resolution(_DESIGN_W, _DESIGN_H)
         return App(0.0, "")
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         self.angle += 0.6 * frame.time.delta
 
         # Filed the moment the key is read, and written at `present` — the
         # file holds the whole frame however early in `update` it was asked
         # for, so nothing has to be drawn before asking.
         var dir = script_dir()
-        if input.just_pressed("s"):
+        if frame.input.just_pressed("s"):
             frame.save_screenshot(dir + "/../out/screenshot.png")
             self.saved = "screenshot.png — the window, bars included"
-        elif input.just_pressed("i"):
-            if input.is_key_down("shift"):
+        elif frame.input.just_pressed("i"):
+            if frame.input.is_key_down("shift"):
                 frame.save_image(
                     dir + "/../out/image@2x.png", 2.0, transparent=True
                 )

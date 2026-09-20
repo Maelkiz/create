@@ -28,7 +28,7 @@ from create.math.vector2d import Vector2D
 from create.render.options import Options
 from create.render.viewport import Viewport
 
-from .input import Input
+from create.render.input import Input
 
 
 def apply_events(

@@ -143,9 +143,7 @@ struct _Parity(Program):
         options.design_resolution(_DESIGN_W, _DESIGN_H)
         return _Parity(Sprite.load("tests/fixtures/test_2x2.png"), shape)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         frame.background(_BACKGROUND)
 
         if self.shape == _SHAPE_RECT:

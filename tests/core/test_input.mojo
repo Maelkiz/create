@@ -1,5 +1,5 @@
 from std.testing import TestSuite, assert_equal, assert_true
-from create.core.input import Input
+from create.render.input import Input
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 

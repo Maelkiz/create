@@ -23,7 +23,7 @@ from create.render.surface import MemorySurface
 
 from ._step import step
 from .headless import _FRAME_MILLIS
-from .input import Input
+from create.render.input import Input
 from .program import Program
 
 comptime _HEADLESS_MSAA_SAMPLES = 4

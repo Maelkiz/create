@@ -54,9 +54,7 @@ struct Bench(Program):
             0.0,
         )
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         self.t += frame.time.delta
         self.frames += 1
         self.elapsed += frame.time.delta

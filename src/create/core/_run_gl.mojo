@@ -26,7 +26,7 @@ from create.render.options import Options
 
 from ._events import apply_events
 from ._step import step
-from .input import Input
+from create.render.input import Input
 from .program import Program
 from .window_mode import WindowMode
 

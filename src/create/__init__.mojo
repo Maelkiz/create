@@ -18,9 +18,7 @@ struct Sketch(Program):
     def create(mut options: Options) raises -> Self:
         return Self(0.0)
 
-    def update(
-        mut self, mut options: Options, mut frame: Frame, input: Input
-    ) raises:
+    def update(mut self, mut options: Options, mut frame: Frame) raises:
         self.angle += frame.time.delta
         frame.background(Color.BLACK)
         frame.circle((100 * cos(self.angle), 100 * sin(self.angle)), 20)
