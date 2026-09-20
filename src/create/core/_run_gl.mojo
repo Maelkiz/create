@@ -99,10 +99,10 @@ def _wait_for_dimensions(mut win: GLWindow, mut ctx: Context) raises:
 
 def _cap_frame_rate(mut win: GLWindow, ctx: Context, frame_start: Int) raises:
     """Sleep off whatever is left of the target frame duration, if any."""
-    if ctx._frame_cap_fps <= 0:
+    if ctx._fps_cap <= 0:
         return
     var worked_ms = win.ticks() - frame_start
-    var target_ms = 1000.0 / Float64(ctx._frame_cap_fps)
+    var target_ms = 1000.0 / Float64(ctx._fps_cap)
     var remaining_ms = target_ms - Float64(worked_ms)
     if remaining_ms > 0.0:
         sleep(remaining_ms / 1000.0)

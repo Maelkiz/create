@@ -239,7 +239,7 @@ def test_framerate_is_inverse_of_delta() raises -> None:
 def test_frame_cap_stores_the_target_fps() raises -> None:
     var ctx = Context()
     ctx.frame_cap(30)
-    assert_equal(ctx._frame_cap_fps, 30)
+    assert_equal(ctx._fps_cap, 30)
 
 
 def test_frame_cap_rejects_non_positive_fps() raises -> None:

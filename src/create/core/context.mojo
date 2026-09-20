@@ -28,7 +28,7 @@ struct Context(Movable):
     var scale: Float64
     var view: Viewport
     var _quit: Bool
-    var _frame_cap_fps: Int
+    var _fps_cap: Int
 
     def __init__(out self):
         self.time = Time()
@@ -39,7 +39,7 @@ struct Context(Movable):
         self.scale = 1.0
         self.view = Viewport()
         self._quit = False
-        self._frame_cap_fps = 0
+        self._fps_cap = 0
 
     def design(mut self, width: Int, height: Int, mode: Int = AutoScale.FIT):
         """Author this program in a fixed world size, scaled to any window.
@@ -110,7 +110,7 @@ struct Context(Movable):
         """
         if fps <= 0:
             raise Error("frame_cap fps must be positive, got " + String(fps))
-        self._frame_cap_fps = fps
+        self._fps_cap = fps
 
     def quit(mut self):
         """Ask the run loop to stop after the current frame.
