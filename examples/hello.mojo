@@ -15,4 +15,4 @@ struct MyApp(Program):
 
 
 def main() raises:
-    run[MyApp]("Example Sketch", WindowMode.FULLSCREEN)
+    run[MyApp]("Hello", WindowMode.FULLSCREEN)
