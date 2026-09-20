@@ -2,7 +2,7 @@
 interactive graphics.
 
 `from create import *` is the import a program needs. It brings in the whole
-public surface: the `Program` trait and the run loops, `Canvas` and the drawing
+public surface: the `Program` trait and the run loops, `Frame` and the drawing
 types, the vector and matrix maths, sprites, audio, and a re-export of
 `std.math` so `sin`, `cos` and `pi` are there without a second import.
 
@@ -21,9 +21,9 @@ struct Sketch(Program):
     def update(mut self, mut ctx: Context, input: Input) raises:
         self.angle += ctx.time.delta
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color.BLACK)
-        canvas.circle((100 * cos(self.angle), 100 * sin(self.angle)), 20)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color.BLACK)
+        frame.circle((100 * cos(self.angle), 100 * sin(self.angle)), 20)
 
 
 def main() raises:
@@ -36,7 +36,7 @@ on — so this module is a convenience, not a layer.
 
 **What this module re-exports is the union of the subpackages.** Each of them
 exports the names it owns and nothing from a layer below — `create.core` names
-`Canvas` and `Rectangle` in its signatures but exports neither — so a single
+`Frame` and `Rectangle` in its signatures but exports neither — so a single
 subpackage star is never a preamble; this module is. It re-exports everything
 public by star-importing all five, so a name added to `math/__init__.mojo`
 appears here with no second edit and the two cannot drift apart.

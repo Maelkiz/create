@@ -91,17 +91,17 @@ struct App(Program):
     def _row_y(self, i: Int) -> Float64:
         return 170.0 - Float64(i) * 66.0
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color(18, 18, 24))
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color(18, 18, 24))
 
         # Tracks first, while outline is still enabled — the dots below turn it
         # off and a line drawn after that would not appear.
-        canvas.outline(Color(44, 44, 58), thickness=3)
-        canvas.line((-420.0, 300.0), (420.0, 300.0))
+        frame.outline(Color(44, 44, 58), thickness=3)
+        frame.line((-420.0, 300.0), (420.0, 300.0))
         for i in range(len(self.curves)):
-            canvas.line((-360.0, self._row_y(i)), (580.0, self._row_y(i)))
+            frame.line((-360.0, self._row_y(i)), (580.0, self._row_y(i)))
 
-        canvas.outline(enabled=False)
+        frame.outline(enabled=False)
 
         # The hero: a point moved by lerping between two positions with the
         # tween's eased value. OUT_BACK and OUT_ELASTIC leave 0..1 mid-run, so
@@ -109,32 +109,32 @@ struct App(Program):
         var pos = Point2D(-420.0, 300.0).lerp(
             Point2D(420.0, 300.0), self.slide.value
         )
-        canvas.fill(Color(235, 120, 70))
-        canvas.rectangle(pos, 44, 44)
+        frame.fill(Color(235, 120, 70))
+        frame.rectangle(pos, 44, 44)
 
         # One dot per curve, all reading the same progress.
-        canvas.fill(Color(90, 170, 255))
+        frame.fill(Color(90, 170, 255))
         for i in range(len(self.curves)):
             var t = ease(self.curves[i], self.clock.progress)
-            canvas.circle((lerp(-360.0, 580.0, t), self._row_y(i)), 11)
+            frame.circle((lerp(-360.0, 580.0, t), self._row_y(i)), 11)
 
-        canvas.text_color(Color(200, 200, 212))
-        canvas.font_size(30)
-        canvas.text_align(Align.TOP)
-        canvas.text("Easing and Tweens", 0, 362)
-        canvas.font_size(18)
-        canvas.text(
+        frame.text_color(Color(200, 200, 212))
+        frame.font_size(30)
+        frame.text_align(Align.TOP)
+        frame.text("Easing and Tweens", 0, 362)
+        frame.font_size(18)
+        frame.text(
             "space  cycles the hero curve: " + self.names[self.pick], 0, 238
         )
 
-        canvas.font_size(18)
-        canvas.text_align(Align.LEFT)
+        frame.font_size(18)
+        frame.text_align(Align.LEFT)
         for i in range(len(self.curves)):
             if i == self.pick:
-                canvas.text_color(Color(235, 120, 70))
+                frame.text_color(Color(235, 120, 70))
             else:
-                canvas.text_color(Color(140, 140, 155))
-            canvas.text(self.names[i], -614.0, self._row_y(i))
+                frame.text_color(Color(140, 140, 155))
+            frame.text(self.names[i], -614.0, self._row_y(i))
 
 
 def main() raises:

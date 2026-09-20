@@ -53,10 +53,10 @@ struct Player:
         else:
             self.on_ground = False
 
-    def draw(self, mut canvas: Canvas) raises:
+    def draw(self, mut frame: Frame) raises:
         # Scoped, because this is a callee: without the guard the caller's
         # next draw would silently inherit this fill and outline(enabled=False).
-        with canvas.style():
-            canvas.fill(Color(220, 80, 80))
-            canvas.outline(enabled=False)
-            canvas.rectangle(self.x, self.y, self.width, self.height)
+        with frame.style():
+            frame.fill(Color(220, 80, 80))
+            frame.outline(enabled=False)
+            frame.rectangle(self.x, self.y, self.width, self.height)

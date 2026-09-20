@@ -1,4 +1,4 @@
-from create.render.canvas import Canvas
+from create.render.frame import Frame
 from .context import Context
 from .input import Input
 
@@ -35,11 +35,11 @@ trait Program(Deinitable, Movable):
         """
         pass
 
-    def render(self, mut canvas: Canvas) raises:
+    def render(self, mut frame: Frame) raises:
         """Draw one frame.
 
         `self` is immutable: rendering reads the state `update` produced. The
-        `canvas` is built fresh for this frame and dropped after, so it must
+        `frame` is built fresh for this frame and dropped after, so it must
         not be stored anywhere.
         """
         pass

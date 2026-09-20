@@ -2,9 +2,9 @@ from std.time import sleep
 
 from window.window import Window
 from create.render.render_backend import RenderBackend
-from create.render.canvas import PersistentCanvasState
+from create.render.frame import PersistentFrameState
 from ._events import apply_events
-from ._frame import step
+from ._step import step
 from create.render.surface import Surface
 from .input import Input
 from .context import Context
@@ -46,10 +46,10 @@ def _cap_frame_rate(mut win: Window, ctx: Context, frame_start: Int) raises:
 def _run_loop[
     P: Program
 ](mut program: P, mut win: Window, mut ctx: Context, mut input: Input) raises:
-    # Style and loaded fonts live here rather than in the Canvas, which is
+    # Style and loaded fonts live here rather than in the Frame, which is
     # rebuilt every frame; the transform stack deliberately does not, so each
     # frame starts unrotated and untranslated.
-    var state = PersistentCanvasState()
+    var state = PersistentFrameState()
     # Seeded here rather than in run() so the program's create() — which may
     # load fonts or decode audio — does not land in the first frame's delta.
     ctx.time._start(win.ticks())

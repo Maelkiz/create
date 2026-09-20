@@ -1,5 +1,5 @@
 # Regression coverage for post-render clipping and the sized sprite overload
-# — kept out of test_canvas.mojo, already the package's slowest file, since
+# — kept out of test_frame.mojo, already the package's slowest file, since
 # both tests here use larger buffers.
 
 from std.testing import TestSuite, assert_equal
@@ -18,14 +18,14 @@ struct OverflowingRect(Program):
     def create(mut ctx: Context) raises -> OverflowingRect:
         return OverflowingRect(0)
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
-        canvas.fill(Color.GREEN)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color.BLACK)
+        frame.outline(enabled=False)
+        frame.fill(Color.GREEN)
         # Far larger than the 100x50 design — if the raster loop didn't
         # already clip to the framebuffer, this alone would prove nothing, so
         # the value is entirely in what happens after render.
-        canvas.rectangle(0.0, 0.0, 1000.0, 1000.0)
+        frame.rectangle(0.0, 0.0, 1000.0, 1000.0)
 
 
 def test_letterbox_clips_a_shape_drawn_past_the_design_edge() raises -> None:
@@ -49,14 +49,14 @@ struct ScaledSprite(Program):
     def create(mut ctx: Context) raises -> ScaledSprite:
         return ScaledSprite(Sprite.load("tests/fixtures/test_2x2.bmp"))
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color.BLACK)
-        canvas.sprite(self.sprite, 0.0, 0.0, 8, 8)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color.BLACK)
+        frame.sprite(self.sprite, 0.0, 0.0, 8, 8)
 
 
 def test_sized_sprite_overload_resamples_nearest_neighbour() raises -> None:
     # test_2x2.bmp: top-left red, top-right white, bottom-left blue, bottom-
-    # right white (test_sprite_blits_unflipped's fixture, in test_canvas.mojo).
+    # right white (test_sprite_blits_unflipped's fixture, in test_frame.mojo).
     # Blown up 4x to an 8x8 destination, each source pixel becomes a sharp 4x4
     # block — nearest-neighbour, so the boundary between blocks is exact
     # rather than blended.

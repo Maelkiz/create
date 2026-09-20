@@ -1,7 +1,7 @@
 # The consumer-side gate — a program built from outside the library.
 #
 # Type-checks the trait surface, `run[T]` instantiation, and the
-# Context/Input/Canvas signatures, none of which `mojo precompile` sees. The
+# Context/Input/Frame signatures, none of which `mojo precompile` sees. The
 # pre-commit hook builds this file; the suite also runs it, which the windowed
 # version could not do. Keep it minimal: it runs on every commit, and its cost
 # must not grow with the example count.
@@ -32,10 +32,10 @@ struct Smoke(Program):
                 ArcPointer(Sound.from_pcm(List[Int16](length=1, fill=0)))
             )
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color.WHITE)
-        canvas.fill(Color.RED)
-        canvas.circle((self.x, 0.0), 20)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color.WHITE)
+        frame.fill(Color.RED)
+        frame.circle((self.x, 0.0), 20)
 
 
 def _windowed_entry_point() raises:

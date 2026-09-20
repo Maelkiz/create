@@ -13,7 +13,7 @@ struct Context(Movable):
     centred and two of them are negative. `time` is the frame clock, `scale`
     the autoscale factor, `view` the mapping they all come from. Screen space
     is camera-independent — `Context` and `Input` don't know a `Camera`
-    exists, since a program sets one on `Canvas`, not on either of these.
+    exists, since a program sets one on `Frame`, not on either of these.
 
     Written from both sides, which is why it is a `mut` parameter: the loop
     refreshes the geometry and the clock each frame, and the program sets

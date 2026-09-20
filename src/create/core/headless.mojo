@@ -1,7 +1,7 @@
 from create.render.autoscale import AutoScale
-from create.render.canvas import PersistentCanvasState
+from create.render.frame import PersistentFrameState
 from create.render.render_backend import RenderBackend
-from ._frame import step
+from ._step import step
 from ._headless_gl import _run_headless_gl
 from .context import Context
 from .input import Input
@@ -57,7 +57,7 @@ def run_headless[
     # create() may have pinned its own design size or changed the mode.
     ctx._set_viewport(pw, ph)
     var input = Input()
-    var state = PersistentCanvasState()
+    var state = PersistentFrameState()
     var now = 0
     ctx.time._start(now)
     for _ in range(frames):

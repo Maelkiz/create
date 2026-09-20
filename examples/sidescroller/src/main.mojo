@@ -32,15 +32,15 @@ struct Game(Program):
         # jumping doesn't move the camera vertically too.
         self.cam.position = Point2D(self.player.x, 0.0)
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color(30, 30, 30))
-        canvas.camera(self.cam)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color(30, 30, 30))
+        frame.camera(self.cam)
 
         # Ground markers every 200 world units, so panning past the edge of
         # any one screen is visible rather than looking like an empty void.
-        with canvas.style():
-            canvas.outline(enabled=False)
-            canvas.fill(Color(70, 70, 70))
+        with frame.style():
+            frame.outline(enabled=False)
+            frame.fill(Color(70, 70, 70))
             var first = Int((self.cam.position.x - 1000.0) / 200.0) * 200
             var last = first + 2200
             for i in range(
@@ -48,23 +48,23 @@ struct Game(Program):
                 min(last, Int(self.WORLD_RIGHT) + 1),
                 200,
             ):
-                canvas.circle(i, 0, 5)
+                frame.circle(i, 0, 5)
 
-        self.player.draw(canvas)
+        self.player.draw(frame)
 
         # Walls at the world edges; only the one in view actually renders.
-        with canvas.style():
-            canvas.outline(enabled=False)
-            canvas.fill(Color(150, 60, 60))
-            var wall_h = canvas.top() - canvas.bottom()
-            canvas.rectangle(self.WORLD_LEFT, 0.0, 30.0, wall_h)
-            canvas.rectangle(self.WORLD_RIGHT, 0.0, 30.0, wall_h)
+        with frame.style():
+            frame.outline(enabled=False)
+            frame.fill(Color(150, 60, 60))
+            var wall_h = frame.top() - frame.bottom()
+            frame.rectangle(self.WORLD_LEFT, 0.0, 30.0, wall_h)
+            frame.rectangle(self.WORLD_RIGHT, 0.0, 30.0, wall_h)
 
-        with canvas.overlay():
-            canvas.text_color(Color(220, 220, 220))
-            canvas.text(
+        with frame.overlay():
+            frame.text_color(Color(220, 220, 220))
+            frame.text(
                 "A/D move, W jump (double-jump in air)",
-                (canvas.left() + 20.0, canvas.top() - 20.0),
+                (frame.left() + 20.0, frame.top() - 20.0),
             )
 
 

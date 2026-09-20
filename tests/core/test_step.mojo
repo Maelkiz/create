@@ -1,6 +1,6 @@
 # The one shared frame step, and the split it depends on.
 #
-# `Canvas` takes its geometry from the `Viewport` and its extent from the
+# `Frame` takes its geometry from the `Viewport` and its extent from the
 # `Surface`. The windowed loop relies on exactly that: the viewport is measured
 # before events, but `Window._resize` reallocates the pixel buffer during them,
 # so the two can disagree for a frame. Only the surface knows how big the
@@ -9,7 +9,7 @@
 from std.testing import TestSuite, assert_equal
 
 from create import *
-from create.core._frame import step
+from create.core._step import step
 
 
 @fieldwise_init
@@ -20,11 +20,11 @@ struct Painter(Program):
     def create(mut ctx: Context) raises -> Painter:
         return Painter(0)
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color.BLUE)
-        canvas.outline(enabled=False)
-        canvas.fill(Color.RED)
-        canvas.rectangle(0.0, 0.0, 10.0, 10.0)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color.BLUE)
+        frame.outline(enabled=False)
+        frame.fill(Color.RED)
+        frame.rectangle(0.0, 0.0, 10.0, 10.0)
 
 
 def _mismatched() raises -> MemorySurface:
@@ -40,7 +40,7 @@ def _mismatched() raises -> MemorySurface:
     var program = Painter(0)
     var input = Input()
     var mem = MemorySurface(200, 200)
-    var state = step(program, ctx, input, PersistentCanvasState())
+    var state = step(program, ctx, input, PersistentFrameState())
     state.backend.present(mem.surface(), ctx.view.scale)
     _ = state^
     return mem^
@@ -86,8 +86,8 @@ struct ClickPainter(Program):
     def update(mut self, mut ctx: Context, input: Input) raises:
         self.clicked = input.mouse_just_pressed()
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color.RED if self.clicked else Color.BLUE)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color.RED if self.clicked else Color.BLUE)
 
 
 def test_scripted_click_drives_render() raises -> None:
@@ -98,7 +98,7 @@ def test_scripted_click_drives_render() raises -> None:
     var mem = MemorySurface(32, 32)
 
     var idle_program = ClickPainter(False)
-    var idle_state = step(idle_program, ctx, Input(), PersistentCanvasState())
+    var idle_state = step(idle_program, ctx, Input(), PersistentFrameState())
     idle_state.backend.present(mem.surface(), ctx.view.scale)
     assert_equal(mem.pixel(16, 16), Color.BLUE)
     _ = idle_state^
@@ -107,7 +107,7 @@ def test_scripted_click_drives_render() raises -> None:
     var clicked_input = Input()
     clicked_input._pressed_buttons |= 1 << 1
     var clicked_state = step(
-        clicked_program, ctx, clicked_input, PersistentCanvasState()
+        clicked_program, ctx, clicked_input, PersistentFrameState()
     )
     clicked_state.backend.present(mem.surface(), ctx.view.scale)
     assert_equal(mem.pixel(16, 16), Color.RED)

@@ -7,30 +7,30 @@ struct Sketch(Program):
     def create(mut ctx: Context) raises -> Sketch:
         return Sketch()
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color.WHITE)
-        canvas.outline(Color.GREEN, thickness=3)
-        canvas.corner_radius(10)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color.WHITE)
+        frame.outline(Color.GREEN, thickness=3)
+        frame.corner_radius(10)
 
         var circle = Circle((-100, 0), 50)
         var triangle = Triangle((0, -100), (50, -250), (150, -150))
         var rectangle = Rectangle((-250, 150), 100, 100)
         var line = Line((-250, 150), triangle.center())
 
-        canvas.fill(Color.BLUE)
-        canvas.circle(circle)
+        frame.fill(Color.BLUE)
+        frame.circle(circle)
 
-        canvas.line(line)
+        frame.line(line)
 
-        canvas.fill(Color.RED)
-        canvas.rectangle(rectangle)
+        frame.fill(Color.RED)
+        frame.rectangle(rectangle)
 
-        canvas.fill(Color.BLACK)
-        canvas.triangle(triangle)
+        frame.fill(Color.BLACK)
+        frame.triangle(triangle)
 
-        canvas.text_color(Color.BLACK)
-        canvas.font_size(54)
-        canvas.text("Create!", 50, 100)
+        frame.text_color(Color.BLACK)
+        frame.font_size(54)
+        frame.text("Create!", 50, 100)
 
 
 def main() raises:

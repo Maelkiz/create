@@ -8,7 +8,7 @@ from .color import Color
 # text, Noto Sans Symbols for codepoints the first face has no glyph for.
 #
 # Both are *relative* paths, resolved against the process CWD rather than the
-# source file, so `canvas.text` only works when a program is run from the repo
+# source file, so `frame.text` only works when a program is run from the repo
 # root. Anywhere else, every text draw raises "FT_New_Face failed — font not
 # found".
 comptime FONT_DEFAULT_PATH = "defaults/fonts/NotoSans.ttf"
@@ -16,7 +16,7 @@ comptime FONT_FALLBACK_PATH = "defaults/fonts/NotoSansSymbols.ttf"
 
 
 struct FontWeight:
-    """Named stroke weights for `canvas.font_weight`.
+    """Named stroke weights for `frame.font_weight`.
 
     Design-space values on the packaged variable faces, so they interpolate
     rather than selecting a file — any number in 100..900 is valid, these are
@@ -126,8 +126,8 @@ struct Font(Movable):
     """One loaded face, rendered through freetype over the C ABI.
 
     A face is a heavy handle, not a per-frame value — `TextRenderer` loads the
-    packaged faces once and caches what they render; `canvas.font` swaps in
-    another and it survives the frame in `PersistentCanvasState`.
+    packaged faces once and caches what they render; `frame.font` swaps in
+    another and it survives the frame in `PersistentFrameState`.
 
     Size and weight are sticky state on the face rather than arguments to
     `render`, which is why both setters return early when nothing changed:

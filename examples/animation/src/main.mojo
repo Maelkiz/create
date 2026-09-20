@@ -89,22 +89,22 @@ struct Game(Program):
         self.x = clamp(self.x, ctx.left() + margin, ctx.right() - margin)
         self.animator.update(ctx.time.delta)
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color(24, 26, 34))
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color(24, 26, 34))
 
-        canvas.outline(enabled=False)
+        frame.outline(enabled=False)
 
         # The ground runs from its surface all the way to the bottom edge, so
         # it never floats over the background however tall the window is.
-        var height = _GROUND - canvas.bottom()
-        canvas.fill(Color(38, 42, 54))
-        canvas.rectangle(
-            (0.0, canvas.bottom() + height / 2.0), canvas.right() * 2.0, height
+        var height = _GROUND - frame.bottom()
+        frame.fill(Color(38, 42, 54))
+        frame.rectangle(
+            (0.0, frame.bottom() + height / 2.0), frame.right() * 2.0, height
         )
 
         # Drawn four times the 32x32 source size -- pixel art wants to be
         # scaled up, and the sized overload does it without touching the asset.
-        canvas.sprite(
+        frame.sprite(
             self.animator,
             self.x,
             _GROUND + _SIZE / 2.0 - _FOOT_PAD,
@@ -112,10 +112,10 @@ struct Game(Program):
             _SIZE,
         )
 
-        canvas.text_color(Color(150, 160, 180))
-        canvas.text_align(Align.TOP)
-        canvas.font_size(20)
-        canvas.text(
+        frame.text_color(Color(150, 160, 180))
+        frame.text_align(Align.TOP)
+        frame.font_size(20)
+        frame.text(
             "A / D to run  -  SPACE to spin  -  P to pause spin animation",
             (0.0, 140.0),
         )

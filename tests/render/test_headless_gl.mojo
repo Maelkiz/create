@@ -18,11 +18,11 @@ struct GPURect(Program):
     def create(mut ctx: Context) raises -> GPURect:
         return GPURect(0)
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color(10, 20, 30))
-        canvas.outline(enabled=False)
-        canvas.fill(Color.RED)
-        canvas.rectangle(0.0, 0.0, 20.0, 20.0)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color(10, 20, 30))
+        frame.outline(enabled=False)
+        frame.fill(Color.RED)
+        frame.rectangle(0.0, 0.0, 20.0, 20.0)
 
 
 def test_the_gpu_backend_paints_a_filled_rectangle() raises -> None:
@@ -48,11 +48,11 @@ struct GPUMover(Program):
     def update(mut self, mut ctx: Context, input: Input) raises:
         self.x += 20.0
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color(10, 20, 30))
-        canvas.outline(enabled=False)
-        canvas.fill(Color.RED)
-        canvas.rectangle(self.x, 0.0, 16.0, 16.0)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color(10, 20, 30))
+        frame.outline(enabled=False)
+        frame.fill(Color.RED)
+        frame.rectangle(self.x, 0.0, 16.0, 16.0)
 
 
 def test_the_gpu_backend_returns_only_the_last_of_several_frames() raises -> (
@@ -100,12 +100,12 @@ struct GPURoundedRect(Program):
     def create(mut ctx: Context) raises -> GPURoundedRect:
         return GPURoundedRect(0)
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color(10, 20, 30))
-        canvas.outline(enabled=False)
-        canvas.fill(Color.RED)
-        canvas.corner_radius(8)
-        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color(10, 20, 30))
+        frame.outline(enabled=False)
+        frame.fill(Color.RED)
+        frame.corner_radius(8)
+        frame.rectangle(0.0, 0.0, 40.0, 40.0)
 
 
 def test_the_gpu_backend_rounds_rectangle_corners() raises -> None:
@@ -137,12 +137,12 @@ struct GPURoundedTriangle(Program):
     def create(mut ctx: Context) raises -> GPURoundedTriangle:
         return GPURoundedTriangle(0)
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color(10, 20, 30))
-        canvas.outline(enabled=False)
-        canvas.fill(Color.RED)
-        canvas.corner_radius(8)
-        canvas.triangle((-20, -20), (20, -20), (-20, 20))
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color(10, 20, 30))
+        frame.outline(enabled=False)
+        frame.fill(Color.RED)
+        frame.corner_radius(8)
+        frame.triangle((-20, -20), (20, -20), (-20, 20))
 
 
 def test_the_gpu_backend_rounds_triangle_corners() raises -> None:

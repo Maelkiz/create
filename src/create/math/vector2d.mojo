@@ -7,7 +7,7 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     type.
 
     The tuple constructors are `@implicit` on purpose: every position argument
-    in the library takes a `Vector2D`, so `canvas.rectangle((0, 0), 100, 100)` works
+    in the library takes a `Vector2D`, so `frame.rectangle((0, 0), 100, 100)` works
     without naming the type, and a program only spells `Vector2D` when it is
     storing one.
 

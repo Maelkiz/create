@@ -113,7 +113,7 @@ struct Rectangle:
     Either takes a bare tuple, so the distinction costs a call site nothing.
 
     `x`/`y` is the centre, not a corner -- consistent with every shape in
-    this module and with `canvas.rectangle`. `w`/`h` are full width and
+    this module and with `frame.rectangle`. `w`/`h` are full width and
     height, so `left()`/`right()`/`bottom()`/`top()` are `+-w/2`/`+-h/2`
     from the centre. Coordinates follow world space: y grows upward, so
     `top()` is `y + h/2` and `bottom()` is `y - h/2`.

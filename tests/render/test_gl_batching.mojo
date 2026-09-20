@@ -9,12 +9,12 @@
 from window import GLWindow
 
 from create import *
-from create.core._frame import step
+from create.core._step import step
 from create.core.input import Input
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.autoscale import AutoScale
-from create.render.canvas import PersistentCanvasState
+from create.render.frame import PersistentFrameState
 from create.render.render_backend import RenderBackend
 from create.sprite.sprite import Sprite
 from std.testing import TestSuite, assert_equal, assert_true
@@ -42,16 +42,16 @@ struct ClearMidFrame(Program):
     def create(mut ctx: Context) raises -> ClearMidFrame:
         return ClearMidFrame(0)
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
-        canvas.fill(Color.BLUE)
-        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color.BLACK)
+        frame.outline(enabled=False)
+        frame.fill(Color.BLUE)
+        frame.rectangle(0.0, 0.0, 40.0, 40.0)
         # An opaque clear must flush the blue rect to the framebuffer before
         # wiping it, not queue it behind the clear where it would survive.
-        canvas.background(Color.RED)
-        canvas.fill(Color.GREEN)
-        canvas.rectangle(10.0, 10.0, 16.0, 16.0)
+        frame.background(Color.RED)
+        frame.fill(Color.GREEN)
+        frame.rectangle(10.0, 10.0, 16.0, 16.0)
 
 
 @fieldwise_init
@@ -62,12 +62,12 @@ struct TwoSprites(Program):
     def create(mut ctx: Context) raises -> TwoSprites:
         return TwoSprites(0)
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color.BLACK)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color.BLACK)
         var a = Sprite.solid(2, 2, 255, 0, 255)
         var b = Sprite.solid(2, 2, 0, 255, 255)
-        canvas.sprite(a, -20, 0, 16, 16)
-        canvas.sprite(b, 20, 0, 16, 16)
+        frame.sprite(a, -20, 0, 16, 16)
+        frame.sprite(b, 20, 0, 16, 16)
 
 
 @fieldwise_init
@@ -78,14 +78,14 @@ struct TextAndSprite(Program):
     def create(mut ctx: Context) raises -> TextAndSprite:
         return TextAndSprite(0)
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color.BLACK)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color.BLACK)
         var img = Sprite.solid(2, 2, 255, 0, 0)
-        canvas.sprite(img, -30, 0, 16, 16)
-        canvas.text_color(Color.WHITE)
-        canvas.font_size(24)
-        canvas.text_align(Align.TOP_LEFT)
-        canvas.text("Hi", 0.0, 20.0)
+        frame.sprite(img, -30, 0, 16, 16)
+        frame.text_color(Color.WHITE)
+        frame.font_size(24)
+        frame.text_align(Align.TOP_LEFT)
+        frame.text("Hi", 0.0, 20.0)
 
 
 @fieldwise_init
@@ -96,20 +96,20 @@ struct ManyShapes(Program):
     def create(mut ctx: Context) raises -> ManyShapes:
         return ManyShapes(0)
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color.BLACK)
+        frame.outline(enabled=False)
         for gy in range(_GRID):
             for gx in range(_GRID):
                 var idx = gy * _GRID + gx
-                canvas.fill(Color.RED if idx % 2 == 0 else Color.BLUE)
+                frame.fill(Color.RED if idx % 2 == 0 else Color.BLUE)
                 var wx = (
                     Float64(gx) - Float64(_GRID) / 2.0
                 ) * _CELL + _CELL / 2.0
                 var wy = (
                     Float64(gy) - Float64(_GRID) / 2.0
                 ) * _CELL + _CELL / 2.0
-                canvas.rectangle(wx, wy, _CELL - 2.0, _CELL - 2.0)
+                frame.rectangle(wx, wy, _CELL - 2.0, _CELL - 2.0)
 
 
 def _gpu_frame[
@@ -133,7 +133,7 @@ def _gpu_frame[
     var program = P.create(ctx)
     ctx._set_viewport(width, height)
     var input = Input()
-    var state = PersistentCanvasState(RenderBackend.GPU)
+    var state = PersistentFrameState(RenderBackend.GPU)
     var now = 0
     ctx.time._start(now)
     for _ in range(frames):

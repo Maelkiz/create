@@ -1,4 +1,4 @@
-from create.render.canvas import Canvas, PersistentCanvasState
+from create.render.frame import Frame, PersistentFrameState
 from .context import Context
 from .input import Input
 from .program import Program
@@ -10,8 +10,8 @@ def step[
     mut program: P,
     mut ctx: Context,
     input: Input,
-    var state: PersistentCanvasState,
-) raises -> PersistentCanvasState:
+    var state: PersistentFrameState,
+) raises -> PersistentFrameState:
     """Advance `program` by one frame and hand its recorded state back.
 
     The windowed and headless loops differ in how they get a frame started —
@@ -20,9 +20,9 @@ def step[
     *is*. It lives in its own module rather than in `run.mojo` because the
     headless path must not pull in the window.
 
-    `state` travels in and out because a `Canvas` is a per-frame view: it is
+    `state` travels in and out because a `Frame` is a per-frame view: it is
     built for this frame and dropped before the frame is presented, so anything
-    longer-lived than a frame rides in `PersistentCanvasState`.
+    longer-lived than a frame rides in `PersistentFrameState`.
 
     **The caller presents.** A frame ends with the recording complete and the
     state handed back; `state.backend.present(surface, scale)` is the caller's
@@ -34,9 +34,9 @@ def step[
     have been pumped.
     """
     program.update(ctx, input)
-    var canvas = Canvas(ctx.view, state^)
-    program.render(canvas)
+    var frame = Frame(ctx.view, state^)
+    program.render(frame)
     # Recorded last, so it doubles as the clip for anything drawn out of
     # bounds — the replay honours the buffer's order.
-    canvas._draw_letterbox()
-    return canvas^._release()
+    frame._draw_letterbox()
+    return frame^._release()

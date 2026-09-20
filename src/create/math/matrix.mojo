@@ -110,7 +110,7 @@ def perspective(
     fov: Float64, aspect: Float64, near: Float64, far: Float64
 ) -> Matrix[4, 4]:
     """A 3D projection: vertical field of view in radians, width/height aspect,
-    and the near and far clip distances. `Canvas` draws in 2D, so this is for a
+    and the near and far clip distances. `Frame` draws in 2D, so this is for a
     program doing its own 3D projection before it hands over coordinates."""
     var m = Matrix[4, 4]()
     var f = 1.0 / tan(fov / 2.0)
@@ -146,7 +146,7 @@ def inverse[N: Int](m: Matrix[N, N]) -> Matrix[N, N]:
     """The transform that undoes `m` — Gauss-Jordan with partial pivoting.
 
     Mapping a point back out of a transformed frame is what this is for, which
-    is how `canvas.to_local` maps a mouse position into the current transform.
+    is how `frame.to_local` maps a mouse position into the current transform.
     A singular matrix (a zero scale, say) has no inverse and the result is
     meaningless rather than an error.
     """

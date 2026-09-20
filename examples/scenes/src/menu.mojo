@@ -14,14 +14,14 @@ struct Menu:
     def update(mut self, mut ctx: Context, input: Input) raises:
         self.start_pressed = input.mouse_just_pressed()
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color(24, 24, 28))
-        with canvas.style():
-            canvas.text_color(Color.WHITE)
-            canvas.font_size(48)
-            canvas.text_align(Align.TOP)
-            canvas.text("Scenes", 0, 40)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color(24, 24, 28))
+        with frame.style():
+            frame.text_color(Color.WHITE)
+            frame.font_size(48)
+            frame.text_align(Align.TOP)
+            frame.text("Scenes", 0, 40)
 
-            canvas.text_color(Color(180, 180, 190))
-            canvas.font_size(20)
-            canvas.text("click to start drawing", 0, -20)
+            frame.text_color(Color(180, 180, 190))
+            frame.font_size(20)
+            frame.text("click to start drawing", 0, -20)

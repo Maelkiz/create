@@ -76,33 +76,33 @@ struct Bench(Program):
             self.elapsed = 0.0
             self.worst = 0.0
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color(0x10, 0x12, 0x18))
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color(0x10, 0x12, 0x18))
 
         # One generator re-seeded every frame, so the layout is identical from
         # frame to frame and the two backends draw the same sketch — only the
         # phase of the animation moves.
         var rng = Random(1234)
-        var w = canvas.right()
-        var h = canvas.top()
-        with canvas.style():
-            canvas.outline(enabled=False)
+        var w = frame.right()
+        var h = frame.top()
+        with frame.style():
+            frame.outline(enabled=False)
             for i in range(_SHAPES):
                 var x = rng.float(-w, w)
                 var y = rng.float(-h, h)
                 var size = rng.float(8.0, 34.0)
                 var phase = self.t + rng.float(0.0, 6.283)
                 var hue = Color.hsv(rng.float(0.0, 360.0), 0.7, 1.0)
-                canvas.fill(Color(hue.r, hue.g, hue.b, 0xC0))
+                frame.fill(Color(hue.r, hue.g, hue.b, 0xC0))
                 var kind = i % 3
                 if kind == 0:
-                    canvas.rectangle(
+                    frame.rectangle(
                         (x + 20.0 * cos(phase), y), size, size * 0.7
                     )
                 elif kind == 1:
-                    canvas.circle((x, y + 20.0 * sin(phase)), size * 0.5)
+                    frame.circle((x, y + 20.0 * sin(phase)), size * 0.5)
                 else:
-                    canvas.triangle(
+                    frame.triangle(
                         (x, y + size),
                         (x - size, y - size),
                         (x + size, y - size),
@@ -110,18 +110,18 @@ struct Bench(Program):
 
         # Two sprites: one texture, so one extra batch for the pair rather
         # than one each.
-        canvas.sprite(self.logo, -w + 90, h - 90, 140, 140)
-        canvas.sprite(self.logo, -w + 220, h - 90, 100, 100)
+        frame.sprite(self.logo, -w + 90, h - 90, 140, 140)
+        frame.sprite(self.logo, -w + 220, h - 90, 100, 100)
 
-        with canvas.style():
-            canvas.outline(enabled=False)
-            canvas.text_color(Color.WHITE)
-            canvas.font_size(22)
-            canvas.text_align(Align.TOP_LEFT)
-            canvas.text(
+        with frame.style():
+            frame.outline(enabled=False)
+            frame.text_color(Color.WHITE)
+            frame.font_size(22)
+            frame.text_align(Align.TOP_LEFT)
+            frame.text(
                 String(_SHAPES) + " shapes, two sprites, this line",
-                canvas.left() + 16,
-                canvas.top() - 16,
+                frame.left() + 16,
+                frame.top() - 16,
             )
 
 

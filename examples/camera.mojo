@@ -22,33 +22,33 @@ struct CameraDemo(Program):
         if input.is_key_down("down"):
             self.cam.zoom = max(0.3, self.cam.zoom - 1.0 * ctx.time.delta)
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color(15, 15, 25))
-        canvas.camera(self.cam)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color(15, 15, 25))
+        frame.camera(self.cam)
 
         # World content: a strip of posts stretching far past what any single
         # screen shows, plus a marker at the world origin — panning the
         # camera with left/right scrolls this whole strip underneath it.
-        canvas.outline(enabled=False)
+        frame.outline(enabled=False)
         for i in range(-20, 20):
             var x = Float64(i) * 120.0
             var t = (sin(self.elapsed + Float64(i)) + 1.0) / 2.0
-            canvas.fill(Color(UInt8(60 + Int(t * 150.0)), 90, 160))
-            canvas.rectangle(x, 0.0, 40.0, 200.0)
+            frame.fill(Color(UInt8(60 + Int(t * 150.0)), 90, 160))
+            frame.rectangle(x, 0.0, 40.0, 200.0)
 
-        canvas.fill(Color(230, 190, 40))
-        canvas.circle(0.0, 140.0, 14.0)
+        frame.fill(Color(230, 190, 40))
+        frame.circle(0.0, 140.0, 14.0)
 
         # HUD: fixed to the screen regardless of where the camera looks or
         # how far it has zoomed.
-        with canvas.overlay():
-            canvas.outline(enabled=False)
-            canvas.fill(Color(230, 230, 230))
-            canvas.rectangle(0.0, canvas.top() - 20.0, 300.0, 30.0)
-            canvas.text_color(Color(20, 20, 20))
-            canvas.text_align(Align.CENTER)
-            canvas.text(
-                "left/right pan, up/down zoom", (0.0, canvas.top() - 20.0)
+        with frame.overlay():
+            frame.outline(enabled=False)
+            frame.fill(Color(230, 230, 230))
+            frame.rectangle(0.0, frame.top() - 20.0, 300.0, 30.0)
+            frame.text_color(Color(20, 20, 20))
+            frame.text_align(Align.CENTER)
+            frame.text(
+                "left/right pan, up/down zoom", (0.0, frame.top() - 20.0)
             )
 
 

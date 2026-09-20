@@ -46,23 +46,23 @@ struct App(Program):
         elif self.x < ctx.left() + 40.0:
             self.dir = 1.0
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color(0x99))
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color(0x99))
 
-        canvas.fill(Color.RED)
-        canvas.circle((self.x, 150), 40)
+        frame.fill(Color.RED)
+        frame.circle((self.x, 150), 40)
 
-        canvas.fill(Color.BLUE)
-        canvas.rectangle((0, 0), 200, 120)
+        frame.fill(Color.BLUE)
+        frame.rectangle((0, 0), 200, 120)
 
-        canvas.text_color(Color.BLACK)
-        canvas.font_size(28)
-        canvas.text_align(Align.TOP)
-        canvas.text("Autoscale Mode: " + _mode_name(canvas.autoscale), 0, -140)
-        canvas.font_size(20)
-        canvas.text("(space to cycle)", 0, -180)
-        canvas.font_size(28)
-        canvas.text("Current scale: " + String(canvas.scale), 0, -220)
+        frame.text_color(Color.BLACK)
+        frame.font_size(28)
+        frame.text_align(Align.TOP)
+        frame.text("Autoscale Mode: " + _mode_name(frame.autoscale), 0, -140)
+        frame.font_size(20)
+        frame.text("(space to cycle)", 0, -180)
+        frame.font_size(28)
+        frame.text("Current scale: " + String(frame.scale), 0, -220)
 
 
 def main() raises:

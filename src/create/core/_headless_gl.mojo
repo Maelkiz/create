@@ -17,10 +17,10 @@ from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.render_backend import RenderBackend
 from create.render.autoscale import AutoScale
-from create.render.canvas import PersistentCanvasState
+from create.render.frame import PersistentFrameState
 from create.render.surface import MemorySurface
 
-from ._frame import step
+from ._step import step
 from .context import Context
 from .headless import _FRAME_MILLIS
 from .input import Input
@@ -82,7 +82,7 @@ def _run_headless_gl[
     ctx._set_viewport(pw, ph)
     var input = Input()
     # After the window: its GL resources need a current context.
-    var state = PersistentCanvasState(RenderBackend.GPU)
+    var state = PersistentFrameState(RenderBackend.GPU)
     var now = 0
     ctx.time._start(now)
     for _ in range(frames):

@@ -16,17 +16,17 @@ struct App(Program):
     def update(mut self, mut ctx: Context, input: Input) raises:
         self.mouse.move_to(input.mouse)
 
-    def render(self, mut canvas: Canvas) raises:
+    def render(self, mut frame: Frame) raises:
         if overlaps(self.center, self.mouse):
-            canvas.background(Color(40, 40, 60))
+            frame.background(Color(40, 40, 60))
         else:
-            canvas.background(Color(20, 20, 30))
+            frame.background(Color(20, 20, 30))
 
-        canvas.outline(enabled=False)
-        canvas.fill(Color(220, 60, 60))
-        canvas.circle(self.center)
-        canvas.fill(Color(60, 120, 220))
-        canvas.circle(self.mouse)
+        frame.outline(enabled=False)
+        frame.fill(Color(220, 60, 60))
+        frame.circle(self.center)
+        frame.fill(Color(60, 120, 220))
+        frame.circle(self.mouse)
 
 
 def main() raises:

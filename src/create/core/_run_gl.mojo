@@ -21,10 +21,10 @@ from window import GLWindow
 
 from create.render.render_backend import RenderBackend
 from create.render.autoscale import AutoScale
-from create.render.canvas import PersistentCanvasState
+from create.render.frame import PersistentFrameState
 
 from ._events import apply_events
-from ._frame import step
+from ._step import step
 from .context import Context
 from .input import Input
 from .program import Program
@@ -112,7 +112,7 @@ def _run_loop[
     P: Program
 ](mut program: P, mut win: GLWindow, mut ctx: Context, mut input: Input) raises:
     # Built after the window because its GL resources need a current context.
-    var state = PersistentCanvasState(RenderBackend.GPU)
+    var state = PersistentFrameState(RenderBackend.GPU)
     ctx.time._start(win.ticks())
     while win.is_open() and not ctx._quit:
         var px_per_point = _update_dimensions(win, ctx)

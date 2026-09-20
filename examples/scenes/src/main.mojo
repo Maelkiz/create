@@ -39,11 +39,11 @@ struct App(Program):
             if self.draw.back_pressed:
                 self.scene = MENU
 
-    def render(self, mut canvas: Canvas) raises:
+    def render(self, mut frame: Frame) raises:
         if self.scene == MENU:
-            self.menu.render(canvas)
+            self.menu.render(frame)
         else:
-            self.draw.render(canvas)
+            self.draw.render(frame)
 
 
 def main() raises:

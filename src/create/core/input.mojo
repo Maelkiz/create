@@ -24,7 +24,7 @@ struct Input(Movable):
 
     `mouse` is in screen coordinates, so it is negative left of and below the
     origin — camera-independent, since `Input` is filled before a program's
-    `Canvas` (and any `Camera` it sets) exists for the frame. Convert with
+    `Frame` (and any `Camera` it sets) exists for the frame. Convert with
     `Camera.to_world` where a program uses one. It and `mouse_press_pos` are
     `Point2D` because they are locations; `wheel` stays a `Vector2D` because a
     scroll delta is a displacement.

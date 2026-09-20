@@ -20,8 +20,8 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable):
         if input.key_pressed(Key.SPACE):
             self.fade.play()
 
-    def render(self, mut canvas: Canvas, ctx: Context) raises:
-        canvas.fill(Color(255, 255, 255, Int(255 * self.fade.value)))
+    def render(self, mut frame: Frame, ctx: Context) raises:
+        frame.fill(Color(255, 255, 255, Int(255 * self.fade.value)))
     ```
 
     Unlike an animation, a tween carries no shared artwork -- its whole

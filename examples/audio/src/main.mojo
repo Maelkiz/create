@@ -36,13 +36,13 @@ struct AudioDemo(Program):
             self.audio.stop(self.loop_id)
             self.looping = False
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color.WHITE)
-        canvas.text_color(Color.BLACK)
-        canvas.font_size(24)
-        canvas.text_align(Align.TOP)
-        canvas.text("space: chime    hold h: loop ambience", 0, 20)
-        canvas.text("looping: " + String(self.looping), 0, -20)
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color.WHITE)
+        frame.text_color(Color.BLACK)
+        frame.font_size(24)
+        frame.text_align(Align.TOP)
+        frame.text("space: chime    hold h: loop ambience", 0, 20)
+        frame.text("looping: " + String(self.looping), 0, -20)
 
 
 def main() raises:

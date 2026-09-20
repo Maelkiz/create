@@ -1,4 +1,4 @@
-"""Saving the canvas, both ways.
+"""Saving the frame, both ways.
 
     S          screenshot — what the window shows, at its own pixel size,
                letterbox bars and all
@@ -29,7 +29,7 @@ struct App(Program):
     var request: Int
     """What `update` asked for this frame, for `render` to file.
 
-    The save calls live on `Canvas`, which only `render` has — and `render`
+    The save calls live on `Frame`, which only `render` has — and `render`
     cannot see `Input`. So the keypress is read here and acted on there, and
     this is cleared at the top of every `update` so one press saves one file.
     """
@@ -56,34 +56,34 @@ struct App(Program):
                 self.request = _IMAGE
                 self.saved = "image.png — 800x500, no bars"
 
-    def render(self, mut canvas: Canvas) raises:
-        canvas.background(Color(0x14, 0x1C, 0x26))
+    def render(self, mut frame: Frame) raises:
+        frame.background(Color(0x14, 0x1C, 0x26))
 
-        with canvas.style():
-            canvas.outline(enabled=False)
-            with canvas.transform(rotate(self.angle)):
-                canvas.fill(Color(0xE0, 0x50, 0x50))
-                canvas.rectangle((0, 0), 220, 220)
-                canvas.fill(Color(0x50, 0xC0, 0xE0))
-                canvas.circle((0, 0), 70)
+        with frame.style():
+            frame.outline(enabled=False)
+            with frame.transform(rotate(self.angle)):
+                frame.fill(Color(0xE0, 0x50, 0x50))
+                frame.rectangle((0, 0), 220, 220)
+                frame.fill(Color(0x50, 0xC0, 0xE0))
+                frame.circle((0, 0), 70)
 
-        canvas.text_color(Color.WHITE)
-        canvas.text_align(Align.TOP)
-        canvas.font_size(26)
-        canvas.text("S - screenshot     I - image     Shift+I - 2x", 0, 220)
-        canvas.font_size(20)
+        frame.text_color(Color.WHITE)
+        frame.text_align(Align.TOP)
+        frame.font_size(26)
+        frame.text("S - screenshot     I - image     Shift+I - 2x", 0, 220)
+        frame.font_size(20)
         if self.saved:
-            canvas.text("wrote " + self.saved, 0, -200)
+            frame.text("wrote " + self.saved, 0, -200)
 
         # Filed here, written at `present` — the file holds the whole frame
         # no matter how early in `render` the call is made.
         var dir = script_dir()
         if self.request == _SCREENSHOT:
-            canvas.save_screenshot(dir + "/../out/screenshot.png")
+            frame.save_screenshot(dir + "/../out/screenshot.png")
         elif self.request == _IMAGE:
-            canvas.save_image(dir + "/../out/image.png")
+            frame.save_image(dir + "/../out/image.png")
         elif self.request == _IMAGE_2X:
-            canvas.save_image(
+            frame.save_image(
                 dir + "/../out/image@2x.png", 2.0, transparent=True
             )
 

@@ -32,10 +32,10 @@ from ._command import (
 from ._style import Style
 
 
-struct PersistentCanvasState(Movable):
-    """The part of a `Canvas` that outlives the frame it was drawn in.
+struct PersistentFrameState(Movable):
+    """The part of a `Frame` that outlives the frame it was drawn in.
 
-    A `Canvas` is built fresh over each frame's framebuffer, so anything it
+    A `Frame` is built fresh over each frame's framebuffer, so anything it
     must remember between frames — the backend, and through it the loaded
     fonts, the glyph cache and the interned sprite images — is moved out at the
     end of one frame and into the next. The transform stack and the style are
@@ -55,90 +55,90 @@ struct PersistentCanvasState(Movable):
 
 
 struct TransformGuard[origin: Origin[mut=True]](Movable):
-    """Pops the matrix `canvas.transform` pushed, on scope exit."""
+    """Pops the matrix `frame.transform` pushed, on scope exit."""
 
-    var _canvas: Pointer[Canvas, Self.origin]
+    var _frame: Pointer[Frame, Self.origin]
 
-    def __init__(out self, ref[Self.origin] canvas: Canvas):
-        self._canvas = Pointer(to=canvas)
+    def __init__(out self, ref[Self.origin] frame: Frame):
+        self._frame = Pointer(to=frame)
 
     def __enter__(mut self):
         pass
 
     def __exit__(mut self):
-        self._canvas[]._pop_transform()
+        self._frame[]._pop_transform()
 
 
 struct OverlayGuard[origin: Origin[mut=True]](Movable):
-    """Restores the camera and transform `canvas.overlay` suspended, on scope
+    """Restores the camera and transform `frame.overlay` suspended, on scope
     exit."""
 
-    var _canvas: Pointer[Canvas, Self.origin]
+    var _frame: Pointer[Frame, Self.origin]
     var _saved_camera: Camera
     var _saved_user: Matrix[3, 3]
     var _saved_user_inv: Matrix[3, 3]
     var _saved_transform: Matrix[3, 3]
     var _saved_transform_inv: Matrix[3, 3]
 
-    def __init__(out self, ref[Self.origin] canvas: Canvas):
-        self._saved_camera = canvas._camera.copy()
-        self._saved_user = canvas._user.copy()
-        self._saved_user_inv = canvas._user_inv.copy()
-        self._saved_transform = canvas._transform.copy()
-        self._saved_transform_inv = canvas._transform_inv.copy()
-        canvas._camera = Camera()
-        canvas._user = identity[3]()
-        canvas._user_inv = identity[3]()
-        canvas._transform = canvas._base.copy()
-        canvas._transform_inv = canvas._base_inv.copy()
-        self._canvas = Pointer(to=canvas)
+    def __init__(out self, ref[Self.origin] frame: Frame):
+        self._saved_camera = frame._camera.copy()
+        self._saved_user = frame._user.copy()
+        self._saved_user_inv = frame._user_inv.copy()
+        self._saved_transform = frame._transform.copy()
+        self._saved_transform_inv = frame._transform_inv.copy()
+        frame._camera = Camera()
+        frame._user = identity[3]()
+        frame._user_inv = identity[3]()
+        frame._transform = frame._base.copy()
+        frame._transform_inv = frame._base_inv.copy()
+        self._frame = Pointer(to=frame)
 
     def __enter__(mut self):
         pass
 
     def __exit__(mut self):
-        self._canvas[]._camera = self._saved_camera.copy()
-        self._canvas[]._user = self._saved_user
-        self._canvas[]._user_inv = self._saved_user_inv
-        self._canvas[]._transform = self._saved_transform
-        self._canvas[]._transform_inv = self._saved_transform_inv
+        self._frame[]._camera = self._saved_camera.copy()
+        self._frame[]._user = self._saved_user
+        self._frame[]._user_inv = self._saved_user_inv
+        self._frame[]._transform = self._saved_transform
+        self._frame[]._transform_inv = self._saved_transform_inv
 
 
 struct StyleGuard[origin: Origin[mut=True]](Movable):
-    """Restores the style the canvas had when the scope was entered.
+    """Restores the style the frame had when the scope was entered.
 
     `Style` is a plain value, so the guard carries its own snapshot and no
     stack is needed — nesting works because each guard restores what it saw.
     """
 
-    var _canvas: Pointer[Canvas, Self.origin]
+    var _frame: Pointer[Frame, Self.origin]
     var _saved: Style
 
-    def __init__(out self, ref[Self.origin] canvas: Canvas):
-        self._saved = canvas._style.copy()
-        self._canvas = Pointer(to=canvas)
+    def __init__(out self, ref[Self.origin] frame: Frame):
+        self._saved = frame._style.copy()
+        self._frame = Pointer(to=frame)
 
     def __enter__(mut self):
         pass
 
     def __exit__(mut self):
-        self._canvas[]._style = self._saved.copy()
+        self._frame[]._style = self._saved.copy()
 
 
-struct Canvas:
+struct Frame:
     """A drawing surface for one frame.
 
     Built fresh each frame and dropped before the frame is presented. State
     that must survive the frame goes in and out through
-    `PersistentCanvasState`.
+    `PersistentFrameState`.
 
     **It takes no parameters, and holds no `Surface`.** It used to need one
     origin parameter for the framebuffer it borrowed, which constrained the
     whole API: a second parameter would have broken every
-    `Program.render(self, mut canvas: Canvas)` signature at once, and pointing
-    an existing `Canvas` at a new framebuffer could not compile at all. Both
-    limits are gone because a `Canvas` no longer touches pixels — it records,
-    and the backend replays onto a `Surface` the canvas never sees. Don't
+    `Program.render(self, mut frame: Frame)` signature at once, and pointing
+    an existing `Frame` at a new framebuffer could not compile at all. Both
+    limits are gone because a `Frame` no longer touches pixels — it records,
+    and the backend replays onto a `Surface` the frame never sees. Don't
     reintroduce a `Surface` field or a parameter to hold one.
 
     Its extent comes from the `Viewport` rather than from a framebuffer. The
@@ -148,7 +148,7 @@ struct Canvas:
 
     A draw call touches no pixels: it appends a `DrawCommand` to the backend's
     recording, and the backend replays the whole frame afterwards. So a
-    `Canvas` is a recorder, and the geometry it records is *local* — the shape
+    `Frame` is a recorder, and the geometry it records is *local* — the shape
     as the program asked for it, paired with the current transform — never
     device pixels. A style is resolved at record time, so a later `fill()`
     cannot reach back and change what an earlier command paints.
@@ -163,8 +163,8 @@ struct Canvas:
     var scale: Float64
     var letterbox: Color
     var view: Viewport
-    var _state: PersistentCanvasState
-    # Style is per-frame, not carried in `_state`: `Canvas` is only reachable
+    var _state: PersistentFrameState
+    # Style is per-frame, not carried in `_state`: `Frame` is only reachable
     # from `render`, so nothing can seed a style outside a frame and carrying
     # one across would only preserve a forgotten setting.
     var _style: Style
@@ -185,7 +185,7 @@ struct Canvas:
     var _transform_inv: Matrix[3, 3]
     var _transform_stack: List[Matrix[3, 3]]
 
-    def __init__(out self, view: Viewport, var state: PersistentCanvasState):
+    def __init__(out self, view: Viewport, var state: PersistentFrameState):
         """Adopt this frame's mapping and carried-over state."""
         self.view = view.copy()
         self.width = view.width
@@ -206,11 +206,11 @@ struct Canvas:
         self._transform_inv = self._base_inv
         self._transform_stack = List[Matrix[3, 3]]()
 
-    def _release(deinit self) -> PersistentCanvasState:
-        """Hand back the state the next frame's `Canvas` should start from.
+    def _release(deinit self) -> PersistentFrameState:
+        """Hand back the state the next frame's `Frame` should start from.
 
-        Consumes the canvas, so the borrow on the framebuffer ends here — the
-        run loop cannot present while a `Canvas` is still alive.
+        Consumes the frame, so the borrow on the framebuffer ends here — the
+        run loop cannot present while a `Frame` is still alive.
         """
         var state = self._state^
         state.letterbox = self.letterbox
@@ -258,15 +258,15 @@ struct Canvas:
         )
 
     # `_uniform`, `_pixel_scale`, `_device_bounds` and `_outline_thickness_px`
-    # used to live here. They are properties of a matrix, not of a canvas, and only
+    # used to live here. They are properties of a matrix, not of a frame, and only
     # the replay needs them now — see `_backend.mojo`.
 
     def transform(mut self, m: Matrix[3, 3]) -> TransformGuard[origin_of(self)]:
         """Apply `m` to everything drawn inside a `with` block.
 
         ```mojo
-        with canvas.transform(translate(50.0, 50.0)):
-            canvas.rectangle((0, 0), 100, 100)
+        with frame.transform(translate(50.0, 50.0)):
+            frame.rectangle((0, 0), 100, 100)
         ```
 
         The matrix pops on exit, including on an early return or a raise.
@@ -317,15 +317,15 @@ struct Canvas:
 
     def camera(mut self, cam: Camera):
         """Set the active camera. Applies to every draw call and every nested
-        `transform()` from here on, until changed again or `canvas.overlay()`
+        `transform()` from here on, until changed again or `frame.overlay()`
         suspends it — and resets to identity next frame, like the rest of the
         transform state.
 
         ```mojo
-        canvas.camera(self.cam)
-        canvas.sprite(self.player.pos, ...)  # world-space coordinates
-        with canvas.overlay():
-            canvas.text("Score: " + str(self.score), (0, ctx.top() - 20))
+        frame.camera(self.cam)
+        frame.sprite(self.player.pos, ...)  # world-space coordinates
+        with frame.overlay():
+            frame.text("Score: " + str(self.score), (0, ctx.top() - 20))
         ```
         """
         self._camera = cam.copy()
@@ -376,7 +376,7 @@ struct Canvas:
         """Paint the whole framebuffer — the usual first call in `render`.
 
         A translucent color blends instead of clearing, which is how motion
-        trails are drawn: `canvas.background(Color(0x11, 0x11, 0x11, 24))`
+        trails are drawn: `frame.background(Color(0x11, 0x11, 0x11, 24))`
         fades the previous frame a little further each time.
         """
         self._state.backend.record(clear_command(color))
@@ -657,7 +657,7 @@ struct Canvas:
         self.text(s, pos.x, pos.y)
 
     def font(mut self, var f: Font):
-        """Swap the face. Lives in `PersistentCanvasState`, so unlike the style
+        """Swap the face. Lives in `PersistentFrameState`, so unlike the style
         settings a font outlives the frame that set it."""
         self._state.backend.text.set_font(f^)
 

@@ -7,9 +7,9 @@ from .viewport import Viewport
 from .time import Time
 from .font import Font, FontWeight
 from .camera import Camera
-from .canvas import (
-    Canvas,
-    PersistentCanvasState,
+from .frame import (
+    Frame,
+    PersistentFrameState,
     StyleGuard as StyleGuard,
     TransformGuard as TransformGuard,
     OverlayGuard as OverlayGuard,
