@@ -56,7 +56,7 @@ def _gpu_entry_point() raises:
     above says nothing about it. Compiling costs nothing at runtime, which
     matters here: the pre-commit hook builds this file.
     """
-    run[Smoke]("Smoke Test", 320, 240, backend=RenderBackend.GPU)
+    run[Smoke]("Smoke Test", 320, 240, RenderBackend.GPU)
 
 
 def test_smoke_renders_through_the_public_api() raises -> None:

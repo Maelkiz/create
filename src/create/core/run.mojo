@@ -10,6 +10,7 @@ from .input import Input
 from .context import Context
 from create.render.autoscale import AutoScale
 from .program import Program
+from .window_mode import WindowMode
 from ._run_gl import run_gl
 
 
@@ -81,45 +82,45 @@ def run[
     title: String,
     width: Int = 1280,
     height: Int = 720,
-    fullscreen: Bool = False,
+    mode: Int = WindowMode.WINDOWED,
     backend: Int = RenderBackend.CPU,
     resizable: Bool = True,
-    borderless: Bool = False,
 ) raises:
     """Open a window and run `P` in it until it quits.
 
     `width`/`height` are both the window size and the design resolution — the
-    coordinate space the program is authored in. A fullscreen window covers the
-    display, so the size only shapes the design space there.
+    coordinate space the program is authored in. A fullscreen or borderless
+    window covers the display, so the size only shapes the design space there.
 
     The design is scaled to the window (`AutoScale.FIT`) unless `create` sets
     `ctx.autoscale` otherwise, so a program keeps its layout on any display.
     The two jobs of the size stay independent once the window is open:
 
-    | call                              | FIT / EXTEND             | OFF            |
-    |-----------------------------------|--------------------------|----------------|
-    | `run("T", 1000, 1000)`            | design 1000x1000, scaled | world = window |
-    | `run("T", 1000, 1000, True)`      | design 1000x1000, scaled | world = monitor|
-    | `run("T", fullscreen=True)`       | design 1280x720, scaled  | world = monitor|
+    | call                                   | FIT / EXTEND             | OFF            |
+    |-----------------------------------------|--------------------------|----------------|
+    | `run("T", 1000, 1000)`                  | design 1000x1000, scaled | world = window |
+    | `run("T", 1000, 1000, WindowMode.FULLSCREEN)` | design 1000x1000, scaled | world = monitor|
+    | `run("T", mode=WindowMode.FULLSCREEN)`  | design 1280x720, scaled  | world = monitor|
 
-    So `fullscreen=True` with a size means *author at that size, present
-    fullscreen*. Under `OFF` the design resolution goes unused entirely, which
-    is the other half of why `FIT` is the default: it keeps the numbers passed
-    here meaningful in every launch mode.
+    So `mode=WindowMode.FULLSCREEN` with a size means *author at that size,
+    present fullscreen*. Under `OFF` the design resolution goes unused
+    entirely, which is the other half of why `FIT` is the default: it keeps
+    the numbers passed here meaningful in every launch mode.
 
     `backend=RenderBackend.GPU` runs the same program through the GL backend
     instead — a different window, a different loop, and the same frame. It is
     a branch rather than a value the loop holds because Mojo 1.0 has no
     dynamic trait dispatch, which is also why `Backend` switches on a `kind`.
     """
+    var fullscreen = mode == WindowMode.FULLSCREEN
+    var borderless = mode == WindowMode.BORDERLESS
     if backend == RenderBackend.GPU:
         run_gl[P](
             title,
             width,
             height,
-            fullscreen,
+            mode,
             resizable=resizable,
-            borderless=borderless,
         )
         return
     var win = Window(

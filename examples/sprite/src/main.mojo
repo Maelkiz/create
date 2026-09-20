@@ -36,4 +36,4 @@ struct Game(Program):
 
 
 def main() raises:
-    run[Game]("Sprite Example", fullscreen=True)
+    run[Game]("Sprite Example", mode=WindowMode.FULLSCREEN)

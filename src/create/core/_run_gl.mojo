@@ -28,6 +28,7 @@ from ._frame import step
 from .context import Context
 from .input import Input
 from .program import Program
+from .window_mode import WindowMode
 
 comptime _MSAA_SAMPLES = 4
 """Antialiasing is the framebuffer's job here, not the tessellator's: the CPU
@@ -40,9 +41,8 @@ def _open_window(
     title: String,
     width: Int,
     height: Int,
-    fullscreen: Bool,
+    mode: Int,
     resizable: Bool,
-    borderless: Bool,
 ) raises -> GLWindow:
     """A multisampled GL window, falling back to none if the driver refuses.
 
@@ -50,6 +50,8 @@ def _open_window(
     count fails context creation — so the retry is here, where a missing
     antialias is a better outcome than a program that will not start.
     """
+    var fullscreen = mode == WindowMode.FULLSCREEN
+    var borderless = mode == WindowMode.BORDERLESS
     try:
         return GLWindow(
             title,
@@ -134,16 +136,16 @@ def run_gl[
     title: String,
     width: Int = 1280,
     height: Int = 720,
-    fullscreen: Bool = False,
+    mode: Int = WindowMode.WINDOWED,
     vsync: Bool = True,
     resizable: Bool = True,
-    borderless: Bool = False,
 ) raises:
     """Open a GL window and run `P` on the GPU backend until it quits.
 
-    `fullscreen` covers the display; the design resolution is still
-    `width`/`height`, so the program is authored in the same space either way
-    and the viewport scales it to whatever the display turns out to be.
+    `mode` covers the display (`WindowMode.FULLSCREEN`/`BORDERLESS`); the
+    design resolution is still `width`/`height`, so the program is authored
+    in the same space either way and the viewport scales it to whatever the
+    display turns out to be.
 
     `vsync=False` is for benchmarking only: without it every frame waits for
     the display and the measurement is the refresh rate rather than the
@@ -153,9 +155,7 @@ def run_gl[
     both the window size and the space the program is authored in, scaled to
     the window by `AutoScale.FIT` unless `create` says otherwise.
     """
-    var win = _open_window(
-        title, width, height, fullscreen, resizable, borderless
-    )
+    var win = _open_window(title, width, height, mode, resizable)
     win.set_swap_interval(1 if vsync else 0)
     var ctx = Context()
     ctx.view.set_design(width, height)

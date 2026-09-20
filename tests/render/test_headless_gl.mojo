@@ -28,7 +28,7 @@ struct GPURect(Program):
 def test_the_gpu_backend_paints_a_filled_rectangle() raises -> None:
     var m: MemorySurface
     try:
-        m = run_headless[GPURect](32, 32, backend=RenderBackend.GPU)
+        m = run_headless[GPURect](32, 32, RenderBackend.GPU)
     except e:
         print("SKIP — no GL context:", e)
         return
@@ -151,9 +151,7 @@ def test_the_gpu_backend_rounds_triangle_corners() raises -> None:
     to move the structural tolerances. This checks the corner directly."""
     var m: MemorySurface
     try:
-        m = run_headless[GPURoundedTriangle](
-            100, 100, backend=RenderBackend.GPU
-        )
+        m = run_headless[GPURoundedTriangle](100, 100, RenderBackend.GPU)
     except e:
         print("SKIP — no GL context:", e)
         return
