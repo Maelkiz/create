@@ -15,13 +15,11 @@ struct Sketch(Program):
     var angle: Float64
 
     @staticmethod
-    def create(mut ctx: Context) raises -> Self:
+    def create(mut frame: Frame) raises -> Self:
         return Self(0.0)
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
-        self.angle += ctx.time.delta
-
-    def render(self, mut frame: Frame) raises:
+    def update(mut self, mut frame: Frame, input: Input) raises:
+        self.angle += frame.time.delta
         frame.background(Color.BLACK)
         frame.circle((100 * cos(self.angle), 100 * sin(self.angle)), 20)
 

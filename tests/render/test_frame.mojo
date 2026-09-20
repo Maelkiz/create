@@ -1011,12 +1011,12 @@ def _non_background_box(
 
 
 @fieldwise_init
-struct TextThroughCanvas(Program):
+struct TextThroughFrame(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut frame: Frame) raises -> TextThroughCanvas:
-        return TextThroughCanvas(0)
+    def create(mut frame: Frame) raises -> TextThroughFrame:
+        return TextThroughFrame(0)
 
     def update(mut self, mut frame: Frame, input: Input) raises:
         frame.background(Color.BLACK)
@@ -1031,7 +1031,7 @@ def test_text_draws_below_and_right_of_a_top_left_anchor() raises -> None:
     # at or past it on both axes, the same shape test_text.mojo checks
     # against TextRenderer directly, but now through Frame's own style and
     # transform plumbing.
-    var m = run_headless[TextThroughCanvas](200, 200)
+    var m = run_headless[TextThroughFrame](200, 200)
     var box = _non_background_box(m, Color.BLACK)
     assert_true(box[2] >= 0, "nothing was drawn")
     assert_true(box[0] >= 100, "ink started left of the anchor")

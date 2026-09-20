@@ -191,7 +191,8 @@ struct Frame:
     **It takes no parameters, and holds no `Surface`.** It used to need one
     origin parameter for the framebuffer it borrowed, which constrained the
     whole API: a second parameter would have broken every
-    `Program.render(self, mut frame: Frame)` signature at once, and pointing
+    `Program.update(self, mut frame: Frame, input: Input)` signature at
+    once, and pointing
     an existing `Frame` at a new framebuffer could not compile at all. Both
     limits are gone because a `Frame` no longer touches pixels — it records,
     and the backend replays onto a `Surface` the frame never sees. Don't
@@ -462,7 +463,7 @@ struct Frame:
         frame.camera(self.cam)
         frame.sprite(self.player.pos, ...)  # world-space coordinates
         with frame.overlay():
-            frame.text("Score: " + str(self.score), (0, ctx.top() - 20))
+            frame.text("Score: " + str(self.score), (0, frame.top() - 20))
         ```
         """
         self._camera = cam.copy()

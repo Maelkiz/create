@@ -103,7 +103,7 @@ struct Color(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         """Composite this color over `dst`, source-over.
 
         `self.a` decides how much of `self` shows through. Compositing over an
-        opaque color yields an opaque color, so this is what a canvas fill does
+        opaque color yields an opaque color, so this is what a background fill does
         against the framebuffer.
         """
         if self.a == 255:

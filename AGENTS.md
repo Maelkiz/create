@@ -28,8 +28,8 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 | Module | Path | Responsibility |
 |---|---|---|
 | root | `src/create/__init__.mojo` | The preamble — `from create import *`, the union of every subpackage below |
-| `core` | `src/create/core/` | Program trait, run loops, Context, Time, Input, Key, script_dir |
-| `render` | `src/create/render/` | Frame, DrawCommand, Backend, Surface, Viewport, AutoScale, Style, Color, Font, text layout, raster primitives, the GL renderer |
+| `core` | `src/create/core/` | Program trait, run loops, Input, Key, script_dir |
+| `render` | `src/create/render/` | Frame, Time, DrawCommand, Backend, Surface, Viewport, AutoScale, Style, Color, Font, text layout, raster primitives, the GL renderer |
 | `math` | `src/create/math/` | Point2D, Vector2D, Vector3D, Matrix, geometry shapes, random, util, easing curves and tweens |
 | `sprite` | `src/create/sprite/` | Sprite — BMP/PNG/JPEG loading and raw pixel buffer; SpriteAnimation, SpriteAnimator — frame-based animation |
 | `audio` | `src/create/audio/` | Sound, Audio — WAV/OGG/FLAC/MP3 loading and playback |
@@ -41,15 +41,14 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 |---|---|
 | `src/create/core/program.mojo` | Defines the `Program` trait |
 | `src/create/core/run.mojo` | `run[T](title, width, height, fullscreen, backend)` — the windowed entry point; dispatches to the GPU loop when `backend == RenderBackend.GPU` |
-| `src/create/core/_step.mojo` | `step[P]` — one frame: update, render, letterbox, release. The one copy, shared by both loops |
+| `src/create/core/_step.mojo` | `step[P]` — one frame: update, letterbox, release. The one copy, shared by both loops. Also `create_program[P]`, whose frame is built and then discarded |
 | `src/create/core/headless.mojo` | `run_headless[T](width, height, frames, pixel_width, pixel_height, backend)` — same loop, owned buffer, no window; dispatches to `_headless_gl.mojo` when `backend == RenderBackend.GPU` |
 | `src/create/core/_headless_gl.mojo` | `_run_headless_gl[T]` — `run_headless`'s GPU counterpart: the same frames through the GL backend into an offscreen `_GLTarget`, read back once at the end |
-| `src/create/core/context.mojo` | `Context` — width/height/time/autoscale passed to every frame |
-| `src/create/core/time.mojo` | `Time` — frame delta, frame count, elapsed seconds |
+| `src/create/render/time.mojo` | `Time` — frame delta, frame count, elapsed seconds. In `render` because `Frame` carries it, and `render` may not import `core` |
 | `src/create/core/input.mojo` | `Input` — keyboard state, mouse position/buttons |
 | `src/create/core/key.mojo` | `Key` — named keycodes for the `Int` overloads |
 | `src/create/core/path.mojo` | `script_dir()` — the directory of the running program, for asset paths |
-| `src/create/render/frame.mojo` | Drawing API: shapes, text, transforms, coordinate helpers. Records `DrawCommand`s; touches no pixels |
+| `src/create/render/frame.mojo` | `Frame` — the one per-frame object: geometry (`width`/`height`/`left`/`right`/`bottom`/`top`), the clock, the loop dials (`autoscale`, `quit_on_escape`, `design`, `frame_cap`, `quit`), and the drawing API. Records `DrawCommand`s; touches no pixels. Also `PersistentFrameState`, what survives the frame boundary |
 | `src/create/render/_command.mojo` | `DrawCommand` — one recorded draw, local geometry + transform + resolved `Style`; the per-kind constructor helpers |
 | `src/create/render/render_backend.mojo` | `RenderBackend` — the `CPU`/`GPU` backend-selector constants |
 | `src/create/render/_backend.mojo` | `Backend` — owns the fonts, glyph cache and interned sprite images; replays a frame's `DrawCommand`s onto a `Surface` (`present`) or through GL (`present_gpu`) |
@@ -200,15 +199,15 @@ file minimal: it builds on every commit, and its cost must not grow with the exa
 
 ## Code Conventions
 
-**Defining a program:** implement `Program` (`create` + `render`, optional `update`) and pass it to `run[T]`. See [examples/sidescroller/src/main.mojo](examples/sidescroller/src/main.mojo) for the full shape, or [tests/core/test_smoke.mojo](tests/core/test_smoke.mojo) for the minimum. Both are compile-gated, so neither can go stale.
+**Defining a program:** implement `Program` (`create` + `update`) and pass it to `run[T]`. See [examples/sidescroller/src/main.mojo](examples/sidescroller/src/main.mojo) for the full shape, or [tests/core/test_smoke.mojo](tests/core/test_smoke.mojo) for the minimum. Both are compile-gated, so neither can go stale.
 
 **Imports: `from create import *` is what a program writes.** It is the whole public surface in one
 line. Every example and every test uses it.
 
 Each subpackage exports the names it owns and nothing from a layer below:
 
-- `from create.core import *` — `Program`, `run`, `run_headless`, `Context`, `Time`, `Input`, `MouseButton`, `Key`, `script_dir`.
-- `from create.render import *` — `Frame` and its guards, `Camera`, `Surface`/`MemorySurface`, `Viewport`, `Color`, `Font`/`FontWeight`, `Align`, `AutoScale`, `RenderBackend`.
+- `from create.core import *` — `Program`, `run`, `run_headless`, `Input`, `MouseButton`, `Key`, `script_dir`.
+- `from create.render import *` — `Frame`, `PersistentFrameState` and the frame guards, `Time`, `Camera`, `Surface`/`MemorySurface`, `Viewport`, `Color`, `Font`/`FontWeight`, `Align`, `AutoScale`, `RenderBackend`.
 - `from create.math import *` — `Point2D`, `Vector2D`/`Vector3D`, `Matrix` and its constructors, the geometry shapes and `overlaps`, `Random`, `Easing`/`ease`/`Tween`, the util functions, and a re-export of `std.math` (`sin`, `cos`, `sqrt`, `clamp`, `pi`, `tau`, …).
 - `from create.sprite import *` — `Sprite`, `SpriteAnimation`, `SpriteAnimator`.
 - `from create.audio import *` — `Sound`, `Audio`.
@@ -255,33 +254,33 @@ the rasteriser is written against no layout but its own and the BMP/PNG/JPEG dec
 render path entirely. Keep it that way: a new `render` function that needs pixels takes the buffer,
 not the type that owns it.
 
-**`render` never imports `core`.** Every edge between them runs one way — `program`, `context`,
-`frame`, `run` and `headless` reach into `render`, and nothing comes back. That is what lets
+**`render` never imports `core`.** Every edge between them runs one way — `program`, `input`,
+`run`, `_step` and `headless` reach into `render`, and nothing comes back. That is what lets
 `render` be split off at all, and a package boundary now enforces it: an import the other way is a
 cycle, not a style violation. `render` depends only on `math` and `sprite`, so the whole drawing
 stack is usable without a run loop, which is what `run_headless` already relies on.
 
 **A `Program` can own `Program`s.** Multiple screens are not a distinct feature: a root `Program`
-holds each screen as a plain field, in the same `update`/`render` shape but *not* implementing the
+holds each screen as a plain field, with the same `update` shape but *not* implementing the
 trait — a trait would force one `update`/`enter` signature across every screen, which is the one
 thing that must vary — and switches with an int field and an `if`/`elif`:
 
 ```mojo
-def update(mut self, mut ctx: Context, input: Input) raises:
+def update(mut self, mut frame: Frame, input: Input) raises:
     if self.scene == MENU:
-        self.menu.update(ctx, input)
+        self.menu.update(frame, input)
     else:
-        self.game.update(ctx, input)
+        self.game.update(frame, input)
 ```
 
 A scene needing a one-shot reset on entry gets a plain method (`enter()`) the parent calls right
 before flipping the field; it is not part of `Program` and costs nothing to scenes that don't need
 it. See [examples/scenes/src/main.mojo](examples/scenes/src/main.mojo) for a full menu/drawing-surface
-pair, including that hook and a deliberately-never-cleared canvas so ink accumulates across frames.
+pair, including that hook and a deliberately-never-cleared frame so ink accumulates across frames.
 
 That `enter()` is where a transition carries state — it takes whatever arguments the entering scene
 needs (`enter(from_door: Int)`), and state shared by *all* scenes is a field on the parent passed
-down as a `mut` parameter, alongside `Context`. Both are lost the moment a trait imposes a uniform
+down as a `mut` parameter, alongside `Frame`. Both are lost the moment a trait imposes a uniform
 signature, which is the real argument against one; it is not that a trait is impossible. Mojo 1.0
 has no dynamic trait dispatch — a trait in type position forms an inert `AnyTrait[T]` that nothing
 converts into and no method can be called on — but `Variant` over a closed set of scene types does
@@ -311,7 +310,7 @@ select one with `run[T](..., backend=RenderBackend.GPU)`; the default is unchang
 the file is written when the frame is presented. That is not laziness — `present` is the only
 place that holds both halves at once: the finished framebuffer (what a screenshot is) and the
 frame's command buffer, still unconsumed (what an image is replayed from). Filing a request also
-makes the call position-independent: the image holds the whole frame however early in `render` it
+makes the call position-independent: the image holds the whole frame however early in `update` it
 was asked for. A failed write raises out of `present`, like a missing font does.
 
 `save_image` re-rasterises **on the CPU under both backends**, through `replay` with the capture's
@@ -420,7 +419,7 @@ the `Surface` and so defeats the clipping every raster loop otherwise does.
 **Scope through the guards, never by hand.** `frame.transform(m)` and `frame.style()` both return
 a `with`-block guard that unwinds on exit; `frame._push_transform` is the same push without the pop.
 Style is the subtler of the two: the bare mutators (`fill`, `outline`, `font_size`, …) called
-straight from `render` are the normal path, since the style resets next frame either way — the guard
+straight from `update` are the normal path, since the style resets next frame either way — the guard
 is for a *helper* that sets style before drawing, whose `outline(enabled=False)` would otherwise apply to
 whatever the caller draws next.
 
@@ -433,7 +432,7 @@ with frame.style():
 
 **Coordinate system is not Processing's.** The origin is the **middle** of the screen area and **y grows upward**. Screen `x` runs `[-width/2, +width/2]`, `y` runs `[-height/2, +height/2]`; `(0, 0)` is the centre of the screen and negative `y` is below it.
 
-`Context` and `Frame` both expose `left()`, `right()`, `bottom()`, `top()` as the edges — use those rather than `width`/`height` arithmetic, and note `left()` and `bottom()` are negative. `Rectangle.top()` is `y + h/2`.
+`Frame` exposes `left()`, `right()`, `bottom()`, `top()` as the edges — use those rather than `width`/`height` arithmetic, and note `left()` and `bottom()` are negative. `Rectangle.top()` is `y + h/2`.
 
 Consequences worth internalising:
 
@@ -442,7 +441,7 @@ Consequences worth internalising:
 - Glyphs and sprites are **not** flipped — only their anchor point is mapped.
 - `input.mouse` is delivered in screen coordinates, so it can be negative — camera-independent, since `Input` is filled before that frame's `Camera` exists. See Camera below.
 
-**Camera** is what maps world space onto screen space, for content bigger than the screen — a sidescroller, a top-down level, anything that scrolls. `frame.camera(cam)` sets the active one, and it applies to every draw call and every nested `transform()` from there on, exactly like `Style`: reset to identity each frame, so `render` sets it explicitly each frame it wants one. `Camera` is a field the program owns and moves on its own schedule (`self.cam.position = self.player.pos`, or a `Tween` over it for smoothing) — it is not fed by the run loop, so it costs `Program`, `Context` and `run.mojo` nothing, same reason adding `Audio` did not touch them. `Camera.to_world`/`to_screen` convert a point between the two spaces — `self.cam.to_world(input.mouse)` for picking against world-space entities.
+**Camera** is what maps world space onto screen space, for content bigger than the screen — a sidescroller, a top-down level, anything that scrolls. `frame.camera(cam)` sets the active one, and it applies to every draw call and every nested `transform()` from there on, exactly like `Style`: reset to identity each frame, so `update` sets it explicitly each frame it wants one. `Camera` is a field the program owns and moves on its own schedule (`self.cam.position = self.player.pos`, or a `Tween` over it for smoothing) — it is not fed by the run loop, so it costs `Program`, `Frame` and `run.mojo` nothing, same reason adding `Audio` did not touch them. `Camera.to_world`/`to_screen` convert a point between the two spaces — `self.cam.to_world(input.mouse)` for picking against world-space entities.
 
 `frame.overlay()` is the escape hatch: a `with` block that suspends the active camera (and any nested transform) so what's drawn inside lands in screen space regardless of where the camera looks — HUD, score, anything that must stay fixed on screen.
 
@@ -450,7 +449,7 @@ Consequences worth internalising:
 frame.camera(self.cam)
 frame.sprite(self.player.pos, ...)          # world-space coordinates
 with frame.overlay():
-    frame.text("Score: " + str(self.score), (0, ctx.top() - 20))  # screen space
+    frame.text("Score: " + str(self.score), (0, frame.top() - 20))  # screen space
 ```
 
 Nothing below `Frame` knows a camera exists: `_command.mojo`, `_backend.mojo`, `_tessellate.mojo` and the GL path all just replay `DrawCommand.transform`, which already carries the full composition — camera support cost them nothing.
@@ -479,26 +478,25 @@ not reach each other: a shape colour and a
 label colour can stand at once, and `fill(enabled=False)` no longer silently suppresses text. Text is
 gated on its own alpha instead — `text_color(Color(..., 0))` draws nothing.
 
-**Autoscale** keeps the program in its design resolution while the window resizes. `ctx.width`/`height`, `input.mouse`, and all frame coordinates stay in that design space; `frame.scale` reports the factor, and font size, outline thickness, and sprite size scale with it. Three modes — `FIT` (default), `EXTEND`, `OFF` — documented in [autoscale.mojo](src/create/render/autoscale.mojo), with the launch-mode matrix on `run`. `ctx.design(w, h, mode)` pins the space from inside `create`. See [examples/autoscale.mojo](examples/autoscale.mojo), which cycles all three modes on space.
+**Autoscale** keeps the program in its design resolution while the window resizes. `frame.width`/`height`, `input.mouse`, and all frame coordinates stay in that design space; `frame.scale` reports the factor, and font size, outline thickness, and sprite size scale with it. Three modes — `FIT` (default), `EXTEND`, `OFF` — documented in [autoscale.mojo](src/create/render/autoscale.mojo), with the launch-mode matrix on `run`. `frame.design(w, h, mode)` pins the space from inside `create`. See [examples/autoscale.mojo](examples/autoscale.mojo), which cycles all three modes on space.
 
-The design size is a property of the program, not of the display: it is whatever `run` was passed, unchanged by a resize or by fullscreen. Under `EXTEND` the *reported* size grows with the window, so layout must anchor to the origin or to `ctx.left()`/`right()`/`bottom()`/`top()` rather than hardcoded design coordinates.
+The design size is a property of the program, not of the display: it is whatever `run` was passed, unchanged by a resize or by fullscreen. Under `EXTEND` the *reported* size grows with the window, so layout must anchor to the origin or to `frame.left()`/`right()`/`bottom()`/`top()` rather than hardcoded design coordinates.
 
 `Input._set_mouse(x, y)` is the single writer of `mouse`, `mouse_x` and `mouse_y`, and every event
 arm in `run.mojo` that carries a pointer position goes through it — writing the fields directly
 desynchronises the `Point2D` from the `Int` pair. A new event that reports a position calls
 `_set_mouse` and adds only what is genuinely its own — `mouse_press_pos` on a press, say.
 
-**Parameter vs. field:** a resource the run loop *feeds* the program every frame (`Context`, `Input`, `Frame`) stays a parameter; a resource the program *drives* on its own schedule (`Sprite`, `Font`, `Sound`, `Audio`, `SpriteAnimator`) is a field the program owns and constructs in `create`. This is why adding audio required zero changes to `Program`, `Context`, or `run.mojo` — `Audio` is just another field, like `Sprite`.
+**Parameter vs. field:** a resource the run loop *feeds* the program every frame (`Frame`, `Input`) stays a parameter; a resource the program *drives* on its own schedule (`Sprite`, `Font`, `Sound`, `Audio`, `SpriteAnimator`) is a field the program owns and constructs in `create`. This is why adding audio required zero changes to `Program`, `Frame`, or `run.mojo` — `Audio` is just another field, like `Sprite`.
 
-**What earns its own parameter** is decided by *who writes it*, not by who feeds it — feeding alone doesn't distinguish anything, since `Time` is fed every frame and is a field on `Context`.
+**What earns its own parameter** is decided by *who writes it*, not by who feeds it — feeding alone doesn't distinguish anything, since `Time` is fed every frame and is a field on `Frame`.
 
 | | Loop writes | Program writes | Shape |
 |---|---|---|---|
-| `Context` (and its `Time`) | yes | yes | `mut` parameter |
-| `Frame` | yes | yes | `mut` parameter |
+| `Frame` (and its `Time`) | yes | yes | `mut` parameter |
 | `Input` | yes | **no** | read-only parameter |
 
-`Input` is the only one the program never writes, hence a read-only argument rather than a field on the `mut` `Context` — reasoning in the [`Input` docstring](src/create/core/input.mojo). `ctx.time` shows the cost of the alternative: the program never writes it either, but `ctx.time.frame_count = 99` compiles.
+`Input` is the only one the program never writes, hence a read-only argument rather than a field on the `mut` `Frame` — reasoning in the [`Input` docstring](src/create/core/input.mojo). `frame.time` shows the cost of the alternative: the program never writes it either, but `frame.time.frame_count = 99` compiles.
 
 **Per-frame obligations.** Three fields the program owns need ticking from `update`, and nothing
 enforces it:
@@ -506,9 +504,9 @@ enforces it:
 - `audio.update()` — SDL never reports a finished stream, so skipping it stalls a loop after its
   first buffer drains and leaks one-shot voice slots forever. See
   [audio.mojo](src/create/audio/audio.mojo) and [examples/audio/src/main.mojo](examples/audio/src/main.mojo).
-- `animator.update(ctx.time.delta)` — the playhead only advances here. See
+- `animator.update(frame.time.delta)` — the playhead only advances here. See
   [animator.mojo](src/create/sprite/animator.mojo) and [examples/animation/src/main.mojo](examples/animation/src/main.mojo).
-- `tween.update(ctx.time.delta)` — same shape and same failure: a tween never ticked sits at its
+- `tween.update(frame.time.delta)` — same shape and same failure: a tween never ticked sits at its
   `start` forever. See [tween.mojo](src/create/math/tween.mojo) and [examples/tween.mojo](examples/tween.mojo),
   which also cycles the easing curves against one shared playhead.
 
@@ -543,7 +541,7 @@ it. The biggest trap in the animation API is documented on
    root, or `script_dir() + "/../fixtures/"` — so the suite must be run from the root either way,
    which `pixi run test` guarantees.
 
-3. **A window does not report its real size immediately.** In fullscreen SDL fires a bogus `(1, 1)` `Resized` before reporting real dimensions, so `_wait_for_dimensions` pumps events until width > 1 and height > 1. On Wayland the fullscreen transition is asynchronous on top of that: `run[T]("t", 1000, 1000, fullscreen=True)` reports the requested 1000x1000 for frame 1 and the display size from frame 2 on. The run loop refreshes dimensions every frame, so this self-corrects — but don't cache pixel dimensions from `create` or the first frame.
+3. **A window does not report its real size immediately.** In fullscreen SDL fires a bogus `(1, 1)` `Resized` before reporting real dimensions, so `_wait_for_dimensions` pumps events until width > 1 and height > 1. On Wayland the fullscreen transition is asynchronous on top of that: `run[T]("t", 1000, 1000, mode=WindowMode.FULLSCREEN)` reports the requested 1000x1000 for frame 1 and the display size from frame 2 on. The run loop refreshes dimensions every frame, so this self-corrects — but don't cache pixel dimensions from `create` or the first frame.
 
 4. **One origin limit in this Mojo version shapes the API.** Nothing can return a reference to a
    `List` element, so `SpriteAnimation` has **no `frame()` accessor** — see its
@@ -551,7 +549,7 @@ it. The biggest trap in the animation API is documented on
    Index inline at the use site instead. Don't retry it.
 
    (`Frame` used to take one parameter — the `Surface` it drew onto — for the same class of
-   reason: a second parameter would have broken every `Program.render` signature at once, and
+   reason: a second parameter would have broken every `Program.update` signature at once, and
    pointing an existing `Frame` at a new framebuffer could not compile. The command-buffer split
    (`Frame` records, `Backend` replays onto a `Surface` it never sees) removed the need for a
    `Surface` on `Frame` at all, so `Frame` now takes **no** parameters. Don't reintroduce a
@@ -576,17 +574,18 @@ docstring; this table is not an API reference and must not grow into one.
 
 | Term | Meaning |
 |---|---|
-| `Program` | Full interactive program: `create` + `update` + `render`. No event callbacks — input arrives as `update`'s `Input` parameter |
-| Screen space | The fixed coordinate space `Context`/`Input` describe — origin centred, y up (see Coordinate system above). Camera-independent: `ctx.left`/`right`/`bottom`/`top` and `input.mouse` live here, and `Viewport.base_matrix()` maps it straight to framebuffer pixels |
+| `Program` | Full interactive program: `create`, then `update` once per frame. One per-frame method, not two: deciding and drawing are the same frame's work, so a decision never has to be smuggled between them through a field. No event callbacks — input arrives as `update`'s `Input` parameter |
+| `Frame` | The one object a program is handed per frame: the screen geometry (`width`/`height`, `left`/`right`/`bottom`/`top`), the clock (`time`), the loop dials (`autoscale`, `quit_on_escape`, `design()`, `frame_cap()`, `quit()`) and the whole drawing API. `mut` because the program writes it from one side while the loop writes it from the other. Built fresh each frame and dropped before the frame is presented, so nothing may hold one across frames — hold the `PersistentFrameState` instead. `design()` is deferred: it pins the design space, and the new mapping takes effect on the next frame rather than mid-frame |
+| Screen space | The fixed coordinate space `Frame`/`Input` describe — origin centred, y up (see Coordinate system above). Camera-independent: `frame.left`/`right`/`bottom`/`top` and `input.mouse` live here, and `Viewport.base_matrix()` maps it straight to framebuffer pixels |
 | World space | The camera-relative space a program draws in once it sets a `Camera` — effectively unbounded, since panning or zooming the camera just changes which part of it lands on screen. `Frame._user`/`to_local`/`to_world` operate here; with no camera set (the default), world space and screen space coincide |
 | `Camera` | What maps world space onto screen space: `position` (world point centred on screen) and `zoom`. A field the program owns and moves on its own schedule, like `Sprite` — not fed by the run loop. `frame.camera(cam)` applies it to every draw call and nested `transform()` until changed or `frame.overlay()` suspends it; resets to identity every frame, like `Style`. `frame.overlay()` is the escape hatch for a HUD or other UI that must stay in screen space regardless of the camera |
-| Design resolution | The size passed to `run` (default 1280x720, or pinned by `ctx.design()`) — the space a program is authored in, and the factor `ctx.autoscale` scales by. See Autoscale above |
+| Design resolution | The size passed to `run` (default 1280x720, or pinned by `frame.design()`) — the space a program is authored in, and the factor `frame.autoscale` scales by. See Autoscale above |
 | `DrawCommand` | One recorded draw: local-space geometry, the transform at record time, and the resolved `Style`. What `Frame` appends instead of touching pixels — see [_command.mojo](src/create/render/_command.mojo) |
 | `Backend` | Owns the fonts, glyph cache and interned sprite images, and replays a frame's `DrawCommand`s — onto a `Surface` at `present` (CPU, the one caller of `_raster.mojo`) or through `GLRenderer` at `present_gpu` (GPU). Which one is a `kind` field, not a trait object |
 | `Surface` | A borrowed RGBA framebuffer: pixel pointer plus width and height. Deliberately a plain value, not a trait. The **CPU** backend's replay target specifically — the GPU path has none, and `Frame` never holds one either way. Taken after event processing so a resize is never missed |
 | `save_image` / `save_screenshot` | The two captures, and they answer different questions. `frame.save_image(path, scale, transparent)` is what the program *drew*: design resolution times `scale`, no letterbox bars, CPU-replayed from the recorded commands under **both** backends, so it is reproducible across machines and window sizes. `frame.save_screenshot(path)` is what the user *saw*: the drawable's own resolution, bars included, drawn by whichever rasteriser drew the frame, hence machine-dependent by design. Neither is a fallback for the other |
-| `Viewport` | The design-space-to-pixel mapping: design size, autoscale mode, scale factor, offsets, base matrix. Owns no window and no pixels, so it is pure arithmetic; `Context` forwards to it |
-| `PersistentFrameState` | What survives the frame boundary — the `Backend` (hence fonts, glyph cache, sprite images) and the letterbox colour — moved into each frame's `Frame` and back out again by `_release`. Style is *not* in it: `Frame` is reachable only from `render`, so nothing could seed a style outside a frame, and carrying one forward would preserve only a forgotten setting |
+| `Viewport` | The design-space-to-pixel mapping: design size, autoscale mode, scale factor, offsets, base matrix. Owns no window and no pixels, so it is pure arithmetic; `Frame` forwards to it |
+| `PersistentFrameState` | What survives the frame boundary — the `Backend` (hence fonts, glyph cache, sprite images), the `Viewport`, the clock, the letterbox colour and the program-settable dials — moved into each frame's `Frame` and back out again by `_release`. The transform stack and the style are *not* in it: `Frame` is reachable only from `create` and `update`, so nothing could seed a style outside a frame, and carrying one forward would preserve only a forgotten setting |
 | `TransformGuard` / `StyleGuard` / `OverlayGuard` | RAII wrappers from `frame.transform(m)`, `frame.style()` and `frame.overlay()` — pop the matrix, restore the style, restore the camera and transform, on scope exit |
 | Asset vs. playhead | `SpriteAnimation` and `Sound` are immutable artwork, shared by `ArcPointer`; `SpriteAnimator` and an `Audio` voice are one entity's position in it. The rate (`fps`) belongs to the asset, not the playhead |
 | `Easing` / `Tween` | An `Easing` is the *shape* of a motion — a pure function of a 0-to-1 fraction, so `ease(curve, t)` needs no state. A `Tween` is a playhead that walks that fraction over a duration and reads out a value. A tween has no shared asset to split off the way an animation does: its whole definition is four numbers, so each entity owns its own |
@@ -597,7 +596,7 @@ docstring; this table is not an API reference and must not grow into one.
 
 - Use `@fieldwise_init` on program structs to auto-generate `__init__` from fields.
 - Use `pixi run test` before committing.
-- Use `frame.background(Color.X)` as the first call in `render` to clear the frame.
+- Use `frame.background(Color.X)` as the first drawing call in `update` to clear the frame.
 - Use `frame.to_local`/`to_world` to move a position between world space and the current transform's frame — neither deals in pixels, and both take two `Float64`, so pass `input.mouse.x, input.mouse.y`. Both still *return* a `Tuple[Float64, Float64]`, which lands implicitly in a `Point2D` or a `Vector2D`, so they are the seam between the two rather than a conversion site.
 - Use `Point2D` for a new signature's locations and `Vector2D` for its extents and deltas — `Rectangle(pos: Point2D, size: Vector2D)` and `frame.rectangle(pos, size)` are the shape to copy when one signature names both.
 - Use `script_dir()` for every asset path; a bare relative path resolves against the CWD.

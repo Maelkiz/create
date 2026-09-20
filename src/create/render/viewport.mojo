@@ -10,9 +10,9 @@ from .autoscale import AutoScale
 struct Viewport(Copyable, Movable):
     """The design-space mapping: how world coordinates land on the framebuffer.
 
-    One home for the geometry `Context` reports and `Frame` draws through, so
-    the two cannot drift. Owns no window and no pixels — it is pure arithmetic
-    over a framebuffer size, which is what makes it unit-testable on its own.
+    One home for the geometry `Frame` reports and draws through, so the two
+    cannot drift. Owns no window and no pixels — it is pure arithmetic over a
+    framebuffer size, which is what makes it unit-testable on its own.
     """
 
     var width: Int
@@ -129,9 +129,10 @@ struct Viewport(Copyable, Movable):
         """Map a window pixel position into screen space.
 
         The inverse of `base_matrix`, done in arithmetic: pointer positions
-        reach the program in the same space `ctx.left`/`right`/`bottom`/`top`
-        describe. Camera-independent, like the rest of `Viewport` — a program
-        using a `Camera` converts on top with `Camera.to_world`.
+        reach the program in the same space
+        `frame.left`/`right`/`bottom`/`top` describe. Camera-independent, like
+        the rest of `Viewport` — a program using a `Camera` converts on top
+        with `Camera.to_world`.
         """
         return (
             (x - Float64(self.pixel_w) / 2.0) / self.scale,

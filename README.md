@@ -16,21 +16,19 @@ from create import *
 @fieldwise_init
 struct MyApp(Program):
     @staticmethod
-    def create(mut ctx: Context) raises -> MyApp:
+    def create(mut frame: Frame) raises -> MyApp:
         return MyApp()  # Set initial application state here
 
-    def update(mut self, mut ctx: Context, input: Input) raises:
-        pass  # Executes once per frame, handle input, update state, etc.
-
-    def render(self, mut frame: Frame) raises:
-        # Also executes once per frame, frame.rectangle(), frame.circle(), etc.
+    def update(mut self, mut frame: Frame, input: Input) raises:
+        # Once per frame: read input, advance state, then draw —
+        # frame.rectangle(), frame.circle(), and the rest.
         frame.background(Color.BLACK)
         frame.text_align(Align.CENTER)
         frame.text("Hello World!", 0, 0)
 
 
 def main() raises:
-    run[MyApp]("Example Sketch", fullscreen=True)
+    run[MyApp]("Example Sketch", mode=WindowMode.FULLSCREEN)
 ```
 
 Rendering runs on the CPU by default. `backend=RenderBackend.GPU` runs the same program through an

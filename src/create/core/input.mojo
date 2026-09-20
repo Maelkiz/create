@@ -10,13 +10,13 @@ struct Input(Movable):
 
     The whole input surface — there are no event callbacks, because every
     window event either lands on a field here or is already reflected in
-    `Context` (`ctx.width`/`height` refresh every frame, so a resize needs no
-    notification of its own).
+    `Frame` (`frame.width`/`height` are rebuilt every frame, so a resize needs
+    no notification of its own).
 
-    Passed to `update` read-only rather than living on `Context`, which is the
-    one thing a program never writes: `ctx` must be `mut` for `quit` and
-    `autoscale`, so anything on it would inherit that mutability and the
-    one-way flow would stop being checkable.
+    A parameter of its own rather than a field on `Frame`, because it is the
+    one thing a program never writes: `frame` must be `mut` for `quit`,
+    `autoscale` and every draw call, so anything on it would inherit that
+    mutability and the one-way flow would stop being checkable.
 
     Being a plain struct, it is also how input becomes scriptable: a test fills
     one in and calls `step` directly, driving click- or key-driven behaviour
