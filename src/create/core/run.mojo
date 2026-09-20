@@ -65,6 +65,12 @@ def _run_loop[
         # mapped with this frame's scale, not the previous one's.
         _update_dimensions(win, state)
         _process_events(win, state, input)
+        # Re-derive after events: a resize this frame reallocated the pixel
+        # buffer, so the mapping taken above is one frame stale while the
+        # framebuffer is already the new size. Drawing that frame against the
+        # old mapping puts it in a corner of the new buffer — one crooked
+        # frame, and a permanent ghost in a program that never clears.
+        _update_dimensions(win, state)
         var frame_start = win.ticks()
         state.time._tick(frame_start)
         # The Surface is taken here, after events, because Window._resize

@@ -130,7 +130,11 @@ def _run_loop[
         var frame_start = win.ticks()
         state.time._tick(frame_start)
         # Re-read after events: a resize this frame changed the drawable, and
-        # the bars have to reach the edge of the *new* one.
+        # the bars have to reach the edge of the *new* one. The viewport is
+        # re-derived from it too — the mapping taken before the events is one
+        # frame stale, and drawing against it puts the whole frame in a corner
+        # of the resized drawable.
+        _ = _update_dimensions(win, state)
         var drawable = win.drawable_size()
         state = step(program, input, state^)
         state.backend.present_gpu(drawable[0], drawable[1], state.view.scale)

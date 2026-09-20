@@ -17,12 +17,14 @@ from create import *
 struct MyApp(Program):
     @staticmethod
     def create(mut frame: Frame) raises -> MyApp:
+        # Build the program's initial state, and load anything it owns,
+        # e.g., sprites, fonts, sounds. This frame is never presented.
         return MyApp()  # Set initial application state here
 
     def update(mut self, mut frame: Frame, input: Input) raises:
-        # Once per frame: read input, advance state, then draw —
-        # frame.rectangle(), frame.circle(), and the rest.
+        # Called once per frame: handle input, advance state, and render to the screen
         frame.background(Color.BLACK)
+        frame.text_color(Color.WHITE)
         frame.text_align(Align.CENTER)
         frame.text("Hello World!", 0, 0)
 
