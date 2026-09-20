@@ -1,6 +1,6 @@
 from create.math.matrix import Matrix
 from create.render.autoscale import AutoScale
-from .time import Time
+from create.render.time import Time
 from create.render.viewport import Viewport
 
 

@@ -1,5 +1,5 @@
 from std.testing import TestSuite, assert_equal, assert_almost_equal
-from create.core.time import Time
+from create.render.time import Time
 
 
 def _started(now: Int) raises -> Time:
