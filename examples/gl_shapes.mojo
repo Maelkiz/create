@@ -30,7 +30,7 @@ struct App(Program):
         # FIT with a 4:3 design in a 16:9 window, so the letterbox bars are
         # on screen from the first frame.
         frame.autoscale = AutoScale.FIT
-        frame.design(800, 600)
+        frame.design_resolution(800, 600)
         # Twice, below, from one interned image and so one GL upload.
         var logo = Sprite.load(script_dir() + "/sprite/assets/sprite.png")
         return App(0.0, logo^, 0)

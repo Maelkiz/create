@@ -187,7 +187,7 @@ struct Frame:
 
     Written from both sides, which is why it is a `mut` parameter: the loop
     fills in the geometry and the clock, and the program sets `autoscale` or
-    `quit_on_escape`, calls `design`, `frame_cap` and `quit`, and draws.
+    `quit_on_escape`, calls `design_resolution`, `frame_cap` and `quit`, and draws.
 
     Built fresh each frame and dropped before the frame is presented. State
     that must survive the frame goes in and out through
@@ -236,7 +236,7 @@ struct Frame:
     var autoclear: Bool
     """Whether each frame opens with a clear to `clear_color`.
 
-    **Deferred**, like `design`: this frame's clear is already recorded by the
+    **Deferred**, like `design_resolution`: this frame's clear is already recorded by the
     time `update` runs, so turning it off takes effect on the next frame. Set
     it in `create` to keep frame one unclear.
     """
@@ -326,7 +326,9 @@ struct Frame:
         state._quit = self._quit
         return state^
 
-    def design(mut self, width: Int, height: Int, mode: Int = AutoScale.FIT):
+    def design_resolution(
+        mut self, width: Int, height: Int, mode: Int = AutoScale.FIT
+    ):
         """Author this program in a fixed world size, scaled to any window.
 
         Overrides the size passed to `run`, so a program can pin its own

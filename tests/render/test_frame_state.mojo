@@ -70,11 +70,11 @@ def test_release_does_not_write_the_viewport_back() raises -> None:
 
 
 def test_design_takes_effect_on_the_next_frame() raises -> None:
-    # `design` writes through to the state, so the frame that called it keeps
+    # `design_resolution` writes through to the state, so the frame that called it keeps
     # reporting the size it was built with; the loop's next `_set_viewport`
     # is what publishes the new mapping.
     var frame = Frame(_state(1600, 1200)^)
-    frame.design(800, 600)
+    frame.design_resolution(800, 600)
     assert_equal(frame.width, 1600)
     var state = frame^._release()
     assert_equal(state.autoscale, AutoScale.FIT)
@@ -87,8 +87,8 @@ def test_design_takes_effect_on_the_next_frame() raises -> None:
 
 def test_design_overrides_an_earlier_design() raises -> None:
     var frame = Frame(_state(2000, 1000)^)
-    frame.design(800, 600)
-    frame.design(1000, 500, AutoScale.EXTEND)
+    frame.design_resolution(800, 600)
+    frame.design_resolution(1000, 500, AutoScale.EXTEND)
     var state = frame^._release()
     state._set_viewport(2000, 1000)
     var next = Frame(state^)

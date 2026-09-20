@@ -101,25 +101,31 @@ def run[
 ) raises:
     """Open a window and run `P` in it until it quits.
 
-    `width`/`height` are both the window size and the design resolution — the
-    coordinate space the program is authored in. A fullscreen, borderless or
-    maximized window covers the display (or its work area), so the size only
-    shapes the design space there.
+    `width`/`height` are the resolution the program is **authored** in — the
+    space `frame.width`/`height`, the frame edges and `input.mouse` are
+    reported in. They are not a window size that happens to double as one: a
+    `WINDOWED` or `BORDERLESS` launch opens a window of that size because the
+    two coincide there, while `FULLSCREEN` and `MAXIMIZED` take the display or
+    its work area and the design is scaled onto it. `mode=FULLSCREEN` with a
+    size therefore means *author at that size, present fullscreen*.
 
-    The design is scaled to the window (`AutoScale.FIT`) unless `create` sets
-    `frame.autoscale` otherwise, so a program keeps its layout on any display.
-    The two jobs of the size stay independent once the window is open:
+    The scaling is `AutoScale.FIT` unless `create` sets `frame.autoscale`, so
+    a program keeps its layout on any display:
 
-    | call                                   | FIT / EXTEND             | OFF            |
-    |-----------------------------------------|--------------------------|----------------|
-    | `run("T", 1000, 1000)`                  | design 1000x1000, scaled | world = window |
+    | call                                         | FIT / EXTEND             | OFF            |
+    |----------------------------------------------|--------------------------|----------------|
+    | `run("T", 1000, 1000)`                       | design 1000x1000, scaled | world = window |
     | `run("T", 1000, 1000, WindowMode.FULLSCREEN)` | design 1000x1000, scaled | world = monitor|
-    | `run("T", mode=WindowMode.FULLSCREEN)`  | design 1280x720, scaled  | world = monitor|
+    | `run("T", mode=WindowMode.FULLSCREEN)`       | design 1280x720, scaled  | world = monitor|
 
-    So `mode=WindowMode.FULLSCREEN` with a size means *author at that size,
-    present fullscreen*. Under `OFF` the design resolution goes unused
-    entirely, which is the other half of why `FIT` is the default: it keeps
-    the numbers passed here meaningful in every launch mode.
+    `AutoScale.OFF` is the opt-out, and the only way the size here stops
+    meaning anything: the design resolution goes unused and coordinates become
+    the window's own pixels, which is how a program authors against the
+    display rather than against a fixed space.
+
+    `frame.design_resolution(w, h, mode)` pins the same space from inside `create`, which
+    is where a program with an opinion of its own states it. The size here is
+    the shorthand for the common case where the window and the design agree.
 
     `backend=RenderBackend.GPU` runs the same program through the GL backend
     instead — a different window, a different loop, and the same frame. It is

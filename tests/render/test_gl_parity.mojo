@@ -142,7 +142,7 @@ struct _Parity(Program):
     @staticmethod
     def create(mut frame: Frame, shape: Int) raises -> _Parity:
         frame.autoscale = AutoScale.FIT
-        frame.design(_DESIGN_W, _DESIGN_H)
+        frame.design_resolution(_DESIGN_W, _DESIGN_H)
         return _Parity(Sprite.load("tests/fixtures/test_2x2.png"), shape)
 
     def update(mut self, mut frame: Frame, input: Input) raises:

@@ -31,6 +31,12 @@ def main() raises:
     run[MyApp]("Example Sketch", mode=WindowMode.FULLSCREEN)
 ```
 
+`run`'s `width`/`height` (default 1280x720) are the resolution the program is *authored* in, not a
+window size: a windowed launch opens at that size because the two coincide, while a fullscreen one
+covers the display and scales the design onto it. `frame.design_resolution(w, h)` pins the same space from
+inside `create`, and `frame.autoscale = AutoScale.OFF` opts out of the design space entirely, making
+coordinates the window's own pixels.
+
 Rendering runs on the CPU by default. `backend=RenderBackend.GPU` runs the same program through an
 OpenGL 3.3 backend instead — no other change to the program:
 
