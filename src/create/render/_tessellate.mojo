@@ -335,7 +335,7 @@ def emit_rect(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
 
     if r <= 0.0:
         if not c.style.outline_visible():
-            if c.style.fill_enabled:
+            if c.style.fill_visible():
                 _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.fill_color)
             return
 
@@ -354,7 +354,7 @@ def emit_rect(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
             _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.outline_color)
             return
 
-        if c.style.fill_enabled:
+        if c.style.fill_visible():
             # Inset, not full-size: see the module docstring on double
             # blending.
             _mapped_quad(vb, m, ix0, iy0, ix1, iy1, c.style.fill_color)
@@ -367,7 +367,7 @@ def emit_rect(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
 
     var sf = pixel_scale(m, scale)
     if not c.style.outline_visible():
-        if c.style.fill_enabled:
+        if c.style.fill_visible():
             _rounded_rect_fill(
                 vb, m, lx0, ly0, lx1, ly1, r, sf, c.style.fill_color
             )
@@ -386,7 +386,7 @@ def emit_rect(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
         return
 
     var inner_r = r - sw
-    if c.style.fill_enabled:
+    if c.style.fill_visible():
         if inner_r > 0.0:
             _rounded_rect_fill(
                 vb, m, ix0, iy0, ix1, iy1, inner_r, sf, c.style.fill_color
@@ -436,7 +436,7 @@ def emit_circle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     var solid_all = c.style.outline_visible() and inner <= 0.0
     var fill_r = inner if outlined else r
     var fill_c = c.style.fill_color
-    var fill_on = c.style.fill_enabled
+    var fill_on = c.style.fill_visible()
     if solid_all and not fill_on:
         fill_on = True
         fill_c = c.style.outline_color
@@ -659,7 +659,7 @@ def emit_triangle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
         var p1 = mat_apply(m, lx1, ly1)
         var p2 = mat_apply(m, lx2, ly2)
         var p3 = mat_apply(m, lx3, ly3)
-        if c.style.fill_enabled:
+        if c.style.fill_visible():
             vb.triangle(
                 p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], c.style.fill_color
             )
@@ -682,7 +682,7 @@ def emit_triangle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     var cy = (ly1 + ly2 + ly3) / 3.0
     var sf = pixel_scale(m, scale)
 
-    if c.style.fill_enabled:
+    if c.style.fill_visible():
         _rounded_triangle_fill(
             vb, m, cx, cy, f0, f1, f2, r, sf, c.style.fill_color
         )

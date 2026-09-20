@@ -985,7 +985,7 @@ struct Backend(Movable):
             var iw = Int(abs(p1[0] - p0[0]))
             var ih = Int(abs(p1[1] - p0[1]))
             if r_local <= 0.0:
-                if c.style.fill_enabled:
+                if c.style.fill_visible():
                     fill_pixels(s, x0, y0, x0 + iw, y0 + ih, c.style.fill_color)
                 if c.style.outline_visible():
                     var sw = outline_thickness_px(c.style, m, scale)
@@ -1006,7 +1006,7 @@ struct Backend(Movable):
                 # disc in *fill* colour, not outline).
                 var pr = r_local * pixel_scale(m, scale)
                 var pr_i = Int(pr)
-                var fill_enabled = c.style.fill_enabled
+                var fill_enabled = c.style.fill_visible()
                 var outline_enabled = c.style.outline_visible()
                 var fill_col = c.style.fill_color
                 var outline_col = c.style.outline_color
@@ -1150,7 +1150,7 @@ struct Backend(Movable):
             var inv_step_x = 1.0 / step_x if step_x != 0.0 else 0.0
             var inv_step_y = 1.0 / step_y if step_y != 0.0 else 0.0
             if r_local <= 0.0:
-                var fill_enabled = c.style.fill_enabled
+                var fill_enabled = c.style.fill_visible()
                 var outline_enabled = c.style.outline_visible()
                 var fill_col = c.style.fill_color
                 var outline_col = c.style.outline_color
@@ -1239,7 +1239,7 @@ struct Backend(Movable):
                 # to the sharp two-axis test, so a corner too thick for its
                 # outline gets a sharp inner silhouette rather than a
                 # negative radius.
-                var fill_enabled = c.style.fill_enabled
+                var fill_enabled = c.style.fill_visible()
                 var outline_enabled = c.style.outline_visible()
                 var fill_col = c.style.fill_color
                 var outline_col = c.style.outline_color
@@ -1372,10 +1372,10 @@ struct Backend(Movable):
             # drawn — matches the per-pixel `if`'s "or pr_inner <= 0.0" arm,
             # which shortcuts to true regardless of `d2` and so never leaves
             # the `elif` reachable.
-            var full_fill = c.style.fill_enabled and (
+            var full_fill = c.style.fill_visible() and (
                 not c.style.outline_visible() or pr_inner <= 0.0
             )
-            var fill_enabled = c.style.fill_enabled
+            var fill_enabled = c.style.fill_visible()
             var outline_enabled = c.style.outline_visible()
             var fill_col = c.style.fill_color
             var outline_col = c.style.outline_color
@@ -1411,7 +1411,7 @@ struct Backend(Movable):
             var b = device_bounds(m, cx - r, cy - r, cx + r, cy + r, W, H)
             var step_x = minv[0, 0]
             var step_y = minv[1, 0]
-            var fill_enabled = c.style.fill_enabled
+            var fill_enabled = c.style.fill_visible()
             var outline_enabled = c.style.outline_visible()
             var fill_col = c.style.fill_color
             var outline_col = c.style.outline_color
@@ -1501,7 +1501,7 @@ struct Backend(Movable):
         )
 
         if r_local <= 0.0:
-            if c.style.fill_enabled:
+            if c.style.fill_visible():
                 fill_triangle(
                     s,
                     p1[0],
@@ -1520,7 +1520,7 @@ struct Backend(Movable):
                 line_pixels(s, p3[0], p3[1], p1[0], p1[1], sc, sw)
             return
 
-        var fill_enabled = c.style.fill_enabled
+        var fill_enabled = c.style.fill_visible()
         var outline_enabled = c.style.outline_visible()
         var fill_col = c.style.fill_color
         var outline_col = c.style.outline_color
@@ -1719,9 +1719,9 @@ struct Backend(Movable):
         scale: Float64,
         m: Matrix[3, 3],
     ) raises:
-        if not c.style.fill_enabled:
-            return
         # Only the anchor is mapped — the layout itself happens in pixel space.
+        # `canvas.text` already skips recording when `text_color` is fully
+        # transparent; text has no other visibility gate (fill is unrelated).
         var p = mat_apply(m, c.geom[0], c.geom[1])
         self.text.draw(s, c.text, p[0], p[1], c.style, pixel_scale(m, scale))
 

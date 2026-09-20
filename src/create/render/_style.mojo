@@ -36,6 +36,15 @@ struct Style(Copyable, Movable):
         self.text_align = Align.TOP_LEFT
         self.opacity = 1.0
 
+    def fill_visible(self) -> Bool:
+        """Whether the fill actually paints anything.
+
+        `fill_enabled` alone isn't enough — a fully transparent color paints
+        nothing either, and every rasteriser gate should skip that work
+        rather than draw an invisible fill.
+        """
+        return self.fill_enabled and self.fill_color.a > 0
+
     def outline_visible(self) -> Bool:
         """Whether the outline actually paints anything.
 
