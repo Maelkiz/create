@@ -89,8 +89,9 @@ def run[
     """Open a window and run `P` in it until it quits.
 
     `width`/`height` are both the window size and the design resolution — the
-    coordinate space the program is authored in. A fullscreen or borderless
-    window covers the display, so the size only shapes the design space there.
+    coordinate space the program is authored in. A fullscreen, borderless or
+    maximized window covers the display (or its work area), so the size only
+    shapes the design space there.
 
     The design is scaled to the window (`AutoScale.FIT`) unless `create` sets
     `ctx.autoscale` otherwise, so a program keeps its layout on any display.
@@ -114,6 +115,7 @@ def run[
     """
     var fullscreen = mode == WindowMode.FULLSCREEN
     var borderless = mode == WindowMode.BORDERLESS
+    var maximized = mode == WindowMode.MAXIMIZED
     if backend == RenderBackend.GPU:
         run_gl[P](
             title,
@@ -130,6 +132,7 @@ def run[
         fullscreen,
         resizable=resizable,
         borderless=borderless,
+        maximized=maximized,
     )
     var ctx = Context()
     # The size the program is authored against is always what the caller asked

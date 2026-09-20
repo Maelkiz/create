@@ -15,7 +15,7 @@ environments:
     - url: https://repo.prefix.dev/modular-community/
     packages:
       linux-64:
-      - conda: /home/karl/Git/mojo-window/output/linux-64/mojo-window-0.2.0-hb0f4dca_3.conda
+      - conda: /home/karl/Git/mojo-window/output/linux-64/mojo-window-0.2.0-hb0f4dca_4.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/dbus-1.16.2-he8c428d_2.conda
@@ -117,18 +117,18 @@ environments:
       - conda: https://conda.modular.com/max/noarch/mblack-26.5.0-release.conda
       - conda: https://conda.modular.com/max/noarch/mojo-python-1.0.0-release.conda
 packages:
-- conda: /home/karl/Git/mojo-window/output/linux-64/mojo-window-0.2.0-hb0f4dca_3.conda
+- conda: /home/karl/Git/mojo-window/output/linux-64/mojo-window-0.2.0-hb0f4dca_4.conda
   subdir: linux-64
-  sha256: 8992f2e081a9664267b2689e8c7a7fda687d6b4c1157202bdea25d9acb025b11
-  md5: 304799e163166ad46116476cf7c91462
+  sha256: 100632b20330da1c5437b9b5de0ac07ce93b39f9f5cd7148edb069700d2f5e11
+  md5: 7969dde38799cb94686adbc1d2d675d2
   depends:
   - mojo-compiler >=1.0.0,<2.0a0
   - sdl3 >=3.4,<4
   - sdl3 >=3.4.16,<4.0a0
   channel: file:///home/karl/Git/mojo-window/output
   license: MIT
-  size: 99708
-  timestamp: 1789893932239
+  size: 99847
+  timestamp: 1789915027269
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
   build_number: 20
   sha256: 1dd3fffd892081df9726d7eb7e0dea6198962ba775bd88842135a4ddb4deb3c9

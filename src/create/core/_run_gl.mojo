@@ -52,6 +52,7 @@ def _open_window(
     """
     var fullscreen = mode == WindowMode.FULLSCREEN
     var borderless = mode == WindowMode.BORDERLESS
+    var maximized = mode == WindowMode.MAXIMIZED
     try:
         return GLWindow(
             title,
@@ -61,6 +62,7 @@ def _open_window(
             fullscreen=fullscreen,
             resizable=resizable,
             borderless=borderless,
+            maximized=maximized,
         )
     except:
         return GLWindow(
@@ -70,6 +72,7 @@ def _open_window(
             fullscreen=fullscreen,
             resizable=resizable,
             borderless=borderless,
+            maximized=maximized,
         )
 
 
