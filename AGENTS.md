@@ -48,7 +48,7 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 | `src/create/core/input.mojo` | `Input` — keyboard state, mouse position/buttons |
 | `src/create/core/key.mojo` | `Key` — named keycodes for the `Int` overloads |
 | `src/create/core/path.mojo` | `script_dir()` — the directory of the running program, for asset paths |
-| `src/create/render/frame.mojo` | `Frame` — the one per-frame object: geometry (`width`/`height`/`left`/`right`/`bottom`/`top`), the clock, the loop dials (`autoscale`, `quit_on_escape`, `design`, `frame_cap`, `quit`), and the drawing API. Records `DrawCommand`s; touches no pixels. Also `PersistentFrameState`, what survives the frame boundary |
+| `src/create/render/frame.mojo` | `Frame` — the one per-frame object: geometry (`width`/`height`/`left`/`right`/`bottom`/`top`), the clock, the loop dials (`autoscale`, `autoclear`, `clear_color`, `quit_on_escape`, `design`, `frame_cap`, `quit`), and the drawing API. Records `DrawCommand`s; touches no pixels. Also `PersistentFrameState`, what survives the frame boundary |
 | `src/create/render/_command.mojo` | `DrawCommand` — one recorded draw, local geometry + transform + resolved `Style`; the per-kind constructor helpers |
 | `src/create/render/render_backend.mojo` | `RenderBackend` — the `CPU`/`GPU` backend-selector constants |
 | `src/create/render/_backend.mojo` | `Backend` — owns the fonts, glyph cache and interned sprite images; replays a frame's `DrawCommand`s onto a `Surface` (`present`) or through GL (`present_gpu`) |
@@ -276,7 +276,7 @@ def update(mut self, mut frame: Frame, input: Input) raises:
 A scene needing a one-shot reset on entry gets a plain method (`enter()`) the parent calls right
 before flipping the field; it is not part of `Program` and costs nothing to scenes that don't need
 it. See [examples/scenes/src/main.mojo](examples/scenes/src/main.mojo) for a full menu/drawing-surface
-pair, including that hook and a deliberately-never-cleared frame so ink accumulates across frames.
+pair, including that hook and `autoclear = False` so ink accumulates across frames.
 
 That `enter()` is where a transition carries state — it takes whatever arguments the entering scene
 needs (`enter(from_door: Int)`), and state shared by *all* scenes is a field on the parent passed
@@ -461,6 +461,27 @@ enabled, 1 unit thick** — a `rectangle` drawn without `outline(enabled=False)`
 asked for. `corner_radius` defaults to `0` (sharp corners, unchanged behaviour). The rest of the
 defaults are in [_style.mojo](src/create/render/_style.mojo).
 
+**Every frame opens with a clear, and that is what makes those defaults visible.** `Frame.__init__`
+records a `CMD_CLEAR` to `clear_color` — gray `200` — unless `autoclear` is off. Without it the
+screen is whatever the framebuffer happened to hold, which is a zero-filled buffer at startup and
+therefore black; black default outlines and black default text on it are a sketch that draws
+nothing. The two defaults have to agree, and the clear is the one of the pair a program sets once
+rather than per shape.
+
+It is a recorded command, not a fill behind the command buffer's back, so one mechanism serves
+every path: the GPU backend turns it into `glClear` through the batching rule it already had, an
+opaque `frame.background()` *replaces* it through `Backend.record_clear` (so the usual first line
+of `update` costs one full-framebuffer paint, not two), and a transparent `save_image` drops it
+with the mask it already applies to `CMD_CLEAR`. A translucent `background()` does not replace it,
+because it blends with what the clear painted.
+
+`autoclear` is **deferred** like `design()` — this frame's clear is recorded before `update` runs,
+so turning it off applies from the next frame. Set it in `create`. Off is what a program that
+accumulates ink across frames wants ([examples/scenes/src/main.mojo](examples/scenes/src/main.mojo))
+and what motion trails drawn by fading the previous frame require
+([examples/alpha.mojo](examples/alpha.mojo)). Accumulation is a CPU-backend property either way:
+the GPU path swaps buffers, so what a frame inherits is two frames old.
+
 **Rounding a corner does not change what "outline" means for that shape.** A rectangle's outline
 is an **inset ring** — the stroke sits inside the fill footprint, so rounding just curves the ring's
 own inner and outer edges at each corner. A triangle's outline is **centred, device-space bands**
@@ -575,7 +596,7 @@ docstring; this table is not an API reference and must not grow into one.
 | Term | Meaning |
 |---|---|
 | `Program` | Full interactive program: `create`, then `update` once per frame. One per-frame method, not two: deciding and drawing are the same frame's work, so a decision never has to be smuggled between them through a field. No event callbacks — input arrives as `update`'s `Input` parameter |
-| `Frame` | The one object a program is handed per frame: the screen geometry (`width`/`height`, `left`/`right`/`bottom`/`top`), the clock (`time`), the loop dials (`autoscale`, `quit_on_escape`, `design()`, `frame_cap()`, `quit()`) and the whole drawing API. `mut` because the program writes it from one side while the loop writes it from the other. Built fresh each frame and dropped before the frame is presented, so nothing may hold one across frames — hold the `PersistentFrameState` instead. `design()` is deferred: it pins the design space, and the new mapping takes effect on the next frame rather than mid-frame |
+| `Frame` | The one object a program is handed per frame: the screen geometry (`width`/`height`, `left`/`right`/`bottom`/`top`), the clock (`time`), the loop dials (`autoscale`, `autoclear`/`clear_color`, `quit_on_escape`, `design()`, `frame_cap()`, `quit()`) and the whole drawing API. `mut` because the program writes it from one side while the loop writes it from the other. Built fresh each frame and dropped before the frame is presented, so nothing may hold one across frames — hold the `PersistentFrameState` instead. `design()` is deferred: it pins the design space, and the new mapping takes effect on the next frame rather than mid-frame |
 | Screen space | The fixed coordinate space `Frame`/`Input` describe — origin centred, y up (see Coordinate system above). Camera-independent: `frame.left`/`right`/`bottom`/`top` and `input.mouse` live here, and `Viewport.base_matrix()` maps it straight to framebuffer pixels |
 | World space | The camera-relative space a program draws in once it sets a `Camera` — effectively unbounded, since panning or zooming the camera just changes which part of it lands on screen. `Frame._user`/`to_local`/`to_world` operate here; with no camera set (the default), world space and screen space coincide |
 | `Camera` | What maps world space onto screen space: `position` (world point centred on screen) and `zoom`. A field the program owns and moves on its own schedule, like `Sprite` — not fed by the run loop. `frame.camera(cam)` applies it to every draw call and nested `transform()` until changed or `frame.overlay()` suspends it; resets to identity every frame, like `Style`. `frame.overlay()` is the escape hatch for a HUD or other UI that must stay in screen space regardless of the camera |
@@ -596,7 +617,7 @@ docstring; this table is not an API reference and must not grow into one.
 
 - Use `@fieldwise_init` on program structs to auto-generate `__init__` from fields.
 - Use `pixi run test` before committing.
-- Use `frame.background(Color.X)` as the first drawing call in `update` to clear the frame.
+- Use `frame.background(Color.X)` as the first drawing call in `update` to pick the frame's colour — it replaces the `autoclear` clear rather than adding a second one. Set `frame.clear_color` in `create` instead if the colour never changes, and `frame.autoclear = False` if the program wants the previous frame left alone.
 - Use `frame.to_local`/`to_world` to move a position between world space and the current transform's frame — neither deals in pixels, and both take two `Float64`, so pass `input.mouse.x, input.mouse.y`. Both still *return* a `Tuple[Float64, Float64]`, which lands implicitly in a `Point2D` or a `Vector2D`, so they are the seam between the two rather than a conversion site.
 - Use `Point2D` for a new signature's locations and `Vector2D` for its extents and deltas — `Rectangle(pos: Point2D, size: Vector2D)` and `frame.rectangle(pos, size)` are the shape to copy when one signature names both.
 - Use `script_dir()` for every asset path; a bare relative path resolves against the CWD.

@@ -758,6 +758,25 @@ struct Backend(Movable):
         """Append one draw to the frame being recorded."""
         self.commands.append(c^)
 
+    def record_clear(mut self, var c: DrawCommand):
+        """Append a clear, replacing an adjacent one it would erase anyway.
+
+        An opaque clear covers the whole framebuffer, so any clear recorded
+        immediately before it — with no draw in between to survive — paints
+        nothing. Dropping it here rather than at replay keeps both backends
+        and both captures agreeing, and costs the common case nothing: a
+        program that sets `autoclear` and also opens `update` with
+        `background()` records one clear, not two.
+        """
+        if (
+            c.style.fill_color.a == 255
+            and len(self.commands) > 0
+            and self.commands[len(self.commands) - 1].kind == CMD_CLEAR
+        ):
+            self.commands[len(self.commands) - 1] = c^
+            return
+        self.commands.append(c^)
+
     def request_image(mut self, var request: _ImageRequest):
         """File a design-resolution capture of the frame being recorded."""
         self.pending_image = Optional(request^)

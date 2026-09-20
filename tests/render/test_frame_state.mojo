@@ -121,7 +121,8 @@ struct DrawsInCreate(Program):
 
 def test_create_draws_do_not_reach_the_first_frame() raises -> None:
     var m = run_headless[DrawsInCreate](200, 100)
-    assert_equal(m.pixel(100, 50), Color.TRANSPARENT)
+    # Frame one shows the default `autoclear` colour, never `create`'s red.
+    assert_equal(m.pixel(100, 50), Color(200))
 
 
 def test_a_capture_filed_in_create_writes_no_file() raises -> None:

@@ -7,6 +7,9 @@ struct App(Program):
 
     @staticmethod
     def create(mut frame: Frame) raises -> App:
+        # The trails below are drawn by fading the *previous* frame, so the
+        # per-frame clear has to be off — it would wipe what they fade.
+        frame.autoclear = False
         return App(0.0)
 
     def update(mut self, mut frame: Frame, input: Input) raises:

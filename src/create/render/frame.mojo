@@ -62,6 +62,9 @@ struct PersistentFrameState(Movable):
     read-only snapshot taken at construction."""
     var autoscale: Int
     var quit_on_escape: Bool
+    var autoclear: Bool
+    """Whether each frame opens with a clear to `clear_color`."""
+    var clear_color: Color
     var _fps_cap: Int
     var _quit: Bool
 
@@ -74,6 +77,8 @@ struct PersistentFrameState(Movable):
         self.time = Time()
         self.autoscale = AutoScale.OFF
         self.quit_on_escape = True
+        self.autoclear = True
+        self.clear_color = Color(200)
         self._fps_cap = 0
         self._quit = False
 
@@ -228,6 +233,16 @@ struct Frame:
     cannot desynchronise the loop by touching them.
     """
     var quit_on_escape: Bool
+    var autoclear: Bool
+    """Whether each frame opens with a clear to `clear_color`.
+
+    **Deferred**, like `design`: this frame's clear is already recorded by the
+    time `update` runs, so turning it off takes effect on the next frame. Set
+    it in `create` to keep frame one unclear.
+    """
+    var clear_color: Color
+    """What `autoclear` clears to. Persistent, like `letterbox` — set once in
+    `create` rather than every frame."""
     var _quit: Bool
     var _fps_cap: Int
     var _state: PersistentFrameState
@@ -267,6 +282,8 @@ struct Frame:
         self.letterbox = state.letterbox
         self.time = state.time.copy()
         self.quit_on_escape = state.quit_on_escape
+        self.autoclear = state.autoclear
+        self.clear_color = state.clear_color
         self._quit = state._quit
         self._fps_cap = state._fps_cap
         self._state = state^
@@ -281,6 +298,11 @@ struct Frame:
         self._transform = self._base
         self._transform_inv = self._base_inv
         self._transform_stack = List[Matrix[3, 3]]()
+        # Recorded here rather than by the loop so both loops and the
+        # never-presented `create` frame get it from one place, and so a
+        # program's own `background()` can coalesce with it.
+        if self.autoclear:
+            self._state.backend.record_clear(clear_command(self.clear_color))
 
     def _release(deinit self) -> PersistentFrameState:
         """Hand back the state the next frame's `Frame` should start from.
@@ -298,6 +320,8 @@ struct Frame:
         state.letterbox = self.letterbox
         state.autoscale = self.autoscale
         state.quit_on_escape = self.quit_on_escape
+        state.autoclear = self.autoclear
+        state.clear_color = self.clear_color
         state._fps_cap = self._fps_cap
         state._quit = self._quit
         return state^
@@ -511,13 +535,20 @@ struct Frame:
         self._style.outline_enabled = enabled
 
     def background(mut self, color: Color):
-        """Paint the whole framebuffer — the usual first call in `render`.
+        """Paint the whole framebuffer — the usual first call in `update`.
 
         A translucent color blends instead of clearing, which is how motion
         trails are drawn: `frame.background(Color(0x11, 0x11, 0x11, 24))`
-        fades the previous frame a little further each time.
+        fades the previous frame a little further each time. Trails need
+        `autoclear = False` set in `create`, or the frame's own clear wipes
+        what they were fading.
+
+        An opaque color replaces `autoclear`'s clear rather than stacking on
+        it, so opening `update` with this costs one clear, not two. It does
+        not change `clear_color`: this paints now, at the point it is called,
+        while `clear_color` is what every frame starts from.
         """
-        self._state.backend.record(clear_command(color))
+        self._state.backend.record_clear(clear_command(color))
 
     def save_image(
         mut self,

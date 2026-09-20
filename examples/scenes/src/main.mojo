@@ -26,6 +26,10 @@ struct App(Program):
     @staticmethod
     def create(mut frame: Frame) raises -> App:
         frame.autoscale = AutoScale.FIT
+        # The drawing scene accumulates ink across frames, so the per-frame
+        # clear is off for the whole program: `Menu` paints its own background
+        # every frame, and `Draw` clears once on entry.
+        frame.autoclear = False
         return App(MENU, Menu(False), Draw(False, False, False, Point2D(0, 0)))
 
     def update(mut self, mut frame: Frame, input: Input) raises:

@@ -23,8 +23,6 @@ struct MyApp(Program):
 
     def update(mut self, mut frame: Frame, input: Input) raises:
         # Called once per frame: handle input, advance state, and render to the screen
-        frame.background(Color.BLACK)
-        frame.text_color(Color.WHITE)
         frame.text_align(Align.CENTER)
         frame.text("Hello World!", 0, 0)
 
