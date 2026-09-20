@@ -13,7 +13,7 @@ struct AudioDemo(Program):
 
     @staticmethod
     def create(mut ctx: Context) raises -> AudioDemo:
-        ctx.exit_on_escape = True
+        ctx.quit_on_escape = True
         var audio = Audio()
         var chime = ArcPointer(
             Sound.load(script_dir() + "/../assets/chime.wav")

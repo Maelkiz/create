@@ -17,13 +17,13 @@ struct Context(Movable):
 
     Written from both sides, which is why it is a `mut` parameter: the loop
     refreshes the geometry and the clock each frame, and the program sets
-    `autoscale`, `exit_on_escape`, or calls `design` and `quit`.
+    `autoscale`, `quit_on_escape`, or calls `design` and `quit`.
     """
 
     var time: Time
     var width: Int
     var height: Int
-    var exit_on_escape: Bool
+    var quit_on_escape: Bool
     var autoscale: Int
     var scale: Float64
     var view: Viewport
@@ -34,7 +34,7 @@ struct Context(Movable):
         self.time = Time()
         self.width = 0
         self.height = 0
-        self.exit_on_escape = True
+        self.quit_on_escape = True
         self.autoscale = AutoScale.OFF
         self.scale = 1.0
         self.view = Viewport()

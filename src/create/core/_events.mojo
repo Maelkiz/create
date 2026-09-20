@@ -50,7 +50,7 @@ def apply_events(
             quit = True
         elif event.isa[KeyDown]():
             var keycode = event[KeyDown].keycode
-            if keycode == 27 and ctx.exit_on_escape:
+            if keycode == 27 and ctx.quit_on_escape:
                 quit = True
             if not input.is_key_down(keycode):
                 input._held_keys.set(keycode)

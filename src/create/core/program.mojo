@@ -29,7 +29,7 @@ trait Program(Deinitable, Movable):
         """Advance the program by one frame.
 
         `ctx` is mutable because the program writes back to it — `quit()`,
-        `autoscale`, `exit_on_escape`. `input` is not: the run loop is its only
+        `autoscale`, `quit_on_escape`. `input` is not: the run loop is its only
         writer, so borrowing it read-only makes that one-way flow a compile
         error to violate rather than a convention to remember.
         """
