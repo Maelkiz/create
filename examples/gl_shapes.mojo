@@ -7,8 +7,8 @@ a case the two backends could disagree about — a translucent fill under an
 outline, an outline wider than its shape, a rotated rect, a diagonal line, a
 letterbox bar under `FIT`.
 
-    pixi run create examples/gl_shapes.mojo
-    pixi run create examples/gl_shapes.mojo fullscreen
+    pixi run example gl_shapes
+    pixi run example gl_shapes fullscreen
     mojo build -I src examples/gl_shapes.mojo -o build/gl_shapes && ./build/gl_shapes
 
 `WindowMode.FULLSCREEN` covers the display without changing the design

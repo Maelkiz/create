@@ -6,7 +6,7 @@ platforms = ["linux-64"]
 version = "0.1.0"
 
 [tasks]
-create = "mojo run -I src"
+example = "bash scripts/example.sh"
 test = "bash -c 'set -e; export SDL_AUDIO_DRIVER=dummy; if [ -z \"$DISPLAY\" ] && [ -z \"$WAYLAND_DISPLAY\" ] && [ -z \"$XDG_RUNTIME_DIR\" ]; then export SDL_VIDEODRIVER=offscreen; fi; for f in $(find tests -name \"test_*.mojo\" | sort); do mojo run -I src \"$f\"; done'"
 precompile = "mkdir -p build && mojo precompile src/create -o build/create.mojoc"
 format = "mojo format src examples tests"

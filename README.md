@@ -46,8 +46,11 @@ OpenGL 3.3 backend instead — no other change to the program:
 run[MyApp]("Example Sketch", backend=RenderBackend.GPU)
 ```
 
-Run the example programs using the `create` pixi task:
+Run the example programs with the `example` pixi task, which takes a name rather
+than a path — a file under `examples/`, or a folder whose `src/main.mojo` it finds:
 
 ```bash
-pixi run create examples/sketch.mojo
+pixi run example sketch          # examples/sketch.mojo
+pixi run example sidescroller    # examples/sidescroller/src/main.mojo
+pixi run example                 # lists every example
 ```

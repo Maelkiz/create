@@ -1,6 +1,6 @@
 """Per-primitive timings for the CPU raster path, headless.
 
-    pixi run create examples/cpu_bench.mojo
+    pixi run example cpu_bench
 
 No window: this drives `_raster.mojo` and `Backend` (CPU kind) directly over a
 `MemorySurface`, so it measures rasterisation alone — no SDL present, no event

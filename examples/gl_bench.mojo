@@ -1,7 +1,7 @@
 """The same heavy frame on both backends, timed.
 
-    pixi run create examples/gl_bench.mojo        # GPU, vsync off
-    pixi run create examples/gl_bench.mojo cpu    # CPU replay, for comparison
+    pixi run example gl_bench        # GPU, vsync off
+    pixi run example gl_bench cpu    # CPU replay, for comparison
 
 The sketch is deliberately more than a display is worth: a few thousand
 animated shapes, two sprites and a block of text, all of it re-recorded every

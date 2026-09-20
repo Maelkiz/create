@@ -92,8 +92,11 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 # Run any file
 mojo run -I src examples/sketch.mojo
 
-# Pixi shorthand for examples
-pixi run create examples/sketch.mojo
+# Pixi shorthand for examples — takes a name, not a path (scripts/example.sh
+# resolves it to examples/<name>.mojo or examples/<name>/src/main.mojo, and
+# runs an existing path as given). No argument lists them.
+pixi run example sketch
+pixi run example sidescroller
 
 # Run all tests — falls back to SDL's offscreen video driver with no display
 # (DISPLAY, WAYLAND_DISPLAY and XDG_RUNTIME_DIR all unset), so the GL tests
