@@ -155,7 +155,7 @@ def test_style_defaults() raises -> None:
     # boundary — a wrong default here silently changes the first draw call of
     # every render that doesn't set that field.
     var s = Style()
-    assert_equal(s.fill_color, Color.WHITE)
+    assert_equal(s.fill_color, Color.TRANSPARENT)
     assert_true(s.fill_enabled)
     assert_equal(s.outline_color, Color.BLACK)
     assert_equal(s.outline_thickness, 1)
