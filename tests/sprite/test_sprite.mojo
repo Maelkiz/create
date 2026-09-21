@@ -519,7 +519,7 @@ def test_stem_end_without_a_dot_is_the_length() raises -> None:
 
 def test_every_sprite_gets_its_own_identity() raises -> None:
     # A backend caches one image per id, so two sprites sharing one would make
-    # the second draw the first's pixels.
+    # the second render the first's pixels.
     var a = Sprite(2, 2)
     var b = Sprite(2, 2)
     var c = Sprite.solid(1, 1, 255, 0, 0)

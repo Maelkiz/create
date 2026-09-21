@@ -6,7 +6,7 @@ from .font import FontWeight
 struct Style(Copyable, Movable):
     """How the next shape or glyph is painted, independent of where it goes.
 
-    Set once and read by every draw call until changed. Rebuilt fresh each
+    Set once and read by every render call until changed. Rebuilt fresh each
     frame — carrying one forward would preserve only a forgotten setting,
     never a useful one.
     """
@@ -41,7 +41,7 @@ struct Style(Copyable, Movable):
 
         `fill_enabled` alone isn't enough — a fully transparent color paints
         nothing either, and every rasteriser gate should skip that work
-        rather than draw an invisible fill.
+        rather than render an invisible fill.
         """
         return self.fill_enabled and self.fill_color.a > 0
 
@@ -50,7 +50,7 @@ struct Style(Copyable, Movable):
 
         `outline_enabled` alone isn't enough — a fully transparent color or a
         zero thickness paints nothing either, and every rasteriser gate
-        should skip that work rather than draw an invisible outline.
+        should skip that work rather than render an invisible outline.
         """
         return (
             self.outline_enabled

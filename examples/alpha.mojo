@@ -7,7 +7,7 @@ struct App(Program):
 
     @staticmethod
     def create(mut options: Options) raises -> App:
-        # The trails below are drawn by fading the *previous* frame, so the
+        # The trails below are rendered by fading the *previous* frame, so the
         # per-frame clear has to be off — it would wipe what they fade.
         options.autoclear = False
         return App(0.0)
@@ -30,7 +30,7 @@ struct App(Program):
         frame.fill(Color(0, 0, 255, 128))
         frame.circle((0.0, 90.0), 90.0)
 
-        # An orbiting dot draws the trail the faded background preserves.
+        # An orbiting dot renders the trail the faded background preserves.
         var r = 220.0
         frame.fill(Color.ORANGE)
         frame.circle((r * cos(self.t), r * sin(self.t) * 0.5), 14.0)

@@ -34,7 +34,7 @@ struct App(Program):
 
         # Filed the moment the key is read, and written at `present` — the
         # file holds the whole frame however early in `update` it was asked
-        # for, so nothing has to be drawn before asking.
+        # for, so nothing has to be rendered before asking.
         var dir = script_dir()
         if frame.input.just_pressed("s"):
             frame.save_screenshot(dir + "/../out/screenshot.png")

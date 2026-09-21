@@ -2,8 +2,8 @@ from create import *
 
 
 @fieldwise_init
-struct Draw:
-    """The drawing scene. Left-drag paints, right-click returns to the menu.
+struct Paint:
+    """The painting scene. Left-drag paints, right-click returns to the menu.
 
     Deliberately never calls `frame.background()` per frame — `App.create`
     turns `options.autoclear` off, so skipping the clear here is what lets ink
@@ -15,7 +15,7 @@ struct Draw:
 
     var back_pressed: Bool
     var _entering: Bool
-    var drawing: Bool
+    var painting: Bool
     var pen: Point2D
 
     def enter(mut self):
@@ -23,14 +23,14 @@ struct Draw:
 
     def update(mut self, mut frame: Frame) raises:
         self.back_pressed = frame.input.mouse_just_pressed(MouseButton.RIGHT)
-        self.drawing = frame.input.is_mouse_down(MouseButton.LEFT)
+        self.painting = frame.input.is_mouse_down(MouseButton.LEFT)
         self.pen = frame.input.mouse
 
         if self._entering:
             frame.background(Color(24, 24, 28))
             self._entering = False
 
-        if self.drawing:
+        if self.painting:
             with frame.style():
                 frame.outline(enabled=False)
                 frame.fill(Color(240, 200, 90))

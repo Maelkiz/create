@@ -5,7 +5,7 @@ from create import *
 comptime _SIZE = 128
 comptime _GROUND = -140.0
 
-# Transparent rows under the feet in the source cell, at the drawn scale.
+# Transparent rows under the feet in the source cell, at the rendered scale.
 comptime _FOOT_PAD = 12.0
 
 
@@ -101,7 +101,7 @@ struct Game(Program):
             (0.0, frame.bottom() + height / 2.0), frame.right() * 2.0, height
         )
 
-        # Drawn four times the 32x32 source size -- pixel art wants to be
+        # Rendered four times the 32x32 source size -- pixel art wants to be
         # scaled up, and the sized overload does it without touching the asset.
         frame.sprite(
             self.animator,

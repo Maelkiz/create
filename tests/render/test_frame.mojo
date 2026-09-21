@@ -1,4 +1,4 @@
-# The rendering tests: draw through the real Frame into an owned buffer and
+# The rendering tests: render through the real Frame into an owned buffer and
 # assert on the pixels that come out. Everything here runs headless, so the
 # geometry conventions the library promises — centred origin, y up, centred
 # shapes, source-over alpha — are checked rather than eyeballed.
@@ -88,7 +88,7 @@ struct HighRect(Program):
         frame.rectangle(0.0, 30.0, 10.0, 10.0)
 
 
-def test_positive_y_draws_above_centre() raises -> None:
+def test_positive_y_renders_above_centre() raises -> None:
     # The load-bearing orientation test: world y grows upward, so +30 must land
     # in *lower*-numbered rows. Row 20 is 30 pixels above centre, row 80 is 30
     # below it — a y-down mapping would swap the two assertions.
@@ -621,7 +621,7 @@ def test_png_sprite_blits_unflipped() raises -> None:
 
 @fieldwise_init
 struct StyleAcrossFrames(Program):
-    # Frame 1 sets a style and draws nothing; frame 2 draws without setting
+    # Frame 1 sets a style and renders nothing; frame 2 renders without setting
     # one. Style is per-frame, so frame 2 must get the defaults back.
     var frame: Int
 
@@ -687,7 +687,7 @@ struct StrokedRect(Program):
         frame.rectangle(0.0, 0.0, 40.0, 40.0)
 
 
-def test_rect_outline_draws_all_four_bands() raises -> None:
+def test_rect_outline_renders_all_four_bands() raises -> None:
     # The border is four separate fill_pixels calls, so a single-corner
     # assertion would miss three of them.
     var m = run_headless[StrokedRect](100, 100)
@@ -713,7 +713,7 @@ struct StrokedCircle(Program):
         frame.circle(0.0, 0.0, 20.0)
 
 
-def test_circle_outline_draws_the_ring() raises -> None:
+def test_circle_outline_renders_the_ring() raises -> None:
     var m = run_headless[StrokedCircle](100, 100)
     # Radius 20, outline thickness 4: the ring is d in (16, 20].
     assert_equal(m.pixel(69, 50), Color.WHITE)  # just inside the outer radius
@@ -736,7 +736,7 @@ struct StrokedTriangle(Program):
         frame.triangle(0.0, 30.0, -30.0, -30.0, 30.0, -30.0)
 
 
-def test_triangle_outline_draws_the_edges() raises -> None:
+def test_triangle_outline_renders_the_edges() raises -> None:
     var m = run_headless[StrokedTriangle](100, 100)
     # (-15, 0) sits exactly on the apex-to-base-left edge.
     assert_equal(m.pixel(35, 50), Color.WHITE)
@@ -988,9 +988,9 @@ def _non_background_box(
     m: MemorySurface, bg: Color
 ) -> Tuple[Int, Int, Int, Int]:
     """Bounding box of every pixel that differs from `bg` — `(x0, y0, x1, y1)`,
-    inclusive. Returns `(-1, -1, -1, -1)` when nothing was drawn.
+    inclusive. Returns `(-1, -1, -1, -1)` when nothing was rendered.
 
-    Unlike test_text.mojo's transparent buffers, everything drawn here goes
+    Unlike test_text.mojo's transparent buffers, everything rendered here goes
     onto an opaque background, so ink is found by difference from the known
     background colour rather than by alpha.
     """
@@ -1026,14 +1026,14 @@ struct TextThroughFrame(Program):
         frame.text("Hi", 0.0, 0.0)
 
 
-def test_text_draws_below_and_right_of_a_top_left_anchor() raises -> None:
+def test_text_renders_below_and_right_of_a_top_left_anchor() raises -> None:
     # The anchor is the buffer centre (100, 100); LEFT/TOP must put the ink
     # at or past it on both axes, the same shape test_text.mojo checks
     # against TextRenderer directly, but now through Frame's own style and
     # transform plumbing.
     var m = run_headless[TextThroughFrame](200, 200)
     var box = _non_background_box(m, Color.BLACK)
-    assert_true(box[2] >= 0, "nothing was drawn")
+    assert_true(box[2] >= 0, "nothing was rendered")
     assert_true(box[0] >= 100, "ink started left of the anchor")
     assert_true(box[1] >= 100, "ink started above the anchor")
 
@@ -1089,7 +1089,7 @@ def test_text_color_is_independent_of_fill() raises -> None:
                 assert_equal(c.r, 0)
                 assert_equal(c.b, 0)
                 ink_is_green = True
-    assert_true(ink_is_green, "no glyph ink was drawn")
+    assert_true(ink_is_green, "no glyph ink was rendered")
 
 
 @fieldwise_init
@@ -1209,7 +1209,7 @@ struct AnimatorBlit(Program):
 def test_animator_blits_the_current_frame() raises -> None:
     # Headless frames are a synthetic 16ms; at 100 fps a frame is held 10ms, so
     # the playhead runs ahead of the loop: after one frame it is on index 1,
-    # and after three (48ms, 4.8 frame durations) on index 4. Same draw call
+    # and after three (48ms, 4.8 frame durations) on index 4. Same render call
     # each time, so the overload reads the live index rather than a frame
     # captured at construction.
     assert_equal(
@@ -1242,7 +1242,7 @@ struct AnimatorSized(Program):
 
 
 def test_animator_sized_overload_scales() raises -> None:
-    # A 2x2 frame drawn at 40x40 covers the centre out to +/-20 world units.
+    # A 2x2 frame rendered at 40x40 covers the centre out to +/-20 world units.
     var m = run_headless[AnimatorSized](100, 100)
     assert_equal(m.pixel(50, 50), Color.RED)
     assert_equal(m.pixel(31, 31), Color.RED)
@@ -1251,7 +1251,7 @@ def test_animator_sized_overload_scales() raises -> None:
 
 
 struct AnimatorEveryOverload(Program):
-    """Draws through all six `frame.sprite(SpriteAnimator, ...)` overloads.
+    """Renders through all six `frame.sprite(SpriteAnimator, ...)` overloads.
 
     Five of them delegate to the two that index the frame, so without a call
     site each they are never type-checked: a library build only checks the
@@ -1286,7 +1286,7 @@ struct AnimatorEveryOverload(Program):
         frame.sprite(self.animator, Point2D(0.0, -40.0), 4, 4)
 
 
-def test_every_animator_overload_draws_at_its_anchor() raises -> None:
+def test_every_animator_overload_renders_at_its_anchor() raises -> None:
     # World (x, y) maps to pixel (50 + x, 50 - y) at 1:1 on a 100x100 frame.
     var m = run_headless[AnimatorEveryOverload](100, 100)
     assert_equal(m.pixel(10, 10), Color.RED)  # (a, Float64, Float64)
@@ -1295,7 +1295,7 @@ def test_every_animator_overload_draws_at_its_anchor() raises -> None:
     assert_equal(m.pixel(10, 90), Color.RED)  # (a, Float64, Float64, w, h)
     assert_equal(m.pixel(30, 90), Color.RED)  # (a, Int, Int, w, h)
     assert_equal(m.pixel(50, 90), Color.RED)  # (a, Point2D, w, h)
-    # Between the two rows nothing was drawn.
+    # Between the two rows nothing was rendered.
     assert_equal(m.pixel(50, 50), Color.BLACK)
 
 
@@ -1421,7 +1421,7 @@ def test_save_image_can_keep_the_background_clear() raises -> None:
     _ = run_headless[SaveImageTransparent](200, 100, 1, 640, 480)
     var img = _saved(_IMG_ALPHA)
     assert_equal(_px(img, 100, 50), Color.RED)
-    # Nothing was drawn here and the clear was dropped, so the buffer's own
+    # Nothing was rendered here and the clear was dropped, so the buffer's own
     # alpha 0 survives all the way to the file.
     assert_equal(_px(img, 10, 10), Color(0, 0, 0, 0))
 

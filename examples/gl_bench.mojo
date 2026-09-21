@@ -79,7 +79,7 @@ struct Bench(Program):
         frame.background(Color.WHITE)
 
         # One generator re-seeded every frame, so the layout is identical from
-        # frame to frame and the two backends draw the same sketch — only the
+        # frame to frame and the two backends render the same sketch — only the
         # phase of the animation moves.
         var rng = Random(1234)
         var w = frame.right()

@@ -1,6 +1,6 @@
 """What a transform means to a rasteriser, independent of which one.
 
-Three questions every backend asks of a `DrawCommand`'s matrix — is it
+Three questions every backend asks of a `RenderCommand`'s matrix — is it
 axis-aligned, how many pixels is a world unit, how thick is an outline — and one
 answer each, so the CPU replay and the GL tessellator cannot disagree about
 them. They lived in `_backend.mojo` until the GL backend needed them too;
@@ -23,7 +23,7 @@ def uniform(m: Matrix[3, 3]) -> Bool:
     rect stays a rect, a circle stays a circle.
 
     The base mapping alone qualifies (it scales by `s` and `-s`), so plain
-    drawing keeps the integer raster paths even under autoscale. Only
+    rendering keeps the integer raster paths even under autoscale. Only
     rotation, shear, and non-uniform scales fall through to the per-pixel
     inverse mapping.
     """

@@ -49,7 +49,7 @@ struct Game(Program):
             ):
                 frame.circle(i, 0, 5)
 
-        self.player.draw(frame)
+        self.player.render(frame)
 
         # Walls at the world edges; only the one in view actually renders.
         with frame.style():

@@ -26,10 +26,10 @@ def _scaled_alpha(color: Color, opacity: Float64) -> Color:
     return Color(color.r, color.g, color.b, UInt8(max(0.0, min(255.0, a))))
 
 
-struct DrawCommand(Copyable, Movable):
-    """One recorded draw, everything a backend needs to replay it.
+struct RenderCommand(Copyable, Movable):
+    """One recorded render, everything a backend needs to replay it.
 
-    `Frame` appends one of these per draw call instead of rasterising, and a
+    `Frame` appends one of these per render call instead of rasterising, and a
     backend consumes the whole buffer at the end of the frame. That seam is
     what lets a GPU backend exist at all: a `Surface` is a pixel pointer, which
     a GPU does not have, whereas this is just data.
@@ -59,7 +59,7 @@ struct DrawCommand(Copyable, Movable):
     | `CMD_TEXT` | `x` | `y` | — | — | — | — |
     | `CMD_LETTERBOX` | `cx0` | `cy0` | `cx1` | `cy1` | — | — |
 
-    Build one with the free functions below rather than by hand, so no drawing
+    Build one with the free functions below rather than by hand, so no rendering
     call site has to remember that table.
     """
 
@@ -71,7 +71,7 @@ struct DrawCommand(Copyable, Movable):
     change what an already-recorded command paints."""
     var text: String
     """`CMD_TEXT` only, and owned — layout happens at replay, in the backend
-    that holds the fonts, so the string has to outlive the drawing call."""
+    that holds the fonts, so the string has to outlive the rendering call."""
     var image: Int
     """`CMD_SPRITE` only: a backend image id, interned at record time. The
     pixels are copied or uploaded when the sprite is first seen, so no borrow
@@ -118,13 +118,13 @@ struct DrawCommand(Copyable, Movable):
         self.image_h = 0
 
 
-def clear_command(color: Color) -> DrawCommand:
+def clear_command(color: Color) -> RenderCommand:
     """Paint the whole framebuffer. Carries no transform — it covers the
     framebuffer, not the design area, so no mapping applies."""
     var s = Style()
     s.fill_color = color
     s.fill_enabled = True
-    return DrawCommand(CMD_CLEAR, identity[3](), s)
+    return RenderCommand(CMD_CLEAR, identity[3](), s)
 
 
 def rect_command(
@@ -134,9 +134,9 @@ def rect_command(
     y: Float64,
     w: Float64,
     h: Float64,
-) -> DrawCommand:
+) -> RenderCommand:
     """A rectangle centred at `(x, y)`, `w` by `h`, in local units."""
-    return DrawCommand(CMD_RECT, transform, style, x, y, w, h)
+    return RenderCommand(CMD_RECT, transform, style, x, y, w, h)
 
 
 def circle_command(
@@ -145,8 +145,8 @@ def circle_command(
     cx: Float64,
     cy: Float64,
     r: Float64,
-) -> DrawCommand:
-    return DrawCommand(CMD_CIRCLE, transform, style, cx, cy, r)
+) -> RenderCommand:
+    return RenderCommand(CMD_CIRCLE, transform, style, cx, cy, r)
 
 
 def line_command(
@@ -156,8 +156,8 @@ def line_command(
     y0: Float64,
     x1: Float64,
     y1: Float64,
-) -> DrawCommand:
-    return DrawCommand(CMD_LINE, transform, style, x0, y0, x1, y1)
+) -> RenderCommand:
+    return RenderCommand(CMD_LINE, transform, style, x0, y0, x1, y1)
 
 
 def triangle_command(
@@ -169,8 +169,8 @@ def triangle_command(
     y2: Float64,
     x3: Float64,
     y3: Float64,
-) -> DrawCommand:
-    return DrawCommand(CMD_TRIANGLE, transform, style, x1, y1, x2, y2, x3, y3)
+) -> RenderCommand:
+    return RenderCommand(CMD_TRIANGLE, transform, style, x1, y1, x2, y2, x3, y3)
 
 
 def sprite_command(
@@ -183,14 +183,14 @@ def sprite_command(
     image: Int,
     image_w: Int,
     image_h: Int,
-) -> DrawCommand:
-    """A sprite centred at `(cx, cy)`, drawn `w` by `h` local units.
+) -> RenderCommand:
+    """A sprite centred at `(cx, cy)`, rendered `w` by `h` local units.
 
     `image` is a backend id, not a pointer — see the field docstring. `image_w`
     and `image_h` are the source pixel dimensions, which the replay needs to
     resample and the record site already knows.
     """
-    var c = DrawCommand(CMD_SPRITE, transform, style, cx, cy, w, h)
+    var c = RenderCommand(CMD_SPRITE, transform, style, cx, cy, w, h)
     c.image = image
     c.image_w = image_w
     c.image_h = image_h
@@ -199,21 +199,21 @@ def sprite_command(
 
 def text_command(
     transform: Matrix[3, 3], style: Style, x: Float64, y: Float64, var s: String
-) -> DrawCommand:
+) -> RenderCommand:
     """Text anchored at `(x, y)` in local units.
 
     Deferred whole: the alignment, advances and baseline all come out of
     `style` and the backend's font at replay time, so nothing about the layout
     is decided here.
     """
-    var c = DrawCommand(CMD_TEXT, transform, style, x, y)
+    var c = RenderCommand(CMD_TEXT, transform, style, x, y)
     c.text = s^
     return c^
 
 
 def letterbox_command(
     color: Color, cx0: Float64, cy0: Float64, cx1: Float64, cy1: Float64
-) -> DrawCommand:
+) -> RenderCommand:
     """The bars outside the device content rect `[cx0, cx1) x [cy0, cy1)`.
 
     Recorded last, so it doubles as the clip for anything a program drew past
@@ -222,4 +222,4 @@ def letterbox_command(
     var s = Style()
     s.fill_color = color
     s.fill_enabled = True
-    return DrawCommand(CMD_LETTERBOX, identity[3](), s, cx0, cy0, cx1, cy1)
+    return RenderCommand(CMD_LETTERBOX, identity[3](), s, cx0, cy0, cx1, cy1)

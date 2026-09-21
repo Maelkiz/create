@@ -6,7 +6,7 @@ struct Vector3D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     `dot`, `cross`, `dist`, `lerp`, and `xy`/`xyz` to hand the components to
     another type — `xy` dropping `z`.
 
-    Drawing is 2D, so nothing in the library takes one — it is here for a
+    Rendering is 2D, so nothing in the library takes one — it is here for a
     program doing its own 3D work.
 
     Both accessors return plain tuples rather than a `Vector2D`, which is

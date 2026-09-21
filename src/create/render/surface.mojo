@@ -48,7 +48,7 @@ struct MemorySurface(Movable):
     window.
 
     Holds the pixels so a `Surface` can borrow them; `pixel` reads one back so
-    a test can assert on what was drawn.
+    a test can assert on what was rendered.
     """
 
     var data: List[UInt8]

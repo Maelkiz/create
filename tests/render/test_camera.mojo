@@ -51,7 +51,7 @@ struct PannedCameraRect(Program):
 
 
 def test_camera_position_pans_world_content() raises -> None:
-    # A rect drawn at world (0, 0) with the camera centred on world (20, 0)
+    # A rect rendered at world (0, 0) with the camera centred on world (20, 0)
     # lands 20 units left of screen centre, i.e. at pixel (30, 50).
     var m = run_headless[PannedCameraRect](100, 100)
     assert_equal(m.pixel(30, 50), Color.RED)
@@ -101,7 +101,7 @@ struct OverlayIgnoresCamera(Program):
 
 def test_overlay_ignores_the_active_camera() raises -> None:
     # Despite the camera panning 50 world units, the overlaid rect still
-    # lands centred on screen — overlay draws in screen space regardless.
+    # lands centred on screen — overlay renders in screen space regardless.
     var m = run_headless[OverlayIgnoresCamera](100, 100)
     assert_equal(m.pixel(50, 50), Color.RED)
     assert_equal(m.pixel(0, 50), Color.BLACK)

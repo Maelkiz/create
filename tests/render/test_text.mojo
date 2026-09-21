@@ -14,10 +14,10 @@ from create.render._text import TextRenderer, _GLYPH_CACHE_LIMIT
 
 
 def _ink_box(m: MemorySurface) -> Tuple[Int, Int, Int, Int]:
-    """Bounding box of everything drawn — `(x0, y0, x1, y1)`, inclusive.
+    """Bounding box of everything rendered — `(x0, y0, x1, y1)`, inclusive.
 
     The buffer starts fully transparent, so any pixel with alpha is ink.
-    Returns `(-1, -1, -1, -1)` when nothing was drawn.
+    Returns `(-1, -1, -1, -1)` when nothing was rendered.
     """
     var x0 = m.width
     var y0 = m.height
@@ -43,17 +43,17 @@ def _style(align: Align) -> Style:
     return s^
 
 
-def _draw(align: Align, x: Float64, y: Float64) raises -> MemorySurface:
+def _render(align: Align, x: Float64, y: Float64) raises -> MemorySurface:
     var m = MemorySurface(200, 120)
     var t = TextRenderer()
-    t.draw(m.surface(), "Hi", x, y, _style(align), 1.0)
+    t.render(m.surface(), "Hi", x, y, _style(align), 1.0)
     return m^
 
 
-def _draw_with(mut t: TextRenderer, var style: Style) raises -> MemorySurface:
-    """Draw "Hi" through an existing renderer, so its cache carries over."""
+def _render_with(mut t: TextRenderer, var style: Style) raises -> MemorySurface:
+    """Render "Hi" through an existing renderer, so its cache carries over."""
     var m = MemorySurface(200, 120)
-    t.draw(m.surface(), "Hi", 40.0, 30.0, style^, 1.0)
+    t.render(m.surface(), "Hi", 40.0, 30.0, style^, 1.0)
     return m^
 
 
@@ -68,7 +68,7 @@ def _same_pixels(a: MemorySurface, b: MemorySurface) -> Bool:
 
 
 def test_construction_touches_no_disk() raises -> None:
-    # A program that draws no text must not pay the font load, and must not
+    # A program that renders no text must not pay the font load, and must not
     # fail on a missing file it never needed.
     var t = TextRenderer()
     assert_equal(len(t._font), 0)
@@ -76,7 +76,7 @@ def test_construction_touches_no_disk() raises -> None:
     assert_false(t._fallback_attempted)
 
 
-def test_font_loads_lazily_on_first_draw() raises -> None:
+def test_font_loads_lazily_on_first_render() raises -> None:
     var t = TextRenderer()
     t._ensure_font(16)
     assert_equal(len(t._font), 1)
@@ -93,19 +93,19 @@ def test_fallback_is_attempted_at_most_once() raises -> None:
     assert_equal(len(t._fallback_font), loaded)
 
 
-def test_draw_puts_ink_below_and_right_of_a_top_left_anchor() raises -> None:
-    var m = _draw(Align.TOP_LEFT, 40.0, 30.0)
+def test_render_puts_ink_below_and_right_of_a_top_left_anchor() raises -> None:
+    var m = _render(Align.TOP_LEFT, 40.0, 30.0)
     var box = _ink_box(m)
-    assert_true(box[2] >= 0, "nothing was drawn")
+    assert_true(box[2] >= 0, "nothing was rendered")
     assert_true(box[0] >= 40, "ink started left of the anchor")
     assert_true(box[1] >= 30, "ink started above the anchor")
     assert_true(box[2] < 200 and box[3] < 120, "ink ran off the buffer")
 
 
 def test_centre_align_shifts_ink_left_of_left_align() raises -> None:
-    var left = _ink_box(_draw(Align.TOP_LEFT, 100.0, 30.0))
-    var centre = _ink_box(_draw(Align.TOP, 100.0, 30.0))
-    var right = _ink_box(_draw(Align.TOP_RIGHT, 100.0, 30.0))
+    var left = _ink_box(_render(Align.TOP_LEFT, 100.0, 30.0))
+    var centre = _ink_box(_render(Align.TOP, 100.0, 30.0))
+    var right = _ink_box(_render(Align.TOP_RIGHT, 100.0, 30.0))
     assert_true(centre[0] < left[0], "CENTER did not shift left of LEFT")
     assert_true(right[0] < centre[0], "RIGHT did not shift left of CENTER")
 
@@ -114,9 +114,9 @@ def test_baseline_shifts_ink_up_the_buffer() raises -> None:
     # Glyphs rasterise upright regardless of the world y axis, so TOP must put
     # the box below the anchor and BOTTOM above it — in pixel rows, upward
     # means smaller.
-    var top = _ink_box(_draw(Align.TOP_LEFT, 40.0, 60.0))
-    var middle = _ink_box(_draw(Align.LEFT, 40.0, 60.0))
-    var bottom = _ink_box(_draw(Align.BOTTOM_LEFT, 40.0, 60.0))
+    var top = _ink_box(_render(Align.TOP_LEFT, 40.0, 60.0))
+    var middle = _ink_box(_render(Align.LEFT, 40.0, 60.0))
+    var bottom = _ink_box(_render(Align.BOTTOM_LEFT, 40.0, 60.0))
     assert_true(middle[1] < top[1], "MIDDLE did not sit above TOP")
     assert_true(bottom[1] < middle[1], "BOTTOM did not sit above MIDDLE")
 
@@ -125,7 +125,7 @@ def test_pixel_scale_grows_the_glyphs() raises -> None:
     # Font size is authored in world units, so autoscale must reach the raster.
     var m1 = MemorySurface(200, 120)
     var t1 = TextRenderer()
-    t1.draw(
+    t1.render(
         m1.surface(),
         "Hi",
         20.0,
@@ -135,7 +135,7 @@ def test_pixel_scale_grows_the_glyphs() raises -> None:
     )
     var m2 = MemorySurface(200, 120)
     var t2 = TextRenderer()
-    t2.draw(
+    t2.render(
         m2.surface(),
         "Hi",
         20.0,
@@ -152,7 +152,7 @@ def test_pixel_scale_grows_the_glyphs() raises -> None:
 
 def test_style_defaults() raises -> None:
     # What every frame starts with, since style does not survive the frame
-    # boundary — a wrong default here silently changes the first draw call of
+    # boundary — a wrong default here silently changes the first render call of
     # every render that doesn't set that field.
     var s = Style()
     assert_equal(s.fill_color, Color.TRANSPARENT)
@@ -166,19 +166,19 @@ def test_style_defaults() raises -> None:
     assert_true(s.text_align == Align.TOP_LEFT)
 
 
-def test_repeating_a_draw_adds_no_cache_entries() raises -> None:
+def test_repeating_a_render_adds_no_cache_entries() raises -> None:
     # The point of the cache: a static line of text rasterises its glyphs on
     # the frame it first appears and on no frame after.
     var t = TextRenderer()
     var top_left = _style(Align.TOP_LEFT)
-    var first = _draw_with(t, top_left.copy())
+    var first = _render_with(t, top_left.copy())
     var after_first = len(t._glyphs)
-    var second = _draw_with(t, top_left.copy())
+    var second = _render_with(t, top_left.copy())
     assert_true(after_first > 0, "nothing was cached")
     assert_equal(len(t._glyphs), after_first)
-    # A cache that served a stale or wrongly-keyed mask would still draw
+    # A cache that served a stale or wrongly-keyed mask would still render
     # something, so the pixels have to match, not just the entry count.
-    assert_true(_same_pixels(first, second), "the cached draw differed")
+    assert_true(_same_pixels(first, second), "the cached render differed")
 
 
 def test_size_and_weight_are_part_of_the_key() raises -> None:
@@ -186,19 +186,19 @@ def test_size_and_weight_are_part_of_the_key() raises -> None:
     var t = TextRenderer()
     var base = _style(Align.TOP_LEFT)
 
-    var regular = _draw_with(t, base.copy())
+    var regular = _render_with(t, base.copy())
     var entries = len(t._glyphs)
 
     var bigger = base.copy()
     bigger.font_size = base.font_size * 2
-    var big = _draw_with(t, bigger^)
+    var big = _render_with(t, bigger^)
     assert_true(len(t._glyphs) > entries, "a new size reused the old masks")
     entries = len(t._glyphs)
     assert_false(_same_pixels(regular, big), "a larger size drew the same ink")
 
     var bold = base.copy()
     bold.font_weight = FontWeight.BLACK
-    var heavy = _draw_with(t, bold^)
+    var heavy = _render_with(t, bold^)
     assert_true(len(t._glyphs) > entries, "a new weight reused the old masks")
     assert_false(
         _same_pixels(regular, heavy), "a heavier weight drew the same ink"
@@ -207,10 +207,10 @@ def test_size_and_weight_are_part_of_the_key() raises -> None:
 
 def test_swapping_the_font_drops_the_cache() raises -> None:
     # The key says nothing about which face rendered the mask, so a face swap
-    # would otherwise keep drawing the old font's glyphs.
+    # would otherwise keep rendering the old font's glyphs.
     var t = TextRenderer()
     var top_left = _style(Align.TOP_LEFT)
-    _ = _draw_with(t, top_left^)
+    _ = _render_with(t, top_left^)
     assert_true(len(t._glyphs) > 0, "nothing was cached")
     t.set_font(Font(FONT_DEFAULT_PATH, 24))
     assert_equal(len(t._glyphs), 0)
@@ -230,13 +230,13 @@ def test_the_cache_is_bounded() raises -> None:
     assert_equal(len(t._glyphs), _GLYPH_CACHE_LIMIT)
 
     # The next miss drops the lot rather than growing past the limit, and the
-    # draw it came from still lands its ink.
+    # render it came from still lands its ink.
     var top_left = _style(Align.TOP_LEFT)
-    var m = _draw_with(t, top_left^)
+    var m = _render_with(t, top_left^)
     assert_true(
         len(t._glyphs) < _GLYPH_CACHE_LIMIT, "the cache grew past its limit"
     )
-    assert_true(_ink_box(m)[2] >= 0, "nothing was drawn after a cache drop")
+    assert_true(_ink_box(m)[2] >= 0, "nothing was rendered after a cache drop")
 
 
 def main() raises:

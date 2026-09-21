@@ -9,7 +9,7 @@ struct Random(Movable):
     sequence every run, so a procedurally generated level or a particle burst
     can be reproduced exactly while it is being tuned.
 
-    xoroshiro128++ — fast and well-distributed, not cryptographic. Don't draw
+    xoroshiro128++ — fast and well-distributed, not cryptographic. Don't render
     keys or tokens from it.
     """
 

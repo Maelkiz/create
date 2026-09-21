@@ -39,7 +39,7 @@ def step[
     """
     var frame = Frame(state^, options, input)
     program.update(options, frame)
-    # Recorded last, so it doubles as the clip for anything drawn out of
+    # Recorded last, so it doubles as the clip for anything rendered out of
     # bounds — the replay honours the buffer's order.
-    frame._draw_letterbox()
+    frame._render_letterbox()
     return frame^._release()

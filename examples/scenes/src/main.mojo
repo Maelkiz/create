@@ -2,7 +2,7 @@
 #
 # `Program` stays exactly `create`/`update`. A scene switch is nothing more
 # than an int field and an if/elif in `update` —
-# `Menu` and `Draw` are plain structs in the same shape as `Program`, not
+# `Menu` and `Paint` are plain structs in the same shape as `Program`, not
 # `Program`s themselves, which is what lets them take a shared field
 # (nothing shared here, but see AGENTS.md's "Program can own Programs").
 # See AGENTS.md for why this beats a generic scene-router: no dynamic trait
@@ -11,7 +11,7 @@
 
 from create import *
 from menu import Menu
-from draw import Draw
+from paint import Paint
 
 comptime MENU = 0
 comptime DRAWING = 1
@@ -21,26 +21,26 @@ comptime DRAWING = 1
 struct App(Program):
     var scene: Int
     var menu: Menu
-    var draw: Draw
+    var paint: Paint
 
     @staticmethod
     def create(mut options: Options) raises -> App:
         options.autoscale = AutoScale.FIT
-        # The drawing scene accumulates ink across frames, so the per-frame
+        # The painting scene accumulates ink across frames, so the per-frame
         # clear is off for the whole program: `Menu` paints its own background
-        # every frame, and `Draw` clears once on entry.
+        # every frame, and `Paint` clears once on entry.
         options.autoclear = False
-        return App(MENU, Menu(False), Draw(False, False, False, Point2D(0, 0)))
+        return App(MENU, Menu(False), Paint(False, False, False, Point2D(0, 0)))
 
     def update(mut self, mut options: Options, mut frame: Frame) raises:
         if self.scene == MENU:
             self.menu.update(frame)
             if self.menu.start_pressed:
-                self.draw.enter()
+                self.paint.enter()
                 self.scene = DRAWING
         else:
-            self.draw.update(frame)
-            if self.draw.back_pressed:
+            self.paint.update(frame)
+            if self.paint.back_pressed:
                 self.scene = MENU
 
 

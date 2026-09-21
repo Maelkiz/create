@@ -9,10 +9,10 @@ struct SpriteAnimation(Movable):
     A `SpriteAnimation` is the asset, not the playhead -- it holds the frames
     and how fast they are meant to run, and never mutates. `SpriteAnimator`
     walks it. The rate lives here because it is a property of the artwork: a
-    run cycle and an idle cycle are drawn for different speeds.
+    run cycle and an idle cycle are rendered for different speeds.
 
     Frames are cut into owned `Sprite`s at construction, so a sheet or a folder
-    is paid for once and every draw afterwards is a plain blit.
+    is paid for once and every render afterwards is a plain blit.
 
     Hold one as an `ArcPointer[SpriteAnimation]` field, like a `Sound`, so
     several animators can share the frame buffers by refcount instead of

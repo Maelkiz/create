@@ -71,7 +71,7 @@ def _run_loop[
         _process_events(win, state, options, input)
         # Re-derive after events: a resize this frame reallocated the pixel
         # buffer, so the mapping taken above is one frame stale while the
-        # framebuffer is already the new size. Drawing that frame against the
+        # framebuffer is already the new size. Rendering that frame against the
         # old mapping puts it in a corner of the new buffer — one crooked
         # frame, and a permanent ghost in a program that never clears.
         _update_dimensions(win, state, options)

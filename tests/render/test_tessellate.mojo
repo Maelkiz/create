@@ -233,7 +233,7 @@ def test_a_line_is_one_quad_of_the_outline_thickness() raises -> None:
 
 
 def test_an_unoutlined_line_emits_nothing() raises -> None:
-    # A line has no interior, so a fill-only style has nothing to draw.
+    # A line has no interior, so a fill-only style has nothing to render.
     var vb = VertexBuffer()
     var v = _viewport(100, 100)
     emit_line(

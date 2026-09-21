@@ -288,7 +288,7 @@ struct GL(Movable):
     var check_framebuffer_status: _CheckFramebufferStatus
     var read_pixels: _ReadPixels
     """Framebuffer objects and readback. No frame uses either — they exist
-    for `tests/render/test_gl_parity.mojo`, which needs to draw at an exact
+    for `tests/render/test_gl_parity.mojo`, which needs to render at an exact
     pixel size the window manager cannot veto, and to see what the GPU drew.
     """
 

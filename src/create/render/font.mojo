@@ -4,12 +4,12 @@ from std.math import abs
 from create._bytes import le_uint, sign_extend_32
 from .color import Color
 
-# The two packaged faces, loaded lazily on the first text draw: Noto Sans for
+# The two packaged faces, loaded lazily on the first text render: Noto Sans for
 # text, Noto Sans Symbols for codepoints the first face has no glyph for.
 #
 # Both are *relative* paths, resolved against the process CWD rather than the
 # source file, so `frame.text` only works when a program is run from the repo
-# root. Anywhere else, every text draw raises "FT_New_Face failed — font not
+# root. Anywhere else, every text render raises "FT_New_Face failed — font not
 # found".
 comptime FONT_DEFAULT_PATH = "defaults/fonts/NotoSans.ttf"
 comptime FONT_FALLBACK_PATH = "defaults/fonts/NotoSansSymbols.ttf"
@@ -94,7 +94,7 @@ struct _GlyphInfo(Movable):
     """One rendered glyph: its coverage mask and where to put it.
 
     The mask is alpha only — the colour comes from the style at blit time, so
-    one cached glyph serves every colour it is ever drawn in. `TextRenderer`
+    one cached glyph serves every colour it is ever rendered in. `TextRenderer`
     keeps them, keyed by codepoint, pixel size and weight; a `Font` renders
     one and forgets it.
     """
@@ -213,7 +213,7 @@ struct Font(Movable):
         _ = ft.call["FT_Done_MM_Var", Int32](self._lib, master)
 
     def has_glyph(self, codepoint: Int) raises -> Bool:
-        """Whether this face can draw this codepoint — how `TextRenderer`
+        """Whether this face can render this codepoint — how `TextRenderer`
         decides to fall back to the symbols face."""
         var ft = _DLHandle("libfreetype.so.6")
         return (

@@ -14,7 +14,7 @@ struct Options(Copyable, Movable):
     Handed to `Program.create` on its own, before any frame exists, and
     alongside the frame to `Program.update`. That is the whole reason it is a
     separate object rather than fields on `Frame`: `create` has dials to turn
-    and nothing to draw on, so it is given exactly that — a program cannot
+    and nothing to render on, so it is given exactly that — a program cannot
     record a command that will never be presented, and there is no discarded
     frame to explain.
 
@@ -22,7 +22,7 @@ struct Options(Copyable, Movable):
     `clear_color` and `letterbox` when it is built, and the loop re-derives
     the viewport from `autoscale` and the design size at the top of each
     frame. So a dial turned part-way through `update` applies to the *next*
-    frame, uniformly — the clear of the frame being drawn was recorded before
+    frame, uniformly — the clear of the frame being rendered was recorded before
     `update` was called, and one frame cannot record under two mappings. Set
     them in `create` to have them hold from frame one. `frame_cap` and `quit`
     are the exception, and only because the loop reads them after the frame
@@ -66,7 +66,7 @@ struct Options(Copyable, Movable):
         where the window size is the display's rather than the caller's.
 
         Takes effect on the next frame, like every dial here: the frame being
-        drawn keeps the mapping it was built with, since one frame cannot
+        rendered keeps the mapping it was built with, since one frame cannot
         record under two of them. From `create` there is no frame yet, so it
         applies to frame one.
         """

@@ -28,10 +28,10 @@ struct OverflowingRect(Program):
         frame.rectangle(0.0, 0.0, 1000.0, 1000.0)
 
 
-def test_letterbox_clips_a_shape_drawn_past_the_design_edge() raises -> None:
+def test_letterbox_clips_a_shape_rendered_past_the_design_edge() raises -> None:
     # 100x50 design in a 100x100 buffer: scale 1, 25-row bars top and bottom.
     # The rect covers every framebuffer pixel, so a bar pixel reading the
-    # letterbox colour proves _draw_letterbox clips rather than merely fills
+    # letterbox colour proves _render_letterbox clips rather than merely fills
     # an otherwise-empty margin.
     var m = run_headless[OverflowingRect](100, 50, 1, 100, 100)
     assert_equal(m.pixel(50, 5), Color(0x22))

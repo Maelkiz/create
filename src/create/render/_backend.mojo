@@ -13,7 +13,7 @@ from ._command import (
     CMD_SPRITE,
     CMD_TEXT,
     CMD_LETTERBOX,
-    DrawCommand,
+    RenderCommand,
 )
 from ._raster import (
     blend,
@@ -587,7 +587,7 @@ def _rounded_triangle_row_span(
     return (out_lo, out_hi)
 
 
-def _draw_fillet_arc[
+def _render_fillet_arc[
     o: Origin[mut=True]
 ](
     s: Surface[o],
@@ -601,7 +601,7 @@ def _draw_fillet_arc[
     """Stroke one rounded triangle corner's arc in device space, as a fan of
     `line_pixels` segments between its tangent points.
 
-    `_triangle`'s outline is drawn as a separate pass over the fill, in
+    `_triangle`'s outline is rendered as a separate pass over the fill, in
     centred device-space bands — the same convention its sharp-corner
     outline already used and deliberately different from the rounded
     rect's inset ring, so this walks the arc rather than reusing any
@@ -629,7 +629,7 @@ def _draw_fillet_arc[
         prev_y = cur_y
 
 
-def _draw_fillet_arc_mapped[
+def _render_fillet_arc_mapped[
     o: Origin[mut=True]
 ](
     s: Surface[o],
@@ -642,7 +642,7 @@ def _draw_fillet_arc_mapped[
     c: Color,
     sw: Int,
 ):
-    """`_draw_fillet_arc`'s non-uniform counterpart.
+    """`_render_fillet_arc`'s non-uniform counterpart.
 
     The fillet's circle is only genuinely a circle in local space — under a
     rotation or non-uniform scale it becomes an ellipse, so there is no
@@ -722,7 +722,7 @@ struct Backend(Movable):
 
     Just a path: a screenshot has no geometry to decide, which is the whole
     difference from `_ImageRequest` — it is whatever the framebuffer holds
-    once the frame has been drawn.
+    once the frame has been rendered.
     """
     var pending_image: Optional[_ImageRequest]
     """A `save_image` filed by this frame, serviced at present.
@@ -731,7 +731,7 @@ struct Backend(Movable):
     sensible reading of two saves of the same frame to two paths being asked
     for by accident.
     """
-    var commands: List[DrawCommand]
+    var commands: List[RenderCommand]
     """The frame being recorded.
 
     The buffer lives here rather than travelling out of `Frame` because a
@@ -747,22 +747,22 @@ struct Backend(Movable):
         self.kind = kind
         self.text = TextRenderer()
         self.images = Dict[Int, _Image]()
-        self.commands = List[DrawCommand]()
+        self.commands = List[RenderCommand]()
         self.pending_image = Optional[_ImageRequest]()
         self.pending_screenshot = Optional[String]()
         self.gl = Optional[GLRenderer]()
         if kind == RenderBackend.GPU:
             self.gl = Optional(GLRenderer())
 
-    def record(mut self, var c: DrawCommand):
-        """Append one draw to the frame being recorded."""
+    def record(mut self, var c: RenderCommand):
+        """Append one render to the frame being recorded."""
         self.commands.append(c^)
 
-    def record_clear(mut self, var c: DrawCommand):
+    def record_clear(mut self, var c: RenderCommand):
         """Append a clear, replacing an adjacent one it would erase anyway.
 
         An opaque clear covers the whole framebuffer, so any clear recorded
-        immediately before it — with no draw in between to survive — paints
+        immediately before it — with no render in between to survive — paints
         nothing. Dropping it here rather than at replay keeps both backends
         and both captures agreeing, and costs the common case nothing: a
         program that sets `options.autoclear` and also opens `update` with
@@ -808,7 +808,7 @@ struct Backend(Movable):
 
         There is no host buffer to copy from here, so this is the one capture
         that costs a pipeline stall — see `GLRenderer.read_frame`. It runs
-        after `draw` and before the run loop's buffer swap, which is the only
+        after `render` and before the run loop's buffer swap, which is the only
         window in which the finished frame is still the one being read.
         """
         if not self.pending_screenshot:
@@ -818,7 +818,7 @@ struct Backend(Movable):
         _force_opaque(frame)
         write_png(frame, width, height, path)
 
-    def _flush_image(mut self, cmds: List[DrawCommand]) raises:
+    def _flush_image(mut self, cmds: List[RenderCommand]) raises:
         """Service a pending `save_image` by replaying `cmds` a second time.
 
         Onto an owned buffer of the capture's own size, through the CPU
@@ -852,7 +852,7 @@ struct Backend(Movable):
     def present[
         o: Origin[mut=True]
     ](mut self, s: Surface[o], scale: Float64) raises:
-        """Draw the recorded frame onto `s` and start a new recording.
+        """Render the recorded frame onto `s` and start a new recording.
 
         The buffer is moved out and back rather than iterated in place: replay
         needs `self` mutably (the glyph cache and the image cache both fill in
@@ -860,7 +860,7 @@ struct Backend(Movable):
         Moving it back keeps its capacity for the next frame.
         """
         var cmds = self.commands^
-        self.commands = List[DrawCommand]()
+        self.commands = List[RenderCommand]()
         self.replay(s, cmds, scale)
         self._flush_screenshot(s)
         self._flush_image(cmds)
@@ -881,8 +881,10 @@ struct Backend(Movable):
                 " construct it with kind=RenderBackend.GPU"
             )
         var cmds = self.commands^
-        self.commands = List[DrawCommand]()
-        self.gl.value().draw(cmds, self.images, self.text, width, height, scale)
+        self.commands = List[RenderCommand]()
+        self.gl.value().render(
+            cmds, self.images, self.text, width, height, scale
+        )
         self._flush_screenshot_gpu(width, height)
         self._flush_image(cmds)
         cmds.clear()
@@ -896,7 +898,7 @@ struct Backend(Movable):
         """Return a backend id for the `width` x `height` RGBA buffer at `src`.
 
         Copies on first sight and returns the cached id thereafter, so a sprite
-        drawn every frame is copied once. `key` must be stable for the life of
+        rendered every frame is copied once. `key` must be stable for the life of
         the image — a `Sprite`'s identity, not its pixel address, which could
         be reused after a free.
 
@@ -916,12 +918,12 @@ struct Backend(Movable):
     ](
         mut self,
         s: Surface[o],
-        cmds: List[DrawCommand],
+        cmds: List[RenderCommand],
         scale: Float64,
         pre: Matrix[3, 3] = identity[3](),
         skip_kinds: Int = 0,
     ) raises:
-        """Draw `cmds` onto `s`, in order.
+        """Render `cmds` onto `s`, in order.
 
         `scale` is the frame's autoscale factor — the fallback pixel scale for
         commands whose transform is not uniform. It is constant for a frame, so
@@ -948,7 +950,7 @@ struct Backend(Movable):
     ](
         mut self,
         s: Surface[o],
-        c: DrawCommand,
+        c: RenderCommand,
         scale: Float64,
         pre: Matrix[3, 3],
     ) raises:
@@ -977,7 +979,7 @@ struct Backend(Movable):
     ](
         mut self,
         s: Surface[o],
-        c: DrawCommand,
+        c: RenderCommand,
         scale: Float64,
         m: Matrix[3, 3],
     ):
@@ -1360,7 +1362,7 @@ struct Backend(Movable):
     ](
         mut self,
         s: Surface[o],
-        c: DrawCommand,
+        c: RenderCommand,
         scale: Float64,
         m: Matrix[3, 3],
     ):
@@ -1388,7 +1390,7 @@ struct Backend(Movable):
             var x1 = min(Int(pcx + pr) + 1, W)
             var y1 = min(Int(pcy + pr) + 1, H)
             # Whether a row's *entire* outer span is fill, with no outline ever
-            # drawn — matches the per-pixel `if`'s "or pr_inner <= 0.0" arm,
+            # rendered — matches the per-pixel `if`'s "or pr_inner <= 0.0" arm,
             # which shortcuts to true regardless of `d2` and so never leaves
             # the `elif` reachable.
             var full_fill = c.style.fill_visible() and (
@@ -1478,7 +1480,7 @@ struct Backend(Movable):
     ](
         mut self,
         s: Surface[o],
-        c: DrawCommand,
+        c: RenderCommand,
         scale: Float64,
         m: Matrix[3, 3],
     ):
@@ -1501,7 +1503,7 @@ struct Backend(Movable):
     ](
         mut self,
         s: Surface[o],
-        c: DrawCommand,
+        c: RenderCommand,
         scale: Float64,
         m: Matrix[3, 3],
     ):
@@ -1603,9 +1605,9 @@ struct Backend(Movable):
                 line_pixels(s, f0[4], f0[5], f1[2], f1[3], outline_col, sw)
                 line_pixels(s, f1[4], f1[5], f2[2], f2[3], outline_col, sw)
                 line_pixels(s, f2[4], f2[5], f0[2], f0[3], outline_col, sw)
-                _draw_fillet_arc(s, f0, pr, outline_col, sw)
-                _draw_fillet_arc(s, f1, pr, outline_col, sw)
-                _draw_fillet_arc(s, f2, pr, outline_col, sw)
+                _render_fillet_arc(s, f0, pr, outline_col, sw)
+                _render_fillet_arc(s, f1, pr, outline_col, sw)
+                _render_fillet_arc(s, f2, pr, outline_col, sw)
         else:
             var minv = inverse(m)
             var step_x = minv[0, 0]
@@ -1690,13 +1692,13 @@ struct Backend(Movable):
                     outline_col,
                     sw,
                 )
-                _draw_fillet_arc_mapped(
+                _render_fillet_arc_mapped(
                     s, m, scale, f0, r_local, outline_col, sw
                 )
-                _draw_fillet_arc_mapped(
+                _render_fillet_arc_mapped(
                     s, m, scale, f1, r_local, outline_col, sw
                 )
-                _draw_fillet_arc_mapped(
+                _render_fillet_arc_mapped(
                     s, m, scale, f2, r_local, outline_col, sw
                 )
 
@@ -1705,7 +1707,7 @@ struct Backend(Movable):
     ](
         mut self,
         s: Surface[o],
-        c: DrawCommand,
+        c: RenderCommand,
         scale: Float64,
         m: Matrix[3, 3],
     ) raises:
@@ -1716,7 +1718,7 @@ struct Backend(Movable):
         var dw = max(Int(c.geom[2] * sf + 0.5), 1)
         var dh = max(Int(c.geom[3] * sf + 0.5), 1)
         # Bound by reference so the pixels stay in the cache rather than being
-        # copied out of it once per draw.
+        # copied out of it once per render.
         ref img = self.images[c.image]
         blit_sprite(
             s,
@@ -1734,7 +1736,7 @@ struct Backend(Movable):
     ](
         mut self,
         s: Surface[o],
-        c: DrawCommand,
+        c: RenderCommand,
         scale: Float64,
         m: Matrix[3, 3],
     ) raises:
@@ -1742,11 +1744,11 @@ struct Backend(Movable):
         # `frame.text` already skips recording when `text_color` is fully
         # transparent; text has no other visibility gate (fill is unrelated).
         var p = mat_apply(m, c.geom[0], c.geom[1])
-        self.text.draw(s, c.text, p[0], p[1], c.style, pixel_scale(m, scale))
+        self.text.render(s, c.text, p[0], p[1], c.style, pixel_scale(m, scale))
 
     def _letterbox[
         o: Origin[mut=True]
-    ](mut self, s: Surface[o], c: DrawCommand):
+    ](mut self, s: Surface[o], c: RenderCommand):
         var W = s.width
         var H = s.height
         var cx0 = Int(c.geom[0])

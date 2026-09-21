@@ -74,7 +74,7 @@ struct ClickPainter(Program):
     and hand straight to `step`, unlike the removed per-event callbacks,
     which only the run loop could ever fire. This is what makes click-driven
     behaviour assertable the same way the pixel tests already assert on
-    drawing.
+    rendering.
     """
 
     var clicked: Bool
@@ -89,7 +89,7 @@ struct ClickPainter(Program):
         frame.background(Color.RED if self.clicked else Color.BLUE)
 
 
-def test_scripted_click_drives_drawing() raises -> None:
+def test_scripted_click_drives_rendering() raises -> None:
     var mem = MemorySurface(32, 32)
 
     var idle_options = Options()

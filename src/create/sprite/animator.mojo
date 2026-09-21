@@ -33,7 +33,7 @@ struct SpriteAnimator(Movable):
         """Hold `animation`, stopped on frame 0.
 
         An animator always has an animation, so there is no empty state to
-        guard against when drawing.
+        guard against when rendering.
         """
         self.animation = animation^
         self.frame_index = 0

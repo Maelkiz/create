@@ -23,4 +23,4 @@ struct Menu:
 
             frame.text_color(Color(180, 180, 190))
             frame.font_size(20)
-            frame.text("click to start drawing", 0, -20)
+            frame.text("click to start painting", 0, -20)

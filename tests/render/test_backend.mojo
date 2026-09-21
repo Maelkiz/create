@@ -16,7 +16,7 @@ from create.render._transform import pixel_scale, outline_thickness_px
 from create.render._command import (
     CMD_CLEAR,
     CMD_LETTERBOX,
-    DrawCommand,
+    RenderCommand,
     clear_command,
     rect_command,
     circle_command,
@@ -49,7 +49,7 @@ def _solid(fill: Color) -> Style:
     return s^
 
 
-def _replay(cmds: List[DrawCommand]) raises -> MemorySurface:
+def _replay(cmds: List[RenderCommand]) raises -> MemorySurface:
     var mem = MemorySurface(_W, _H)
     var backend = Backend()
     backend.replay(mem.surface(), cmds, 1.0)
@@ -57,7 +57,7 @@ def _replay(cmds: List[DrawCommand]) raises -> MemorySurface:
 
 
 def test_clear_covers_every_pixel() raises -> None:
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color(10, 20, 30)))
     var m = _replay(cmds)
     assert_equal(m.pixel(0, 0), Color(10, 20, 30))
@@ -68,7 +68,7 @@ def test_clear_covers_every_pixel() raises -> None:
 def test_rect_replays_centred_and_y_up() raises -> None:
     # A 20x20 rect at the world origin covers pixels [40, 60) on both axes —
     # the same centring promise the Frame tests assert.
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(rect_command(_base(), _solid(Color.RED), 0.0, 0.0, 20.0, 20.0))
     var m = _replay(cmds)
@@ -82,7 +82,7 @@ def test_rect_replays_centred_and_y_up() raises -> None:
 def test_rect_above_the_origin_lands_above_it() raises -> None:
     # Positive world y is a smaller pixel row. A y-down replay would paint the
     # mirror of this and every other assertion here would still pass.
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(rect_command(_base(), _solid(Color.RED), 0.0, 20.0, 10.0, 10.0))
     var m = _replay(cmds)
@@ -95,7 +95,7 @@ def test_rect_outline_frames_the_fill() raises -> None:
     st.outline_enabled = True
     st.outline_color = Color.BLUE
     st.outline_thickness = 2
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(rect_command(_base(), st, 0.0, 0.0, 20.0, 20.0))
     var m = _replay(cmds)
@@ -111,7 +111,7 @@ def test_rect_outline_with_zero_alpha_matches_outline_disabled() raises -> None:
     st.outline_enabled = True
     st.outline_color = Color(0, 0, 255, 0)
     st.outline_thickness = 2
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(rect_command(_base(), st, 0.0, 0.0, 20.0, 20.0))
     var m = _replay(cmds)
@@ -129,7 +129,7 @@ def test_rect_outline_with_zero_thickness_matches_outline_disabled() raises -> (
     st.outline_enabled = True
     st.outline_color = Color.BLUE
     st.outline_thickness = 0
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(rect_command(_base(), st, 0.0, 0.0, 20.0, 20.0))
     var m = _replay(cmds)
@@ -141,7 +141,7 @@ def test_rect_outline_with_zero_thickness_matches_outline_disabled() raises -> (
 
 
 def test_circle_replays_round() raises -> None:
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(circle_command(_base(), _solid(Color.GREEN), 0.0, 0.0, 20.0))
     var m = _replay(cmds)
@@ -213,7 +213,7 @@ def _check_circle_matches_brute_force(
     var want = MemorySurface(_W, _H)
     _brute_circle(want, m, st, cx, cy, r, 1.0)
 
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(circle_command(m, st, cx, cy, r))
     var got = _replay(cmds)
 
@@ -262,7 +262,7 @@ def test_line_replays_between_its_endpoints() raises -> None:
     st.outline_enabled = True
     st.outline_color = Color.WHITE
     st.outline_thickness = 1
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(line_command(_base(), st, -20.0, 0.0, 20.0, 0.0))
     var m = _replay(cmds)
@@ -271,10 +271,10 @@ def test_line_replays_between_its_endpoints() raises -> None:
     assert_equal(m.pixel(50, 40), Color.BLACK)
 
 
-def test_line_with_outline_disabled_draws_nothing() raises -> None:
+def test_line_with_outline_disabled_renders_nothing() raises -> None:
     var st = Style()
     st.outline_enabled = False
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(line_command(_base(), st, -20.0, 0.0, 20.0, 0.0))
     var m = _replay(cmds)
@@ -282,7 +282,7 @@ def test_line_with_outline_disabled_draws_nothing() raises -> None:
 
 
 def test_triangle_replays_inside_only() raises -> None:
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(
         triangle_command(
@@ -308,7 +308,7 @@ def test_sprite_replays_from_an_interned_image() raises -> None:
     var id = backend.intern_image(7, src.unsafe_ptr(), 2, 1)
     assert_equal(id, 7)
 
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(
         sprite_command(_base(), Style(), 0.0, 0.0, 20.0, 10.0, id, 2, 1)
@@ -330,7 +330,7 @@ def test_interning_the_same_key_twice_reuses_the_copy() raises -> None:
 def test_sprite_with_an_unknown_image_is_skipped() raises -> None:
     # A command referring to an id the backend never interned must be dropped,
     # not read out of bounds.
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(
         sprite_command(_base(), Style(), 0.0, 0.0, 20.0, 10.0, 999, 2, 1)
@@ -345,7 +345,7 @@ def test_text_replays_through_the_backend_font() raises -> None:
     var st = _solid(Color.WHITE)
     st.text_color = Color.WHITE
     st.font_size = 24
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(text_command(_base(), st, -40.0, 0.0, String("III")))
     var m = _replay(cmds)
@@ -357,10 +357,10 @@ def test_text_replays_through_the_backend_font() raises -> None:
     assert_true(lit > 0, "text drew no pixels")
 
 
-def test_text_with_a_transparent_text_color_draws_nothing() raises -> None:
+def test_text_with_a_transparent_text_color_renders_nothing() raises -> None:
     var st = Style()
     st.text_color = Color(255, 255, 255, 0)
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(text_command(_base(), st, -40.0, 0.0, String("III")))
     var m = _replay(cmds)
@@ -370,7 +370,7 @@ def test_text_with_a_transparent_text_color_draws_nothing() raises -> None:
 def test_a_pre_matrix_relocates_the_whole_replay() raises -> None:
     # What a capture does: the commands were recorded against one mapping and
     # are replayed against another, without rewriting the command list.
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(rect_command(_base(), _solid(Color.RED), 0.0, 0.0, 20.0, 20.0))
     var mem = MemorySurface(_W, _H)
@@ -382,7 +382,7 @@ def test_a_pre_matrix_relocates_the_whole_replay() raises -> None:
 
 
 def test_skipping_the_letterbox_leaves_its_region_untouched() raises -> None:
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.RED))
     cmds.append(letterbox_command(Color.BLUE, 10.0, 20.0, 90.0, 80.0))
     var mem = MemorySurface(_W, _H)
@@ -394,7 +394,7 @@ def test_skipping_the_letterbox_leaves_its_region_untouched() raises -> None:
 
 
 def test_skipping_the_clear_leaves_the_background_transparent() raises -> None:
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(rect_command(_base(), _solid(Color.RED), 0.0, 0.0, 20.0, 20.0))
     var mem = MemorySurface(_W, _H)
@@ -406,7 +406,7 @@ def test_skipping_the_clear_leaves_the_background_transparent() raises -> None:
 
 def test_letterbox_paints_outside_the_device_content_rect() raises -> None:
     # The one command whose geometry is already device pixels.
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.RED))
     cmds.append(letterbox_command(Color.BLUE, 10.0, 20.0, 90.0, 80.0))
     var m = _replay(cmds)
@@ -418,7 +418,7 @@ def test_letterbox_paints_outside_the_device_content_rect() raises -> None:
 
 
 def test_commands_replay_in_order() raises -> None:
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(rect_command(_base(), _solid(Color.RED), 0.0, 0.0, 40.0, 40.0))
     cmds.append(rect_command(_base(), _solid(Color.BLUE), 0.0, 0.0, 20.0, 20.0))
@@ -458,7 +458,7 @@ def test_a_rotated_rect_replays_identically_to_frame() raises -> None:
     # since a pre-mapped device rect could not express it at all.
     var want = run_headless[RotatedRect](_W, _H)
 
-    var cmds = List[DrawCommand]()
+    var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(
         rect_command(

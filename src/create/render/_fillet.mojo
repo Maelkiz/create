@@ -87,7 +87,7 @@ def corner_fillet(
     sin(theta/2)` along the interior bisector (the normalised sum of the two
     unit edge vectors leaving the vertex, which points inward for any convex
     corner regardless of winding), and the two angles are `atan2` about that
-    centre for whatever arc-drawing code sweeps between them. Used
+    centre for whatever arc-rendering code sweeps between them. Used
     unconditionally by both rect corners (theta fixed at pi/2) and triangle
     corners (theta from real geometry) — no shape-specific special-casing.
     """

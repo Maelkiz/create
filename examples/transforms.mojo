@@ -23,7 +23,7 @@ struct Transforms(Program):
 
         # Solar system: the sun sits at the origin, so it needs no transform of
         # its own — the nesting below is what the demo is about.
-        # Hit-test the sun in the frame it is drawn in. `to_local` maps a world
+        # Hit-test the sun in the frame it is rendered in. `to_local` maps a world
         # position (which is what `frame.input.mouse` already is) into that frame.
         var local = frame.to_local(Float64(self.mouse_x), Float64(self.mouse_y))
         var lx = local[0]
@@ -36,7 +36,7 @@ struct Transforms(Program):
 
         # Planet — rotate then translate so it orbits the sun
         with frame.transform(rotate(planet_angle) @ translate(160.0, 0.0)):
-            # Thin orbit guide drawn in planet's frame before further nesting
+            # Thin orbit guide rendered in planet's frame before further nesting
             frame.outline(Color(50, 50, 70), thickness=1)
             frame.fill(enabled=False)
             frame.circle(0.0, 0.0, 45.0)

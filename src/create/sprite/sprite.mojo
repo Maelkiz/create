@@ -12,7 +12,7 @@ comptime _SPRITE_IDS = _Global["create_sprite_ids", _new_sprite_ids]
 """Process-wide counter behind `Sprite._id`.
 
 Global rather than per-`Sprite` because the point is uniqueness *between*
-sprites, and global rather than per-backend because a sprite may be drawn
+sprites, and global rather than per-backend because a sprite may be rendered
 through more than one.
 """
 

@@ -65,7 +65,7 @@ def test_quit_is_recorded_on_the_options() raises -> None:
 
 def test_release_does_not_write_the_viewport_back() raises -> None:
     # The loop owns the mapping — a frame that wrote its copy back would undo
-    # a resize the loop handled while the frame was being drawn.
+    # a resize the loop handled while the frame was being rendered.
     var options = Options()
     var frame = Frame(_state(options, 800, 600), options, Input())
     frame.view.set_size(1600, 1200)

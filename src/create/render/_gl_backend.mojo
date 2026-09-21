@@ -2,7 +2,7 @@
 
 The split with `_tessellate.mojo` is deliberate and load-bearing: *where* a
 triangle goes is arithmetic and is decided there, testable with no context and
-no GPU; this file is only the GL plumbing that uploads and draws it. Nothing
+no GPU; this file is only the GL plumbing that uploads and renders it. Nothing
 here decides geometry.
 
 **One batch spans as many commands as it can.** The vertex buffer accumulates
@@ -11,7 +11,7 @@ impossible — an opaque `CMD_CLEAR` (which resets the framebuffer, so earlier
 vertices must already have landed), a *second* sprite texture, and the end of
 the frame. Solids, glyphs and one sprite share a batch because they sample
 different things: the atlas is permanently on texture unit 0 and sprites go on
-unit 1, so a sprite between two glyphs costs no rebind and text drawn over a
+unit 1, so a sprite between two glyphs costs no rebind and text rendered over a
 sprite — the obvious way to write a HUD — costs no break either. That is the
 whole point of baking the
 transform per vertex rather than passing it as a uniform: a per-command
@@ -20,9 +20,9 @@ speak of.
 
 **Clearing follows the CPU replay rather than the obvious GL call.**
 `_raster.fill_all` *composites* — a `background` with `a < 255` blends over
-what was already drawn — so only an opaque clear becomes `glClear`. A
+what was already rendered — so only an opaque clear becomes `glClear`. A
 translucent one is a full-drawable quad in the batch, which blends, and an
-`a == 0` one draws nothing at all.
+`a == 0` one renders nothing at all.
 """
 
 from std.collections import Dict, Optional
@@ -39,7 +39,7 @@ from ._command import (
     CMD_SPRITE,
     CMD_TEXT,
     CMD_TRIANGLE,
-    DrawCommand,
+    RenderCommand,
 )
 from ._gl import (
     GL,
@@ -320,7 +320,7 @@ struct GLRenderer(Movable):
     """The `TextRenderer.font_generation` these rects were packed against."""
     var textures: Dict[Int, UInt32]
     """Backend image id to GL texture name. The id is already the interning
-    key on `Backend.images`, so a sprite drawn a thousand times is one entry
+    key on `Backend.images`, so a sprite rendered a thousand times is one entry
     and one upload; the pixels are read from the `_Image` only the first
     time."""
     var bound: UInt32
@@ -330,7 +330,7 @@ struct GLRenderer(Movable):
     never replaced and so never forces one."""
     var vertices: VertexBuffer
     var draw_calls: Int
-    """Batches flushed by the last `draw`. Read by the bench example and the
+    """Batches flushed by the last `render`. Read by the bench example and the
     Phase 8 performance work; it costs one increment a batch."""
 
     def __init__(out self) raises:
@@ -404,7 +404,7 @@ struct GLRenderer(Movable):
 
         `_pack` fills it a glyph at a time with `glTexSubImage2D`; allocating
         it whole up front is what lets those uploads be sub-images and what
-        makes a sampler safe to read before any text is drawn. Texel (0, 0) is
+        makes a sampler safe to read before any text is rendered. Texel (0, 0) is
         left opaque and outside the allocator's reach, so a `MODE_MASK` quad
         can sample "full coverage" without a glyph.
 
@@ -447,9 +447,9 @@ struct GLRenderer(Movable):
         _ = name
         self.gl.uniform_1i(location, unit)
 
-    def draw(
+    def render(
         mut self,
-        cmds: List[DrawCommand],
+        cmds: List[RenderCommand],
         images: Dict[Int, _Image],
         mut text: TextRenderer,
         width: Int,
@@ -463,7 +463,7 @@ struct GLRenderer(Movable):
         the real edge of the frame.
         """
         if width != self.viewport_w or height != self.viewport_h:
-            # A resize, so once in a while — everything else the draw needs is
+            # A resize, so once in a while — everything else the render needs is
             # already set from construction.
             self.gl.viewport(0, 0, Int32(width), Int32(height))
             self.gl.uniform_2f(self.u_viewport, Float32(width), Float32(height))
@@ -531,7 +531,7 @@ struct GLRenderer(Movable):
         return out^
 
     def _text(
-        mut self, c: DrawCommand, mut text: TextRenderer, scale: Float64
+        mut self, c: RenderCommand, mut text: TextRenderer, scale: Float64
     ) raises:
         """`CMD_TEXT`, laid out by the same function the CPU replay uses."""
         if not c.style.fill_enabled:
@@ -622,7 +622,7 @@ struct GLRenderer(Movable):
         self.bound = name
 
     def _sprite(
-        mut self, c: DrawCommand, images: Dict[Int, _Image], scale: Float64
+        mut self, c: RenderCommand, images: Dict[Int, _Image], scale: Float64
     ) raises:
         if c.image not in images:
             return
@@ -635,7 +635,7 @@ struct GLRenderer(Movable):
             return self.textures[id]
         # Uploading rebinds unit 1 itself, ahead of `_bind`'s own check — so
         # whatever the batch so far is sampling from unit 1 must be flushed
-        # here, or it silently gets drawn under this new texture instead.
+        # here, or it silently gets rendered under this new texture instead.
         self._flush()
         ref img = images[id]
         var name = _gen_object(self.gl.gen_textures)
@@ -689,7 +689,7 @@ struct GLRenderer(Movable):
         self.vertices.quad(0.0, 0.0, w, 0.0, w, h, 0.0, h, color)
 
     def _flush(mut self) raises:
-        """Upload what has accumulated and draw it as one batch.
+        """Upload what has accumulated and render it as one batch.
 
         One `glBufferData` per batch rather than an orphan followed by a
         `glBufferSubData`: respecifying the whole store *is* the orphan, so

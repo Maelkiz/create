@@ -91,7 +91,7 @@ struct App(Program):
         frame.background(Color(18, 18, 24))
 
         # Tracks first, while outline is still enabled — the dots below turn it
-        # off and a line drawn after that would not appear.
+        # off and a line rendered after that would not appear.
         frame.outline(Color(44, 44, 58), thickness=3)
         frame.line((-420.0, 300.0), (420.0, 300.0))
         for i in range(len(self.curves)):

@@ -1,4 +1,4 @@
-"""Which renderer replays a frame's `DrawCommand`s.
+"""Which renderer replays a frame's `RenderCommand`s.
 
 A selector with a type of its own: `Backend.kind` and the `backend`
 parameter of `run`/`run_headless` are all `RenderBackend`, compared with `==`,

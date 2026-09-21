@@ -16,7 +16,7 @@ struct Input(Copyable, Movable):
     A field on `Frame` rather than a parameter of its own, alongside `time`
     and for the same reason: both are per-frame readings the loop takes, and
     reaching them the same way is one thing less to remember. It costs the
-    checkable one-way flow a parameter gave — `frame` is `mut` for every draw
+    checkable one-way flow a parameter gave — `frame` is `mut` for every render
     call, so `frame.input` is writable too, exactly as `frame.time` is — and
     buys a sketch that reads neither naming neither. The copy is the
     consolation: the loop owns the `Input` that persists across frames, this

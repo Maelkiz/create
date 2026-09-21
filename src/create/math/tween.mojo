@@ -52,7 +52,7 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable):
     var progress: Float64
     """How far through the duration, 0 to 1, *before* easing.
 
-    The raw time fraction, so it is what a progress bar wants to draw -- and
+    The raw time fraction, so it is what a progress bar wants to render -- and
     what `value` is derived from. While ping-ponging it runs back down to 0.
     """
 

@@ -10,7 +10,7 @@ trait Program(Deinitable, Movable):
     a frame it may not write to and no input at all, which is what forced a
     program to smuggle a decision from one into the other through a field —
     reading a key in `update` to file a screenshot in `render`, or caching a
-    framerate reading to draw it. Deciding and drawing are the same frame's
+    framerate reading to render it. Deciding and rendering are the same frame's
     work, so they are the same method's.
 
     There are no event callbacks. Input arrives on the frame, as
@@ -30,7 +30,7 @@ trait Program(Deinitable, Movable):
 
         No `Frame`: there is no frame yet, and one handed over here could only
         be a frame nothing presents. So the dials are all `create` is given,
-        and a draw call it cannot make is a draw call that cannot silently go
+        and a render call it cannot make is a render call that cannot silently go
         nowhere. Geometry is not readable here either, which is deliberate —
         a window does not report its real size until it has been shown (see
         Gotcha 3), so a layout measured here would be measured against a lie.
@@ -38,11 +38,11 @@ trait Program(Deinitable, Movable):
         ...
 
     def update(mut self, mut options: Options, mut frame: Frame) raises:
-        """Advance the program by one frame, and draw it.
+        """Advance the program by one frame, and render it.
 
         Two parameters, two lifetimes. `options` outlives the frame and is
         written for the *next* one — the autoscale mode, the clear, `quit()`.
-        `frame` is this frame alone: it is built fresh, drawn on, and dropped
+        `frame` is this frame alone: it is built fresh, rendered on, and dropped
         before presentation, so it must not be stored anywhere. Keyboard and
         mouse are `frame.input`, alongside `frame.time`, so a sketch that
         reads neither names neither.

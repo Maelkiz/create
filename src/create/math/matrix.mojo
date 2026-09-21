@@ -110,7 +110,7 @@ def perspective(
     fov: Float64, aspect: Float64, near: Float64, far: Float64
 ) -> Matrix[4, 4]:
     """A 3D projection: vertical field of view in radians, width/height aspect,
-    and the near and far clip distances. `Frame` draws in 2D, so this is for a
+    and the near and far clip distances. `Frame` renders in 2D, so this is for a
     program doing its own 3D projection before it hands over coordinates."""
     var m = Matrix[4, 4]()
     var f = 1.0 / tan(fov / 2.0)

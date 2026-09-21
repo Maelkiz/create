@@ -48,7 +48,7 @@ struct PlacedGlyph(Copyable, Movable):
 
 
 struct TextRenderer(Movable):
-    """Font ownership and glyph layout, kept out of the drawing surface.
+    """Font ownership and glyph layout, kept out of the rendering surface.
 
     Holds the loaded faces, so it is the other half of what has to survive a
     frame: reloading a font every frame would be absurd. Lays a string out in
@@ -86,10 +86,10 @@ struct TextRenderer(Movable):
     def _ensure_font(mut self, size: Int) raises:
         """Lazily load the packaged default/fallback fonts on first use.
 
-        Construction never touches disk — a program that draws no text pays no
+        Construction never touches disk — a program that renders no text pays no
         freetype cost and can't fail on a missing default. The fallback load is
         attempted at most once; a missing fallback file just means no fallback
-        glyphs, not a draw failure.
+        glyphs, not a render failure.
         """
         if len(self._font) == 0:
             self._font.append(Font(FONT_DEFAULT_PATH, size))
@@ -116,7 +116,7 @@ struct TextRenderer(Movable):
         Every FreeType call in the text path is behind this miss: rasterising a
         glyph costs an `FT_Load_Char` and an `FT_Render_Glyph` over the C ABI,
         and choosing the face costs an `FT_Get_Char_Index` on top. Laying a
-        string out reads each glyph twice — once to measure, once to draw — so
+        string out reads each glyph twice — once to measure, once to render — so
         uncached, a static line of text paid all three per character per frame.
 
         The mask is alpha only and the pen advance is a number, so nothing here
@@ -147,7 +147,7 @@ struct TextRenderer(Movable):
         to a `Dict` value across a function boundary (Gotcha 4). That is
         affordable only because the one caller — the GL atlas — reads a glyph
         exactly once, on upload; the CPU blit still reads it by reference from
-        inside `draw`.
+        inside `render`.
         """
         return self._glyphs[key].pixels.copy()
 
@@ -178,17 +178,17 @@ struct TextRenderer(Movable):
             var key = self._ensure_glyph(Int(cp), size, weight)
             tw += self._glyphs[key].advance_x
 
-        var draw_x = Int(tx)
-        var draw_y = Int(ty)
+        var pen_x = Int(tx)
+        var pen_y = Int(ty)
         var align = style.text_align
         if align._right():
-            draw_x -= tw
+            pen_x -= tw
         elif not align._left():
-            draw_x -= tw // 2
+            pen_x -= tw // 2
 
         var asc = self._font[0].ascender
         var desc = self._font[0].descender
-        var baseline_y = draw_y
+        var baseline_y = pen_y
         if align._top():
             baseline_y += asc
         elif align._bottom():
@@ -197,7 +197,7 @@ struct TextRenderer(Movable):
             baseline_y += (asc + desc) // 2
 
         var placed = List[PlacedGlyph]()
-        var cx = draw_x
+        var cx = pen_x
         for cp in s.codepoints():
             # Bound by reference: the mask stays in the cache rather than
             # being copied out of it once per character.
@@ -215,7 +215,7 @@ struct TextRenderer(Movable):
             cx += g.advance_x
         return placed^
 
-    def draw[
+    def render[
         o: Origin[mut=True]
     ](
         mut self,

@@ -3,7 +3,7 @@ interactive graphics.
 
 `from create import *` is the import a program needs. It brings in the whole
 public surface: the `Program` trait and the run loops, `Options`, `Frame` and the
-drawing types, the vector and matrix maths, sprites, audio, and a re-export of
+rendering types, the vector and matrix maths, sprites, audio, and a re-export of
 `std.math` so `sin`, `cos` and `pi` are there without a second import.
 
 ```mojo
@@ -29,7 +29,7 @@ def main() raises:
 ```
 
 The subpackages stay importable on their own — `from create.render import *`
-gives the drawing stack with no run loop, which is what `run_headless` is built
+gives the rendering stack with no run loop, which is what `run_headless` is built
 on — so this module is a convenience, not a layer.
 
 **What this module re-exports is the union of the subpackages.** Each of them

@@ -1,4 +1,4 @@
-"""One shape kind at a time, drawn on both backends, compared structurally.
+"""One shape kind at a time, rendered on both backends, compared structurally.
 
 The CPU replay is the reference implementation — every geometry decision the
 GL path makes exists to agree with it — and `tests/render/test_tessellate.mojo`
@@ -71,7 +71,7 @@ moves."""
 
 comptime _BACKGROUND = Color(0x20, 0x30, 0x40)
 comptime _INK_THRESHOLD = 8
-"""How far from the background a pixel has to be to count as drawn on."""
+"""How far from the background a pixel has to be to count as rendered on."""
 
 comptime _BBOX_TOLERANCE = 2
 """Pixels either edge of a shape's bounding box may differ by. Sized for the
@@ -87,7 +87,7 @@ comptime _INTERIOR_MARGIN = 3
 """Pixels a candidate must stay clear of any ink/background disagreement.
 1 was enough while every shape's edges were straight, but a rounded
 corner's fill/outline boundary is itself a curve, and the GPU tessellator
-draws it as a fan of straight segments rather than the CPU rasteriser's
+renders it as a fan of straight segments rather than the CPU rasteriser's
 exact circle test — the same kind of disagreement the outer edge is
 already allowed, just one pixel wider where two colours meet on an arc."""
 
@@ -214,7 +214,7 @@ def _mask(pixels: List[UInt8]) -> List[Bool]:
     """Which pixels are not the background, restricted to the content rect.
 
     Outside it is the letterbox, painted the same fixed colour by both
-    backends regardless of what `_Parity` draws — never ink, so a shape can
+    backends regardless of what `_Parity` renders — never ink, so a shape can
     never be found out there.
     """
     var m = List[Bool](length=_PIXEL_W * _PIXEL_H, fill=False)
@@ -459,7 +459,7 @@ def _gpu_frame(mut win: GLWindow, shape: Int) raises -> List[UInt8]:
 def test_the_gl_backend_matches_the_cpu_backend() raises -> None:
     var win: GLWindow
     try:
-        # Tiny and never drawn into: the frame goes to an FBO, and this exists
+        # Tiny and never rendered into: the frame goes to an FBO, and this exists
         # only because a GL context needs a window to belong to.
         win = GLWindow("parity", 64, 64)
     except e:

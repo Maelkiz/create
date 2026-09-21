@@ -36,7 +36,7 @@ from ._style import Style
 
 
 struct PersistentFrameState(Movable):
-    """The part of a `Frame` that outlives the frame it was drawn in.
+    """The part of a `Frame` that outlives the frame it was rendered in.
 
     A `Frame` is built fresh each frame, so anything it must remember between
     frames — the backend, and through it the loaded fonts, the glyph cache and
@@ -155,9 +155,9 @@ struct StyleGuard[origin: Origin[mut=True]](Movable):
 
 
 struct Frame:
-    """One frame: the geometry, the clock and the drawing API.
+    """One frame: the geometry, the clock and the rendering API.
 
-    This is the object a program is handed to draw a frame with. `width`/`height`
+    This is the object a program is handed to render a frame with. `width`/`height`
     are the screen extent and `left`/`right`/`bottom`/`top` its edges — use
     those rather than width arithmetic, since the origin is centred and two of
     them are negative. `time` is the frame clock, `input` this frame's keyboard
@@ -166,7 +166,7 @@ struct Frame:
     `Camera` exists, since a program sets one on the frame's transform, not on
     the geometry it reports.
 
-    A `mut` parameter because the program draws on it, and the recording it
+    A `mut` parameter because the program renders on it, and the recording it
     appends to is the frame's whole output. What it does *not* carry is a
     setting: everything that outlives a frame is in `Options`, handed to
     `update` beside it. A `Frame` that carried a dial would be offering to
@@ -190,7 +190,7 @@ struct Frame:
     extent is only used for coordinate arithmetic, and the replay clips against
     the real surface it is handed.
 
-    A draw call touches no pixels: it appends a `DrawCommand` to the backend's
+    A render call touches no pixels: it appends a `RenderCommand` to the backend's
     recording, and the backend replays the whole frame afterwards. So a
     `Frame` is a recorder, and the geometry it records is *local* — the shape
     as the program asked for it, paired with the current transform — never
@@ -222,7 +222,7 @@ struct Frame:
     """
     var _letterbox: Color
     """This frame's bar colour, snapshotted from `Options` at construction —
-    the frame is drawn under one set of dials, whatever `update` does to them
+    the frame is rendered under one set of dials, whatever `update` does to them
     for the next."""
     var _state: PersistentFrameState
     # Style is per-frame, not carried in `_state`: `Frame` is only reachable
@@ -237,7 +237,7 @@ struct Frame:
     var _camera: Camera
     # `_user` is the composition of the matrices the program pushed, mapping
     # local coordinates to world. `_base` maps screen to pixels, `_camera`
-    # world to screen. Drawing uses the full product; `to_world`/`to_local`
+    # world to screen. Rendering uses the full product; `to_world`/`to_local`
     # use `_user` alone, so a program never sees the mapping below world space
     # it did not ask for.
     var _user: Matrix[3, 3]
@@ -255,7 +255,7 @@ struct Frame:
         """Adopt the carried-over state, and this frame's mapping, dials and
         input.
 
-        `options` is read here and not held: the frame is drawn under the
+        `options` is read here and not held: the frame is rendered under the
         dials as they stood when it began, so a program turning one mid-frame
         changes the next frame rather than this one halfway through. `input`
         is copied for the same reason — the loop owns the real one across
@@ -326,10 +326,10 @@ struct Frame:
     def top(self) -> Float64:
         return self.view.top()
 
-    def _draw_letterbox(mut self):
+    def _render_letterbox(mut self):
         """Record the window area outside the design bounds.
 
-        Runs after render, so it doubles as the clip for anything drawn past
+        Runs after render, so it doubles as the clip for anything rendered past
         the edges of the design area. Nothing to do under `AutoScale.EXTEND`:
         the design covers the whole frame, so there is neither a bar to paint
         nor an out-of-bounds region to clip — and rounding the extended size
@@ -358,7 +358,7 @@ struct Frame:
     # the replay needs them now — see `_backend.mojo`.
 
     def transform(mut self, m: Matrix[3, 3]) -> TransformGuard[origin_of(self)]:
-        """Apply `m` to everything drawn inside a `with` block.
+        """Apply `m` to everything rendered inside a `with` block.
 
         ```mojo
         with frame.transform(translate(50.0, 50.0)):
@@ -367,7 +367,7 @@ struct Frame:
 
         The matrix pops on exit, including on an early return or a raise.
         `_push_transform` is the same push without that guarantee -- a missed
-        pop shifts every later draw in the frame, so go through here.
+        pop shifts every later render in the frame, so go through here.
         """
         self._push_transform(m)
         return TransformGuard[origin_of(self)](self)
@@ -375,9 +375,9 @@ struct Frame:
     def style(mut self) -> StyleGuard[origin_of(self)]:
         """Scope the fill, outline and font settings to a `with` block.
 
-        For helpers that set style before drawing: without this, a callee's
+        For helpers that set style before rendering: without this, a callee's
         `outline(enabled=False)` silently applies to whatever the caller
-        draws next.
+        renders next.
         """
         return StyleGuard[origin_of(self)](self)
 
@@ -412,7 +412,7 @@ struct Frame:
         return mat_apply(self._user_inv, x, y)
 
     def camera(mut self, cam: Camera):
-        """Set the active camera. Applies to every draw call and every nested
+        """Set the active camera. Applies to every render call and every nested
         `transform()` from here on, until changed again or `frame.overlay()`
         suspends it — and resets to identity next frame, like the rest of the
         transform state.
@@ -429,7 +429,7 @@ struct Frame:
 
     def overlay(mut self) -> OverlayGuard[origin_of(self)]:
         """Suspend the camera and any active transform for a `with` block, so
-        what's drawn inside lands in screen space regardless of where the
+        what's rendered inside lands in screen space regardless of where the
         camera looks — for a HUD or other UI that must stay put.
 
         Pops back to whatever camera and transform were active on exit,
@@ -456,7 +456,7 @@ struct Frame:
     ):
         """Outline shapes. `color`/`thickness` left unset keep their current
         values — a plain `outline()` only re-enables it. Worth knowing outline
-        is *on* by default, in black, 1 unit thick — a `rectangle` drawn
+        is *on* by default, in black, 1 unit thick — a `rectangle` rendered
         without `outline(enabled=False)` gets one nobody asked for.
 
         Thickness is in world units, scaled by autoscale like every other
@@ -472,7 +472,7 @@ struct Frame:
         """Paint the whole framebuffer — the usual first call in `update`.
 
         A translucent color blends instead of clearing, which is how motion
-        trails are drawn: `frame.background(Color(0x11, 0x11, 0x11, 24))`
+        trails are rendered: `frame.background(Color(0x11, 0x11, 0x11, 24))`
         fades the previous frame a little further each time. Trails need
         `options.autoclear = False` set in `create`, or the frame's own clear wipes
         what they were fading.
@@ -493,7 +493,7 @@ struct Frame:
         """Save this frame as a PNG at the design resolution, times `scale`.
 
         Window-independent by construction: the size of the file is the space
-        the program draws in, never the size of the window, and the letterbox
+        the program renders in, never the size of the window, and the letterbox
         bars are absent because they belong to a window this image is not of.
         The same call under either backend produces the same image — the
         capture is rasterised on the CPU from the recorded commands, so the
@@ -502,7 +502,7 @@ struct Frame:
         what the user actually saw.
 
         `transparent` drops the frame's `background`, leaving alpha 0 wherever
-        nothing was drawn. `scale` multiplies the output resolution, so
+        nothing was rendered. `scale` multiplies the output resolution, so
         `scale=2.0` gives a 2x export of the identical layout.
 
         Deferred, not immediate: the file is written when the frame is
@@ -540,7 +540,7 @@ struct Frame:
         """Save this frame as a PNG at the framebuffer's own resolution.
 
         The complement of `save_image`: this answers what the user *saw*, so
-        it is the size of the drawable, letterbox bars included, drawn by
+        it is the size of the drawable, letterbox bars included, rendered by
         whichever rasteriser actually drew the frame. That makes it
         deliberately machine-dependent — window size, HiDPI scaling and any
         driver antialiasing are all in it, and two machines will not produce
@@ -563,7 +563,7 @@ struct Frame:
         )
 
     def line(mut self, x0: Float64, y0: Float64, x1: Float64, y1: Float64):
-        # Recorded only when it would draw: an outline-less line is the one
+        # Recorded only when it would render: an outline-less line is the one
         # shape with nothing left to paint, so the command would be pure
         # overhead.
         if not self._style.outline_enabled:
@@ -642,7 +642,7 @@ struct Frame:
         self.sprite(s, Float64(cx), Float64(cy))
 
     def sprite(mut self, s: Sprite, cx: Float64, cy: Float64):
-        """Draw `s` at its own pixel size.
+        """Render `s` at its own pixel size.
 
         The same command as the sized overload: at a pixel scale of 1 the two
         agree exactly, and the one-sprite-pixel-per-framebuffer-pixel shortcut
@@ -684,7 +684,7 @@ struct Frame:
         self.sprite(s, pos.x, pos.y, w, h)
 
     def sprite(mut self, a: SpriteAnimator, cx: Float64, cy: Float64):
-        """Draw the animator's current frame, centred at (cx, cy).
+        """Render the animator's current frame, centred at (cx, cy).
 
         The frame is indexed here rather than handed back by an accessor on
         `SpriteAnimator`: a `List` element's origin is not spellable from user
@@ -715,7 +715,7 @@ struct Frame:
     def corner_radius(mut self, radius: Int):
         """Round the corners of rectangles and triangles, in world units,
         scaled by autoscale like every other coordinate. A radius wider than
-        a shape permits is clamped down at draw time so corners never
+        a shape permits is clamped down at render time so corners never
         self-intersect."""
         self._style.corner_radius = radius
 
@@ -736,10 +736,10 @@ struct Frame:
 
     def opacity(mut self, value: Float64):
         """Multiply the alpha of fill, outline and text color for whatever is
-        drawn next. `1.0` (the default) leaves colors untouched; `0.0` draws
+        rendered next. `1.0` (the default) leaves colors untouched; `0.0` renders
         nothing visible. Resolved into the color at record time, like every
         other style setting — it cannot reach back and fade what was already
-        drawn."""
+        rendered."""
         self._style.opacity = value
 
     def text_align(mut self, align: Align):

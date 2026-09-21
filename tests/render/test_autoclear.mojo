@@ -1,7 +1,7 @@
 """The per-frame clear: its default, its opt-out, and its coalescing.
 
 `autoclear` records a `CMD_CLEAR` at the head of every frame, so an unstyled
-sketch draws onto a light surface rather than onto whatever the framebuffer
+sketch renders onto a light surface rather than onto whatever the framebuffer
 happened to hold. Turning it off is what a program that accumulates ink across
 frames does, and an opaque `background()` replaces the clear rather than
 stacking a second full-framebuffer paint on it.
@@ -14,12 +14,12 @@ from create.render.frame import Frame, PersistentFrameState
 
 
 @fieldwise_init
-struct DrawsNothing(Program):
+struct RendersNothing(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> DrawsNothing:
-        return DrawsNothing(0)
+    def create(mut options: Options) raises -> RendersNothing:
+        return RendersNothing(0)
 
     def update(mut self, mut options: Options, mut frame: Frame) raises:
         pass
@@ -69,7 +69,7 @@ struct OwnBackground(Program):
 
 
 def test_a_frame_starts_cleared_to_the_default_gray() raises -> None:
-    var m = run_headless[DrawsNothing](200, 100)
+    var m = run_headless[RendersNothing](200, 100)
     assert_equal(m.pixel(100, 50), Color(200))
 
 
@@ -79,7 +79,7 @@ def test_autoclear_off_leaves_the_buffer_untouched() raises -> None:
 
 
 def test_autoclear_off_lets_ink_survive_later_frames() raises -> None:
-    # Drawn on frame 1 only; with no clear it is still there four frames on.
+    # Rendered on frame 1 only; with no clear it is still there four frames on.
     var m = run_headless[InkOnFirstFrameOnly](200, 100, frames=5)
     assert_equal(m.pixel(100, 50), Color.RED)
 

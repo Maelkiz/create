@@ -1,4 +1,4 @@
-"""`DrawCommand`s to device-space triangles, with no GL in sight.
+"""`RenderCommand`s to device-space triangles, with no GL in sight.
 
 The GL backend's geometry is decided here rather than in `_gl_backend.mojo` so
 that it is testable without a context, a window or a GPU: everything below is
@@ -28,7 +28,7 @@ from std.math import abs, ceil, cos, max, min, sin, sqrt, pi
 
 from create.math.matrix import Matrix, apply as mat_apply
 
-from ._command import DrawCommand
+from ._command import RenderCommand
 from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
 from ._transform import pixel_scale, outline_thickness_px
 from .color import Color
@@ -316,7 +316,7 @@ def _rounded_rect_ring(
     _corner_ring_fan(vb, m, x0 + r, y1 - r, r, inner_r, pi / 2.0, n, color)
 
 
-def emit_rect(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
+def emit_rect(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
     """Fill quad plus, when outlined, a four-quad ring inset from the edge.
 
     Rounded corners need no uniform/non-uniform split like
@@ -413,7 +413,7 @@ def emit_rect(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     )
 
 
-def emit_circle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
+def emit_circle(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
     """A fan for the fill and a ring of quads for the outline.
 
     Both are generated in local space and mapped per vertex, so a non-uniform
@@ -432,7 +432,7 @@ def emit_circle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
     var inner = r - Float64(outline_thickness_px(c.style, m, scale)) / sf
     var outlined = c.style.outline_visible() and inner > 0.0
     # Matching the CPU replay: with a outline at least as wide as the radius,
-    # a fill wins the whole disc and no ring is drawn at all.
+    # a fill wins the whole disc and no ring is rendered at all.
     var solid_all = c.style.outline_visible() and inner <= 0.0
     var fill_r = inner if outlined else r
     var fill_c = c.style.fill_color
@@ -474,7 +474,7 @@ def emit_circle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
             )
 
 
-def emit_line(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
+def emit_line(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
     """One quad. A line has no interior, so `fill` never applies."""
     if not c.style.outline_visible():
         return
@@ -498,7 +498,7 @@ def _fillet_arc_span(
     ]
 ) -> Float64:
     """The signed sweep from a fillet's `angle_in` to its `angle_out`,
-    normalised to `[-pi, pi]` — matches `_backend.mojo::_draw_fillet_arc`'s
+    normalised to `[-pi, pi]` — matches `_backend.mojo::_render_fillet_arc`'s
     own normalisation so the two backends walk the identical arc."""
     var delta = f[7] - f[6]
     if delta > pi:
@@ -531,7 +531,7 @@ def _rounded_triangle_fill(
     discs) decomposition `_backend.mojo::_triangle`'s uniform branch uses,
     cheap here because every vertex is mapped individually anyway. Full
     size, not inset — the fill is unaffected by whether an outline is
-    drawn, exactly as the unrounded triangle's own fill is."""
+    rendered, exactly as the unrounded triangle's own fill is."""
     var centre = mat_apply(m, cx, cy)
     var tx0 = f0[2]
     var ty0 = f0[3]
@@ -615,7 +615,7 @@ def _rounded_triangle_corner_outline(
     color: Color,
 ):
     """One rounded corner's outline arc as a fan of thick segments between
-    mapped arc samples, mirroring `_backend.mojo::_draw_fillet_arc_mapped`'s
+    mapped arc samples, mirroring `_backend.mojo::_render_fillet_arc_mapped`'s
     centred device-space band exactly — not a filled sector, so it matches
     the straight edge bands' own convention rather than the rounded rect's
     inset ring."""
@@ -633,7 +633,7 @@ def _rounded_triangle_corner_outline(
         prev = cur
 
 
-def emit_triangle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
+def emit_triangle(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
     """The mapped triangle, plus a quad per edge when outlined.
 
     The outline is three edge quads rather than an inset triangle, matching the
@@ -711,7 +711,7 @@ def emit_triangle(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
 
 
 def emit_letterbox(
-    mut vb: VertexBuffer, c: DrawCommand, width: Int, height: Int
+    mut vb: VertexBuffer, c: RenderCommand, width: Int, height: Int
 ):
     """The bars outside the device content rect — the one untransformed kind.
 
@@ -737,7 +737,7 @@ def emit_letterbox(
         vb.quad(cx1, cy0, w, cy0, w, cy1, cx1, cy1, col)
 
 
-def emit_sprite(mut vb: VertexBuffer, c: DrawCommand, scale: Float64):
+def emit_sprite(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
     """One textured quad, axis-aligned in device space.
 
     Deliberately not a `_mapped_quad`: the CPU replay maps the anchor and then

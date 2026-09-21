@@ -1,4 +1,4 @@
-"""The five solid command kinds, drawn on the GPU backend.
+"""The five solid command kinds, rendered on the GPU backend.
 
 The visual comparison target for the CPU path: run this, then drop the
 `backend=RenderBackend.GPU` argument, and the two frames should be indistinguishable
@@ -93,7 +93,7 @@ struct App(Program):
             frame.triangle((-140, -180), (40, -180), (-50, -30))
 
         # The same image at two sizes: one texture, one upload, and — since
-        # the two draws are adjacent — one extra batch for the pair.
+        # the two renders are adjacent — one extra batch for the pair.
         # Text before the sprites: solids and glyphs share the atlas binding
         # and so share one batch, which the sprite texture then breaks.
         with frame.style():

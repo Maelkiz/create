@@ -1,4 +1,4 @@
-# GPU-only coverage the CPU-vs-GPU parity test cannot reach, because it draws
+# GPU-only coverage the CPU-vs-GPU parity test cannot reach, because it renders
 # one shape kind per frame by design: a batch breaks on an opaque clear, on a
 # second distinct sprite texture, and at the end of the frame, and none of
 # those three are exercised by a single shape. Every case runs through the
@@ -155,7 +155,7 @@ def _gpu_frame[
 def test_gl_batching_behaviours() raises -> None:
     var win: GLWindow
     try:
-        # Tiny and never drawn into: every frame lands in an FBO, and this
+        # Tiny and never rendered into: every frame lands in an FBO, and this
         # exists only because a GL context needs a window to belong to.
         win = GLWindow("gl_batching", 64, 64)
     except e:
@@ -168,12 +168,12 @@ def test_gl_batching_behaviours() raises -> None:
     assert_equal(
         clear_mid_frame.pixel(32, 32),
         Color.RED,
-        "clear mid-frame: earlier draw leaked through",
+        "clear mid-frame: earlier render leaked through",
     )
     assert_equal(
         clear_mid_frame.pixel(42, 22),
         Color.GREEN,
-        "clear mid-frame: later draw missing",
+        "clear mid-frame: later render missing",
     )
 
     # Case 2: a second distinct sprite texture in one frame forces a batch

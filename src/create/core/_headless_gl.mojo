@@ -30,7 +30,7 @@ comptime _HEADLESS_MSAA_SAMPLES = 4
 
 
 def _open_headless_window(msaa: Bool) raises -> GLWindow:
-    """Tiny and never drawn into — the frame lands in the `_GLTarget` FBO,
+    """Tiny and never rendered into — the frame lands in the `_GLTarget` FBO,
     and this exists only because a GL context needs a window to belong to.
 
     This is what raises when there is no GL context at all.

@@ -8,7 +8,7 @@ paths need it and the GL one cannot import the CPU one: `_backend` reaches
 
 
 struct _Image(Movable):
-    """Interned on the first draw of a given sprite and kept until the cache
+    """Interned on the first render of a given sprite and kept until the cache
     is dropped, so the command buffer carries an id rather than a borrow of
     program-owned memory. The GL backend keys its textures by the same id.
     """

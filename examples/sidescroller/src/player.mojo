@@ -53,9 +53,9 @@ struct Player:
         else:
             self.on_ground = False
 
-    def draw(self, mut frame: Frame) raises:
+    def render(self, mut frame: Frame) raises:
         # Scoped, because this is a callee: without the guard the caller's
-        # next draw would silently inherit this fill and outline(enabled=False).
+        # next render would silently inherit this fill and outline(enabled=False).
         with frame.style():
             frame.fill(Color(220, 80, 80))
             frame.outline(enabled=False)

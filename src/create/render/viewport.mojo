@@ -10,7 +10,7 @@ from .autoscale import AutoScale
 struct Viewport(Copyable, Movable):
     """The design-space mapping: how world coordinates land on the framebuffer.
 
-    One home for the geometry `Frame` reports and draws through, so the two
+    One home for the geometry `Frame` reports and renders through, so the two
     cannot drift. Owns no window and no pixels — it is pure arithmetic over a
     framebuffer size, which is what makes it unit-testable on its own.
     """
