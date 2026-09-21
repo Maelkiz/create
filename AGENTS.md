@@ -296,7 +296,7 @@ give heterogeneous storage, so a scene *stack* (pause over game, modal dialogs) 
 is ever needed. It buys storage only: dispatch is still a branch at each use site, `s.isa[Menu]()`
 in place of `self.scene == MENU`. One active scene needs no stack, so the fields stay plain.
 
-**A render call records; it never paints.** `frame.rectangle(...)`, `.circle(...)`, `.sprite(...)`,
+**A `Frame` render call records; it never paints.** `frame.rectangle(...)`, `.circle(...)`, `.sprite(...)`,
 `.text(...)` and the rest each build a [`RenderCommand`](src/create/render/_command.mojo) — local
 geometry, the transform in effect, and the style resolved *now* — and append it to the `Backend`'s
 recording. Nothing is rasterised until `Backend.present` replays the whole buffer at the end of the
