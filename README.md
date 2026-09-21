@@ -1,11 +1,18 @@
-# Mojo Create
+<p align="center">
+    <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo/logo-dark.png">
+    <img src="assets/logo/logo-light.png" width="128" alt="Create Logo">
+    </picture>
+</p>
 
-**Mojo Create** is a creative coding library for rapid prototyping and 
-interactive graphics, inspired by Processing but built to scale — from sketch to 
-game, prototype to full application. It provides a clean, modular API while 
-taking full advantage of Mojo's performance and language features.
+<h1 align="center">Mojo Create</h1>
 
-> Early development, no stable API until the first public release.
+> **Note:** API will be unstable until the first public release.
+
+---
+
+**Mojo Create** is a creative coding library for rapid prototyping and interactive graphics, inspired by Processing but built to scale — 
+from sketch to game, prototype to full application. It provides a clean, modular API while taking full advantage of Mojo's performance and language features.
 
 ## The shape of a program
 
@@ -30,24 +37,14 @@ def main() raises:
     run[MyApp]("Example Sketch", WindowMode.FULLSCREEN)
 ```
 
-`mode` comes right after the title because `WindowMode.FULLSCREEN` names itself; `width`/`height`
-are keyword arguments because two bare integers do not.
-
-`run`'s `width`/`height` (default 1280x720) are the resolution the program is *authored* in, not a
-window size: a windowed launch opens at that size because the two coincide, while a fullscreen one
-covers the display and scales the design onto it. `options.design_resolution(w, h)` pins the same space from
-inside `create`, and `options.autoscale = AutoScale.OFF` opts out of the design space entirely, making
-coordinates the window's own pixels.
-
-Rendering runs on the CPU by default. `backend=RenderBackend.GPU` runs the same program through an
-OpenGL 3.3 backend instead — no other change to the program:
+Rendering runs on the CPU by default. `backend=RenderBackend.GPU` runs the same program through an OpenGL 3.3 backend instead:
 
 ```mojo
 run[MyApp]("Example Sketch", backend=RenderBackend.GPU)
 ```
 
-Run the example programs with the `example` pixi task, which takes a name rather
-than a path — a file under `examples/`, or a folder whose `src/main.mojo` it finds:
+The example programs in this repository can be run with the `example` pixi task, which takes a name rather than a path. 
+The name must correspond to a file or folder under `examples/`. For folders it will find an run their `src/main.mojo`.
 
 ```bash
 pixi run example sketch          # examples/sketch.mojo
