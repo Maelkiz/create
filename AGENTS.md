@@ -155,8 +155,13 @@ def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
 ```
 
-A file reports PASS/FAIL per test and exits non-zero if any failed. `pixi run test` runs under
-`set -e`, so the first failing *file* stops the suite — but within a file every test still runs.
+A file reports PASS/FAIL per test and exits non-zero if any failed. `pixi run test`
+([scripts/test.sh](scripts/test.sh)) runs the files concurrently — one `nproc`-capped worker pool,
+`pixi run test 4` to pin the width — so every file runs whatever the others do, and the suite exits
+non-zero at the end if any failed. Each file's output is buffered and printed in full only when that
+file fails; a passing file contributes one `PASS <path>` line, since a dozen interleaved PASS streams
+are unreadable. Files are safe to run concurrently because each is its own process and every scratch
+path under `/tmp` is namespaced per file — keep it that way when adding one that writes.
 
 Rendering is tested for real. [`run_headless`](src/create/core/headless.mojo) drives a program over
 an owned `MemorySurface` and hands the buffer back; `MemorySurface.pixel(x, y)` reads one pixel out.
