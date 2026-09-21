@@ -48,7 +48,7 @@ struct Bench(Program):
         options.autoscale = AutoScale.OFF
         return Bench(
             0.0,
-            Sprite.load(script_dir() + "/sprite/assets/sprite.png"),
+            Sprite.load(script_dir() + "/../assets/logo/logo-cutout.png"),
             0,
             0.0,
             0.0,
@@ -76,7 +76,7 @@ struct Bench(Program):
             self.elapsed = 0.0
             self.worst = 0.0
 
-        frame.background(Color(0x10, 0x12, 0x18))
+        frame.background(Color.WHITE)
 
         # One generator re-seeded every frame, so the layout is identical from
         # frame to frame and the two backends draw the same sketch — only the
@@ -114,13 +114,11 @@ struct Bench(Program):
 
         with frame.style():
             frame.outline(enabled=False)
-            frame.text_color(Color.WHITE)
-            frame.font_size(22)
-            frame.text_align(Align.TOP_LEFT)
+            frame.font_size(48)
+            frame.font_weight(FontWeight.MEDIUM)
+            frame.text_align(Align.CENTER)
             frame.text(
-                String(_SHAPES) + " shapes, two sprites, this line",
-                frame.left() + 16,
-                frame.top() - 16,
+                String(_SHAPES) + " shapes, two sprites, this text", 0, 0
             )
 
 
