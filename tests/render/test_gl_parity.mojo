@@ -131,7 +131,7 @@ def _shape_name(shape: Int) -> String:
 struct _Parity(Program):
     """One command kind the GL backend implements, picked by `shape`."""
 
-    var logo: Sprite
+    var image: Sprite
     var shape: Int
 
     @staticmethod
@@ -173,7 +173,7 @@ struct _Parity(Program):
         elif self.shape == _SHAPE_SPRITE:
             # Native size: at a scale of 1 neither backend resamples, so this
             # is testing the blit, not the filter.
-            frame.sprite(self.logo, 70, 50, 2, 2)
+            frame.sprite(self.image, 70, 50, 2, 2)
         elif self.shape == _SHAPE_TEXT:
             with frame.style():
                 frame.outline(enabled=False)
