@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="assets/logo/png/logo-cutout.png" width="256" alt="Create Logo">
+    <img src="assets/logo/png/logo-trim.png" width="200" alt="Create Logo">
 </p>
 
 <h1 align="center">Mojo Create</h1>
