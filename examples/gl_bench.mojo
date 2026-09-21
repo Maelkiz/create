@@ -48,7 +48,7 @@ struct Bench(Program):
         options.autoscale = AutoScale.OFF
         return Bench(
             0.0,
-            Sprite.load(script_dir() + "/../assets/logo/logo-cutout.png"),
+            Sprite.load(script_dir() + "/../assets/logo/png/logo-cutout.png"),
             0,
             0.0,
             0.0,
