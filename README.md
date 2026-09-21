@@ -1,8 +1,5 @@
 <p align="center">
-    <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo/logo-dark.png">
-    <img src="assets/logo/logo-light.png" width="128" alt="Create Logo">
-    </picture>
+    <img src="assets/logo/png/logo-cutout.png" width="256" alt="Create Logo">
 </p>
 
 <h1 align="center">Mojo Create</h1>
