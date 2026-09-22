@@ -14,7 +14,7 @@ def le_uint[o: Origin](p: Pointer[UInt8, o], off: Int, count: Int) -> Int:
     """Read `count` little-endian bytes at `off` as an unsigned integer.
 
     Takes a bare pixel-style pointer rather than a buffer type, for the same
-    reason `raster` does: the caller may hold a `List`, an `InlineArray`, or
+    reason `raster` does: the caller may hold a `List`, an `Array`, or
     memory copied out of a C struct, and none of that matters here.
     """
     var v = 0

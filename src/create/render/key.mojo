@@ -166,10 +166,10 @@ struct _KeyBits(Copyable, Movable):
     all >= 1 << 30, spanning a ~230-wide band) map via an offset into the
     upper half of the same word array."""
 
-    var _words: InlineArray[UInt64, 8]
+    var _words: Array[UInt64, 8]
 
     def __init__(out self):
-        self._words = InlineArray[UInt64, 8](fill=0)
+        self._words = Array[UInt64, 8](fill=0)
 
     def _index(self, keycode: Int) -> Int:
         if keycode >= 1073741824:
@@ -189,4 +189,4 @@ struct _KeyBits(Copyable, Movable):
         return (self._words[i // 64] & (UInt64(1) << UInt64(i % 64))) != 0
 
     def clear_all(mut self):
-        self._words = InlineArray[UInt64, 8](fill=0)
+        self._words = Array[UInt64, 8](fill=0)

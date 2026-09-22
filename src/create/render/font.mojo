@@ -75,7 +75,7 @@ comptime _FT_RENDER_MODE_NORMAL = 0
 
 
 def _read_u32(addr: Int) raises -> Int:
-    var buf = InlineArray[UInt8, 4](fill=0)
+    var buf = Array[UInt8, 4](fill=0)
     _ = _DLHandle("libc.so.6").call["memcpy", Int](buf.unsafe_ptr(), addr, 4)
     return le_uint(buf.unsafe_ptr(), 0, 4)
 
@@ -85,7 +85,7 @@ def _read_i32(addr: Int) raises -> Int:
 
 
 def _read_ptr(addr: Int) raises -> Int:
-    var buf = InlineArray[UInt8, 8](fill=0)
+    var buf = Array[UInt8, 8](fill=0)
     _ = _DLHandle("libc.so.6").call["memcpy", Int](buf.unsafe_ptr(), addr, 8)
     return le_uint(buf.unsafe_ptr(), 0, 8)
 
@@ -145,12 +145,12 @@ struct Font(Movable):
     def __init__(out self, path: String, size: Int, weight: Int = 400) raises:
         var ft = _DLHandle("libfreetype.so.6")
 
-        var lib_buf = InlineArray[UInt8, 8](fill=0)
+        var lib_buf = Array[UInt8, 8](fill=0)
         if ft.call["FT_Init_FreeType", Int32](lib_buf.unsafe_ptr()) != 0:
             raise Error("FT_Init_FreeType failed")
         self._lib = _read_ptr(Int(lib_buf.unsafe_ptr()))
 
-        var face_buf = InlineArray[UInt8, 8](fill=0)
+        var face_buf = Array[UInt8, 8](fill=0)
         if (
             ft.call["FT_New_Face", Int32](
                 self._lib, path.unsafe_ptr(), Int(0), face_buf.unsafe_ptr()
@@ -183,7 +183,7 @@ struct Font(Movable):
         if weight == self._weight:
             return
         var ft = _DLHandle("libfreetype.so.6")
-        var master_buf = InlineArray[UInt8, 8](fill=0)
+        var master_buf = Array[UInt8, 8](fill=0)
         if (
             ft.call["FT_Get_MM_Var", Int32](self._face, master_buf.unsafe_ptr())
             != 0

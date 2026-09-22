@@ -21,7 +21,7 @@ looks like a compiler fault rather than the ordinary mistake it is:
    and the null check that turns a mis-resolved symbol into a named error
    instead of a crash.
 2. **Read a C out-parameter back from heap memory, not a local
-   `InlineArray`.** The write lands either way, but `MutUntrackedOrigin` gives
+   `Array`.** The write lands either way, but `MutUntrackedOrigin` gives
    the optimizer no aliasing information, so a read from a local array can be
    served stale from a register. Use a `List` buffer — as `read_int` does.
 3. **Keep the GL context owner alive past the last GL call.** Destroying a
@@ -399,7 +399,7 @@ struct GL(Movable):
     def read_int(self, name: UInt32) -> Int:
         """One `glGetIntegerv` value, read back through heap memory.
 
-        Rule 2: a local `InlineArray` here can read stale, because
+        Rule 2: a local `Array` here can read stale, because
         `MutUntrackedOrigin` tells the optimizer nothing about the write.
         """
         var buf = List[Int32](length=1, fill=-1)

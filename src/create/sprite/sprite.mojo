@@ -4,8 +4,8 @@ from std.ffi import _DLHandle, _Global
 from create._bytes import le_uint, sign_extend_32
 
 
-def _new_sprite_ids() -> Atomic[DType.int64]:
-    return Atomic[DType.int64](0)
+def _new_sprite_ids() -> Atomic[Int64]:
+    return Atomic[Int64](0)
 
 
 comptime _SPRITE_IDS = _Global["create_sprite_ids", _new_sprite_ids]
@@ -204,7 +204,7 @@ struct Sprite(Movable):
     @staticmethod
     def _load_png(data: List[UInt8]) raises -> Sprite:
         var lib = _DLHandle("libpng16.so")
-        var img = InlineArray[UInt8, 104](fill=0)
+        var img = Array[UInt8, 104](fill=0)
         img[8] = 1  # PNG_IMAGE_VERSION
 
         var ok = lib.call["png_image_begin_read_from_memory", Int](

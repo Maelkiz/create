@@ -37,9 +37,7 @@ def _point_on_segment(
 
 def _project_range[
     N: Int
-](nx: Float64, ny: Float64, pts: InlineArray[Point2D, N]) -> Tuple[
-    Float64, Float64
-]:
+](nx: Float64, ny: Float64, pts: Array[Point2D, N]) -> Tuple[Float64, Float64]:
     var lo = nx * pts[0].x + ny * pts[0].y
     var hi = lo
     for i in range(1, N):
@@ -54,8 +52,8 @@ def _ranges_separate[
 ](
     nx: Float64,
     ny: Float64,
-    a: InlineArray[Point2D, N],
-    b: InlineArray[Point2D, M],
+    a: Array[Point2D, N],
+    b: Array[Point2D, M],
 ) -> Bool:
     var ra = _project_range(nx, ny, a)
     var rb = _project_range(nx, ny, b)
@@ -64,7 +62,7 @@ def _ranges_separate[
 
 def _polygons_overlap[
     N: Int, M: Int
-](a: InlineArray[Point2D, N], b: InlineArray[Point2D, M]) -> Bool:
+](a: Array[Point2D, N], b: Array[Point2D, M]) -> Bool:
     # SAT over both polygons' edge normals -- exact for convex polygons.
     # A zero-length edge contributes no normal, so its axis is skipped; its
     # direction is tested instead (needed to separate collinear degenerate
@@ -226,7 +224,7 @@ struct Rectangle:
     def translate(mut self, delta: Vector2D):
         self.translate(delta.x, delta.y)
 
-    def _points(self) -> InlineArray[Point2D, 4]:
+    def _points(self) -> Array[Point2D, 4]:
         return [
             Point2D(self.left(), self.bottom()),
             Point2D(self.right(), self.bottom()),
@@ -679,7 +677,7 @@ struct Triangle:
     def translate(mut self, delta: Vector2D):
         self.translate(delta.x, delta.y)
 
-    def _points(self) -> InlineArray[Point2D, 3]:
+    def _points(self) -> Array[Point2D, 3]:
         return [
             Point2D(self.x1, self.y1),
             Point2D(self.x2, self.y2),

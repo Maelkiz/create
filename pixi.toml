@@ -14,7 +14,7 @@ setup = "git config core.hooksPath .githooks && git config blame.ignoreRevsFile 
 
 [dependencies]
 mojo = ">=1.0.0,<2"
-mojo-window = ">=0.2.0,<0.3"
+mojo-window = ">=0.3,<0.4"
 sdl3 = ">=3.4,<4"
 freetype = ">=2.13,<3"
 libpng = ">=1.6,<2"
