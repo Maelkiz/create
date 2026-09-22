@@ -294,12 +294,20 @@ pair, including that hook and `options.autoclear = False` so ink accumulates acr
 That `enter()` is where a transition carries state — it takes whatever arguments the entering scene
 needs (`enter(from_door: Int)`), and state shared by *all* scenes is a field on the parent passed
 down as a `mut` parameter, alongside `Frame`. Both are lost the moment a trait imposes a uniform
-signature, which is the real argument against one; it is not that a trait is impossible. Mojo 1.0
+signature, which is the real argument against one; it is not that a trait is impossible. Mojo 1.1
 has no dynamic trait dispatch — a trait in type position forms an inert `AnyTrait[T]` that nothing
 converts into and no method can be called on — but `Variant` over a closed set of scene types does
 give heterogeneous storage, so a scene *stack* (pause over game, modal dialogs) is buildable if one
-is ever needed. It buys storage only: dispatch is still a branch at each use site, `s.isa[Menu]()`
-in place of `self.scene == MENU`. One active scene needs no stack, so the fields stay plain.
+is ever needed. For scenes it buys storage only, because their `update`/`enter` signatures differ
+by design: dispatch stays a branch at each use site, `s.isa[Menu]()` in place of `self.scene ==
+MENU`. Where the members *do* share one signature, the branch can move into the library instead —
+a generic `def f[*Ts: SomeTrait](v: Variant[*Ts])` with a `comptime for` over `Ts` unrolls the
+`isa` chain once, at compile time, and the call site is just `f(v)`. That is what makes a
+`List[Variant[...]]` of uniform things ergonomic, and it is not the scenes' case. One active scene
+needs no stack, so the fields stay plain.
+
+`Variant` imports from `std.utils`, not `std.variant` or a bare `utils`, and the pack's length is
+`len(Ts)` — `VariadicList(Ts)` fails to bind.
 
 **A `Frame` render call records; it never paints.** `frame.rectangle(...)`, `.circle(...)`, `.sprite(...)`,
 `.text(...)` and the rest each build a [`RenderCommand`](src/create/render/_command.mojo) — local
@@ -315,7 +323,7 @@ resolved at replay, in the backend that owns the fonts. Add a new shape by exten
 **The command buffer exists so a frame can be replayed by either backend, and both now exist.**
 `Backend` carries a `kind` — `RenderBackend.CPU` replays onto a `Surface` through `_raster.mojo`,
 `RenderBackend.GPU` replays through `GLRenderer` in [_gl_backend.mojo](src/create/render/_gl_backend.mojo)
-— and a `kind` rather than a trait object because Mojo 1.0 has no dynamic trait dispatch. Users
+— and a `kind` rather than a trait object because Mojo 1.1 has no dynamic trait dispatch. Users
 select one with `run[T](..., backend=RenderBackend.GPU)`; the default is unchanged.
 
 **A capture is serviced inside `present`/`present_gpu`, never from the run loop.**
