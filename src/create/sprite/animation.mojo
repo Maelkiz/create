@@ -137,7 +137,7 @@ struct SpriteAnimation(Movable):
         """Load every image in a directory as a frame, in natural number order.
 
         ```mojo
-        var run = SpriteAnimation.from_folder(script_dir() + "/../assets/run")
+        var run = SpriteAnimation.from_folder(source_path("../assets/run"))
         ```
 
         Names are ordered by the number they end in, not by string comparison,

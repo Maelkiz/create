@@ -28,7 +28,7 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 | Module | Path | Responsibility |
 |---|---|---|
 | root | `src/create/__init__.mojo` | The preamble — `from create import *`, the union of every subpackage below |
-| `core` | `src/create/core/` | Program trait, run loops, script_dir |
+| `core` | `src/create/core/` | Program trait, run loops, source_path |
 | `render` | `src/create/render/` | Frame, Time, Input, Key, RenderCommand, Backend, Surface, Viewport, AutoScale, Style, Color, Font, text layout, raster primitives, the GL renderer |
 | `math` | `src/create/math/` | Point2D, Vector2D, Vector3D, Matrix, geometry shapes, random, util, easing curves and tweens |
 | `sprite` | `src/create/sprite/` | Sprite — BMP/PNG/JPEG loading and raw pixel buffer; SpriteAnimation, SpriteAnimator — frame-based animation |
@@ -47,7 +47,7 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 | `src/create/render/time.mojo` | `Time` — frame delta, frame count, elapsed seconds. In `render` because `Frame` carries it, and `render` may not import `core` |
 | `src/create/render/input.mojo` | `Input` — keyboard state, mouse position/buttons. In `render` because `Frame` carries it, same as `Time` |
 | `src/create/render/key.mojo` | `Key` — named keycodes for the `Int` overloads |
-| `src/create/core/path.mojo` | `script_dir()` — the directory of the running program, for asset paths |
+| `src/create/core/path.mojo` | `source_path(relative)` — `relative` resolved against the calling source file's directory, for asset paths |
 | `src/create/render/frame.mojo` | `Frame` — the one per-frame object: geometry (`width`/`height`/`left`/`right`/`bottom`/`top`), the clock, and the rendering API. Records `RenderCommand`s; touches no pixels. Also `PersistentFrameState`, what survives the frame boundary |
 | `src/create/render/options.mojo` | `Options` — the dials that outlive a frame: `autoscale`, `autoclear`, `clear_color`, `letterbox`, `quit_on_escape`, `design_resolution()`, `frame_cap()`, `quit()`. Handed to `create` on its own, and to `update` alongside the `Frame` |
 | `src/create/render/_command.mojo` | `RenderCommand` — one recorded render, local geometry + transform + resolved `Style`; the per-kind constructor helpers |
@@ -215,7 +215,7 @@ line. Every example and every test uses it.
 
 Each subpackage exports the names it owns and nothing from a layer below:
 
-- `from create.core import *` — `Program`, `run`, `run_headless`, `script_dir`.
+- `from create.core import *` — `Program`, `run`, `run_headless`, `source_path`.
 - `from create.render import *` — `Frame`, `Options`, `PersistentFrameState` and the frame guards, `Time`, `Input`/`MouseButton`/`Key`, `Camera`, `Surface`/`MemorySurface`, `Viewport`, `Color`, `Font`/`FontWeight`, `Align`, `AutoScale`, `RenderBackend`.
 - `from create.math import *` — `Point2D`, `Vector2D`/`Vector3D`, `Matrix` and its constructors, the geometry shapes and `overlaps`, `Random`, `Easing`/`ease`/`Tween`, the util functions, and a re-export of `std.math` (`sin`, `cos`, `sqrt`, `clamp`, `pi`, `tau`, …).
 - `from create.sprite import *` — `Sprite`, `SpriteAnimation`, `SpriteAnimator`.
@@ -223,7 +223,7 @@ Each subpackage exports the names it owns and nothing from a layer below:
 
 So there are two shapes and no middle one: take the preamble whole, or name what you import from
 the package that defines it (`from create.math import overlaps`, `from create.core import
-script_dir`). Star-importing a single subpackage is not a preamble — `from create.core import *`
+source_path`). Star-importing a single subpackage is not a preamble — `from create.core import *`
 alone cannot name `Frame`, and is not meant to.
 
 **The root is the union.** [`create/__init__.mojo`](src/create/__init__.mojo) has no signatures of
@@ -563,25 +563,29 @@ it. The biggest trap in the animation API is documented on
 
 1. **`-I src` is required for every `mojo run`.** Without it, `from create import *` fails with a module-not-found error. All pixi tasks include it; bare `mojo run` calls must add it manually.
 
-2. **Paths resolve against the CWD, not the source file.** The library's own assets are the
-   exception: the packaged fonts ship inside the package, in
-   [src/create/render/fonts/](src/create/render/fonts/), and `font.mojo` locates them from its own
-   source path (`std.reflection.source_location`), so `frame.text()` works from any directory. That
-   path is baked in at compile time, spelled the way `-I` was: `mojo run` always finds the fonts,
-   while a `mojo build` binary does only if it was built with an absolute `-I` (or is run from the
-   directory it was built in), and only while the library source it was built from exists.
-
-   Your own assets get no such help: use `script_dir()` (`from create.core import script_dir`),
-   which returns the directory part of `argv[0]` — the `.mojo` file under `mojo run`, the binary
-   under `mojo build` —
+2. **A bare relative path resolves against the CWD; resolve assets against a source file
+   instead.** `source_path(relative)` (`from create.core import source_path`) resolves `relative`
+   against the directory of the source file that calls it, so an asset is found from wherever the
+   program is run:
 
    ```mojo
-   var sprite = Sprite.load(script_dir() + "/../assets/sprite.jpeg", 120, 120)
-   var chime = ArcPointer(Sound.load(script_dir() + "/../assets/chime.wav"))
+   var sprite = Sprite.load(source_path("../assets/sprite.jpeg"), 120, 120)
+   var chime = ArcPointer(Sound.load(source_path("../assets/chime.wav")))
    ```
 
-   Every example does this. Tests reach fixtures both ways — `tests/fixtures/...` relative to the
-   root, or `script_dir() + "/../fixtures/"` — so the suite must be run from the root either way,
+   Every example does this. The library does the same for its own assets: the packaged fonts ship
+   in [src/create/render/fonts/](src/create/render/fonts/) and `font.mojo` locates them from its
+   own source path — through `std.reflection.source_location` directly, since `render` may not
+   import `core` — so `frame.text()` works from any directory.
+
+   Both read a path baked in at compile time (`source_path` is `@always_inline` so
+   `call_location` sees its caller), which is why `mojo run` and `mojo build` agree. That path is
+   spelled the way the compiler was handed it: `mojo run` always resolves, while a `mojo build`
+   binary run from another directory resolves only if it was built from absolute paths (the
+   program file and `-I`), and only while that source still exists.
+
+   Tests reach fixtures both ways — `tests/fixtures/...` relative to the root, or
+   `source_path("../fixtures/" + name)` — so the suite must be run from the root either way,
    which `pixi run test` guarantees.
 
 3. **A window does not report its real size immediately.** In fullscreen SDL fires a bogus `(1, 1)` `Resized` before reporting real dimensions, so `_wait_for_dimensions` pumps events until width > 1 and height > 1. On Wayland the fullscreen transition is asynchronous on top of that: `run[T]("t", WindowMode.FULLSCREEN, width=1000, height=1000)` reports the requested 1000x1000 for frame 1 and the display size from frame 2 on. The run loop refreshes dimensions every frame, so this self-corrects — but don't cache pixel dimensions from `create` or the first frame.
@@ -643,7 +647,7 @@ docstring; this table is not an API reference and must not grow into one.
 - Use `frame.background(Color.X)` as the first rendering call in `update` to pick the frame's colour — it replaces the `autoclear` clear rather than adding a second one. Set `options.clear_color` in `create` instead if the colour never changes, and `options.autoclear = False` if the program wants the previous frame left alone.
 - Use `frame.to_local`/`to_world` to move a position between world space and the current transform's frame — neither deals in pixels, and both take two `Float64`, so pass `frame.input.mouse.x, frame.input.mouse.y`. Both still *return* a `Tuple[Float64, Float64]`, which lands implicitly in a `Point2D` or a `Vector2D`, so they are the seam between the two rather than a conversion site.
 - Use `Point2D` for a new signature's locations and `Vector2D` for its extents and deltas — `Rectangle(pos: Point2D, size: Vector2D)` and `frame.rectangle(pos, size)` are the shape to copy when one signature names both.
-- Use `script_dir()` for every asset path; a bare relative path resolves against the CWD.
+- Use `source_path("...")` for every asset path; a bare relative path resolves against the CWD.
 
 ## Don't
 

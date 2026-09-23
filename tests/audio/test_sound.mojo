@@ -1,10 +1,10 @@
 from std.testing import TestSuite, assert_equal, assert_true, assert_raises
 from create.audio import Sound
-from create.core import script_dir
+from create.core import source_path
 
 
 def _fixture(name: String) -> String:
-    return script_dir() + "/../fixtures/" + name
+    return source_path("../fixtures/" + name)
 
 
 def test_from_pcm_byte_length() raises -> None:

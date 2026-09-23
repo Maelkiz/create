@@ -27,7 +27,7 @@ struct Game(Program):
 
     @staticmethod
     def create(mut options: Options) raises -> Game:
-        var sheet = Sprite.load(script_dir() + "/../assets/character.png")
+        var sheet = Sprite.load(source_path("../assets/character.png"))
 
         # Row-major: the first four cells are the idle cycle, the next four
         # the run cycle. One sheet, two animations, no SpriteSheet type.
@@ -43,9 +43,7 @@ struct Game(Program):
         # spin_1.png .. spin_8.png, ordered by their trailing number rather
         # than lexicographically, so spin_10 would follow spin_9.
         var spin = ArcPointer(
-            SpriteAnimation.from_folder(
-                script_dir() + "/../assets/spin", fps=16.0
-            )
+            SpriteAnimation.from_folder(source_path("../assets/spin"), fps=16.0)
         )
 
         var animator = SpriteAnimator(idle.copy())

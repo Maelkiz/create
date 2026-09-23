@@ -15,11 +15,9 @@ struct AudioDemo(Program):
     def create(mut options: Options) raises -> AudioDemo:
         options.quit_on_escape = True
         var audio = Audio()
-        var chime = ArcPointer(
-            Sound.load(script_dir() + "/../assets/chime.wav")
-        )
+        var chime = ArcPointer(Sound.load(source_path("../assets/chime.wav")))
         var ambience = ArcPointer(
-            Sound.load(script_dir() + "/../assets/ambience.wav")
+            Sound.load(source_path("../assets/ambience.wav"))
         )
         return AudioDemo(audio^, chime, ambience, 0, False)
 

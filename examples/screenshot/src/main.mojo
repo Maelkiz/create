@@ -35,18 +35,17 @@ struct App(Program):
         # Filed the moment the key is read, and written at `present` — the
         # file holds the whole frame however early in `update` it was asked
         # for, so nothing has to be rendered before asking.
-        var dir = script_dir()
         if frame.input.just_pressed("s"):
-            frame.save_screenshot(dir + "/../out/screenshot.png")
+            frame.save_screenshot(source_path("../out/screenshot.png"))
             self.saved = "screenshot.png — the window, bars included"
         elif frame.input.just_pressed("i"):
             if frame.input.is_key_down("shift"):
                 frame.save_image(
-                    dir + "/../out/image@2x.png", 2.0, transparent=True
+                    source_path("../out/image@2x.png"), 2.0, transparent=True
                 )
                 self.saved = "image@2x.png — 1600x1000, transparent"
             else:
-                frame.save_image(dir + "/../out/image.png")
+                frame.save_image(source_path("../out/image.png"))
                 self.saved = "image.png — 800x500, no bars"
 
         frame.background(Color(0x14, 0x1C, 0x26))

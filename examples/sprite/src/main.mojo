@@ -9,9 +9,7 @@ struct Game(Program):
 
     @staticmethod
     def create(mut options: Options) raises -> Game:
-        var sprite = Sprite.load(
-            script_dir() + "/../assets/sprite.jpeg", 120, 120
-        )
+        var sprite = Sprite.load(source_path("../assets/sprite.jpeg"), 120, 120)
         return Game(sprite^, 0, 0)
 
     def update(mut self, mut options: Options, mut frame: Frame) raises:

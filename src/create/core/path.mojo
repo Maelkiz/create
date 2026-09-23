@@ -1,17 +1,20 @@
-from std.sys import argv
+from std.reflection import call_location
 
 
-def script_dir() -> String:
-    """Returns the directory containing the running script."""
-    var path = argv()[0]
-    var bytes = path.as_bytes()
-    var last_slash = -1
-    for i in range(len(bytes)):
-        if bytes[i] == 47:  # '/'
-            last_slash = i
-    if last_slash < 0:
-        return "."
-    var result = String()
-    for i in range(last_slash):
-        result += String(chr(Int(bytes[i])))
-    return result
+@always_inline
+def source_path(relative: String) -> String:
+    """`relative`, resolved against the directory of the calling source file.
+
+    `Sprite.load(source_path("../assets/sprite.png"))` finds the asset from
+    wherever the program is run, where a bare relative path resolves against
+    the CWD. Called from a helper, it resolves against the helper's file —
+    the same rule as Python's `__file__`.
+
+    The caller's path is baked in at compile time, which is why this has to be
+    inlined: `call_location` reports the site it is inlined into. So `mojo run`
+    and `mojo build` agree on the answer, and it is spelled the way the
+    compiler was handed the file — a binary built from a relative path finds
+    its assets only when run from the directory it was built in.
+    """
+    var file = String(call_location().file_name())
+    return String(file[byte = : file.rfind("/") + 1]) + relative

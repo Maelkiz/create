@@ -32,7 +32,7 @@ struct App(Program):
         options.autoscale = AutoScale.FIT
         options.design_resolution(800, 600)
         # Twice, below, from one interned image and so one GL upload.
-        var logo = Sprite.load(script_dir() + "/../assets/logo/png/logo.png")
+        var logo = Sprite.load(source_path("../assets/logo/png/logo.png"))
         return App(0.0, logo^, 0)
 
     def update(mut self, mut options: Options, mut frame: Frame) raises:
