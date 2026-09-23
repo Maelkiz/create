@@ -1,13 +1,13 @@
 """Raw SDL3 audio bindings via `std.ffi._DLHandle`.
 
 Internal only — nothing here is re-exported from the package `__init__`.
-Mirrors the FFI idiom of `mojo-window`'s `src/window/_sdl.mojo`: opaque `Int`
-handles for everything SDL returns a pointer for, `get_error()` on every
-failure, and its own `_DLHandle("libSDL3.so")` rather than importing
-`mojo-window`'s (that module is private to that package). A second `dlopen`
+Mirrors the FFI idiom of `create/_window/_sdl.mojo`: opaque `Int` handles
+for everything SDL returns a pointer for, `get_error()` on every failure, and
+its own `_DLHandle("libSDL3.so")` rather than importing the window's, since
+`audio` has no business depending on the platform window. A second `dlopen`
 of the same shared object returns the same handle, and SDL ref-counts
 `SDL_InitSubSystem`/`SDL_QuitSubSystem` per subsystem, so `SDL_INIT_AUDIO`
-here coexists safely with `mojo-window`'s `SDL_INIT_VIDEO`.
+here coexists safely with the window's `SDL_INIT_VIDEO`.
 
 `SDL_AudioSpec` is `{ SDL_AudioFormat format; int channels; int freq; }` —
 three packed 4-byte fields, no padding (verified against
@@ -17,7 +17,7 @@ three packed 4-byte fields, no padding (verified against
 `SDL_LoadWAV`'s `Uint8 **audio_buf` out-param is a pointer-to-pointer, one
 level deeper than any existing binding handles. It's read back with
 `Pointer[UInt8, MutUntrackedOrigin](unsafe_from_address=...)`, the same
-raw-address-to-Pointer idiom `mojo-window`'s `gl_window.mojo` uses for
+raw-address-to-Pointer idiom `_window/gl_window.mojo` uses for
 `SDL_GL_GetProcAddress` results.
 """
 

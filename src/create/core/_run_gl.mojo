@@ -17,7 +17,7 @@ two loops cannot drift in what a frame is.
 
 from std.time import sleep
 
-from window import GLWindow
+from create._window import GLWindow
 
 from create.render.render_backend import RenderBackend
 from create.render.autoscale import AutoScale

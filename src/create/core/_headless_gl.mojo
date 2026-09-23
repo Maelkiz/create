@@ -11,7 +11,7 @@ Does **not** cover the drawable-size-versus-logical-size distinction that
 window manager to disagree with it. That stays a windowed-only concern.
 """
 
-from window import GLWindow
+from create._window import GLWindow
 
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget

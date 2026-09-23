@@ -7,7 +7,7 @@
 # rather than once per case.
 
 
-from window import GLWindow
+from create._window import GLWindow
 
 from create import *
 from create.core._step import step

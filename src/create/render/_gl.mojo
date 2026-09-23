@@ -3,7 +3,7 @@
 `render` must not import `window` (see AGENTS.md), so this module cannot take
 a `GLWindow` and cannot use its `get_proc_address`. It opens SDL itself and
 calls `SDL_GL_GetProcAddress` — `dlopen` refcounts, so a second handle
-alongside `mojo-window`'s is harmless, and SDL's loader is used rather than
+alongside `_window`'s is harmless, and SDL's loader is used rather than
 plain `dlsym` because extension entry points are not guaranteed to be in the
 process's symbol table.
 

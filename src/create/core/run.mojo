@@ -1,6 +1,6 @@
 from std.time import sleep
 
-from window.window import Window
+from create._window.window import Window
 from create.render.render_backend import RenderBackend
 from create.render.frame import PersistentFrameState
 from create.render.options import Options

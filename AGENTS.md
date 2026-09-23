@@ -34,6 +34,7 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 | `sprite` | `src/create/sprite/` | Sprite — BMP/PNG/JPEG loading and raw pixel buffer; SpriteAnimation, SpriteAnimator — frame-based animation |
 | `audio` | `src/create/audio/` | Sound, Audio — WAV/OGG/FLAC/MP3 loading and playback |
 | `_bytes` | `src/create/_bytes.mojo` | Internal leaf — little-endian integer decoding. Imports nothing, re-exported by nothing |
+| `_window` | `src/create/_window/` | Internal platform layer — `Window`, `GLWindow`, the typed `Event`s, the SDL3 video bindings. Imported only by `core`, re-exported by nothing |
 
 ## Key Files
 
@@ -84,6 +85,10 @@ The goal is **Processing's ergonomics + clean separation of concerns + Mojo's pe
 | `src/create/sprite/animator.mojo` | `SpriteAnimator` — the playhead over one animation |
 | `src/create/audio/sound.mojo` | `Sound` — decoded PCM + format/channels/freq, `load`/`from_pcm` |
 | `src/create/audio/audio.mojo` | `Audio` — playback device, voice lifecycle, `play`/`stop`/`update` |
+| `src/create/_window/_sdl.mojo` | The raw SDL3 video bindings: `SDL_Event` byte offsets and their readers, window/renderer/texture/GL-context calls. The only file in `_window` that touches SDL |
+| `src/create/_window/window.mojo` | `Window` — a native window presenting a CPU-side RGBA8 buffer (`pixels()`, `present()`); the CPU run loop's window |
+| `src/create/_window/gl_window.mojo` | `GLWindow` — a native window with a current GL 3.3 Core context; binds no GL itself, `get_proc_address` hands back raw pointers |
+| `src/create/_window/event.mojo` | `Event` — a `Variant` over `Quit`/`Resized`/`KeyDown`/…; `translate_event`, the one SDL-to-`Event` translation both windows share |
 | `src/create/_bytes.mojo` | `le_uint`, `sign_extend_32` — the one byte-assembly loop, shared by the image decoders and the freetype struct readers |
 
 ## Build & Test
@@ -256,6 +261,14 @@ would be wrong, since no user-facing signature names `le_uint` or `sign_extend_3
 importing it is not a violation of the `render`-never-imports-`core` rule: `_bytes` is not `core`,
 and depending on a leaf cannot make a cycle.
 
+**`_window` is the platform layer, and internal the same way.** It was the external `mojo-window`
+package and now lives in-tree so a window feature lands in one commit. No program opens a window
+itself — `run` does — so the root does not import it and no `__init__.mojo` re-exports it. `core` is
+its only consumer; `render` never imports it (see *`render` reaches GL without importing
+`_window`* below), which is what keeps the whole rendering stack usable with no window at all. It
+imports nothing from `create`. Its tests in `tests/window/` pin `SDL_VIDEODRIVER=dummy` from their
+own `main`, so none opens a real window whatever display `pixi run test` found.
+
 **The `render`-to-`sprite` edge is nominal.** `render` names `Sprite` and `SpriteAnimator` only in
 `frame.sprite`'s overloads — no `render` code depends on what those types
 contain. `raster.blit_sprite` takes a pixel pointer plus its width and height rather than an image type, so
@@ -405,9 +418,9 @@ retracted**; all three symptoms were the mistakes below.)
    context and every call after that segfaults. In a run loop the window is alive by construction;
    this bites in tests and spikes, where `_ = win^` at the end is the fix.
 
-**`render` reaches GL without importing `window`.** The layering rule is unchanged, so `_gl.mojo`
+**`render` reaches GL without importing `_window`.** The layering rule is unchanged, so `_gl.mojo`
 cannot take a `GLWindow` or use its `get_proc_address`: it `dlopen`s SDL itself and resolves through
-`SDL_GL_GetProcAddress` (refcounted, so a second handle alongside `mojo-window`'s is harmless, and
+`SDL_GL_GetProcAddress` (refcounted, so a second handle alongside `_window`'s is harmless, and
 SDL's loader is used rather than plain `dlsym` because extension entry points need not be in the
 process's symbol table). A context must already be current when `GL()` is constructed — `run_gl`
 guarantees that by creating its `GLWindow` first.
@@ -657,4 +670,4 @@ docstring; this table is not an API reference and must not grow into one.
 - Don't hold a raw `Pointer` to `Frame` outside `TransformGuard`/`StyleGuard` — use origin-tracked references.
 - Don't name new test files without the `test_` prefix — the test runner won't pick them up.
 - Don't add a `Point2D` overload beside a `Vector2D` one. Both have `@implicit` tuple constructors, so two overloads differing only in which they take make `frame.circle((0, 0), 20)` ambiguous — replace the parameter's type instead of overloading. The same ambiguity is why `p - Vector2D(1, 2)` must name the type while `p + (1, 2)` need not, and that asymmetry is the algebra's: subtracting from a position has two meanings — the displacement to another position, or a move backwards by one — so a bare tuple cannot say which, while addition has only one, because `Point2D + Point2D` does not exist. Don't sand the asymmetry away by adding a `Point2D` overload to `__add__` purely to make the tuple ambiguous there too: it would make the meaningless `p + Point2D(1, 2)` compile, which is the thing the type exists to refuse.
-- Don't add a `Surface` field or parameter to `Frame`, and don't import `window` from `frame.mojo` — see Gotcha 4.
+- Don't add a `Surface` field or parameter to `Frame`, and don't import `_window` from `frame.mojo` — see Gotcha 4.

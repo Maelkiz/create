@@ -10,7 +10,7 @@ The window itself is deliberately absent: the arms only ever need to say
 `Window` and `GLWindow` without being generic over either.
 """
 
-from window.event import (
+from create._window.event import (
     Event,
     KeyDown,
     KeyUp,

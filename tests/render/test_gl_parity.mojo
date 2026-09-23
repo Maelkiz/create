@@ -49,7 +49,7 @@ from create.render.render_backend import RenderBackend
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.frame import PersistentFrameState
-from window import GLWindow
+from create._window import GLWindow
 
 comptime _DESIGN_W = 200
 comptime _DESIGN_H = 150
