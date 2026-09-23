@@ -563,16 +563,15 @@ it. The biggest trap in the animation API is documented on
 
 1. **`-I src` is required for every `mojo run`.** Without it, `from create import *` fails with a module-not-found error. All pixi tasks include it; bare `mojo run` calls must add it manually.
 
-2. **Paths resolve against the CWD, not the source file.** The packaged font is loaded as the literal
-   relative path `defaults/fonts/NotoSans.ttf` ([font.mojo](src/create/render/font.mojo), used by
-   `TextRenderer._ensure_font`), so **`frame.text()` only works when the process CWD is the repo
-   root.** Run from anywhere else and every text render raises:
+2. **Paths resolve against the CWD, not the source file.** The library's own assets are the
+   exception: the packaged fonts ship inside the package, in
+   [src/create/render/fonts/](src/create/render/fonts/), and `font.mojo` locates them from its own
+   source path (`std.reflection.source_location`), so `frame.text()` works from any directory. That
+   path is baked in at compile time, spelled the way `-I` was: `mojo run` always finds the fonts,
+   while a `mojo build` binary does only if it was built with an absolute `-I` (or is run from the
+   directory it was built in), and only while the library source it was built from exists.
 
-   ```
-   FT_New_Face failed — font not found: defaults/fonts/NotoSans.ttf
-   ```
-
-   The same applies to your own assets: use `script_dir()` (`from create.core import script_dir`),
+   Your own assets get no such help: use `script_dir()` (`from create.core import script_dir`),
    which returns the directory part of `argv[0]` — the `.mojo` file under `mojo run`, the binary
    under `mojo build` —
 

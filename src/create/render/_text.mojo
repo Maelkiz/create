@@ -2,7 +2,7 @@ from std.collections import Dict
 from std.math import max
 from .align import Align
 from .color import Color
-from .font import Font, _GlyphInfo, FONT_DEFAULT_PATH, FONT_FALLBACK_PATH
+from .font import Font, _GlyphInfo, default_font_path, fallback_font_path
 from ._raster import blit_glyph
 from ._style import Style
 from .surface import Surface
@@ -92,11 +92,11 @@ struct TextRenderer(Movable):
         glyphs, not a render failure.
         """
         if len(self._font) == 0:
-            self._font.append(Font(FONT_DEFAULT_PATH, size))
+            self._font.append(Font(default_font_path(), size))
         if not self._fallback_attempted:
             self._fallback_attempted = True
             try:
-                self._fallback_font.append(Font(FONT_FALLBACK_PATH, size))
+                self._fallback_font.append(Font(fallback_font_path(), size))
             except:
                 pass
 

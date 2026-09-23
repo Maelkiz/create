@@ -753,10 +753,10 @@ struct Frame:
         """
         self._style.text_align = align
 
-    def text(mut self, s: String, x: Int, y: Int) raises:
+    def text(mut self, s: String, x: Int, y: Int):
         self.text(s, Float64(x), Float64(y))
 
-    def text(mut self, s: String, pos: Point2D) raises:
+    def text(mut self, s: String, pos: Point2D):
         self.text(s, pos.x, pos.y)
 
     def font(mut self, var f: Font):
@@ -764,7 +764,7 @@ struct Frame:
         settings a font outlives the frame that set it."""
         self._state.backend.text.set_font(f^)
 
-    def text(mut self, s: String, x: Float64, y: Float64) raises:
+    def text(mut self, s: String, x: Float64, y: Float64):
         if self._style.text_color.a == 0:
             return
         # Deferred whole. Nothing about the layout is decided here: the

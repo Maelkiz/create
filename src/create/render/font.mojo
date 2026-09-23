@@ -1,18 +1,35 @@
 from std.ffi import _DLHandle
 from std.math import abs
+from std.reflection import source_location
 
-from create._bytes import le_uint, sign_extend_32
+from create._bytes import cstr, le_uint, sign_extend_32
 from .color import Color
 
 # The two packaged faces, loaded lazily on the first text render: Noto Sans for
 # text, Noto Sans Symbols for codepoints the first face has no glyph for.
 #
-# Both are *relative* paths, resolved against the process CWD rather than the
-# source file, so `frame.text` only works when a program is run from the repo
-# root. Anywhere else, every text render raises "FT_New_Face failed — font not
-# found".
-comptime FONT_DEFAULT_PATH = "defaults/fonts/NotoSans.ttf"
-comptime FONT_FALLBACK_PATH = "defaults/fonts/NotoSansSymbols.ttf"
+# They ship inside the package, in `fonts/` beside this file, and are located
+# from this file's own source path rather than the process CWD — so text works
+# from any directory. That path is baked in at compile time and spelled the way
+# `-I` was, so a `mojo build` binary finds the faces from elsewhere only if it
+# was built with an absolute `-I`, and only while that source still exists.
+
+
+def _packaged_font(name: String) -> String:
+    """A packaged face, located from this source file rather than the CWD."""
+    var here = String(source_location().file_name())
+    return here[byte = : here.rfind("/") + 1] + "fonts/" + name
+
+
+def default_font_path() -> String:
+    """Noto Sans, the face every text render uses unless `frame.font` swaps
+    it."""
+    return _packaged_font("NotoSans.ttf")
+
+
+def fallback_font_path() -> String:
+    """Noto Sans Symbols, consulted for codepoints the default face lacks."""
+    return _packaged_font("NotoSansSymbols.ttf")
 
 
 struct FontWeight:
@@ -151,14 +168,17 @@ struct Font(Movable):
         self._lib = _read_ptr(Int(lib_buf.unsafe_ptr()))
 
         var face_buf = Array[UInt8, 8](fill=0)
+        var cpath = cstr(path)
         if (
             ft.call["FT_New_Face", Int32](
-                self._lib, path.unsafe_ptr(), Int(0), face_buf.unsafe_ptr()
+                self._lib, cpath.unsafe_ptr(), Int(0), face_buf.unsafe_ptr()
             )
             != 0
         ):
             _ = ft.call["FT_Done_FreeType", Int32](self._lib)
             raise Error("FT_New_Face failed — font not found: " + path)
+        # FFI rule 1: the path buffer must outlive the call that read it.
+        _ = cpath^
         self._face = _read_ptr(Int(face_buf.unsafe_ptr()))
         self._size = 0
         self._weight = 0

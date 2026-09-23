@@ -1,13 +1,13 @@
 # TextRenderer, driven straight onto an owned buffer.
 #
-# Hermetic: both faces ship in defaults/fonts/, so this asserts on real glyph
+# Hermetic: both faces ship in src/create/render/fonts/, so this asserts on real glyph
 # pixels rather than mocking the rasteriser.
 
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
 from create.render.align import Align
 from create.render.color import Color
-from create.render.font import Font, FontWeight, FONT_DEFAULT_PATH, _GlyphInfo
+from create.render.font import Font, FontWeight, default_font_path, _GlyphInfo
 from create.render._style import Style
 from create.render.surface import MemorySurface
 from create.render._text import TextRenderer, _GLYPH_CACHE_LIMIT
@@ -212,7 +212,7 @@ def test_swapping_the_font_drops_the_cache() raises -> None:
     var top_left = _style(Align.TOP_LEFT)
     _ = _render_with(t, top_left^)
     assert_true(len(t._glyphs) > 0, "nothing was cached")
-    t.set_font(Font(FONT_DEFAULT_PATH, 24))
+    t.set_font(Font(default_font_path(), 24))
     assert_equal(len(t._glyphs), 0)
 
 
