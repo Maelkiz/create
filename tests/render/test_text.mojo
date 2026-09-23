@@ -163,7 +163,7 @@ def test_style_defaults() raises -> None:
     assert_equal(s.text_color, Color.BLACK)
     assert_equal(s.font_size, 16)
     assert_equal(s.font_weight, FontWeight.REGULAR)
-    assert_true(s.text_align == Align.TOP_LEFT)
+    assert_true(s.text_align == Align.CENTER)
 
 
 def test_repeating_a_render_adds_no_cache_entries() raises -> None:

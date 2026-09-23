@@ -33,7 +33,7 @@ struct Style(Copyable, Movable):
         self.text_color = Color.BLACK
         self.font_size = 16
         self.font_weight = FontWeight.REGULAR
-        self.text_align = Align.TOP_LEFT
+        self.text_align = Align.CENTER
         self.opacity = 1.0
 
     def fill_visible(self) -> Bool:

@@ -40,9 +40,9 @@ struct Paint:
             frame.text_color(Color(180, 180, 190))
             frame.font_size(18)
             # Align.BOTTOM anchors the text box's bottom edge at y, so it
-            # grows upward from the margin instead of downward past it — the
-            # default Align.TOP_LEFT would run this line's descenders straight
-            # through frame.bottom() and into the letterbox clip.
+            # grows upward from the margin instead of straddling it — the
+            # default Align.CENTER would hang half the line below the margin,
+            # its descenders against frame.bottom() and the letterbox clip.
             frame.text_align(Align.BOTTOM)
             frame.text(
                 "left-drag to paint    right-click for menu",

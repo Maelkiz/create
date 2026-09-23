@@ -61,6 +61,7 @@ struct Game(Program):
 
         with frame.overlay():
             frame.text_color(Color(220, 220, 220))
+            frame.text_align(Align.TOP_LEFT)
             frame.text(
                 "A/D move, W jump (double-jump in air)",
                 (frame.left() + 20.0, frame.top() - 20.0),

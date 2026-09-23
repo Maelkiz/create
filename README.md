@@ -26,7 +26,6 @@ struct MyApp(Program):
 
     def update(mut self, mut options: Options, mut frame: Frame) raises:
         # Called once per frame: handle input, advance state, and render to the screen
-        frame.text_align(Align.CENTER)
         frame.text("Hello World!", 0, 0)
 
 

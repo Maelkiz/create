@@ -745,9 +745,9 @@ struct Frame:
     def text_align(mut self, align: Align):
         """Anchor the next text at one of the nine points of its box.
 
-        One argument covers both axes: `text_align(Align.CENTER)` centres the
-        text on the position, `Align.TOP_LEFT` (the default) hangs it below
-        and to the right of it. The one-word constants name an edge's
+        One argument covers both axes: `Align.CENTER` (the default) centres
+        the text on the position, like every other shape, and
+        `Align.TOP_LEFT` hangs it below and to the right of it. The one-word constants name an edge's
         midpoint — `Align.TOP` is top-centre. These are edges of the text box,
         not typographic baselines.
         """
