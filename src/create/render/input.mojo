@@ -13,18 +13,15 @@ struct Input(Copyable, Movable):
     `Canvas` (`canvas.width`/`height` are rebuilt every frame, so a resize needs
     no notification of its own).
 
-    A field on `Canvas` rather than a parameter of its own, alongside `time`
-    and for the same reason: both are per-frame readings the loop takes, and
-    reaching them the same way is one thing less to remember. It costs the
-    checkable one-way flow a parameter gave — `canvas` is `mut` for every render
-    call, so `context.input` is writable too, exactly as `context.time` is — and
-    buys a sketch that reads neither naming neither. The copy is the
-    consolation: the loop owns the `Input` that persists across frames, this
-    one is a snapshot, and a program writing to it reaches nothing that
-    outlives the frame.
+    A field on `Context` rather than a parameter of its own, alongside `time`
+    and for the same reason: both are readings the loop takes each frame, and
+    reaching them the same way is one thing less to remember. It is the loop's
+    own `Input`, not a copy — held keys and buttons persist in it from frame to
+    frame, and `_new_frame` clears only the edges. So read it and don't write
+    it: a write to held state carries into the next frame.
 
     Being a plain struct, it is also how input becomes scriptable: a test fills
-    one in and calls `step` directly, driving click- or key-driven behaviour
+    in `context.input` and calls `step` directly, driving click- or key-driven behaviour
     with no window involved.
 
     `mouse` is in screen coordinates, so it is negative left of and below the

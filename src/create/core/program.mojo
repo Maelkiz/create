@@ -13,7 +13,7 @@ trait Program(Deinitable, Movable):
     framerate reading to render it. Deciding and rendering are the same frame's
     work, so they are the same method's.
 
-    There are no event callbacks. Input arrives on the frame, as
+    There are no event callbacks. Input arrives on the context, as
     `context.input`, and nowhere else — so there is one place a frame's
     decisions are made and no ordering question between a callback and the
     frame body.
@@ -40,11 +40,11 @@ trait Program(Deinitable, Movable):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         """Advance the program by one frame, and render it.
 
-        Two parameters, two lifetimes. `context` outlives the frame and is
-        written for the *next* one — the autoscale mode, the clear, `quit()`.
-        `canvas` is this frame alone: it is built fresh, rendered on, and dropped
-        before presentation, so it must not be stored anywhere. Keyboard and
-        mouse are `context.input`, alongside `context.time`, so a sketch that
-        reads neither names neither.
+        Two parameters, two lifetimes. `context` is the run's state: it
+        outlives the frame, carries what the loop measured for this one —
+        `context.time`, `context.input` — and takes the dials for the *next*
+        one — the autoscale mode, the clear, `quit()`. `canvas` is where this
+        frame is drawn: it is built fresh, rendered on, and dropped before
+        presentation, so it must not be stored anywhere.
         """
         ...

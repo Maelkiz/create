@@ -28,8 +28,8 @@ and laid out at replay. Add a shape by extending `_command.mojo`'s kinds and `_b
 
 `Canvas` holds no `Surface` and takes its geometry from the `Viewport` alone — don't add a `Surface`
 field or parameter, and don't import `_window` from `canvas.mojo`. What survives the frame boundary:
-`PersistentCanvasState` (the `Backend`, `Viewport`, clock — moved in and back out by `_release`) and
-`Context` (owned by the loop). The transform stack, style and camera deliberately don't.
+`PersistentCanvasState` (the `Backend` and `Viewport` — moved in and back out by `_release`) and
+`Context` (owned by the loop, and home to `time` and `input`). The transform stack, style and camera deliberately don't.
 
 The camera is folded into `RenderCommand.transform`; nothing below `Canvas` knows it exists.
 

@@ -17,7 +17,7 @@ passing file. Each file is its own process; namespace any scratch path under `/t
 
 **Rendering is tested for real.** `run_headless` returns the `MemorySurface`, and
 `MemorySurface.pixel(x, y)` reads it back — assert on pixels, don't eyeball.
-`core/test_step.mojo` scripts an `Input` and calls `step` directly for input-driven behaviour.
+`core/test_step.mojo` scripts `context.input` and calls `step` directly for input-driven behaviour.
 
 **GPU coverage, two tiers:**
 - `render/test_gl_parity.mojo` renders one shape kind per frame through both backends and compares

@@ -74,22 +74,24 @@ to `run[T]`. Minimum: [tests/core/test_smoke.mojo](tests/core/test_smoke.mojo); 
 [examples/sidescroller/src/main.mojo](examples/sidescroller/src/main.mojo).
 
 `create` gets no `Canvas` — none exists before the loop — so rendering or reading geometry there is a
-compile error. Input arrives as `canvas.input`; there are no event callbacks. A `Canvas` is built fresh
-each frame; nothing may hold one across frames.
+compile error. Input arrives as `context.input`; there are no event callbacks. A `Canvas` is built
+fresh each frame; nothing may hold one across frames.
 
 **Multiple screens:** a root `Program` holds each screen as a plain field (not implementing
 `Program`) and switches with an int field and `if`/`elif`. A scene's `update` takes only what it uses
-(often just `canvas`); a one-shot reset is a plain `enter(...)` method the parent calls before
+(`context` to read input or time, `canvas` to draw); a one-shot reset is a plain `enter(...)` method the parent calls before
 switching, taking whatever that transition carries. No trait: it would force one `update`/`enter`
 signature on every scene, and those must vary. See [examples/scenes/src/main.mojo](examples/scenes/src/main.mojo).
 (Mojo 1.1 has no dynamic trait dispatch; heterogeneous storage is `Variant` from `std.utils`, with
 `isa[T]()` to dispatch.)
 
 **Parameter vs. field:** what the loop hands the program every frame (`Context`, `Canvas`) is a
-parameter. What the program drives on its own schedule (`Sprite`, `Font`, `Sound`, `Audio`,
+parameter: `Context` is the run's state and outlives the frame, `Canvas` is where this frame is
+drawn. What the program drives on its own schedule (`Sprite`, `Font`, `Sound`, `Audio`,
 `SpriteAnimator`, `Camera`, `Tween`) is a field it constructs in `create` — so adding one touches
-neither `Program` nor the run loop. `Time` and `Input` ride on `Canvas`; `canvas.input` is a per-frame
-copy, so writing to it reaches nothing that outlives the frame.
+neither `Program` nor the run loop. `Time` and `Input` live on `Context`: the loop ticks
+`context.time` and folds events into `context.input` before `update`. Read them, don't write them —
+the loop carries both into the next frame.
 
 **Per-frame obligations**, not enforced by anything:
 - `audio.update()` — otherwise looping streams stall and one-shot voice slots leak.
@@ -147,7 +149,7 @@ are not flipped. **All shapes are centre-positioned**, including `Rectangle.x/y`
 
 **Camera:** `canvas.camera(cam)` maps world space onto screen space for every later render call and
 nested transform, reset every frame. `canvas.overlay()` suspends it for HUD content.
-`canvas.input.mouse` is in screen space; use `cam.to_world(canvas.input.mouse)` for picking.
+`context.input.mouse` is in screen space; use `cam.to_world(context.input.mouse)` for picking.
 
 ```mojo
 canvas.camera(self.cam)
@@ -189,11 +191,11 @@ except `frame_cap()` and `quit()`, read after `update` returns.
 
 | Term | Meaning |
 |---|---|
-| Screen space | Origin-centred, y-up, camera-independent. `canvas.left()`…`top()` and `canvas.input.mouse` live here |
+| Screen space | Origin-centred, y-up, camera-independent. `canvas.left()`…`top()` and `context.input.mouse` live here |
 | World space | What render calls use once a `Camera` is set; identical to screen space without one. `canvas.to_world`/`to_local` convert between world space and the current transform (two `Float64` in, a tuple out) |
 | Asset vs. playhead | `SpriteAnimation`/`Sound` are shared immutable assets; `SpriteAnimator`/an `Audio` voice are one entity's position in one. `fps` belongs to the asset |
 | `Easing` / `Tween` | An `Easing` is a stateless curve over a 0-to-1 fraction (`ease(curve, t)`); a `Tween` walks that fraction over a duration. Each entity owns its own `Tween` |
-| `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(pos, r)`, `canvas.input.mouse`); an extent or displacement is a `Vector2D` (`Rectangle.size()`, velocities). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Both take a bare tuple implicitly |
+| `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(pos, r)`, `context.input.mouse`); an extent or displacement is a `Vector2D` (`Rectangle.size()`, velocities). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Both take a bare tuple implicitly |
 | `overlaps` / `intersects` / `contains` | `overlaps(a, b)`: free, symmetric, regions only (`Rectangle`/`Circle`/`Triangle`). `line.intersects(x)`: `Line` only, since a line has no interior. `region.contains(x)`: asymmetric. A `Line` is never a region |
 
 ## Do

@@ -10,13 +10,17 @@ layering rules; the render side is in [../render/AGENTS.md](../render/AGENTS.md)
 | `run.mojo`, `_run_gl.mojo` | Windowed loops: CPU, and GPU (`backend == RenderBackend.GPU`) |
 | `headless.mojo`, `_headless_gl.mojo` | `run_headless` over an owned buffer, CPU and GPU |
 | `_step.mojo` | `step` — one frame's body |
-| `_events.mojo` | `apply_events` — the one `Event`-to-`Input` fold |
+| `_events.mojo` | `apply_events` — the one `Event`-to-`Input` fold, into `context.input` |
 
 ## Rules
 
 Every loop runs its frame through `step`, and both windowed loops fold events through
 `apply_events`, so they cannot drift in what a frame is or how input is read. Loops differ only in
 how a frame starts (events and a clock, or a counter) and where the pixels go.
+
+The loop owns one `Context` for the whole run and writes the frame's readings into it:
+`context.time._tick` before each `step`, `apply_events` into `context.input`. There is no separate
+`Input` or clock in a loop, and `step` takes only `(program, context, state)`.
 
 `Input._set_mouse(x, y)` is the only writer of `mouse`/`mouse_x`/`mouse_y`; every event arm that
 carries a position calls it and adds only what is its own.

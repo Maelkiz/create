@@ -161,8 +161,8 @@ struct Canvas:
 
     A `mut` parameter because the program renders on it, and the recording it
     appends to is the frame's whole output. What it does *not* carry is a
-    setting: everything that outlives a frame is in `Context`, handed to
-    `update` beside it. A `Canvas` that carried a dial would be offering to
+    setting, the clock or input: everything that outlives a frame is in
+    `Context`, handed to `update` beside it. A `Canvas` that carried a dial would be offering to
     change something it is not around to see the effect of.
 
     Built fresh each frame and dropped before the frame is presented. The

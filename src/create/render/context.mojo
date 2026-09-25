@@ -5,7 +5,11 @@ from .input import Input
 
 
 struct Context(Copyable, Movable):
-    """The dials that outlive a frame: what the program sets, the loop reads.
+    """The run's state: everything that outlives a frame.
+
+    Two directions share it. The loop writes `time` and `input` before each
+    `update`, for the program to read; the program sets the dials, for the
+    loop to read.
 
     A `Canvas` is built and dropped inside one frame, so a setting that has to
     survive the frame boundary cannot live on it. These do — the autoscale
@@ -14,7 +18,7 @@ struct Context(Copyable, Movable):
     loop reads after a frame has been released, `frame_cap` and `quit`.
 
     Handed to `Program.create` on its own, before any frame exists, and
-    alongside the frame to `Program.update`. That is the whole reason it is a
+    alongside the `Canvas` to `Program.update`. That is the whole reason it is a
     separate object rather than fields on `Canvas`: `create` has dials to turn
     and nothing to render on, so it is given exactly that — a program cannot
     record a command that will never be presented, and there is no discarded
