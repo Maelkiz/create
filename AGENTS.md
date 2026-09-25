@@ -132,7 +132,7 @@ Two git hooks gate the repo; there is no CI, so these are the only automated che
 | Hook | Runs | Cost |
 |---|---|---|
 | `.githooks/pre-commit` | Checks the staged `.mojo` files are formatted, then builds `tests/core/test_smoke.mojo` | Constant — does not grow with the repo |
-| `.githooks/pre-push` | `mojo precompile src/create`, all example entrypoints in parallel, then the test suite | Grows with the example and test count |
+| `.githooks/pre-push` | `mojo precompile src/create`, all example entrypoints in parallel, then the test suite — skipped entirely when every pushed path is on its inert allowlist (`*.md`, `LICENSE`, agent and editor config) | Grows with the example and test count |
 
 Neither runs until `pixi run setup` has been done in the clone, which also points
 `blame.ignoreRevsFile` at `.git-blame-ignore-revs` so the bulk reformat listed there stays out of

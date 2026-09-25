@@ -5,6 +5,44 @@
 # build only type-checks the `def` bodies it actually reaches.
 set -u
 
+# A push that changes only files on this allowlist skips every check below:
+# nothing here can reach a build or a test. It is an allowlist on purpose —
+# pixi.toml, scripts/, fixtures and assets look inert and are not, so any
+# path not named here means the full run.
+is_inert() {
+    case "$1" in
+        *.md | LICENSE | .gitignore | .git-blame-ignore-revs \
+            | .agents/* | .claude/* | .vscode/* | skills-lock.json) return 0 ;;
+    esac
+    return 1
+}
+
+# Git hands a pre-push hook one "local_ref local_sha remote_ref remote_sha"
+# line per pushed ref. Any ref whose diff cannot be taken — a new branch with
+# no origin/main to compare to, a remote commit missing locally — counts as
+# code, so the fallback is always the full run.
+zero=0000000000000000000000000000000000000000
+inert=1
+while read -r _ local_sha _ remote_sha; do
+    [ "$local_sha" = "$zero" ] && continue # deleting a branch
+    if [ "$remote_sha" = "$zero" ]; then
+        base=$(git merge-base origin/main "$local_sha" 2>/dev/null) \
+            || { inert=0; break; }
+    else
+        base=$remote_sha
+    fi
+    changed=$(git diff --name-only "$base" "$local_sha" 2>/dev/null) \
+        || { inert=0; break; }
+    for path in $changed; do
+        is_inert "$path" || { inert=0; break 2; }
+    done
+done
+
+if [ "$inert" = 1 ]; then
+    echo "Only docs and editor config changed — skipping checks."
+    exit 0
+fi
+
 out=$(mktemp -d)
 trap 'rm -rf "$out"' EXIT
 
