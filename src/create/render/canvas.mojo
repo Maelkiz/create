@@ -275,9 +275,9 @@ struct Canvas:
         """
         return self._state^
 
-    def to_screen(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
+    def to_screen(self, pixel: Point2D) -> Point2D:
         """Map a window pixel position into screen space."""
-        return self.view.to_screen(x, y)
+        return self.view.to_screen(pixel)
 
     def left(self) -> Float64:
         """Screen x of the left edge — negative, since the origin is centred."""
@@ -429,15 +429,17 @@ struct Canvas:
         self._transform = self._base @ cam_m @ self._user
         self._transform_inv = self._user_inv @ inverse(cam_m) @ self._base_inv
 
-    def to_world(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
+    def to_world(self, local: Point2D) -> Point2D:
         """Map a point from the current transform's frame into world space."""
-        return mat_apply(self._user, x, y)
+        var p = mat_apply(self._user, local.x, local.y)
+        return Point2D(p[0], p[1])
 
-    def to_local(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
+    def to_local(self, world: Point2D) -> Point2D:
         """Map a world-space point — a mouse position already converted
         through `Camera.to_world`, say — into the current transform's frame.
         """
-        return mat_apply(self._user_inv, x, y)
+        var p = mat_apply(self._user_inv, world.x, world.y)
+        return Point2D(p[0], p[1])
 
     def camera(mut self, cam: Camera):
         """Set the active camera. Applies to every render call and every nested
@@ -591,96 +593,58 @@ struct Canvas:
         """
         self._state.backend.request_screenshot(path)
 
-    def rectangle(mut self, x: Float64, y: Float64, w: Float64, h: Float64):
+    def rectangle(mut self, pos: Point2D, size: Vector2D):
         self._state.backend.record(
-            rect_command(self._transform, self._style, x, y, w, h)
+            rect_command(
+                self._transform, self._style, pos.x, pos.y, size.x, size.y
+            )
         )
 
-    def circle(mut self, cx: Float64, cy: Float64, r: Float64):
+    def rectangle(mut self, pos: Point2D, w: Float64, h: Float64):
+        self.rectangle(pos, Vector2D(w, h))
+
+    def rectangle(mut self, r: Rectangle):
+        self.rectangle(r.center(), r.size())
+
+    def circle(mut self, pos: Point2D, r: Float64):
         self._state.backend.record(
-            circle_command(self._transform, self._style, cx, cy, r)
+            circle_command(self._transform, self._style, pos.x, pos.y, r)
         )
 
-    def line(mut self, x0: Float64, y0: Float64, x1: Float64, y1: Float64):
+    def circle(mut self, pos: Point2D, r: Int):
+        self.circle(pos, Float64(r))
+
+    def circle(mut self, c: Circle):
+        self.circle(c.center(), c.r)
+
+    def line(mut self, start: Point2D, end: Point2D):
         # Recorded only when it would render: an outline-less line is the one
         # shape with nothing left to paint, so the command would be pure
         # overhead.
         if not self._style.outline_enabled:
             return
         self._state.backend.record(
-            line_command(self._transform, self._style, x0, y0, x1, y1)
-        )
-
-    def triangle(
-        mut self,
-        x1: Float64,
-        y1: Float64,
-        x2: Float64,
-        y2: Float64,
-        x3: Float64,
-        y3: Float64,
-    ):
-        self._state.backend.record(
-            triangle_command(
-                self._transform, self._style, x1, y1, x2, y2, x3, y3
+            line_command(
+                self._transform, self._style, start.x, start.y, end.x, end.y
             )
         )
 
-    def rectangle(mut self, x: Int, y: Int, w: Int, h: Int):
-        self.rectangle(Float64(x), Float64(y), Float64(w), Float64(h))
-
-    def circle(mut self, cx: Int, cy: Int, r: Int):
-        self.circle(Float64(cx), Float64(cy), Float64(r))
-
-    def line(mut self, x0: Int, y0: Int, x1: Int, y1: Int):
-        self.line(Float64(x0), Float64(y0), Float64(x1), Float64(y1))
-
-    def triangle(
-        mut self, x1: Int, y1: Int, x2: Int, y2: Int, x3: Int, y3: Int
-    ):
-        self.triangle(
-            Float64(x1),
-            Float64(y1),
-            Float64(x2),
-            Float64(y2),
-            Float64(x3),
-            Float64(y3),
-        )
-
-    def rectangle(mut self, r: Rectangle):
-        self.rectangle(r.x, r.y, r.w, r.h)
-
-    def rectangle(mut self, pos: Point2D, w: Float64, h: Float64):
-        self.rectangle(pos.x, pos.y, w, h)
-
-    def rectangle(mut self, pos: Point2D, size: Vector2D):
-        self.rectangle(pos.x, pos.y, size.x, size.y)
-
-    def circle(mut self, c: Circle):
-        self.circle(c.x, c.y, c.r)
-
-    def circle(mut self, pos: Point2D, r: Float64):
-        self.circle(pos.x, pos.y, r)
-
-    def circle(mut self, pos: Point2D, r: Int):
-        self.circle(pos.x, pos.y, Float64(r))
-
     def line(mut self, l: Line):
-        self.line(l.x0, l.y0, l.x1, l.y1)
-
-    def line(mut self, start: Point2D, end: Point2D):
-        self.line(start.x, start.y, end.x, end.y)
-
-    def triangle(mut self, t: Triangle):
-        self.triangle(t.x1, t.y1, t.x2, t.y2, t.x3, t.y3)
+        self.line(Point2D(l.x0, l.y0), Point2D(l.x1, l.y1))
 
     def triangle(mut self, a: Point2D, b: Point2D, c: Point2D):
-        self.triangle(a.x, a.y, b.x, b.y, c.x, c.y)
+        self._state.backend.record(
+            triangle_command(
+                self._transform, self._style, a.x, a.y, b.x, b.y, c.x, c.y
+            )
+        )
 
-    def sprite(mut self, s: Sprite, cx: Int, cy: Int):
-        self.sprite(s, Float64(cx), Float64(cy))
+    def triangle(mut self, t: Triangle):
+        self.triangle(
+            Point2D(t.x1, t.y1), Point2D(t.x2, t.y2), Point2D(t.x3, t.y3)
+        )
 
-    def sprite(mut self, s: Sprite, cx: Float64, cy: Float64):
+    def sprite(mut self, s: Sprite, pos: Point2D):
         """Render `s` at its own pixel size.
 
         The same command as the sized overload: at a pixel scale of 1 the two
@@ -688,12 +652,9 @@ struct Canvas:
         they used to differ by now lives inside `blit_sprite`, where the replay
         can take it without the record site having to know.
         """
-        self.sprite(s, cx, cy, s.width, s.height)
+        self.sprite(s, pos, s.width, s.height)
 
-    def sprite(mut self, s: Sprite, pos: Point2D):
-        self.sprite(s, pos.x, pos.y)
-
-    def sprite(mut self, s: Sprite, cx: Float64, cy: Float64, w: Int, h: Int):
+    def sprite(mut self, s: Sprite, pos: Point2D, w: Int, h: Int):
         # Rotation and shear are not resampled — only position and scale apply.
         #
         # The image is interned *now*, not at replay: the command then carries
@@ -706,8 +667,8 @@ struct Canvas:
             sprite_command(
                 self._transform,
                 self._style,
-                cx,
-                cy,
+                pos.x,
+                pos.y,
                 Float64(w),
                 Float64(h),
                 image,
@@ -716,40 +677,18 @@ struct Canvas:
             )
         )
 
-    def sprite(mut self, s: Sprite, cx: Int, cy: Int, w: Int, h: Int):
-        self.sprite(s, Float64(cx), Float64(cy), w, h)
-
-    def sprite(mut self, s: Sprite, pos: Point2D, w: Int, h: Int):
-        self.sprite(s, pos.x, pos.y, w, h)
-
-    def sprite(mut self, a: SpriteAnimator, cx: Float64, cy: Float64):
-        """Render the animator's current frame, centred at (cx, cy).
+    def sprite(mut self, a: SpriteAnimator, pos: Point2D):
+        """Render the animator's current frame, centred at `pos`.
 
         The frame is indexed here rather than handed back by an accessor on
         `SpriteAnimator`: a `List` element's origin is not spellable from user
         code, so a reference to it cannot cross a function boundary. That is
-        also why only this overload and the sized one below index it — the
-        rest delegate here, so the inline indexing lives in two places rather
-        than six.
+        also why the sized overload below indexes it inline too.
         """
-        self.sprite(a.animation[].frames[a.frame_index], cx, cy)
-
-    def sprite(mut self, a: SpriteAnimator, cx: Int, cy: Int):
-        self.sprite(a, Float64(cx), Float64(cy))
-
-    def sprite(mut self, a: SpriteAnimator, pos: Point2D):
-        self.sprite(a, pos.x, pos.y)
-
-    def sprite(
-        mut self, a: SpriteAnimator, cx: Float64, cy: Float64, w: Int, h: Int
-    ):
-        self.sprite(a.animation[].frames[a.frame_index], cx, cy, w, h)
-
-    def sprite(mut self, a: SpriteAnimator, cx: Int, cy: Int, w: Int, h: Int):
-        self.sprite(a, Float64(cx), Float64(cy), w, h)
+        self.sprite(a.animation[].frames[a.frame_index], pos)
 
     def sprite(mut self, a: SpriteAnimator, pos: Point2D, w: Int, h: Int):
-        self.sprite(a, pos.x, pos.y, w, h)
+        self.sprite(a.animation[].frames[a.frame_index], pos, w, h)
 
     def corner_radius(mut self, radius: Int):
         """Round the corners of rectangles and triangles, in world units,
@@ -792,23 +731,17 @@ struct Canvas:
         """
         self._style.text_align = align
 
-    def text(mut self, s: String, x: Int, y: Int):
-        self.text(s, Float64(x), Float64(y))
-
-    def text(mut self, s: String, pos: Point2D):
-        self.text(s, pos.x, pos.y)
-
     def font(mut self, var f: Font):
         """Swap the face. Lives in `PersistentCanvasState`, so unlike the style
         settings a font outlives the frame that set it."""
         self._state.backend.text.set_font(f^)
 
-    def text(mut self, s: String, x: Float64, y: Float64):
+    def text(mut self, s: String, pos: Point2D):
         if self._style.text_color.a == 0:
             return
         # Deferred whole. Nothing about the layout is decided here: the
         # advances, the alignment and the baseline all come out of the font,
         # which the backend owns, so they are resolved at replay.
         self._state.backend.record(
-            text_command(self._transform, self._style, x, y, s.copy())
+            text_command(self._transform, self._style, pos.x, pos.y, s.copy())
         )

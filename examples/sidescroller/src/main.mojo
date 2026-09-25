@@ -47,7 +47,7 @@ struct Game(Program):
                 min(last, Int(self.WORLD_RIGHT) + 1),
                 200,
             ):
-                canvas.circle(i, 0, 5)
+                canvas.circle((i, 0), 5)
 
         self.player.render(canvas)
 
@@ -56,8 +56,8 @@ struct Game(Program):
             canvas.outline_enabled(False)
             canvas.fill(Color(150, 60, 60))
             var wall_h = canvas.top() - canvas.bottom()
-            canvas.rectangle(self.WORLD_LEFT, 0.0, 30.0, wall_h)
-            canvas.rectangle(self.WORLD_RIGHT, 0.0, 30.0, wall_h)
+            canvas.rectangle((self.WORLD_LEFT, 0.0), 30.0, wall_h)
+            canvas.rectangle((self.WORLD_RIGHT, 0.0), 30.0, wall_h)
 
         with canvas.overlay():
             canvas.text_color(Color(220, 220, 220))

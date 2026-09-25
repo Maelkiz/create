@@ -4,6 +4,7 @@ from create.math.matrix import (
     scale as mat_scale,
     translate as mat_translate,
 )
+from create.math.point2d import Point2D
 from .autoscale import AutoScale
 
 
@@ -125,7 +126,7 @@ struct Viewport(Copyable, Movable):
             Float64(self.pixel_w) / 2.0, Float64(self.pixel_h) / 2.0
         ) @ mat_scale(self.scale, -self.scale)
 
-    def to_screen(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
+    def to_screen(self, pixel: Point2D) -> Point2D:
         """Map a window pixel position into screen space.
 
         The inverse of `base_matrix`, done in arithmetic: pointer positions
@@ -134,7 +135,7 @@ struct Viewport(Copyable, Movable):
         the rest of `Viewport` — a program using a `Camera` converts on top
         with `Camera.to_world`.
         """
-        return (
-            (x - Float64(self.pixel_w) / 2.0) / self.scale,
-            (Float64(self.pixel_h) / 2.0 - y) / self.scale,
+        return Point2D(
+            (pixel.x - Float64(self.pixel_w) / 2.0) / self.scale,
+            (Float64(self.pixel_h) / 2.0 - pixel.y) / self.scale,
         )

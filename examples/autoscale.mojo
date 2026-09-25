@@ -57,11 +57,13 @@ struct App(Program):
         canvas.text_color(Color.BLACK)
         canvas.font_size(28)
         canvas.text_align(Align.TOP)
-        canvas.text("Autoscale Mode: " + _mode_name(context.autoscale), 0, -140)
+        canvas.text(
+            "Autoscale Mode: " + _mode_name(context.autoscale), (0, -140)
+        )
         canvas.font_size(20)
-        canvas.text("(space to cycle)", 0, -180)
+        canvas.text("(space to cycle)", (0, -180))
         canvas.font_size(28)
-        canvas.text("Current scale: " + String(canvas.scale), 0, -220)
+        canvas.text("Current scale: " + String(canvas.scale), (0, -220))
 
 
 def main() raises:

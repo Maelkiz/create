@@ -9,8 +9,8 @@ struct App(Program):
     @staticmethod
     def create(mut context: Context) raises -> App:
         return App(
-            center=Circle(0, 0, 100),
-            mouse=Circle(0, 0, 100),
+            center=Circle((0, 0), 100),
+            mouse=Circle((0, 0), 100),
         )
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

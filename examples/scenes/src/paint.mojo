@@ -46,6 +46,5 @@ struct Paint:
             canvas.text_align(Align.BOTTOM)
             canvas.text(
                 "left-drag to paint    right-click for menu",
-                0,
-                canvas.bottom() + 14.0,
+                (0, canvas.bottom() + 14.0),
             )

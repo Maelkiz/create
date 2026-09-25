@@ -46,12 +46,12 @@ struct ClearMidFrame(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.BLUE)
-        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
+        canvas.rectangle((0.0, 0.0), 40.0, 40.0)
         # An opaque clear must flush the blue rect to the framebuffer before
         # wiping it, not queue it behind the clear where it would survive.
         canvas.background(Color.RED)
         canvas.fill(Color.GREEN)
-        canvas.rectangle(10.0, 10.0, 16.0, 16.0)
+        canvas.rectangle((10.0, 10.0), 16.0, 16.0)
 
 
 @fieldwise_init
@@ -66,8 +66,8 @@ struct TwoSprites(Program):
         canvas.background(Color.BLACK)
         var a = Sprite.solid(2, 2, 255, 0, 255)
         var b = Sprite.solid(2, 2, 0, 255, 255)
-        canvas.sprite(a, -20, 0, 16, 16)
-        canvas.sprite(b, 20, 0, 16, 16)
+        canvas.sprite(a, (-20, 0), 16, 16)
+        canvas.sprite(b, (20, 0), 16, 16)
 
 
 @fieldwise_init
@@ -81,11 +81,11 @@ struct TextAndSprite(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
         var img = Sprite.solid(2, 2, 255, 0, 0)
-        canvas.sprite(img, -30, 0, 16, 16)
+        canvas.sprite(img, (-30, 0), 16, 16)
         canvas.text_color(Color.WHITE)
         canvas.font_size(24)
         canvas.text_align(Align.TOP_LEFT)
-        canvas.text("Hi", 0.0, 20.0)
+        canvas.text("Hi", (0.0, 20.0))
 
 
 @fieldwise_init
@@ -109,7 +109,7 @@ struct ManyShapes(Program):
                 var wy = (
                     Float64(gy) - Float64(_GRID) / 2.0
                 ) * _CELL + _CELL / 2.0
-                canvas.rectangle(wx, wy, _CELL - 2.0, _CELL - 2.0)
+                canvas.rectangle((wx, wy), _CELL - 2.0, _CELL - 2.0)
 
 
 def _gpu_frame[

@@ -69,27 +69,33 @@ def apply_events(
             # Pointer positions reach the program in screen space — the same
             # camera-independent space `canvas.left`/`right`/`bottom`/`top` use.
             var p = view.to_screen(
-                Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
+                Point2D(
+                    Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
+                )
             )
-            input._set_mouse(p[0], p[1])
+            input._set_mouse(p.x, p.y)
         elif event.isa[MouseButtonDown]():
             var e = event[MouseButtonDown]
             var p = view.to_screen(
-                Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
+                Point2D(
+                    Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
+                )
             )
             input.mouse_pressed = True
             input.mouse_button = e.button
-            input._set_mouse(p[0], p[1])
-            input.mouse_press_pos = Point2D(p[0], p[1])
+            input._set_mouse(p.x, p.y)
+            input.mouse_press_pos = p
             input._held_buttons |= 1 << e.button
             input._pressed_buttons |= 1 << e.button
         elif event.isa[MouseButtonUp]():
             var e = event[MouseButtonUp]
             var p = view.to_screen(
-                Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
+                Point2D(
+                    Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
+                )
             )
             input.mouse_pressed = False
-            input._set_mouse(p[0], p[1])
+            input._set_mouse(p.x, p.y)
             input._held_buttons &= ~(1 << e.button)
             input._released_buttons |= 1 << e.button
         elif event.isa[MouseWheel]():

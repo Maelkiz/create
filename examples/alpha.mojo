@@ -38,7 +38,7 @@ struct App(Program):
         canvas.text_color(Color(255, 255, 255, 160))
         canvas.font_size(28)
         canvas.text_align(Align.TOP)
-        canvas.text("alpha", 0.0, -150.0)
+        canvas.text("alpha", (0.0, -150.0))
 
 
 def main() raises:

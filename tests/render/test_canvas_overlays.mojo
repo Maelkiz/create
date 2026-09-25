@@ -25,7 +25,7 @@ struct OverflowingRect(Program):
         # Far larger than the 100x50 design — if the raster loop didn't
         # already clip to the framebuffer, this alone would prove nothing, so
         # the value is entirely in what happens after render.
-        canvas.rectangle(0.0, 0.0, 1000.0, 1000.0)
+        canvas.rectangle((0.0, 0.0), 1000.0, 1000.0)
 
 
 def test_letterbox_clips_a_shape_rendered_past_the_design_edge() raises -> None:
@@ -51,7 +51,7 @@ struct ScaledSprite(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.sprite(self.sprite, 0.0, 0.0, 8, 8)
+        canvas.sprite(self.sprite, (0.0, 0.0), 8, 8)
 
 
 def test_sized_sprite_overload_resamples_nearest_neighbour() raises -> None:

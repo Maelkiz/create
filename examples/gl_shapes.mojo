@@ -101,14 +101,14 @@ struct App(Program):
             canvas.text_color(Color.WHITE)
             canvas.font_size(28)
             canvas.text_align(Align.CENTER)
-            canvas.text("centre / middle", 0, 0)
+            canvas.text("centre / middle", (0, 0))
 
         with canvas.style():
             canvas.outline_enabled(False)
             canvas.text_color(Color(0x9C, 0xE8, 0x6E))
             canvas.font_size(20)
             canvas.text_align(Align.TOP_LEFT)
-            canvas.text("left / top", canvas.left() + 12, canvas.top() - 12)
+            canvas.text("left / top", (canvas.left() + 12, canvas.top() - 12))
 
         with canvas.style():
             canvas.outline_enabled(False)
@@ -117,12 +117,11 @@ struct App(Program):
             canvas.text_align(Align.BOTTOM_RIGHT)
             canvas.text(
                 "right / bottom — translucent",
-                canvas.right() - 12,
-                canvas.bottom() + 12,
+                (canvas.right() - 12, canvas.bottom() + 12),
             )
 
-        canvas.sprite(self.logo, 250, -170, 140, 140)
-        canvas.sprite(self.logo, 90, -230, 70, 70)
+        canvas.sprite(self.logo, (250, -170), 140, 140)
+        canvas.sprite(self.logo, (90, -230), 70, 70)
 
         with canvas.style():
             canvas.font_size(20)
@@ -130,8 +129,7 @@ struct App(Program):
             canvas.text_align(Align.TOP_RIGHT)
             canvas.text(
                 "fps: " + String(self.fps),
-                canvas.right() - 12,
-                canvas.top() - 12,
+                (canvas.right() - 12, canvas.top() - 12),
             )
 
 

@@ -30,7 +30,7 @@ struct Sketch(Program):
 
         canvas.text_color(Color.BLACK)
         canvas.font_size(54)
-        canvas.text("Create!", 50, 100)
+        canvas.text("Create!", (50, 100))
 
 
 def main() raises:

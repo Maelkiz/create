@@ -449,7 +449,7 @@ struct RotatedRect(Program):
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         with canvas.transform(rotate(_ANGLE)):
-            canvas.rectangle(12.0, 6.0, _RECT_W, _RECT_H)
+            canvas.rectangle((12.0, 6.0), _RECT_W, _RECT_H)
 
 
 def test_a_rotated_rect_replays_identically_to_canvas() raises -> None:

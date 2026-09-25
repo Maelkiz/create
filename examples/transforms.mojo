@@ -4,17 +4,13 @@ from create import *
 @fieldwise_init
 struct Transforms(Program):
     var elapsed: Float64
-    var mouse_x: Int
-    var mouse_y: Int
 
     @staticmethod
     def create(mut context: Context) raises -> Transforms:
-        return Transforms(elapsed=0.0, mouse_x=0, mouse_y=0)
+        return Transforms(elapsed=0.0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         self.elapsed = context.time.elapsed
-        self.mouse_x = context.input.mouse_x
-        self.mouse_y = context.input.mouse_y
 
         canvas.background(Color(8, 8, 20))
 
@@ -25,39 +21,35 @@ struct Transforms(Program):
         # its own — the nesting below is what the demo is about.
         # Hit-test the sun in the frame it is rendered in. `to_local` maps a world
         # position (which is what `context.input.mouse` already is) into that frame.
-        var local = canvas.to_local(
-            Float64(self.mouse_x), Float64(self.mouse_y)
-        )
-        var lx = local[0]
-        var ly = local[1]
-        var sun_hovered = lx * lx + ly * ly <= 40.0 * 40.0
+        var local = canvas.to_local(context.input.mouse)
+        var sun_hovered = local.x * local.x + local.y * local.y <= 40.0 * 40.0
 
         canvas.outline_enabled(False)
         canvas.fill(Color(30, 180, 230) if sun_hovered else Color(230, 180, 20))
-        canvas.circle(0.0, 0.0, 40.0)
+        canvas.circle((0.0, 0.0), 40.0)
 
         # Planet — rotate then translate so it orbits the sun
         with canvas.transform(rotate(planet_angle) @ translate(160.0, 0.0)):
             # Thin orbit guide rendered in planet's frame before further nesting
             canvas.outline(Color(50, 50, 70), thickness=1)
             canvas.fill_enabled(False)
-            canvas.circle(0.0, 0.0, 45.0)
+            canvas.circle((0.0, 0.0), 45.0)
 
             canvas.outline_enabled(False)
             canvas.fill(Color(60, 120, 220))
-            canvas.circle(0.0, 0.0, 18.0)
+            canvas.circle((0.0, 0.0), 18.0)
 
             # Moon — orbits the planet
             with canvas.transform(rotate(moon_angle) @ translate(45.0, 0.0)):
                 canvas.fill(Color(170, 170, 170))
-                canvas.circle(0.0, 0.0, 8.0)
+                canvas.circle((0.0, 0.0), 8.0)
 
         # Spinning rect cluster: same transform pattern, different shape.
         # Below and left of centre, so both coordinates are negative.
         with canvas.transform(translate(-232.0, -165.0)):
             canvas.outline_enabled(False)
             canvas.fill(Color(60, 60, 80))
-            canvas.circle(0.0, 0.0, 8.0)
+            canvas.circle((0.0, 0.0), 8.0)
 
             for i in range(6):
                 var arm_angle = self.elapsed * 0.9 + Float64(i) * tau / 6.0
@@ -71,7 +63,7 @@ struct Transforms(Program):
                     var r = UInt8(60 + Int(t * 180.0))
                     var b = UInt8(180 - Int(t * 100.0))
                     canvas.fill(Color(r, 80, b))
-                    canvas.rectangle(0.0, 0.0, 36.0, 18.0)
+                    canvas.rectangle((0.0, 0.0), 36.0, 18.0)
 
         # Rotating triangle fan
         with canvas.transform(translate(232.0, -165.0)):
@@ -81,7 +73,7 @@ struct Transforms(Program):
                     var g = UInt8(100 + Int(Float64(i) * 30.0))
                     canvas.outline_enabled(False)
                     canvas.fill(Color(40, g, 160))
-                    canvas.triangle(0.0, 0.0, 60.0, 15.0, 60.0, -15.0)
+                    canvas.triangle((0.0, 0.0), (60.0, 15.0), (60.0, -15.0))
 
 
 def main() raises:

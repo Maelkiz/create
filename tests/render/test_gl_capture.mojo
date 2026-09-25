@@ -39,7 +39,7 @@ def _scene(mut canvas: Canvas):
     canvas.background(Color.BLACK)
     canvas.outline_enabled(False)
     canvas.fill(Color.RED)
-    canvas.rectangle(0.0, 0.0, 20.0, 20.0)
+    canvas.rectangle((0.0, 0.0), 20.0, 20.0)
 
 
 @fieldwise_init

@@ -33,7 +33,7 @@ struct Game(Program):
         )
 
         canvas.background(Color(30, 30, 30))
-        canvas.sprite(self.sprite, self.x, self.y)
+        canvas.sprite(self.sprite, (self.x, self.y))
 
 
 def main() raises:

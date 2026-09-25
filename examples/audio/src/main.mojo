@@ -38,8 +38,8 @@ struct AudioDemo(Program):
         canvas.text_color(Color.BLACK)
         canvas.font_size(24)
         canvas.text_align(Align.TOP)
-        canvas.text("space: chime    hold h: loop ambience", 0, 20)
-        canvas.text("looping: " + String(self.looping), 0, -20)
+        canvas.text("space: chime    hold h: loop ambience", (0, 20))
+        canvas.text("looping: " + String(self.looping), (0, -20))
 
 
 def main() raises:

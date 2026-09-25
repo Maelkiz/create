@@ -107,8 +107,7 @@ struct Game(Program):
         # scaled up, and the sized overload does it without touching the asset.
         canvas.sprite(
             self.animator,
-            self.x,
-            _GROUND + _SIZE / 2.0 - _FOOT_PAD,
+            (self.x, _GROUND + _SIZE / 2.0 - _FOOT_PAD),
             _SIZE,
             _SIZE,
         )

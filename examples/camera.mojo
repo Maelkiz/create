@@ -33,17 +33,17 @@ struct CameraDemo(Program):
             var x = Float64(i) * 120.0
             var t = (sin(self.elapsed + Float64(i)) + 1.0) / 2.0
             canvas.fill(Color(UInt8(60 + Int(t * 150.0)), 90, 160))
-            canvas.rectangle(x, 0.0, 40.0, 200.0)
+            canvas.rectangle((x, 0.0), 40.0, 200.0)
 
         canvas.fill(Color(230, 190, 40))
-        canvas.circle(0.0, 140.0, 14.0)
+        canvas.circle((0.0, 140.0), 14.0)
 
         # HUD: fixed to the screen regardless of where the camera looks or
         # how far it has zoomed.
         with canvas.overlay():
             canvas.outline_enabled(False)
             canvas.fill(Color(230, 230, 230))
-            canvas.rectangle(0.0, canvas.top() - 20.0, 300.0, 30.0)
+            canvas.rectangle((0.0, canvas.top() - 20.0), 300.0, 30.0)
             canvas.text_color(Color(20, 20, 20))
             canvas.text_align(Align.CENTER)
             canvas.text(

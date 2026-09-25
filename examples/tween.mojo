@@ -117,10 +117,10 @@ struct App(Program):
         canvas.text_color(Color(200, 200, 212))
         canvas.font_size(30)
         canvas.text_align(Align.TOP)
-        canvas.text("Easing and Tweens", 0, 362)
+        canvas.text("Easing and Tweens", (0, 362))
         canvas.font_size(18)
         canvas.text(
-            "space  cycles the hero curve: " + self.names[self.pick], 0, 238
+            "space  cycles the hero curve: " + self.names[self.pick], (0, 238)
         )
 
         canvas.font_size(18)
@@ -130,7 +130,7 @@ struct App(Program):
                 canvas.text_color(Color(235, 120, 70))
             else:
                 canvas.text_color(Color(140, 140, 155))
-            canvas.text(self.names[i], -614.0, self._row_y(i))
+            canvas.text(self.names[i], (-614.0, self._row_y(i)))
 
     def _row_y(self, i: Int) -> Float64:
         return 170.0 - Float64(i) * 66.0

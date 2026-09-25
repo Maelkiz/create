@@ -204,7 +204,7 @@ except `frame_cap()` and `quit()`, read after `update` returns.
 | Term | Meaning |
 |---|---|
 | Screen space | Origin-centred, y-up, camera-independent. `canvas.left()`…`top()` and `context.input.mouse` live here |
-| World space | What render calls use once a `Camera` is set; identical to screen space without one. `canvas.to_world`/`to_local` convert between world space and the current transform (two `Float64` in, a tuple out) |
+| World space | What render calls use once a `Camera` is set; identical to screen space without one. `canvas.to_world`/`to_local` convert a `Point2D` between world space and the current transform |
 | Asset vs. playhead | `SpriteAnimation`/`Sound` are shared immutable assets; `SpriteAnimator`/an `Audio` voice are one entity's position in one. `fps` belongs to the asset |
 | `Easing` / `Tween` | An `Easing` is a stateless curve over a 0-to-1 fraction (`ease(curve, t)`); a `Tween` walks that fraction over a duration. Each entity owns its own `Tween` |
 | `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(pos, r)`, `context.input.mouse`); an extent or displacement is a `Vector2D` (`Rectangle.size()`, velocities). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Both take a bare tuple implicitly |
@@ -226,6 +226,9 @@ except `frame_cap()` and `quit()`, read after `update` returns.
 - Don't use `fn` — removed; use `def`.
 - Don't hold a raw `Pointer` to `Canvas` outside the guards; use origin-tracked references.
 - Don't name a test file without the `test_` prefix; the runner won't find it.
+- Don't take a location as separate `x, y` scalars, not even as a convenience overload beside the
+  `Point2D` one: a bare tuple already fills a `Point2D` parameter, and `(x, y)` keeps the pairs
+  readable where a run of numbers doesn't.
 - Don't add a `Point2D` overload beside a `Vector2D` one: both have `@implicit` tuple constructors,
   so `canvas.circle((0, 0), 20)` becomes ambiguous. Change the parameter's type instead. That's also why
   `p - Vector2D(1, 2)` must name the type while `p + (1, 2)` need not. Don't "fix" that by adding

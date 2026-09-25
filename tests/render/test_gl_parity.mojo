@@ -173,14 +173,14 @@ struct _Parity(Program):
         elif self.shape == _SHAPE_SPRITE:
             # Native size: at a scale of 1 neither backend resamples, so this
             # is testing the blit, not the filter.
-            canvas.sprite(self.image, 70, 50, 2, 2)
+            canvas.sprite(self.image, (70, 50), 2, 2)
         elif self.shape == _SHAPE_TEXT:
             with canvas.style():
                 canvas.outline_enabled(False)
                 canvas.text_color(Color.WHITE)
                 canvas.font_size(16)
                 canvas.text_align(Align.CENTER)
-                canvas.text("parity", 0, 0)
+                canvas.text("parity", (0, 0))
         elif self.shape == _SHAPE_ROTATED_RECT:
             # Rotation defeats the axis-aligned fast path on both backends,
             # so this exercises the CPU's non-uniform inverse-mapping branch

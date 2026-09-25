@@ -109,8 +109,8 @@ struct Bench(Program):
 
         # Two sprites: one texture, so one extra batch for the pair rather
         # than one each.
-        canvas.sprite(self.logo, -w + 90, h - 90, 140, 140)
-        canvas.sprite(self.logo, -w + 220, h - 90, 100, 100)
+        canvas.sprite(self.logo, (-w + 90, h - 90), 140, 140)
+        canvas.sprite(self.logo, (-w + 220, h - 90), 100, 100)
 
         with canvas.style():
             canvas.outline_enabled(False)
@@ -118,7 +118,7 @@ struct Bench(Program):
             canvas.font_weight(FontWeight.MEDIUM)
             canvas.text_align(Align.CENTER)
             canvas.text(
-                String(_SHAPES) + " shapes, two sprites, this text", 0, 0
+                String(_SHAPES) + " shapes, two sprites, this text", (0, 0)
             )
 
 

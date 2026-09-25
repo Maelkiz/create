@@ -6,9 +6,10 @@ struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     `xy`/`xyz` to hand the components to another type.
 
     Every position in the library is one of these — `canvas.circle(pos, r)`,
-    `Rectangle.center()`, `input.mouse`. The tuple constructors are
-    `@implicit`, so `canvas.circle((0, 0), 20)` works without naming the type
-    and a program only spells `Point2D` when it is storing one.
+    `Rectangle.center()`, `input.mouse` — and no signature takes a location
+    as a loose x/y pair instead. The tuple constructors are `@implicit`, so
+    `canvas.circle((0, 0), 20)` works without naming the type and a program
+    only spells `Point2D` when it is storing one.
 
     The surface is strictly affine, which is the whole point of the type
     existing beside `Vector2D`: subtracting two positions gives the

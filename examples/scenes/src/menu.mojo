@@ -19,8 +19,8 @@ struct Menu:
             canvas.text_color(Color.WHITE)
             canvas.font_size(48)
             canvas.text_align(Align.TOP)
-            canvas.text("Scenes", 0, 40)
+            canvas.text("Scenes", (0, 40))
 
             canvas.text_color(Color(180, 180, 190))
             canvas.font_size(20)
-            canvas.text("click to start painting", 0, -20)
+            canvas.text("click to start painting", (0, -20))

@@ -57,7 +57,7 @@ struct CentredRect(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
-        canvas.rectangle(0.0, 0.0, 20.0, 20.0)
+        canvas.rectangle((0.0, 0.0), 20.0, 20.0)
 
 
 def test_rect_is_centre_positioned() raises -> None:
@@ -85,7 +85,7 @@ struct HighRect(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.GREEN)
-        canvas.rectangle(0.0, 30.0, 10.0, 10.0)
+        canvas.rectangle((0.0, 30.0), 10.0, 10.0)
 
 
 def test_positive_y_renders_above_centre() raises -> None:
@@ -109,7 +109,7 @@ struct CentredCircle(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.CYAN)
-        canvas.circle(0.0, 0.0, 20.0)
+        canvas.circle((0.0, 0.0), 20.0)
 
 
 def test_circle_is_centred_and_radial() raises -> None:
@@ -139,7 +139,7 @@ struct UprightTriangle(Program):
         canvas.outline_enabled(False)
         canvas.fill(Color.MAGENTA)
         # Apex up, base below — in world terms, since y grows upward.
-        canvas.triangle(0.0, 30.0, -30.0, -30.0, 30.0, -30.0)
+        canvas.triangle((0.0, 30.0), (-30.0, -30.0), (30.0, -30.0))
 
 
 def test_triangle_fills_its_interior_only() raises -> None:
@@ -166,7 +166,7 @@ struct AlphaOverRed(Program):
         canvas.background(Color.RED)
         canvas.outline_enabled(False)
         canvas.fill(Color(0, 0, 255, 128))
-        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
+        canvas.rectangle((0.0, 0.0), 40.0, 40.0)
 
 
 def test_alpha_composites_source_over() raises -> None:
@@ -186,7 +186,7 @@ struct ThickLine(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
         canvas.outline(Color.WHITE, thickness=3)
-        canvas.line(-10.0, 0.0, 10.0, 0.0)
+        canvas.line((-10.0, 0.0), (10.0, 0.0))
 
 
 def test_outline_thickness_scales_to_pixels() raises -> None:
@@ -253,7 +253,7 @@ struct RotatedRect(Program):
         canvas.outline_enabled(False)
         canvas.fill(Color.YELLOW)
         with canvas.transform(rotate(pi / 4.0)):
-            canvas.rectangle(0.0, 0.0, 20.0, 20.0)
+            canvas.rectangle((0.0, 0.0), 20.0, 20.0)
 
 
 def test_rotation_takes_the_inverse_mapped_path() raises -> None:
@@ -280,7 +280,7 @@ struct SharpRect(Program):
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.corner_radius(0)
-        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
+        canvas.rectangle((0.0, 0.0), 40.0, 40.0)
 
 
 def test_corner_radius_zero_matches_sharp_rect() raises -> None:
@@ -304,7 +304,7 @@ struct RoundedRect(Program):
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.corner_radius(10)
-        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
+        canvas.rectangle((0.0, 0.0), 40.0, 40.0)
 
 
 def test_rect_corner_radius_rounds_the_corner() raises -> None:
@@ -330,7 +330,7 @@ struct RoundedRectOutlined(Program):
         canvas.outline(Color.BLUE, thickness=2)
         canvas.fill(Color.RED)
         canvas.corner_radius(10)
-        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
+        canvas.rectangle((0.0, 0.0), 40.0, 40.0)
 
 
 def test_rect_corner_radius_outline_follows_the_arc() raises -> None:
@@ -369,7 +369,7 @@ struct ScaledRoundedRect(Program):
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.corner_radius(5)
-        canvas.rectangle(0.0, 0.0, 20.0, 20.0)
+        canvas.rectangle((0.0, 0.0), 20.0, 20.0)
 
 
 def test_corner_radius_scales_to_pixels() raises -> None:
@@ -395,7 +395,7 @@ struct RotatedRoundedRect(Program):
         canvas.fill(Color.YELLOW)
         canvas.corner_radius(6)
         with canvas.transform(rotate(pi / 4.0)):
-            canvas.rectangle(0.0, 0.0, 20.0, 20.0)
+            canvas.rectangle((0.0, 0.0), 20.0, 20.0)
 
 
 def test_rect_corner_radius_under_rotation() raises -> None:
@@ -424,7 +424,7 @@ struct SharpTriangle(Program):
         canvas.fill(Color.RED)
         canvas.corner_radius(0)
         # Right angle at world (-20, -20), legs of length 20 along +x and +y.
-        canvas.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
+        canvas.triangle((-20.0, -20.0), (0.0, -20.0), (-20.0, 0.0))
 
 
 def test_corner_radius_zero_matches_sharp_triangle() raises -> None:
@@ -455,7 +455,7 @@ struct RoundedTriangle(Program):
         # triangle_corner_radius), so the right angle's own fillet centre
         # ends up at world (-15.86, -15.86), device pixel (34, 66) — offset
         # from the vertex by the clamped radius, not the requested one.
-        canvas.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
+        canvas.triangle((-20.0, -20.0), (0.0, -20.0), (-20.0, 0.0))
 
 
 def test_triangle_corner_radius_rounds_the_corner() raises -> None:
@@ -483,7 +483,7 @@ struct RoundedTriangleOutlined(Program):
         canvas.outline(Color.BLUE, thickness=4)
         canvas.fill(Color.RED)
         canvas.corner_radius(5)
-        canvas.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
+        canvas.triangle((-20.0, -20.0), (0.0, -20.0), (-20.0, 0.0))
 
 
 def test_triangle_corner_radius_outline_is_centred() raises -> None:
@@ -522,7 +522,7 @@ struct ThinRoundedTriangle(Program):
         # support — triangle_corner_radius must clamp it, not let the
         # fillets balloon past the triangle's own edges.
         canvas.corner_radius(1000)
-        canvas.triangle(0.0, 20.0, -30.0, -20.0, 30.0, -21.0)
+        canvas.triangle((0.0, 20.0), (-30.0, -20.0), (30.0, -21.0))
 
 
 def test_triangle_corner_radius_clamps_to_incircle() raises -> None:
@@ -550,7 +550,7 @@ struct RotatedRoundedTriangle(Program):
         canvas.fill(Color.YELLOW)
         canvas.corner_radius(6)
         with canvas.transform(rotate(pi / 4.0)):
-            canvas.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
+            canvas.triangle((-20.0, -20.0), (0.0, -20.0), (-20.0, 0.0))
 
 
 def test_triangle_corner_radius_under_rotation() raises -> None:
@@ -579,7 +579,7 @@ struct SpriteBlit(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.sprite(self.sprite, 0.0, 0.0)
+        canvas.sprite(self.sprite, (0.0, 0.0))
 
 
 def test_sprite_blits_unflipped() raises -> None:
@@ -605,7 +605,7 @@ struct PngSpriteBlit(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.sprite(self.sprite, 0.0, 0.0)
+        canvas.sprite(self.sprite, (0.0, 0.0))
 
 
 def test_png_sprite_blits_unflipped() raises -> None:
@@ -810,7 +810,7 @@ struct StrokedRect(Program):
         canvas.background(Color.BLACK)
         canvas.fill(Color.RED)
         canvas.outline(Color.BLUE, thickness=4)
-        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
+        canvas.rectangle((0.0, 0.0), 40.0, 40.0)
 
 
 def test_rect_outline_renders_all_four_bands() raises -> None:
@@ -836,7 +836,7 @@ struct StrokedCircle(Program):
         canvas.background(Color.BLACK)
         canvas.fill(Color.GREEN)
         canvas.outline(Color.WHITE, thickness=4)
-        canvas.circle(0.0, 0.0, 20.0)
+        canvas.circle((0.0, 0.0), 20.0)
 
 
 def test_circle_outline_renders_the_ring() raises -> None:
@@ -859,7 +859,7 @@ struct StrokedTriangle(Program):
         canvas.background(Color.BLACK)
         canvas.fill(Color.ORANGE)
         canvas.outline(Color.WHITE, thickness=4)
-        canvas.triangle(0.0, 30.0, -30.0, -30.0, 30.0, -30.0)
+        canvas.triangle((0.0, 30.0), (-30.0, -30.0), (30.0, -30.0))
 
 
 def test_triangle_outline_renders_the_edges() raises -> None:
@@ -881,7 +881,7 @@ struct NoFillRect(Program):
         canvas.background(Color.BLACK)
         canvas.fill_enabled(False)
         canvas.outline(Color.WHITE, thickness=4)
-        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
+        canvas.rectangle((0.0, 0.0), 40.0, 40.0)
 
 
 def test_no_fill_leaves_the_rect_interior_untouched() raises -> None:
@@ -902,7 +902,7 @@ struct NoFillCircle(Program):
         canvas.background(Color.BLACK)
         canvas.fill_enabled(False)
         canvas.outline(Color.WHITE, thickness=4)
-        canvas.circle(0.0, 0.0, 20.0)
+        canvas.circle((0.0, 0.0), 20.0)
 
 
 def test_no_fill_leaves_the_circle_interior_untouched() raises -> None:
@@ -980,7 +980,7 @@ struct RotatedCircle(Program):
         canvas.outline_enabled(False)
         canvas.fill(Color.CYAN)
         with canvas.transform(rotate(pi / 4.0)):
-            canvas.circle(0.0, 0.0, 20.0)
+            canvas.circle((0.0, 0.0), 20.0)
 
 
 def test_circle_under_rotation_matches_the_axis_aligned_result() raises -> None:
@@ -1011,7 +1011,7 @@ struct QuarterTurnRect(Program):
         canvas.outline_enabled(False)
         canvas.fill(Color.YELLOW)
         with canvas.transform(rotate(pi / 2.0)):
-            canvas.rectangle(0.0, 0.0, 20.0, 40.0)
+            canvas.rectangle((0.0, 0.0), 20.0, 40.0)
 
 
 @fieldwise_init
@@ -1026,7 +1026,7 @@ struct SwappedRect(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.YELLOW)
-        canvas.rectangle(0.0, 0.0, 40.0, 20.0)
+        canvas.rectangle((0.0, 0.0), 40.0, 20.0)
 
 
 def _assert_quarter_turn_pixels(m: MemorySurface) raises:
@@ -1057,17 +1057,17 @@ struct GeometryOverloads(Program):
 
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
-        canvas.rectangle(Rectangle(-90.0, 40.0, 20.0, 20.0))
+        canvas.rectangle(Rectangle((-90.0, 40.0), 20.0, 20.0))
 
         canvas.fill(Color.GREEN)
-        canvas.circle(Circle(-30.0, 40.0, 10.0))
+        canvas.circle(Circle((-30.0, 40.0), 10.0))
 
         canvas.outline(Color.BLUE, thickness=3)
-        canvas.line(Line(20.0, 40.0, 40.0, 40.0))
+        canvas.line(Line((20.0, 40.0), (40.0, 40.0)))
 
         canvas.outline_enabled(False)
         canvas.fill(Color.CYAN)
-        canvas.triangle(Triangle(90.0, 50.0, 80.0, 30.0, 100.0, 30.0))
+        canvas.triangle(Triangle((90.0, 50.0), (80.0, 30.0), (100.0, 30.0)))
 
         canvas.fill(Color.MAGENTA)
         canvas.rectangle(Point2D(-90.0, -40.0), 20.0, 20.0)
@@ -1091,8 +1091,8 @@ struct GeometryOverloads(Program):
 
 def test_geometry_overloads_dispatch_correctly() raises -> None:
     # These are one-line forwards, so the value is dispatch and argument
-    # order — that rect(Rectangle(x, y, w, h)) centres on (x, y) like the
-    # float form, not a corner — not the raster.
+    # order — that rect(Rectangle((x, y), w, h)) centres on (x, y), not a
+    # corner — not the raster.
     var m = run_headless[GeometryOverloads](240, 240)
     assert_equal(m.pixel(30, 80), Color.RED)  # rect(Rectangle)
     assert_equal(m.pixel(90, 80), Color.GREEN)  # circle(Circle)
@@ -1117,18 +1117,18 @@ struct ToWorldRoundTrip(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
         with canvas.transform(translate(10.0, 20.0)):
-            var origin = canvas.to_local(10.0, 20.0)
-            assert_almost_equal(origin[0], 0.0)
-            assert_almost_equal(origin[1], 0.0)
-            var back = canvas.to_world(0.0, 0.0)
-            assert_almost_equal(back[0], 10.0)
-            assert_almost_equal(back[1], 20.0)
+            var origin = canvas.to_local((10.0, 20.0))
+            assert_almost_equal(origin.x, 0.0)
+            assert_almost_equal(origin.y, 0.0)
+            var back = canvas.to_world((0.0, 0.0))
+            assert_almost_equal(back.x, 10.0)
+            assert_almost_equal(back.y, 20.0)
 
         with canvas.transform(translate(5.0, -8.0) @ rotate(pi / 3.0)):
-            var world = canvas.to_world(7.0, -2.0)
-            var local = canvas.to_local(world[0], world[1])
-            assert_almost_equal(local[0], 7.0)
-            assert_almost_equal(local[1], -2.0)
+            var world = canvas.to_world((7.0, -2.0))
+            var local = canvas.to_local(world)
+            assert_almost_equal(local.x, 7.0)
+            assert_almost_equal(local.y, -2.0)
 
 
 def test_to_world_and_to_local_round_trip_through_a_transform() raises -> None:
@@ -1149,7 +1149,7 @@ struct ThickLineUnderNonUniformScale(Program):
         canvas.background(Color.BLACK)
         canvas.outline(Color.WHITE, thickness=3)
         with canvas.transform(scale(3.0, 1.0)):
-            canvas.line(-10.0 / 3.0, 0.0, 10.0 / 3.0, 0.0)
+            canvas.line((-10.0 / 3.0, 0.0), (10.0 / 3.0, 0.0))
 
 
 def test_outline_thickness_under_non_uniform_transform_follows_autoscale() raises -> (
@@ -1205,7 +1205,7 @@ struct TextThroughCanvas(Program):
         canvas.text_color(Color.WHITE)
         canvas.font_size(24)
         canvas.text_align(Align.TOP_LEFT)
-        canvas.text("Hi", 0.0, 0.0)
+        canvas.text("Hi", (0.0, 0.0))
 
 
 def test_text_renders_below_and_right_of_a_top_left_anchor() raises -> None:
@@ -1231,7 +1231,7 @@ struct TransparentText(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
         canvas.text_color(Color(255, 255, 255, 0))
-        canvas.text("Hi", 0.0, 0.0)
+        canvas.text("Hi", (0.0, 0.0))
 
 
 def test_a_transparent_text_color_suppresses_text() raises -> None:
@@ -1255,7 +1255,7 @@ struct TextBesideShape(Program):
         canvas.text_color(Color.GREEN)
         canvas.font_size(48)
         canvas.text_align(Align.CENTER)
-        canvas.text("Hi", 40.0, 0.0)
+        canvas.text("Hi", (40.0, 0.0))
 
 
 def test_text_color_is_independent_of_fill() raises -> None:
@@ -1287,7 +1287,7 @@ struct SmallText(Program):
         canvas.text_color(Color.WHITE)
         canvas.font_size(12)
         canvas.text_align(Align.TOP_LEFT)
-        canvas.text("Hi", 0.0, 0.0)
+        canvas.text("Hi", (0.0, 0.0))
 
 
 @fieldwise_init
@@ -1303,7 +1303,7 @@ struct BigText(Program):
         canvas.text_color(Color.WHITE)
         canvas.font_size(48)
         canvas.text_align(Align.TOP_LEFT)
-        canvas.text("Hi", 0.0, 0.0)
+        canvas.text("Hi", (0.0, 0.0))
 
 
 def test_font_size_grows_the_text_extent() raises -> None:
@@ -1340,7 +1340,7 @@ struct QuitOnFrameTwo(Program):
             canvas.fill(Color.GREEN)
         else:
             canvas.fill(Color.BLUE)
-        canvas.rectangle(0.0, 0.0, 100.0, 100.0)
+        canvas.rectangle((0.0, 0.0), 100.0, 100.0)
 
 
 def test_frame_quit_stops_the_loop() raises -> None:
@@ -1385,7 +1385,7 @@ struct AnimatorBlit(Program):
         self.animator.update(context.time.delta)
 
         canvas.background(Color.BLACK)
-        canvas.sprite(self.animator, 0.0, 0.0)
+        canvas.sprite(self.animator, (0.0, 0.0))
 
 
 def test_animator_blits_the_current_frame() raises -> None:
@@ -1433,13 +1433,13 @@ def test_animator_sized_overload_scales() raises -> None:
 
 
 struct AnimatorEveryOverload(Program):
-    """Renders through all six `canvas.sprite(SpriteAnimator, ...)` overloads.
+    """Renders through both `canvas.sprite(SpriteAnimator, ...)` overloads,
+    each from a `Float64` tuple, an `Int` tuple and a `Point2D`.
 
-    Five of them delegate to the two that index the frame, so without a call
-    site each they are never type-checked: a library build only checks the
-    `def` bodies it reaches. The assertions below double as the positioning
-    check -- every overload must land its frame on the same anchor its
-    `Sprite` counterpart would.
+    Without a call site each is never type-checked: a library build only
+    checks the `def` bodies it reaches. The assertions below double as the
+    positioning check -- every call must land its frame on the same anchor
+    its `Sprite` counterpart would.
     """
 
     var animator: SpriteAnimator
@@ -1459,23 +1459,23 @@ struct AnimatorEveryOverload(Program):
         canvas.background(Color.BLACK)
         # Top row: the unsized overloads, at 1:1 so the 2x2 frame covers its
         # own anchor pixel.
-        canvas.sprite(self.animator, -40.0, 40.0)
-        canvas.sprite(self.animator, -20, 40)
+        canvas.sprite(self.animator, (-40.0, 40.0))
+        canvas.sprite(self.animator, (-20, 40))
         canvas.sprite(self.animator, Point2D(0.0, 40.0))
         # Bottom row: the sized overloads, scaled up to 4x4.
-        canvas.sprite(self.animator, -40.0, -40.0, 4, 4)
-        canvas.sprite(self.animator, -20, -40, 4, 4)
+        canvas.sprite(self.animator, (-40.0, -40.0), 4, 4)
+        canvas.sprite(self.animator, (-20, -40), 4, 4)
         canvas.sprite(self.animator, Point2D(0.0, -40.0), 4, 4)
 
 
 def test_every_animator_overload_renders_at_its_anchor() raises -> None:
     # World (x, y) maps to pixel (50 + x, 50 - y) at 1:1 on a 100x100 frame.
     var m = run_headless[AnimatorEveryOverload](100, 100)
-    assert_equal(m.pixel(10, 10), Color.RED)  # (a, Float64, Float64)
-    assert_equal(m.pixel(30, 10), Color.RED)  # (a, Int, Int)
+    assert_equal(m.pixel(10, 10), Color.RED)  # (a, (Float64, Float64))
+    assert_equal(m.pixel(30, 10), Color.RED)  # (a, (Int, Int))
     assert_equal(m.pixel(50, 10), Color.RED)  # (a, Point2D)
-    assert_equal(m.pixel(10, 90), Color.RED)  # (a, Float64, Float64, w, h)
-    assert_equal(m.pixel(30, 90), Color.RED)  # (a, Int, Int, w, h)
+    assert_equal(m.pixel(10, 90), Color.RED)  # (a, (Float64, Float64), w, h)
+    assert_equal(m.pixel(30, 90), Color.RED)  # (a, (Int, Int), w, h)
     assert_equal(m.pixel(50, 90), Color.RED)  # (a, Point2D, w, h)
     # Between the two rows nothing was rendered.
     assert_equal(m.pixel(50, 50), Color.BLACK)
@@ -1515,7 +1515,7 @@ def _scene(mut canvas: Canvas):
     canvas.background(Color.BLACK)
     canvas.outline_enabled(False)
     canvas.fill(Color.RED)
-    canvas.rectangle(0.0, 0.0, 20.0, 20.0)
+    canvas.rectangle((0.0, 0.0), 20.0, 20.0)
 
 
 @fieldwise_init

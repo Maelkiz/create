@@ -99,7 +99,6 @@ def _polygons_overlap[
     return True
 
 
-@fieldwise_init
 struct Rectangle:
     """An axis-aligned rectangle: `center`, `size`, `area`, `left`/`right`/
     `bottom`/`top`, `closest_point`, `contains`, `move_to`, `translate`.
@@ -128,17 +127,17 @@ struct Rectangle:
     var w: Float64
     var h: Float64
 
-    def __init__(out self, x: Int, y: Int, w: Int, h: Int):
-        self = Rectangle(Float64(x), Float64(y), Float64(w), Float64(h))
+    def __init__(out self, pos: Point2D, size: Vector2D):
+        self.x = pos.x
+        self.y = pos.y
+        self.w = size.x
+        self.h = size.y
 
     def __init__(out self, pos: Point2D, w: Float64, h: Float64):
-        self = Rectangle(pos.x, pos.y, w, h)
+        self = Rectangle(pos, Vector2D(w, h))
 
     def __init__(out self, pos: Point2D, w: Int, h: Int):
-        self = Rectangle(pos.x, pos.y, Float64(w), Float64(h))
-
-    def __init__(out self, pos: Point2D, size: Vector2D):
-        self = Rectangle(pos.x, pos.y, size.x, size.y)
+        self = Rectangle(pos, Vector2D(w, h))
 
     def center(self) -> Point2D:
         return Point2D(self.x, self.y)
@@ -149,14 +148,13 @@ struct Rectangle:
     def size(self) -> Vector2D:
         return Vector2D(self.w, self.h)
 
-    def closest_point(self, px: Float64, py: Float64) -> Point2D:
+    def closest_point(self, p: Point2D) -> Point2D:
+        var px = p.x
+        var py = p.y
         return Point2D(
             max(self.left(), min(px, self.right())),
             max(self.bottom(), min(py, self.top())),
         )
-
-    def closest_point(self, v: Point2D) -> Point2D:
-        return self.closest_point(v.x, v.y)
 
     def left(self) -> Float64:
         return self.x - self.w / 2.0
@@ -170,14 +168,13 @@ struct Rectangle:
     def top(self) -> Float64:
         return self.y + self.h / 2.0
 
-    def contains(self, px: Float64, py: Float64) -> Bool:
+    def contains(self, p: Point2D) -> Bool:
+        var px = p.x
+        var py = p.y
         return (
             self.left() <= px <= self.right()
             and self.bottom() <= py <= self.top()
         )
-
-    def contains(self, v: Point2D) -> Bool:
-        return self.contains(v.x, v.y)
 
     def contains(self, other: Rectangle) -> Bool:
         return (
@@ -202,27 +199,17 @@ struct Rectangle:
         return True
 
     def contains(self, l: Line) -> Bool:
-        return self.contains(l.x0, l.y0) and self.contains(l.x1, l.y1)
-
-    def move_to(mut self, x: Float64, y: Float64):
-        self.x = x
-        self.y = y
-
-    def move_to(mut self, x: Int, y: Int):
-        self.move_to(Float64(x), Float64(y))
+        return self.contains(Point2D(l.x0, l.y0)) and self.contains(
+            Point2D(l.x1, l.y1)
+        )
 
     def move_to(mut self, pos: Point2D):
-        self.move_to(pos.x, pos.y)
-
-    def translate(mut self, dx: Float64, dy: Float64):
-        self.x += dx
-        self.y += dy
-
-    def translate(mut self, dx: Int, dy: Int):
-        self.translate(Float64(dx), Float64(dy))
+        self.x = pos.x
+        self.y = pos.y
 
     def translate(mut self, delta: Vector2D):
-        self.translate(delta.x, delta.y)
+        self.x += delta.x
+        self.y += delta.y
 
     def _points(self) -> Array[Point2D, 4]:
         return [
@@ -233,7 +220,6 @@ struct Rectangle:
         ]
 
 
-@fieldwise_init
 struct Circle:
     """A circle: `center`, `area`, `diameter`, `closest_point`, `contains`,
     `move_to`, `translate`.
@@ -254,14 +240,13 @@ struct Circle:
     var y: Float64
     var r: Float64
 
-    def __init__(out self, x: Int, y: Int, r: Int):
-        self = Circle(Float64(x), Float64(y), Float64(r))
-
     def __init__(out self, pos: Point2D, r: Float64):
-        self = Circle(pos.x, pos.y, r)
+        self.x = pos.x
+        self.y = pos.y
+        self.r = r
 
     def __init__(out self, pos: Point2D, r: Int):
-        self = Circle(pos.x, pos.y, Float64(r))
+        self = Circle(pos, Float64(r))
 
     def center(self) -> Point2D:
         return Point2D(self.x, self.y)
@@ -272,7 +257,9 @@ struct Circle:
     def diameter(self) -> Float64:
         return self.r * 2.0
 
-    def closest_point(self, px: Float64, py: Float64) -> Point2D:
+    def closest_point(self, p: Point2D) -> Point2D:
+        var px = p.x
+        var py = p.y
         var dx = px - self.x
         var dy = py - self.y
         var dist_sq = dx * dx + dy * dy
@@ -281,16 +268,12 @@ struct Circle:
         var dist = sqrt(dist_sq)
         return Point2D(self.x + dx / dist * self.r, self.y + dy / dist * self.r)
 
-    def closest_point(self, v: Point2D) -> Point2D:
-        return self.closest_point(v.x, v.y)
-
-    def contains(self, px: Float64, py: Float64) -> Bool:
+    def contains(self, p: Point2D) -> Bool:
+        var px = p.x
+        var py = p.y
         var dx = px - self.x
         var dy = py - self.y
         return dx * dx + dy * dy <= self.r * self.r
-
-    def contains(self, v: Point2D) -> Bool:
-        return self.contains(v.x, v.y)
 
     def contains(self, other: Circle) -> Bool:
         var dx = other.x - self.x
@@ -311,30 +294,19 @@ struct Circle:
         return True
 
     def contains(self, l: Line) -> Bool:
-        return self.contains(l.x0, l.y0) and self.contains(l.x1, l.y1)
-
-    def move_to(mut self, x: Float64, y: Float64):
-        self.x = x
-        self.y = y
-
-    def move_to(mut self, x: Int, y: Int):
-        self.move_to(Float64(x), Float64(y))
+        return self.contains(Point2D(l.x0, l.y0)) and self.contains(
+            Point2D(l.x1, l.y1)
+        )
 
     def move_to(mut self, pos: Point2D):
-        self.move_to(pos.x, pos.y)
-
-    def translate(mut self, dx: Float64, dy: Float64):
-        self.x += dx
-        self.y += dy
-
-    def translate(mut self, dx: Int, dy: Int):
-        self.translate(Float64(dx), Float64(dy))
+        self.x = pos.x
+        self.y = pos.y
 
     def translate(mut self, delta: Vector2D):
-        self.translate(delta.x, delta.y)
+        self.x += delta.x
+        self.y += delta.y
 
 
-@fieldwise_init
 struct Line:
     """A line segment from `(x0, y0)` to `(x1, y1)`: `length`, `length_sq`,
     `midpoint`, `closest_point`, `intersects`, `move_to`, `translate`.
@@ -358,11 +330,11 @@ struct Line:
     var x1: Float64
     var y1: Float64
 
-    def __init__(out self, x0: Int, y0: Int, x1: Int, y1: Int):
-        self = Line(Float64(x0), Float64(y0), Float64(x1), Float64(y1))
-
     def __init__(out self, start: Point2D, end: Point2D):
-        self = Line(start.x, start.y, end.x, end.y)
+        self.x0 = start.x
+        self.y0 = start.y
+        self.x1 = end.x
+        self.y1 = end.y
 
     def length_sq(self) -> Float64:
         var dx = self.x1 - self.x0
@@ -422,18 +394,19 @@ struct Line:
     # circle's containment is radial from its centre), `Rectangle` and
     # `Triangle` via endpoint containment (covers a segment wholly inside,
     # which no edge test would catch) plus their edges as `Line`s.
-    def intersects(self, px: Float64, py: Float64) -> Bool:
+    def intersects(self, p: Point2D) -> Bool:
+        var px = p.x
+        var py = p.y
         return _point_on_segment(px, py, self.x0, self.y0, self.x1, self.y1)
 
-    def intersects(self, v: Point2D) -> Bool:
-        return self.intersects(v.x, v.y)
-
     def intersects(self, c: Circle) -> Bool:
-        var closest = self.closest_point(c.x, c.y)
+        var closest = self.closest_point(c.center())
         return c.contains(closest)
 
     def intersects(self, r: Rectangle) -> Bool:
-        if r.contains(self.x0, self.y0) or r.contains(self.x1, self.y1):
+        if r.contains(Point2D(self.x0, self.y0)) or r.contains(
+            Point2D(self.x1, self.y1)
+        ):
             return True
         var pts = r._points()
         for i in range(4):
@@ -443,7 +416,9 @@ struct Line:
         return False
 
     def intersects(self, t: Triangle) -> Bool:
-        if t.contains(self.x0, self.y0) or t.contains(self.x1, self.y1):
+        if t.contains(Point2D(self.x0, self.y0)) or t.contains(
+            Point2D(self.x1, self.y1)
+        ):
             return True
         var pts = t._points()
         for i in range(3):
@@ -452,44 +427,24 @@ struct Line:
                 return True
         return False
 
-    def closest_point(self, px: Float64, py: Float64) -> Point2D:
+    def closest_point(self, p: Point2D) -> Point2D:
+        var px = p.x
+        var py = p.y
         return _closest_on_segment(px, py, self.x0, self.y0, self.x1, self.y1)
-
-    def closest_point(self, v: Point2D) -> Point2D:
-        return self.closest_point(v.x, v.y)
 
     def midpoint(self) -> Point2D:
         return Point2D((self.x0 + self.x1) / 2.0, (self.y0 + self.y1) / 2.0)
 
-    def move_to(mut self, x: Float64, y: Float64):
-        var m = self.midpoint()
-        var dx = x - m.x
-        var dy = y - m.y
-        self.x0 += dx
-        self.y0 += dy
-        self.x1 += dx
-        self.y1 += dy
-
-    def move_to(mut self, x: Int, y: Int):
-        self.move_to(Float64(x), Float64(y))
-
     def move_to(mut self, pos: Point2D):
-        self.move_to(pos.x, pos.y)
-
-    def translate(mut self, dx: Float64, dy: Float64):
-        self.x0 += dx
-        self.y0 += dy
-        self.x1 += dx
-        self.y1 += dy
-
-    def translate(mut self, dx: Int, dy: Int):
-        self.translate(Float64(dx), Float64(dy))
+        self.translate(pos - self.midpoint())
 
     def translate(mut self, delta: Vector2D):
-        self.translate(delta.x, delta.y)
+        self.x0 += delta.x
+        self.y0 += delta.y
+        self.x1 += delta.x
+        self.y1 += delta.y
 
 
-@fieldwise_init
 struct Triangle:
     """A triangle defined by its three vertices `(x1,y1)`, `(x2,y2)`,
     `(x3,y3)`: `center`, `area`, `closest_point`, `contains`, `move_to`,
@@ -517,20 +472,13 @@ struct Triangle:
     var x3: Float64
     var y3: Float64
 
-    def __init__(
-        out self, x1: Int, y1: Int, x2: Int, y2: Int, x3: Int, y3: Int
-    ):
-        self = Triangle(
-            Float64(x1),
-            Float64(y1),
-            Float64(x2),
-            Float64(y2),
-            Float64(x3),
-            Float64(y3),
-        )
-
     def __init__(out self, a: Point2D, b: Point2D, c: Point2D):
-        self = Triangle(a.x, a.y, b.x, b.y, c.x, c.y)
+        self.x1 = a.x
+        self.y1 = a.y
+        self.x2 = b.x
+        self.y2 = b.y
+        self.x3 = c.x
+        self.y3 = c.y
 
     def center(self) -> Point2D:
         return Point2D(
@@ -547,8 +495,10 @@ struct Triangle:
             / 2.0
         )
 
-    def closest_point(self, px: Float64, py: Float64) -> Point2D:
-        if self.contains(px, py):
+    def closest_point(self, p: Point2D) -> Point2D:
+        var px = p.x
+        var py = p.y
+        if self.contains(p):
             return Point2D(px, py)
         var p1 = _closest_on_segment(px, py, self.x1, self.y1, self.x2, self.y2)
         var p2 = _closest_on_segment(px, py, self.x2, self.y2, self.x3, self.y3)
@@ -562,10 +512,9 @@ struct Triangle:
             return p2
         return p3
 
-    def closest_point(self, v: Point2D) -> Point2D:
-        return self.closest_point(v.x, v.y)
-
-    def contains(self, px: Float64, py: Float64) -> Bool:
+    def contains(self, p: Point2D) -> Bool:
+        var px = p.x
+        var py = p.y
         var signed_area2 = (self.x2 - self.x1) * (self.y3 - self.y1) - (
             self.y2 - self.y1
         ) * (self.x3 - self.x1)
@@ -603,9 +552,6 @@ struct Triangle:
         var has_pos = (d1 > 0) or (d2 > 0) or (d3 > 0)
         return not (has_neg and has_pos)
 
-    def contains(self, v: Point2D) -> Bool:
-        return self.contains(v.x, v.y)
-
     def contains(self, other: Triangle) -> Bool:
         for p in other._points():
             if not self.contains(p):
@@ -619,7 +565,7 @@ struct Triangle:
         return True
 
     def contains(self, c: Circle) -> Bool:
-        if not self.contains(c.x, c.y):
+        if not self.contains(c.center()):
             return False
         var p1 = _closest_on_segment(
             c.x, c.y, self.x1, self.y1, self.x2, self.y2
@@ -644,38 +590,20 @@ struct Triangle:
         )
 
     def contains(self, l: Line) -> Bool:
-        return self.contains(l.x0, l.y0) and self.contains(l.x1, l.y1)
-
-    def move_to(mut self, x: Float64, y: Float64):
-        var c = self.center()
-        var dx = x - c.x
-        var dy = y - c.y
-        self.x1 += dx
-        self.y1 += dy
-        self.x2 += dx
-        self.y2 += dy
-        self.x3 += dx
-        self.y3 += dy
-
-    def move_to(mut self, x: Int, y: Int):
-        self.move_to(Float64(x), Float64(y))
+        return self.contains(Point2D(l.x0, l.y0)) and self.contains(
+            Point2D(l.x1, l.y1)
+        )
 
     def move_to(mut self, pos: Point2D):
-        self.move_to(pos.x, pos.y)
-
-    def translate(mut self, dx: Float64, dy: Float64):
-        self.x1 += dx
-        self.y1 += dy
-        self.x2 += dx
-        self.y2 += dy
-        self.x3 += dx
-        self.y3 += dy
-
-    def translate(mut self, dx: Int, dy: Int):
-        self.translate(Float64(dx), Float64(dy))
+        self.translate(pos - self.center())
 
     def translate(mut self, delta: Vector2D):
-        self.translate(delta.x, delta.y)
+        self.x1 += delta.x
+        self.y1 += delta.y
+        self.x2 += delta.x
+        self.y2 += delta.y
+        self.x3 += delta.x
+        self.y3 += delta.y
 
     def _points(self) -> Array[Point2D, 3]:
         return [
@@ -721,7 +649,7 @@ def overlaps(a: Circle, b: Circle) -> Bool:
 
 
 def overlaps(a: Circle, b: Rectangle) -> Bool:
-    return a.contains(b.closest_point(a.x, a.y))
+    return a.contains(b.closest_point(a.center()))
 
 
 def overlaps(a: Rectangle, b: Circle) -> Bool:
@@ -729,7 +657,7 @@ def overlaps(a: Rectangle, b: Circle) -> Bool:
 
 
 def overlaps(a: Circle, b: Triangle) -> Bool:
-    return a.contains(b.closest_point(a.x, a.y))
+    return a.contains(b.closest_point(a.center()))
 
 
 def overlaps(a: Triangle, b: Circle) -> Bool:
