@@ -1,5 +1,16 @@
 #!/bin/sh
-# Runs every tests/**/test_*.mojo file, several at a time.
+# Runs tests/**/test_*.mojo files, several at a time.
+#
+#   pixi run test                  -> every test file
+#   pixi run test render           -> tests/render/
+#   pixi run test render audio     -> both
+#   pixi run test frame            -> tests/**/test_frame.mojo
+#   pixi run test tests/math/test_tween.mojo
+#   pixi run test --jobs 4 render  -> pin the worker count (default nproc, max 8)
+#   pixi run test -j 4 render      -> the same
+#
+# A target is resolved as a path that exists as given, then as a subpackage
+# directory under tests/, then as a test file name without its test_ prefix.
 #
 # Each file is its own program, so the only shared state between them is the
 # filesystem — and every scratch path is already namespaced per file, so the
@@ -10,7 +21,14 @@
 # failure is the only time the detail is wanted.
 set -u
 
-jobs=${1:-}
+jobs=
+case "${1:-}" in
+    -j|--jobs)
+        [ -n "${2:-}" ] || { echo "$1 needs a worker count" >&2; exit 1; }
+        jobs=$2
+        shift 2
+        ;;
+esac
 if [ -z "$jobs" ]; then
     jobs=$(nproc 2>/dev/null || echo 4)
     [ "$jobs" -gt 8 ] && jobs=8
@@ -26,8 +44,26 @@ logs=$(mktemp -d)
 trap 'rm -rf "$logs"' EXIT
 export LOGS="$logs"
 
-files=$(find tests -name 'test_*.mojo' | sort)
-[ -z "$files" ] && { echo "No test files found."; exit 1; }
+[ $# -eq 0 ] && set -- tests
+files=
+for target in "$@"; do
+    if [ -e "$target" ]; then
+        found=$(find "$target" -name 'test_*.mojo')
+    elif [ -d "tests/$target" ]; then
+        found=$(find "tests/$target" -name 'test_*.mojo')
+    else
+        found=$(find tests -name "test_$target.mojo")
+    fi
+    if [ -z "$found" ]; then
+        echo "no tests for: $target" >&2
+        echo "subpackages: $(ls -d tests/*/ | sed 's|tests/||; s|/$||' \
+            | grep -vx 'fixtures\|assets' | tr '\n' ' ')" >&2
+        exit 1
+    fi
+    files="$files
+$found"
+done
+files=$(echo "$files" | sed '/^$/d' | sort -u)
 
 echo "$files" | xargs -P "$jobs" -I{} sh -c '
     log="$LOGS/$(echo "{}" | tr / _).log"

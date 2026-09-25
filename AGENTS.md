@@ -108,7 +108,13 @@ pixi run example sidescroller
 # still run rather than skip
 pixi run test
 
-# Run a single test file
+# Run a subset — each target is a path, a subpackage under tests/, or a test
+# file name without its test_ prefix; several may be given
+pixi run test render
+pixi run test frame tween
+pixi run test tests/math/test_vector2d.mojo
+
+# Run a single test file directly, output unbuffered
 mojo run -I src tests/math/test_vector2d.mojo
 
 # Type-check the whole library without running anything (output goes to build/, gitignored)
@@ -162,7 +168,7 @@ def main() raises:
 
 A file reports PASS/FAIL per test and exits non-zero if any failed. `pixi run test`
 ([scripts/test.sh](scripts/test.sh)) runs the files concurrently — one `nproc`-capped worker pool,
-`pixi run test 4` to pin the width — so every file runs whatever the others do, and the suite exits
+`pixi run test --jobs 4` (or `-j 4`) to pin the width — so every file runs whatever the others do, and the suite exits
 non-zero at the end if any failed. Each file's output is buffered and printed in full only when that
 file fails; a passing file contributes one `PASS <path>` line, since a dozen interleaved PASS streams
 are unreadable. Files are safe to run concurrently because each is its own process and every scratch
@@ -656,7 +662,7 @@ docstring; this table is not an API reference and must not grow into one.
 ## Do
 
 - Use `@fieldwise_init` on program structs to auto-generate `__init__` from fields.
-- Use `pixi run test` before committing.
+- Run only the tests a change can reach — `pixi run test render`, `pixi run test frame tween` — not the full suite by default; the pre-push hook runs it anyway. 
 - Use `frame.background(Color.X)` as the first rendering call in `update` to pick the frame's colour — it replaces the `autoclear` clear rather than adding a second one. Set `options.clear_color` in `create` instead if the colour never changes, and `options.autoclear = False` if the program wants the previous frame left alone.
 - Use `frame.to_local`/`to_world` to move a position between world space and the current transform's frame — neither deals in pixels, and both take two `Float64`, so pass `frame.input.mouse.x, frame.input.mouse.y`. Both still *return* a `Tuple[Float64, Float64]`, which lands implicitly in a `Point2D` or a `Vector2D`, so they are the seam between the two rather than a conversion site.
 - Use `Point2D` for a new signature's locations and `Vector2D` for its extents and deltas — `Rectangle(pos: Point2D, size: Vector2D)` and `frame.rectangle(pos, size)` are the shape to copy when one signature names both.
