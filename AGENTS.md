@@ -1,8 +1,8 @@
-# AGENTS.md — Mojo Create
+# AGENTS.md — Create
 
 ## Purpose
 
-Mojo Create is a creative coding library for interactive graphics in Mojo: Processing's ergonomics,
+Create is a creative coding library for interactive graphics in Mojo: Processing's ergonomics,
 clean separation of concerns, Mojo's performance — scaling from sketch to full application.
 
 **Early development, no public release, no external consumers.** Breaking changes are fine. Doc

@@ -2,13 +2,13 @@
     <img src="assets/logo/png/logo-trim.png" width="150" alt="Create Logo">
 </p>
 
-<h1 align="center">Mojo Create</h1>
+<h1 align="center">Create</h1>
 
 > **Note:** API will be unstable until the first public release.
 
 ---
 
-**Mojo Create** is a creative coding library for rapid prototyping and interactive graphics, inspired by Processing but built to scale — 
+**Create** is a creative coding library for rapid prototyping and interactive graphics, inspired by Processing but built to scale — 
 from sketch to game, prototype to full application. It provides a clean, modular API while taking full advantage of Mojo's performance and language features.
 
 ## The shape of a program

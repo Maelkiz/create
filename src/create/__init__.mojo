@@ -1,4 +1,4 @@
-"""Mojo Create — a creative coding library for rapid prototyping and
+"""Create — a creative coding library for rapid prototyping and
 interactive graphics.
 
 `from create import *` is the import a program needs. It brings in the whole
