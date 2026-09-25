@@ -49,7 +49,7 @@ struct InkOnFirstFrameOnly(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         # `_tick` runs before `update`, so the first frame is count 1.
-        if canvas.time.frame_count > 1:
+        if context.time.frame_count > 1:
             return
         canvas.outline(enabled=False)
         canvas.fill(Color.RED)

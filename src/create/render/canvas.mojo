@@ -6,7 +6,6 @@ from .autoscale import AutoScale
 from .font import Font
 from .viewport import Viewport
 from .context import Context
-from .time import Time
 from .camera import Camera
 from .input import Input
 from create.math.geometry import Rectangle, Circle, Line, Triangle
@@ -59,16 +58,12 @@ struct PersistentCanvasState(Movable):
     """The authoritative design-to-pixel mapping, re-derived by the loop every
     frame from `Context`. A `Canvas` copies it; `Canvas._release` deliberately
     does not write it back, which would undo the loop's own resize handling."""
-    var time: Time
-    """The frame clock. The loop is its only writer — a `Canvas` carries a
-    read-only snapshot taken at construction."""
 
     def __init__(out self, kind: RenderBackend = RenderBackend.CPU) raises:
         """`kind` picks the backend that will present the frames — a GPU one
         builds its GL resources now, so a context must already be current."""
         self.backend = Backend(kind)
         self.view = Viewport()
-        self.time = Time()
 
     def _set_viewport(mut self, context: Context, pixel_w: Int, pixel_h: Int):
         """Remap onto a framebuffer of this size, under `context`.
@@ -155,13 +150,13 @@ struct StyleGuard[origin: Origin[mut=True]](Movable):
 
 
 struct Canvas:
-    """One frame: the geometry, the clock and the rendering API.
+    """One frame: the geometry and the rendering API.
 
     This is the object a program is handed to render a frame with. `width`/`height`
     are the screen extent and `left`/`right`/`bottom`/`top` its edges — use
     those rather than width arithmetic, since the origin is centred and two of
-    them are negative. `time` is the frame clock, `input` this frame's keyboard
-    and mouse, `scale` the autoscale factor, `view` the mapping they all come
+    them are negative. `input` is this frame's keyboard and mouse, `scale` the
+    autoscale factor, `view` the mapping they all come
     from. Screen space is camera-independent: these and `input` don't know a
     `Camera` exists, since a program sets one on the frame's transform, not on
     the geometry it reports.
@@ -205,16 +200,10 @@ struct Canvas:
     var height: Int
     var scale: Float64
     var view: Viewport
-    var time: Time
-    """This frame's clock, a snapshot taken at construction.
-
-    A copy rather than a reference because the run loop owns the real one and
-    is its only writer — the program reads `delta` and `frame_count` here and
-    cannot desynchronise the loop by touching them.
-    """
     var input: Input
     """This frame's keyboard and mouse state, a snapshot taken at
-    construction, for the same reason and on the same terms as `time`.
+    construction. A copy rather than a reference because the run loop owns the
+    real one and is its only writer.
 
     The loop folds a frame's events into the input it owns before the frame is
     built, so what a program reads here is settled for the whole frame — and
@@ -265,7 +254,6 @@ struct Canvas:
         self.width = state.view.width
         self.height = state.view.height
         self.scale = state.view.scale
-        self.time = state.time.copy()
         self.input = input.copy()
         self._letterbox = context.letterbox
         self._state = state^
@@ -292,8 +280,7 @@ struct Canvas:
         presents it — nothing can append to a frame that is being replayed.
 
         Nothing is written back. `self.view` is this frame's copy of a mapping
-        the loop re-derives every frame, the loop is the only writer of the
-        clock, and the dials a program turns are in `Context`, which a `Canvas`
+        the loop re-derives every frame, and the dials a program turns are in `Context`, which a `Canvas`
         never owned — so there is no merge to get wrong here.
         """
         return self._state^
@@ -301,16 +288,6 @@ struct Canvas:
     def to_screen(self, x: Float64, y: Float64) -> Tuple[Float64, Float64]:
         """Map a window pixel position into screen space."""
         return self.view.to_screen(x, y)
-
-    def framerate(self) -> Float64:
-        """Current frames per second, derived from the last frame's delta.
-
-        `0.0` on the first frame, where `delta` is still `0.0` and there is
-        no prior frame to measure against.
-        """
-        if self.time.delta == 0.0:
-            return 0.0
-        return 1.0 / self.time.delta
 
     def left(self) -> Float64:
         """Screen x of the left edge — negative, since the origin is centred."""

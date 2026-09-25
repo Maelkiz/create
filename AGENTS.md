@@ -93,7 +93,7 @@ copy, so writing to it reaches nothing that outlives the frame.
 
 **Per-frame obligations**, not enforced by anything:
 - `audio.update()` — otherwise looping streams stall and one-shot voice slots leak.
-- `animator.update(canvas.time.delta)` / `tween.update(canvas.time.delta)` — otherwise the playhead
+- `animator.update(context.time.delta)` / `tween.update(context.time.delta)` — otherwise the playhead
   never moves.
 
 Shared assets (`SpriteAnimation`, `Sound`) are held as `ArcPointer` fields. Read

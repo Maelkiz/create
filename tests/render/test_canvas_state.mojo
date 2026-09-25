@@ -29,18 +29,14 @@ def _state(
 
 
 def test_framerate_is_zero_before_the_first_tick() raises -> None:
-    var context = Context()
-    var canvas = Canvas(_state(context, 800, 600), context, Input())
-    assert_equal(canvas.framerate(), 0.0)
+    assert_equal(Context().framerate(), 0.0)
 
 
 def test_framerate_is_the_inverse_of_delta() raises -> None:
     var context = Context()
-    var state = _state(context, 800, 600)
-    state.time._start(0)
-    state.time._tick(20)
-    var canvas = Canvas(state^, context, Input())
-    assert_almost_equal(canvas.framerate(), 50.0)
+    context.time._start(0)
+    context.time._tick(20)
+    assert_almost_equal(context.framerate(), 50.0)
 
 
 def test_frame_cap_is_recorded_on_the_context() raises -> None:

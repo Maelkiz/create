@@ -19,7 +19,7 @@ struct Sketch(Program):
         return Self(0.0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.angle += canvas.time.delta
+        self.angle += context.time.delta
         canvas.background(Color.BLACK)
         canvas.circle((100 * cos(self.angle), 100 * sin(self.angle)), 20)
 

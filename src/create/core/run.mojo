@@ -63,7 +63,7 @@ def _run_loop[
 ) raises:
     # Seeded here rather than in run() so the program's create() — which may
     # load fonts or decode audio — does not land in the first frame's delta.
-    state.time._start(win.ticks())
+    context.time._start(win.ticks())
     while win.is_open() and not context._quit:
         # Dimensions are refreshed before events so pointer positions are
         # mapped with this frame's scale, not the previous one's.
@@ -76,7 +76,7 @@ def _run_loop[
         # frame, and a permanent ghost in a program that never clears.
         _update_dimensions(win, state, context)
         var frame_start = win.ticks()
-        state.time._tick(frame_start)
+        context.time._tick(frame_start)
         # The Surface is taken here, after events, because Window._resize
         # reallocates the pixel buffer: one taken before them could point at
         # freed memory. Its extent comes from the window rather than the

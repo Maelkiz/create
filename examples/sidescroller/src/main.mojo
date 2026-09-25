@@ -20,7 +20,7 @@ struct Game(Program):
         return Game(Player(0.0, 0.0, w, h, 0.0, False, 2), Camera())
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.player.update(canvas)
+        self.player.update(context, canvas)
 
         var half_w = self.player.width / 2
         if self.player.x - half_w < self.WORLD_LEFT:

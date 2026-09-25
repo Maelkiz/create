@@ -36,7 +36,7 @@ struct App(Program):
                 context.autoscale = AutoScale.OFF
             else:
                 context.autoscale = AutoScale.FIT
-        self.x += self.dir * 200.0 * canvas.time.delta
+        self.x += self.dir * 200.0 * context.time.delta
         # Set the sign rather than flip it: under EXTEND/OFF a shrinking
         # window can move canvas.right()/left() past the ball between frames,
         # and a flip on an already-true condition alternates forever instead

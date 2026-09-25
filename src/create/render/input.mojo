@@ -17,7 +17,7 @@ struct Input(Copyable, Movable):
     and for the same reason: both are per-frame readings the loop takes, and
     reaching them the same way is one thing less to remember. It costs the
     checkable one-way flow a parameter gave — `canvas` is `mut` for every render
-    call, so `canvas.input` is writable too, exactly as `canvas.time` is — and
+    call, so `canvas.input` is writable too, exactly as `context.time` is — and
     buys a sketch that reads neither naming neither. The copy is the
     consolation: the loop owns the `Input` that persists across frames, this
     one is a snapshot, and a program writing to it reaches nothing that

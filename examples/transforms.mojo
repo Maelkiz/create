@@ -12,7 +12,7 @@ struct Transforms(Program):
         return Transforms(elapsed=0.0, mouse_x=0, mouse_y=0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.elapsed = canvas.time.elapsed
+        self.elapsed = context.time.elapsed
         self.mouse_x = canvas.input.mouse_x
         self.mouse_y = canvas.input.mouse_y
 

@@ -12,12 +12,13 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable):
     frame delta.
 
     ```mojo
-    def create(out self):
-        self.fade = Tween(0.0, 1.0, 0.4, Easing.OUT_CUBIC)
+    @staticmethod
+    def create(mut context: Context) raises -> Self:
+        return Self(Tween(0.0, 1.0, 0.4, Easing.OUT_CUBIC))
 
-    def update(mut self, mut canvas: Canvas, input: Input) raises:
-        self.fade.update(canvas.time.delta)
-        if input.key_pressed(Key.SPACE):
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        self.fade.update(context.time.delta)
+        if canvas.input.just_pressed(Key.SPACE):
             self.fade.play()
         canvas.fill(Color(255, 255, 255, Int(255 * self.fade.value)))
     ```

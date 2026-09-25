@@ -13,7 +13,7 @@ struct App(Program):
         return App(0.0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.t = canvas.time.elapsed
+        self.t = context.time.elapsed
 
         # A translucent background fades the previous frame instead of
         # clearing it, leaving motion trails.

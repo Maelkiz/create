@@ -44,7 +44,7 @@ trait Program(Deinitable, Movable):
         written for the *next* one — the autoscale mode, the clear, `quit()`.
         `canvas` is this frame alone: it is built fresh, rendered on, and dropped
         before presentation, so it must not be stored anywhere. Keyboard and
-        mouse are `canvas.input`, alongside `canvas.time`, so a sketch that
+        mouse are `canvas.input`, alongside `context.time`, so a sketch that
         reads neither names neither.
         """
         ...

@@ -30,7 +30,7 @@ struct App(Program):
         return App(0.0, "")
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.angle += 0.6 * canvas.time.delta
+        self.angle += 0.6 * context.time.delta
 
         # Filed the moment the key is read, and written at `present` — the
         # file holds the whole frame however early in `update` it was asked

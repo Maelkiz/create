@@ -3,7 +3,7 @@ from create import *
 
 @fieldwise_init
 struct Player:
-    # All rates are per second, integrated with canvas.time.delta so the feel is
+    # All rates are per second, integrated with context.time.delta so the feel is
     # the same at any frame rate. y grows upward, so gravity is negative and a
     # jump is positive.
     comptime GRAVITY: Float64 = -5400.0  # units/s^2
@@ -19,8 +19,8 @@ struct Player:
     var on_ground: Bool
     var jumps_left: Int
 
-    def update(mut self, mut canvas: Canvas):
-        var dt = canvas.time.delta
+    def update(mut self, context: Context, canvas: Canvas):
+        var dt = context.time.delta
 
         if canvas.input.is_key_down("a"):
             self.x -= self.SPEED * dt

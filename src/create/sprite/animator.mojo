@@ -11,8 +11,8 @@ struct SpriteAnimator(Movable):
     share the same animation. Ticked once per frame with the frame delta:
 
     ```mojo
-    def update(mut self, mut canvas: Canvas, input: Input) raises:
-        self.animator.update(canvas.time.delta)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        self.animator.update(context.time.delta)
     ```
 
     Constructed stopped on frame 0 -- nothing advances until `play` or `loop`.

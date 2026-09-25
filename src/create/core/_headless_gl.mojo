@@ -82,12 +82,12 @@ def _run_headless_gl[
     state._set_viewport(context, pw, ph)
     var input = Input()
     var now = 0
-    state.time._start(now)
+    context.time._start(now)
     for _ in range(frames):
         if context._quit:
             break
         now += _FRAME_MILLIS
-        state.time._tick(now)
+        context.time._tick(now)
         state = step(program, context, input, state^)
         state.backend.present_gpu(pw, ph, state.view.scale)
 

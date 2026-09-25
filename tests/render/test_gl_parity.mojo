@@ -416,8 +416,8 @@ def _cpu_frame(shape: Int) raises -> MemorySurface:
     var context = Context()
     var program = _create(context, state, shape)
     var input = Input()
-    state.time._start(0)
-    state.time._tick(16)
+    context.time._start(0)
+    context.time._tick(16)
     state = step(program, context, input, state^)
     state.backend.present(mem.surface(), state.view.scale)
     return mem^
@@ -440,8 +440,8 @@ def _gpu_frame(mut win: GLWindow, shape: Int) raises -> List[UInt8]:
     var context = Context()
     var program = _create(context, state, shape)
     var input = Input()
-    state.time._start(0)
-    state.time._tick(16)
+    context.time._start(0)
+    context.time._tick(16)
     state = step(program, context, input, state^)
     state.backend.present_gpu(_PIXEL_W, _PIXEL_H, state.view.scale)
 

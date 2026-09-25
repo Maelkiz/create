@@ -51,7 +51,7 @@ struct Game(Program):
         return Game(idle^, run^, spin^, animator^, 0.0, False)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        var speed = 240.0 * canvas.time.delta
+        var speed = 240.0 * context.time.delta
 
         if canvas.input.just_pressed("space") and not self.spinning:
             # A one-shot: it holds its last frame and reports is_finished().
@@ -89,7 +89,7 @@ struct Game(Program):
 
         var margin = Float64(_SIZE) / 2.0
         self.x = clamp(self.x, canvas.left() + margin, canvas.right() - margin)
-        self.animator.update(canvas.time.delta)
+        self.animator.update(context.time.delta)
 
         canvas.background(Color(24, 26, 34))
 

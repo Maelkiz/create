@@ -55,10 +55,10 @@ struct Bench(Program):
         )
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.t += canvas.time.delta
+        self.t += context.time.delta
         self.frames += 1
-        self.elapsed += canvas.time.delta
-        self.worst = max(self.worst, canvas.time.delta)
+        self.elapsed += context.time.delta
+        self.worst = max(self.worst, context.time.delta)
         if self.frames == _WINDOW:
             var mean_ms = self.elapsed / Float64(_WINDOW) * 1000.0
             print(

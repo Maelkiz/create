@@ -1,5 +1,6 @@
 from .autoscale import AutoScale
 from .color import Color
+from .time import Time
 
 
 struct Context(Copyable, Movable):
@@ -40,6 +41,10 @@ struct Context(Copyable, Movable):
     var letterbox: Color
     """The bars outside the design area under `AutoScale.FIT`."""
     var quit_on_escape: Bool
+    var time: Time
+    """The frame clock. The run loop ticks it before each `update`; read
+    `delta` and `frame_count` here, and don't write it — the loop derives the
+    next delta from it."""
     var _design_w: Int
     var _design_h: Int
     var _fps_cap: Int
@@ -51,6 +56,7 @@ struct Context(Copyable, Movable):
         self.clear_color = Color(200)
         self.letterbox = Color(0x22)
         self.quit_on_escape = True
+        self.time = Time()
         self._design_w = 0
         self._design_h = 0
         self._fps_cap = 0
@@ -73,6 +79,16 @@ struct Context(Copyable, Movable):
         self._design_w = width
         self._design_h = height
         self.autoscale = mode
+
+    def framerate(self) -> Float64:
+        """Current frames per second, derived from the last frame's delta.
+
+        `0.0` on the first frame, where `delta` is still `0.0` and there is
+        no prior frame to measure against.
+        """
+        if self.time.delta == 0.0:
+            return 0.0
+        return 1.0 / self.time.delta
 
     def frame_cap(mut self, fps: Int) raises:
         """Limit the loop to at most `fps` frames per second.

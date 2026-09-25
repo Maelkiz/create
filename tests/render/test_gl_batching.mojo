@@ -134,10 +134,10 @@ def _gpu_frame[
     state._set_viewport(context, width, height)
     var input = Input()
     var now = 0
-    state.time._start(now)
+    context.time._start(now)
     for _ in range(frames):
         now += 16
-        state.time._tick(now)
+        context.time._tick(now)
         state = step(program, context, input, state^)
         state.backend.present_gpu(width, height, state.view.scale)
 

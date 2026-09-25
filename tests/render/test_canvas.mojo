@@ -630,7 +630,7 @@ struct StyleAcrossFrames(Program):
         return StyleAcrossFrames(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.frame = canvas.time.frame_count
+        self.frame = context.time.frame_count
 
         canvas.background(Color.BLACK)
         if self.frame == 1:
@@ -1146,7 +1146,7 @@ struct QuitOnFrameTwo(Program):
         return QuitOnFrameTwo()
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.frame = canvas.time.frame_count
+        self.frame = context.time.frame_count
         if self.frame == 2:
             context.quit()
 
@@ -1200,7 +1200,7 @@ struct AnimatorBlit(Program):
         return AnimatorBlit(a^)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.animator.update(canvas.time.delta)
+        self.animator.update(context.time.delta)
 
         canvas.background(Color.BLACK)
         canvas.sprite(self.animator, 0.0, 0.0)

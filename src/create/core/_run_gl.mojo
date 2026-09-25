@@ -123,13 +123,13 @@ def _run_loop[
     mut context: Context,
     mut input: Input,
 ) raises:
-    state.time._start(win.ticks())
+    context.time._start(win.ticks())
     while win.is_open() and not context._quit:
         var px_per_point = _update_dimensions(win, state, context)
         if apply_events(win.events(), state.view, context, input, px_per_point):
             win.close()
         var frame_start = win.ticks()
-        state.time._tick(frame_start)
+        context.time._tick(frame_start)
         # Re-read after events: a resize this frame changed the drawable, and
         # the bars have to reach the edge of the *new* one. The viewport is
         # re-derived from it too — the mapping taken before the events is one
