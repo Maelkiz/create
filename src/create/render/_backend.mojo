@@ -679,7 +679,7 @@ struct _ImageRequest(Movable):
     Filed while recording and flushed at present, because present is the only
     place holding both the finished command buffer and a target to replay it
     onto. Deferring also makes the contract honest: the file gets the *whole*
-    frame no matter where in `render` the call was made.
+    frame no matter where in `update` the call was made.
     """
 
     var path: String

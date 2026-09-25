@@ -25,8 +25,8 @@ def run_headless[
 ) raises -> MemorySurface:
     """Run `P` for `frames` frames over an owned buffer and return it.
 
-    The same sequence as `run`, minus the window: `create`, then `update` and
-    `render` per frame, with the letterbox painted after each render. `width`
+    The same sequence as `run`, minus the window: `create`, then `update`
+    per frame, with the letterbox painted after each one. `width`
     and `height` are the design resolution; `pixel_width`/`pixel_height` are
     the framebuffer, defaulting to the same size — pass a different shape to
     exercise autoscale, since a design that matches the framebuffer maps 1:1

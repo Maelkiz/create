@@ -4,7 +4,7 @@
 #   pixi run test                  -> every test file
 #   pixi run test render           -> tests/render/
 #   pixi run test render audio     -> both
-#   pixi run test frame            -> tests/**/test_frame.mojo
+#   pixi run test canvas           -> tests/**/test_canvas.mojo
 #   pixi run test tests/math/test_tween.mojo
 #   pixi run test --jobs 4 render  -> pin the worker count (default nproc, max 8)
 #   pixi run test -j 4 render      -> the same

@@ -7,7 +7,7 @@ trait Program(Deinitable, Movable):
     frame.
 
     One per-frame method, not two. A separate `render` would have to be handed
-    a frame it may not write to and no input at all, which is what forced a
+    a canvas it may not write to and no input at all, which is what forced a
     program to smuggle a decision from one into the other through a field —
     reading a key in `update` to file a screenshot in `render`, or caching a
     framerate reading to render it. Deciding and rendering are the same frame's

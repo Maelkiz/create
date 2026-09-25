@@ -156,7 +156,7 @@ struct Canvas:
     those rather than width arithmetic, since the origin is centred and two of
     them are negative. `scale` is the autoscale factor, `view` the mapping they all come
     from. Screen space is camera-independent: these don't know a
-    `Camera` exists, since a program sets one on the frame's transform, not on
+    `Camera` exists, since a program sets one on the canvas's transform, not on
     the geometry it reports.
 
     A `mut` parameter because the program renders on it, and the recording it
@@ -175,7 +175,7 @@ struct Canvas:
     `Program.update` signature at once, and pointing an existing `Canvas` at a
     new framebuffer could not compile at all. Both
     limits are gone because a `Canvas` no longer touches pixels — it records,
-    and the backend replays onto a `Surface` the frame never sees. Don't
+    and the backend replays onto a `Surface` the canvas never sees. Don't
     reintroduce a `Surface` field or a parameter to hold one.
 
     Its extent comes from the `Viewport` rather than from a framebuffer. The
@@ -204,7 +204,7 @@ struct Canvas:
     for the next."""
     var _state: PersistentCanvasState
     # Style is per-frame, not carried in `_state`: `Canvas` is only reachable
-    # from `render`, so nothing can seed a style outside a frame and carrying
+    # from `update`, so nothing can seed a style outside a frame and carrying
     # one across would only preserve a forgotten setting.
     var _style: Style
     var _base: Matrix[3, 3]
@@ -260,7 +260,7 @@ struct Canvas:
     def _release(deinit self) -> PersistentCanvasState:
         """Hand back the state the next frame's `Canvas` should start from.
 
-        Consumes the frame, so the recording is complete before the loop
+        Consumes the canvas, so the recording is complete before the loop
         presents it — nothing can append to a frame that is being replayed.
 
         Nothing is written back. `self.view` is this frame's copy of a mapping
@@ -467,7 +467,7 @@ struct Canvas:
         `scale=2.0` gives a 2x export of the identical layout.
 
         Deferred, not immediate: the file is written when the frame is
-        presented, so it holds the whole frame however early in `render` this
+        presented, so it holds the whole frame however early in `update` this
         was called. A failure to write raises there, from `present`, rather
         than here.
         """

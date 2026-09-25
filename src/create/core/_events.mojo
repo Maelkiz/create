@@ -37,8 +37,8 @@ def apply_events(
 ) -> Bool:
     """Fold a frame's events into `context.input`; True means quit.
 
-    Takes the viewport and the dials rather than a frame because this runs
-    *before* the frame is built — pointer positions have to be mapped with
+    Takes the viewport and the context rather than a `Canvas` because this
+    runs *before* the canvas is built — pointer positions have to be mapped with
     this frame's mapping, which the loop has just re-derived.
 
     `px_per_point` converts a pointer position from SDL's logical window

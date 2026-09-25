@@ -192,7 +192,7 @@ struct Color(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def hsv(h: Float64, s: Float64, v: Float64) -> Color:
         """Build a color from hue in degrees (wraps) and saturation/value in 0..1.
 
-        Hue cycling is the point: `Color.hsv(Float64(frame) % 360.0, 1.0, 1.0)`
+        Hue cycling is the point: `Color.hsv(Float64(context.time.frame_count) % 360.0, 1.0, 1.0)`
         sweeps the spectrum without hand-mixing channels.
         """
         var hh = h - 360.0 * Float64(Int(h / 360.0))

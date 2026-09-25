@@ -103,7 +103,7 @@ def run[
     """Open a window and run `P` in it until it quits.
 
     `width`/`height` are the resolution the program is **authored** in — the
-    space `canvas.width`/`height`, the frame edges and `input.mouse` are
+    space `canvas.width`/`height`, the canvas edges and `context.input.mouse` are
     reported in. They are not a window size that happens to double as one: a
     `WINDOWED` or `BORDERLESS` launch opens a window of that size because the
     two coincide there, while `FULLSCREEN` and `MAXIMIZED` take the display or
