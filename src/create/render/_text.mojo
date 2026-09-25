@@ -4,7 +4,7 @@ from .align import Align
 from .color import Color
 from .font import Font, _GlyphInfo, default_font_path, fallback_font_path
 from ._raster import blit_glyph
-from ._style import Style
+from .style import Style
 from .surface import Surface
 
 comptime _GLYPH_CACHE_LIMIT = 4096

@@ -1,5 +1,5 @@
 from .color import Color
-from ._style import Style
+from .style import Style
 from create.math.matrix import Matrix, identity
 
 comptime CMD_CLEAR = 0

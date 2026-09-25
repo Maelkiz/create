@@ -26,7 +26,7 @@ from ._raster import (
 )
 from ._gl_backend import GLRenderer
 from ._image import _Image
-from ._style import Style
+from .style import Style
 from ._transform import pixel_scale, outline_thickness_px, uniform
 from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
 from ._tessellate import _arc_segments
@@ -1006,9 +1006,9 @@ struct Backend(Movable):
             var iw = Int(abs(p1[0] - p0[0]))
             var ih = Int(abs(p1[1] - p0[1]))
             if r_local <= 0.0:
-                if c.style.fill_visible():
+                if c.style._fill_visible():
                     fill_pixels(s, x0, y0, x0 + iw, y0 + ih, c.style.fill_color)
-                if c.style.outline_visible():
+                if c.style._outline_visible():
                     var sw = outline_thickness_px(c.style, m, scale)
                     var sc = c.style.outline_color
                     fill_pixels(s, x0, y0, x0 + iw, y0 + sw, sc)
@@ -1027,8 +1027,8 @@ struct Backend(Movable):
                 # disc in *fill* colour, not outline).
                 var pr = r_local * pixel_scale(m, scale)
                 var pr_i = Int(pr)
-                var fill_enabled = c.style.fill_visible()
-                var outline_enabled = c.style.outline_visible()
+                var fill_enabled = c.style._fill_visible()
+                var outline_enabled = c.style._outline_visible()
                 var fill_col = c.style.fill_color
                 var outline_col = c.style.outline_color
                 var sw = outline_thickness_px(
@@ -1171,8 +1171,8 @@ struct Backend(Movable):
             var inv_step_x = 1.0 / step_x if step_x != 0.0 else 0.0
             var inv_step_y = 1.0 / step_y if step_y != 0.0 else 0.0
             if r_local <= 0.0:
-                var fill_enabled = c.style.fill_visible()
-                var outline_enabled = c.style.outline_visible()
+                var fill_enabled = c.style._fill_visible()
+                var outline_enabled = c.style._outline_visible()
                 var fill_col = c.style.fill_color
                 var outline_col = c.style.outline_color
                 for row in range(b[1], b[3]):
@@ -1260,8 +1260,8 @@ struct Backend(Movable):
                 # to the sharp two-axis test, so a corner too thick for its
                 # outline gets a sharp inner silhouette rather than a
                 # negative radius.
-                var fill_enabled = c.style.fill_visible()
-                var outline_enabled = c.style.outline_visible()
+                var fill_enabled = c.style._fill_visible()
+                var outline_enabled = c.style._outline_visible()
                 var fill_col = c.style.fill_color
                 var outline_col = c.style.outline_color
                 var r2 = r_local * r_local
@@ -1393,11 +1393,11 @@ struct Backend(Movable):
             # rendered — matches the per-pixel `if`'s "or pr_inner <= 0.0" arm,
             # which shortcuts to true regardless of `d2` and so never leaves
             # the `elif` reachable.
-            var full_fill = c.style.fill_visible() and (
-                not c.style.outline_visible() or pr_inner <= 0.0
+            var full_fill = c.style._fill_visible() and (
+                not c.style._outline_visible() or pr_inner <= 0.0
             )
-            var fill_enabled = c.style.fill_visible()
-            var outline_enabled = c.style.outline_visible()
+            var fill_enabled = c.style._fill_visible()
+            var outline_enabled = c.style._outline_visible()
             var fill_col = c.style.fill_color
             var outline_col = c.style.outline_color
             for row in range(y0, y1):
@@ -1432,8 +1432,8 @@ struct Backend(Movable):
             var b = device_bounds(m, cx - r, cy - r, cx + r, cy + r, W, H)
             var step_x = minv[0, 0]
             var step_y = minv[1, 0]
-            var fill_enabled = c.style.fill_visible()
-            var outline_enabled = c.style.outline_visible()
+            var fill_enabled = c.style._fill_visible()
+            var outline_enabled = c.style._outline_visible()
             var fill_col = c.style.fill_color
             var outline_col = c.style.outline_color
             var full_fill = not outline_enabled or r_inner <= 0.0
@@ -1484,7 +1484,7 @@ struct Backend(Movable):
         scale: Float64,
         m: Matrix[3, 3],
     ):
-        if not c.style.outline_visible():
+        if not c.style._outline_visible():
             return
         var p0 = mat_apply(m, c.geom[0], c.geom[1])
         var p1 = mat_apply(m, c.geom[2], c.geom[3])
@@ -1522,7 +1522,7 @@ struct Backend(Movable):
         )
 
         if r_local <= 0.0:
-            if c.style.fill_visible():
+            if c.style._fill_visible():
                 fill_triangle(
                     s,
                     p1[0],
@@ -1533,7 +1533,7 @@ struct Backend(Movable):
                     p3[1],
                     c.style.fill_color,
                 )
-            if c.style.outline_visible():
+            if c.style._outline_visible():
                 var sw = outline_thickness_px(c.style, m, scale)
                 var sc = c.style.outline_color
                 line_pixels(s, p1[0], p1[1], p2[0], p2[1], sc, sw)
@@ -1541,8 +1541,8 @@ struct Backend(Movable):
                 line_pixels(s, p3[0], p3[1], p1[0], p1[1], sc, sw)
             return
 
-        var fill_enabled = c.style.fill_visible()
-        var outline_enabled = c.style.outline_visible()
+        var fill_enabled = c.style._fill_visible()
+        var outline_enabled = c.style._outline_visible()
         var fill_col = c.style.fill_color
         var outline_col = c.style.outline_color
         var W = s.width

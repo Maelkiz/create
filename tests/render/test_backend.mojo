@@ -9,7 +9,7 @@ from create import *
 from create.core.headless import run_headless
 from create.render.surface import MemorySurface
 from create.render.viewport import Viewport
-from create.render._style import Style
+from create.render.style import Style
 from create.render._backend import Backend
 from create.render._raster import blend
 from create.render._transform import pixel_scale, outline_thickness_px

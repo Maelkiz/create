@@ -8,7 +8,7 @@ from std.testing import TestSuite, assert_equal, assert_true, assert_false
 from create.render.align import Align
 from create.render.color import Color
 from create.render.font import Font, FontWeight, default_font_path, _GlyphInfo
-from create.render._style import Style
+from create.render.style import Style
 from create.render.surface import MemorySurface
 from create.render._text import TextRenderer, _GLYPH_CACHE_LIMIT
 

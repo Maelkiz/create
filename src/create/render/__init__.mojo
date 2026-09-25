@@ -7,6 +7,7 @@ from .viewport import Viewport
 from .context import Context
 from .time import Time
 from .font import Font, FontWeight
+from .style import Style
 from .camera import Camera
 from .key import Key
 from .input import Input, MouseButton

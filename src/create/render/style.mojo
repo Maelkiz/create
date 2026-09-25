@@ -36,7 +36,7 @@ struct Style(Copyable, Movable):
         self.text_align = Align.CENTER
         self.opacity = 1.0
 
-    def fill_visible(self) -> Bool:
+    def _fill_visible(self) -> Bool:
         """Whether the fill actually paints anything.
 
         `fill_enabled` alone isn't enough — a fully transparent color paints
@@ -45,7 +45,7 @@ struct Style(Copyable, Movable):
         """
         return self.fill_enabled and self.fill_color.a > 0
 
-    def outline_visible(self) -> Bool:
+    def _outline_visible(self) -> Bool:
         """Whether the outline actually paints anything.
 
         `outline_enabled` alone isn't enough — a fully transparent color or a

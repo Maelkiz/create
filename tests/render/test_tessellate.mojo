@@ -17,7 +17,7 @@ from create.render._command import (
     sprite_command,
     triangle_command,
 )
-from create.render._style import Style
+from create.render.style import Style
 from create.render._tessellate import (
     MODE_SOLID,
     MODE_TEXTURE,

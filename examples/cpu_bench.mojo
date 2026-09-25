@@ -56,7 +56,7 @@ from create.render._raster import (
     blit_sprite,
     line_pixels,
 )
-from create.render._style import Style
+from create.render import Style
 from create.math.matrix import identity
 
 comptime _W = 1920

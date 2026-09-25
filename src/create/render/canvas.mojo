@@ -30,7 +30,7 @@ from ._command import (
     text_command,
     triangle_command,
 )
-from ._style import Style
+from .style import Style
 
 
 struct PersistentCanvasState(Movable):

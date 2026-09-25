@@ -15,7 +15,7 @@ from std.math import abs, max
 
 from create.math.matrix import Matrix
 
-from ._style import Style
+from .style import Style
 
 
 def uniform(m: Matrix[3, 3]) -> Bool:
