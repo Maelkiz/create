@@ -25,7 +25,7 @@ struct MyApp(Program):
         return MyApp()
 
     def update(mut self, mut context: Context, mut canvas: Canvas):
-        # Called once per frame: handle canvas.input, advance state, and render to the screen
+        # Called once per frame: handle context.input, advance state, and render to the screen
         canvas.text("Hello World!", (0, 0))
 
 

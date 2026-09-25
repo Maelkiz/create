@@ -14,7 +14,7 @@ trait Program(Deinitable, Movable):
     work, so they are the same method's.
 
     There are no event callbacks. Input arrives on the frame, as
-    `canvas.input`, and nowhere else — so there is one place a frame's
+    `context.input`, and nowhere else — so there is one place a frame's
     decisions are made and no ordering question between a callback and the
     frame body.
     """
@@ -44,7 +44,7 @@ trait Program(Deinitable, Movable):
         written for the *next* one — the autoscale mode, the clear, `quit()`.
         `canvas` is this frame alone: it is built fresh, rendered on, and dropped
         before presentation, so it must not be stored anywhere. Keyboard and
-        mouse are `canvas.input`, alongside `context.time`, so a sketch that
+        mouse are `context.input`, alongside `context.time`, so a sketch that
         reads neither names neither.
         """
         ...

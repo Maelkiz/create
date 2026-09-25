@@ -21,10 +21,10 @@ struct Paint:
     def enter(mut self):
         self._entering = True
 
-    def update(mut self, mut canvas: Canvas) raises:
-        self.back_pressed = canvas.input.mouse_just_pressed(MouseButton.RIGHT)
-        self.painting = canvas.input.is_mouse_down(MouseButton.LEFT)
-        self.pen = canvas.input.mouse
+    def update(mut self, context: Context, mut canvas: Canvas) raises:
+        self.back_pressed = context.input.mouse_just_pressed(MouseButton.RIGHT)
+        self.painting = context.input.is_mouse_down(MouseButton.LEFT)
+        self.pen = context.input.mouse
 
         if self._entering:
             canvas.background(Color(24, 24, 28))

@@ -1,6 +1,5 @@
 from create.render.canvas import Canvas, PersistentCanvasState
 from create.render.context import Context
-from create.render.input import Input
 from .program import Program
 
 
@@ -9,7 +8,6 @@ def step[
 ](
     mut program: P,
     mut context: Context,
-    input: Input,
     var state: PersistentCanvasState,
 ) raises -> PersistentCanvasState:
     """Advance `program` by one frame and hand its recorded state back.
@@ -24,9 +22,6 @@ def step[
     built for this frame and dropped before the frame is presented. `context`
     is borrowed rather than moved for the opposite reason — it is never a
     `Canvas`'s to own, which is what lets `update` be handed both at once.
-    `input` is borrowed and copied onto the frame: the loop owns the one that
-    persists across frames, and the program reads this frame's snapshot as
-    `canvas.input`.
 
     **The caller presents.** A frame ends with the recording complete and the
     state handed back; `state.backend.present(surface, scale)` is the caller's
@@ -37,7 +32,7 @@ def step[
     know how to build; in the windowed case that is only valid after events
     have been pumped.
     """
-    var canvas = Canvas(state^, context, input)
+    var canvas = Canvas(state^, context)
     program.update(context, canvas)
     # Recorded last, so it doubles as the clip for anything rendered out of
     # bounds — the replay honours the buffer's order.

@@ -38,9 +38,8 @@ def _mismatched() raises -> MemorySurface:
     context.design_resolution(64, 64)
     start._set_viewport(context, 64, 64)
     var program = Painter(0)
-    var input = Input()
     var mem = MemorySurface(200, 200)
-    var state = step(program, context, input, start^)
+    var state = step(program, context, start^)
     state.backend.present(mem.surface(), state.view.scale)
     _ = state^
     return mem^
@@ -84,7 +83,7 @@ struct ClickPainter(Program):
         return ClickPainter(False)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.clicked = canvas.input.mouse_just_pressed()
+        self.clicked = context.input.mouse_just_pressed()
 
         canvas.background(Color.RED if self.clicked else Color.BLUE)
 
@@ -97,7 +96,7 @@ def test_scripted_click_drives_rendering() raises -> None:
     var idle_start = PersistentCanvasState()
     idle_start._set_viewport(idle_context, 32, 32)
     var idle_program = ClickPainter(False)
-    var idle_state = step(idle_program, idle_context, Input(), idle_start^)
+    var idle_state = step(idle_program, idle_context, idle_start^)
     idle_state.backend.present(mem.surface(), idle_state.view.scale)
     assert_equal(mem.pixel(16, 16), Color.BLUE)
     _ = idle_state^
@@ -107,11 +106,8 @@ def test_scripted_click_drives_rendering() raises -> None:
     var clicked_start = PersistentCanvasState()
     clicked_start._set_viewport(clicked_context, 32, 32)
     var clicked_program = ClickPainter(False)
-    var clicked_input = Input()
-    clicked_input._pressed_buttons |= 1 << 1
-    var clicked_state = step(
-        clicked_program, clicked_context, clicked_input, clicked_start^
-    )
+    clicked_context.input._pressed_buttons |= 1 << 1
+    var clicked_state = step(clicked_program, clicked_context, clicked_start^)
     clicked_state.backend.present(mem.surface(), clicked_state.view.scale)
     assert_equal(mem.pixel(16, 16), Color.RED)
     _ = clicked_state^

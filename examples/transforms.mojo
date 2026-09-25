@@ -13,8 +13,8 @@ struct Transforms(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         self.elapsed = context.time.elapsed
-        self.mouse_x = canvas.input.mouse_x
-        self.mouse_y = canvas.input.mouse_y
+        self.mouse_x = context.input.mouse_x
+        self.mouse_y = context.input.mouse_y
 
         canvas.background(Color(8, 8, 20))
 
@@ -24,7 +24,7 @@ struct Transforms(Program):
         # Solar system: the sun sits at the origin, so it needs no transform of
         # its own — the nesting below is what the demo is about.
         # Hit-test the sun in the frame it is rendered in. `to_local` maps a world
-        # position (which is what `canvas.input.mouse` already is) into that frame.
+        # position (which is what `context.input.mouse` already is) into that frame.
         var local = canvas.to_local(
             Float64(self.mouse_x), Float64(self.mouse_y)
         )

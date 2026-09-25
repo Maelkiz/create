@@ -11,7 +11,6 @@ from create._window import GLWindow
 
 from create import *
 from create.core._step import step
-from create.render.input import Input
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.autoscale import AutoScale
@@ -132,13 +131,12 @@ def _gpu_frame[
     context.design_resolution(width, height)
     var program = P.create(context)
     state._set_viewport(context, width, height)
-    var input = Input()
     var now = 0
     context.time._start(now)
     for _ in range(frames):
         now += 16
         context.time._tick(now)
-        state = step(program, context, input, state^)
+        state = step(program, context, state^)
         state.backend.present_gpu(width, height, state.view.scale)
 
     var pixels = state.backend.gl.value().read_frame(width, height)

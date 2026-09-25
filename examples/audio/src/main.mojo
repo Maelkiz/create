@@ -24,13 +24,13 @@ struct AudioDemo(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         self.audio.update()
 
-        if canvas.input.just_pressed("space"):
+        if context.input.just_pressed("space"):
             _ = self.audio.play(self.chime)
 
-        if canvas.input.just_pressed("h"):
+        if context.input.just_pressed("h"):
             self.loop_id = self.audio.play(self.ambience, loop=True)
             self.looping = True
-        if canvas.input.just_released("h"):
+        if context.input.just_released("h"):
             self.audio.stop(self.loop_id)
             self.looping = False
 

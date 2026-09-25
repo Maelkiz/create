@@ -28,17 +28,14 @@ from create.math.vector2d import Vector2D
 from create.render.context import Context
 from create.render.viewport import Viewport
 
-from create.render.input import Input
-
 
 def apply_events(
     events: List[Event],
     view: Viewport,
-    context: Context,
-    mut input: Input,
+    mut context: Context,
     px_per_point: Float64 = 1.0,
 ) -> Bool:
-    """Fold a frame's events into `input`; True means quit.
+    """Fold a frame's events into `context.input`; True means quit.
 
     Takes the viewport and the dials rather than a frame because this runs
     *before* the frame is built — pointer positions have to be mapped with
@@ -50,6 +47,7 @@ def apply_events(
     over logical ratio on a scaled display, where the GL loop sizes its
     viewport from `drawable_size()`.
     """
+    ref input = context.input
     input._new_frame()
     var quit = False
     for event in events:

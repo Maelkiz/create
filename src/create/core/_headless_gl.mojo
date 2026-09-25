@@ -23,7 +23,6 @@ from create.render.surface import MemorySurface
 
 from ._step import step
 from .headless import _FRAME_MILLIS
-from create.render.input import Input
 from .program import Program
 
 comptime _HEADLESS_MSAA_SAMPLES = 4
@@ -80,7 +79,6 @@ def _run_headless_gl[
     var program = P.create(context)
     # After create(), which may have pinned its own design size or mode.
     state._set_viewport(context, pw, ph)
-    var input = Input()
     var now = 0
     context.time._start(now)
     for _ in range(frames):
@@ -88,7 +86,7 @@ def _run_headless_gl[
             break
         now += _FRAME_MILLIS
         context.time._tick(now)
-        state = step(program, context, input, state^)
+        state = step(program, context, state^)
         state.backend.present_gpu(pw, ph, state.view.scale)
 
     var pixels = state.backend.gl.value().read_frame(pw, ph)

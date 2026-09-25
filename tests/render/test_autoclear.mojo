@@ -93,7 +93,7 @@ def test_an_opaque_background_replaces_the_autoclear() raises -> None:
     var context = Context()
     var state = PersistentCanvasState()
     state._set_viewport(context, 200, 100)
-    var canvas = Canvas(state^, context, Input())
+    var canvas = Canvas(state^, context)
     canvas.background(Color.BLUE)
     var out = canvas^._release()
     assert_equal(len(out.backend.commands), 1)
@@ -104,7 +104,7 @@ def test_a_translucent_background_keeps_both() raises -> None:
     var context = Context()
     var state = PersistentCanvasState()
     state._set_viewport(context, 200, 100)
-    var canvas = Canvas(state^, context, Input())
+    var canvas = Canvas(state^, context)
     canvas.background(Color(0x11, 0x11, 0x11, 24))
     var out = canvas^._release()
     assert_equal(len(out.backend.commands), 2)
@@ -115,7 +115,7 @@ def test_autoclear_records_nothing_when_off() raises -> None:
     context.autoclear = False
     var state = PersistentCanvasState()
     state._set_viewport(context, 200, 100)
-    var canvas = Canvas(state^, context, Input())
+    var canvas = Canvas(state^, context)
     var out = canvas^._release()
     assert_equal(len(out.backend.commands), 0)
 

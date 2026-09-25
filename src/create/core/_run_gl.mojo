@@ -26,7 +26,6 @@ from create.render.context import Context
 
 from ._events import apply_events
 from ._step import step
-from create.render.input import Input
 from .program import Program
 from .window_mode import WindowMode
 
@@ -121,12 +120,11 @@ def _run_loop[
     mut win: GLWindow,
     var state: PersistentCanvasState,
     mut context: Context,
-    mut input: Input,
 ) raises:
     context.time._start(win.ticks())
     while win.is_open() and not context._quit:
         var px_per_point = _update_dimensions(win, state, context)
-        if apply_events(win.events(), state.view, context, input, px_per_point):
+        if apply_events(win.events(), state.view, context, px_per_point):
             win.close()
         var frame_start = win.ticks()
         context.time._tick(frame_start)
@@ -137,7 +135,7 @@ def _run_loop[
         # of the resized drawable.
         _ = _update_dimensions(win, state, context)
         var drawable = win.drawable_size()
-        state = step(program, context, input, state^)
+        state = step(program, context, state^)
         state.backend.present_gpu(drawable[0], drawable[1], state.view.scale)
         win.swap_buffers()
         _cap_frame_rate(win, context, frame_start)
@@ -184,5 +182,4 @@ def run_gl[
     # The mapping is derived once create() has had its say about the design
     # size and the mode.
     _wait_for_dimensions(win, state, context)
-    var input = Input()
-    _run_loop(program, win, state^, context, input)
+    _run_loop(program, win, state^, context)

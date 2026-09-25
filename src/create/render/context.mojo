@@ -1,6 +1,7 @@
 from .autoscale import AutoScale
 from .color import Color
 from .time import Time
+from .input import Input
 
 
 struct Context(Copyable, Movable):
@@ -45,6 +46,10 @@ struct Context(Copyable, Movable):
     """The frame clock. The run loop ticks it before each `update`; read
     `delta` and `frame_count` here, and don't write it — the loop derives the
     next delta from it."""
+    var input: Input
+    """Keyboard and mouse state. The run loop folds each frame's events into
+    it before `update`, so it is settled for the whole frame. Read it, don't
+    write it: the loop carries it into the next frame."""
     var _design_w: Int
     var _design_h: Int
     var _fps_cap: Int
@@ -57,6 +62,7 @@ struct Context(Copyable, Movable):
         self.letterbox = Color(0x22)
         self.quit_on_escape = True
         self.time = Time()
+        self.input = Input()
         self._design_w = 0
         self._design_h = 0
         self._fps_cap = 0

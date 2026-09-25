@@ -7,7 +7,6 @@ from .font import Font
 from .viewport import Viewport
 from .context import Context
 from .camera import Camera
-from .input import Input
 from create.math.geometry import Rectangle, Circle, Line, Triangle
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
@@ -155,9 +154,8 @@ struct Canvas:
     This is the object a program is handed to render a frame with. `width`/`height`
     are the screen extent and `left`/`right`/`bottom`/`top` its edges — use
     those rather than width arithmetic, since the origin is centred and two of
-    them are negative. `input` is this frame's keyboard and mouse, `scale` the
-    autoscale factor, `view` the mapping they all come
-    from. Screen space is camera-independent: these and `input` don't know a
+    them are negative. `scale` is the autoscale factor, `view` the mapping they all come
+    from. Screen space is camera-independent: these don't know a
     `Camera` exists, since a program sets one on the frame's transform, not on
     the geometry it reports.
 
@@ -200,15 +198,6 @@ struct Canvas:
     var height: Int
     var scale: Float64
     var view: Viewport
-    var input: Input
-    """This frame's keyboard and mouse state, a snapshot taken at
-    construction. A copy rather than a reference because the run loop owns the
-    real one and is its only writer.
-
-    The loop folds a frame's events into the input it owns before the frame is
-    built, so what a program reads here is settled for the whole frame — and
-    writing to it reaches nothing, since the copy dies with the frame.
-    """
     var _letterbox: Color
     """This frame's bar colour, snapshotted from `Context` at construction —
     the frame is rendered under one set of dials, whatever `update` does to them
@@ -239,22 +228,17 @@ struct Canvas:
         out self,
         var state: PersistentCanvasState,
         context: Context,
-        input: Input,
     ):
-        """Adopt the carried-over state, and this frame's mapping, dials and
-        input.
+        """Adopt the carried-over state, and this frame's mapping and dials.
 
         `context` is read here and not held: the frame is rendered under the
         dials as they stood when it began, so a program turning one mid-frame
-        changes the next frame rather than this one halfway through. `input`
-        is copied for the same reason — the loop owns the real one across
-        frames, and this frame reports the state it began with.
+        changes the next frame rather than this one halfway through.
         """
         self.view = state.view.copy()
         self.width = state.view.width
         self.height = state.view.height
         self.scale = state.view.scale
-        self.input = input.copy()
         self._letterbox = context.letterbox
         self._state = state^
         self._style = Style()

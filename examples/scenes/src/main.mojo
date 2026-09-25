@@ -34,12 +34,12 @@ struct App(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         if self.scene == MENU:
-            self.menu.update(canvas)
+            self.menu.update(context, canvas)
             if self.menu.start_pressed:
                 self.paint.enter()
                 self.scene = DRAWING
         else:
-            self.paint.update(canvas)
+            self.paint.update(context, canvas)
             if self.paint.back_pressed:
                 self.scene = MENU
 

@@ -14,7 +14,7 @@ struct App(Program):
         )
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.mouse.move_to(canvas.input.mouse)
+        self.mouse.move_to(context.input.mouse)
 
         if overlaps(self.center, self.mouse):
             canvas.background(Color(40, 40, 60))

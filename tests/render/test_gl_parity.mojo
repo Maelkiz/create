@@ -415,10 +415,9 @@ def _cpu_frame(shape: Int) raises -> MemorySurface:
     var state = PersistentCanvasState()
     var context = Context()
     var program = _create(context, state, shape)
-    var input = Input()
     context.time._start(0)
     context.time._tick(16)
-    state = step(program, context, input, state^)
+    state = step(program, context, state^)
     state.backend.present(mem.surface(), state.view.scale)
     return mem^
 
@@ -439,10 +438,9 @@ def _gpu_frame(mut win: GLWindow, shape: Int) raises -> List[UInt8]:
     var state = PersistentCanvasState(RenderBackend.GPU)
     var context = Context()
     var program = _create(context, state, shape)
-    var input = Input()
     context.time._start(0)
     context.time._tick(16)
-    state = step(program, context, input, state^)
+    state = step(program, context, state^)
     state.backend.present_gpu(_PIXEL_W, _PIXEL_H, state.view.scale)
 
     # The same readback `save_screenshot` uses, so the parity test and the

@@ -11,8 +11,8 @@ struct Menu:
 
     var start_pressed: Bool
 
-    def update(mut self, mut canvas: Canvas) raises:
-        self.start_pressed = canvas.input.mouse_just_pressed()
+    def update(mut self, context: Context, mut canvas: Canvas) raises:
+        self.start_pressed = context.input.mouse_just_pressed()
 
         canvas.background(Color(24, 24, 28))
         with canvas.style():

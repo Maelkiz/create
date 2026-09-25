@@ -63,7 +63,7 @@ def test_release_does_not_write_the_viewport_back() raises -> None:
     # The loop owns the mapping — a frame that wrote its copy back would undo
     # a resize the loop handled while the frame was being rendered.
     var context = Context()
-    var canvas = Canvas(_state(context, 800, 600), context, Input())
+    var canvas = Canvas(_state(context, 800, 600), context)
     canvas.view.set_size(1600, 1200)
     var state = canvas^._release()
     assert_equal(state.view.pixel_w, 800)
@@ -76,13 +76,13 @@ def test_design_takes_effect_on_the_next_frame() raises -> None:
     # `_set_viewport` is what publishes the new mapping.
     var context = Context()
     var state = _state(context, 1600, 1200)
-    var canvas = Canvas(state^, context, Input())
+    var canvas = Canvas(state^, context)
     context.design_resolution(800, 600)
     assert_equal(canvas.width, 1600)
     state = canvas^._release()
     assert_true(context.autoscale == AutoScale.FIT)
     state._set_viewport(context, 1600, 1200)
-    var next = Canvas(state^, context, Input())
+    var next = Canvas(state^, context)
     assert_equal(next.width, 800)
     assert_equal(next.height, 600)
     assert_almost_equal(next.scale, 2.0)
@@ -94,7 +94,7 @@ def test_design_overrides_an_earlier_design() raises -> None:
     context.design_resolution(800, 600)
     context.design_resolution(1000, 500, AutoScale.EXTEND)
     state._set_viewport(context, 2000, 1000)
-    var next = Canvas(state^, context, Input())
+    var next = Canvas(state^, context)
     assert_true(next.view.autoscale == AutoScale.EXTEND)
     assert_almost_equal(next.scale, 2.0)
     assert_equal(next.width, 1000)

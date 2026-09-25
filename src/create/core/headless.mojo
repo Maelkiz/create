@@ -4,7 +4,6 @@ from create.render.context import Context
 from create.render.render_backend import RenderBackend
 from ._step import step
 from ._headless_gl import _run_headless_gl
-from create.render.input import Input
 from .program import Program
 from create.render.surface import MemorySurface
 
@@ -55,7 +54,6 @@ def run_headless[
     var program = P.create(context)
     # After create(), which may have pinned its own design size or mode.
     state._set_viewport(context, pw, ph)
-    var input = Input()
     var now = 0
     context.time._start(now)
     for _ in range(frames):
@@ -63,6 +61,6 @@ def run_headless[
             break
         now += _FRAME_MILLIS
         context.time._tick(now)
-        state = step(program, context, input, state^)
+        state = step(program, context, state^)
         state.backend.present(mem.surface(), state.view.scale)
     return mem^

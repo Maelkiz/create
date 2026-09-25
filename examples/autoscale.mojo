@@ -29,7 +29,7 @@ struct App(Program):
         return App(100.0, 1.0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        if canvas.input.just_pressed("space"):
+        if context.input.just_pressed("space"):
             if context.autoscale == AutoScale.FIT:
                 context.autoscale = AutoScale.EXTEND
             elif context.autoscale == AutoScale.EXTEND:

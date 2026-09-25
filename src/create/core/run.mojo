@@ -7,7 +7,6 @@ from create.render.context import Context
 from ._events import apply_events
 from ._step import step
 from create.render.surface import Surface
-from create.render.input import Input
 from create.render.autoscale import AutoScale
 from .program import Program
 from .window_mode import WindowMode
@@ -34,10 +33,9 @@ def _wait_for_dimensions(
 def _process_events(
     mut win: Window,
     state: PersistentCanvasState,
-    context: Context,
-    mut input: Input,
+    mut context: Context,
 ) raises:
-    if apply_events(win.events(), state.view, context, input):
+    if apply_events(win.events(), state.view, context):
         win.close()
 
 
@@ -59,7 +57,6 @@ def _run_loop[
     mut win: Window,
     var state: PersistentCanvasState,
     mut context: Context,
-    mut input: Input,
 ) raises:
     # Seeded here rather than in run() so the program's create() — which may
     # load fonts or decode audio — does not land in the first frame's delta.
@@ -68,7 +65,7 @@ def _run_loop[
         # Dimensions are refreshed before events so pointer positions are
         # mapped with this frame's scale, not the previous one's.
         _update_dimensions(win, state, context)
-        _process_events(win, state, context, input)
+        _process_events(win, state, context)
         # Re-derive after events: a resize this frame reallocated the pixel
         # buffer, so the mapping taken above is one frame stale while the
         # framebuffer is already the new size. Rendering that frame against the
@@ -85,7 +82,7 @@ def _run_loop[
         # buffer.
         var pixel_w = win.width()
         var pixel_h = win.height()
-        state = step(program, context, input, state^)
+        state = step(program, context, state^)
         state.backend.present(
             Surface(win.pixels(), pixel_w, pixel_h), state.view.scale
         )
@@ -176,5 +173,4 @@ def run[
     # create() may have changed the mode or pinned its own design size, so the
     # mapping is derived from `context` only once it has returned.
     _wait_for_dimensions(win, state, context)
-    var input = Input()
-    _run_loop(program, win, state^, context, input)
+    _run_loop(program, win, state^, context)
