@@ -124,7 +124,7 @@ A program writes `from create import *`. Otherwise import by name from the ownin
 
 ### Style and clear
 
-`Style()` defaults are not blank: **outline `BLACK`, enabled, 1 unit**; transparent fill; `BLACK`
+`Style()` defaults are not blank: **outline `BLACK`, on, 1 unit**; transparent fill; `BLACK`
 text. Every frame opens with a clear to `context.clear_color` (gray 200) so those defaults are
 visible.
 - An opaque `canvas.background()` replaces that clear rather than painting a second time; a
@@ -132,10 +132,22 @@ visible.
 - `context.autoclear` is read at frame construction, so set it in `create`. Off lets ink accumulate
   (CPU backend only — GPU swaps buffers).
 
-`fill`, `outline` and `text_color` set three independent colours; `fill(enabled=False)` does not
-hide text. Text is hidden by a zero-alpha `text_color`.
+`fill`, `outline` and `text_color` set three independent colours; `fill_enabled(False)` does not
+hide text. Text is hidden by a zero-alpha `text_color`. `fill_enabled`/`outline_enabled` switch
+off without losing the colour; `fill(color)`/`outline(...)` switch back on.
 
-**Scope with the guards.** `canvas.transform(m)`, `canvas.style()` and `canvas.overlay()` return
+**Three ways to style**, all additive:
+
+| Form | Effect |
+|---|---|
+| `canvas.fill(Color.RED)` (any setter) | Rest of the frame |
+| `with canvas.style(fill=Color.RED):` | Only the named fields, for the block (each goes through its setter) |
+| `with canvas.style(heading):` | A whole `Style` value, for the block — unset fields are `Style()` defaults, not the previous style |
+
+`Style(...)` takes the setters' names as keywords, so a reusable style is a field built in `create`.
+The font is not part of a style: it lives on `PersistentCanvasState` and outlives the frame.
+
+**Scope with the guards.** `canvas.transform(m)`, `canvas.style(...)` and `canvas.overlay()` return
 `with`-block guards that unwind on exit. Bare style mutators straight from `update` are fine (style,
 transform and camera reset every frame); a *helper* that sets style wraps it in `canvas.style()` so it
 can't leak into the caller's next render.
