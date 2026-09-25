@@ -29,7 +29,7 @@ struct Options(Copyable, Movable):
     body returns.
     """
 
-    var autoscale: Int
+    var autoscale: AutoScale
     """How the design resolution maps onto the window — see `AutoScale`."""
     var autoclear: Bool
     """Whether each frame opens with a clear to `clear_color`."""
@@ -57,7 +57,7 @@ struct Options(Copyable, Movable):
         self._quit = False
 
     def design_resolution(
-        mut self, width: Int, height: Int, mode: Int = AutoScale.FIT
+        mut self, width: Int, height: Int, mode: AutoScale = AutoScale.FIT
     ):
         """Author this program in a fixed world size, scaled to any window.
 

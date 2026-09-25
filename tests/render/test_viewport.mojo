@@ -9,7 +9,7 @@ from create.render.viewport import Viewport
 from create.math.matrix import apply
 
 
-def _design(w: Int, h: Int, mode: Int) raises -> Viewport:
+def _design(w: Int, h: Int, mode: AutoScale) raises -> Viewport:
     var v = Viewport()
     v.autoscale = mode
     v.set_design(w, h)

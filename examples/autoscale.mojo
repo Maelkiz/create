@@ -1,7 +1,7 @@
 from create import *
 
 
-def _mode_name(mode: Int) -> String:
+def _mode_name(mode: AutoScale) -> String:
     if mode == AutoScale.FIT:
         return "FIT"
     if mode == AutoScale.EXTEND:

@@ -1,4 +1,4 @@
-struct AutoScale:
+struct AutoScale(Copyable, Equatable, ImplicitlyCopyable, Movable):
     """How the program's design resolution maps onto the window.
 
     The design resolution is the coordinate space a program is authored in --
@@ -33,6 +33,20 @@ struct AutoScale:
     entity toggles it every frame forever instead of correcting it.
     """
 
-    comptime OFF = 0  # the window is the world; a resize moves the extent
-    comptime FIT = 1  # uniform scale to fit, centred, bars on the short axis
-    comptime EXTEND = 2  # same scale as FIT, no bars — leftover becomes extra world
+    var value: Int
+
+    comptime OFF = AutoScale(0)
+    # the window is the world; a resize moves the extent
+    comptime FIT = AutoScale(1)
+    # uniform scale to fit, centred, bars on the short axis
+    comptime EXTEND = AutoScale(2)
+    # same scale as FIT, no bars — leftover becomes extra world
+
+    def __init__(out self, value: Int):
+        self.value = value
+
+    def __eq__(self, other: AutoScale) -> Bool:
+        return self.value == other.value
+
+    def __ne__(self, other: AutoScale) -> Bool:
+        return self.value != other.value

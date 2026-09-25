@@ -17,7 +17,7 @@ struct Viewport(Copyable, Movable):
 
     var width: Int
     var height: Int
-    var autoscale: Int
+    var autoscale: AutoScale
     var scale: Float64
     var pixel_w: Int
     var pixel_h: Int
