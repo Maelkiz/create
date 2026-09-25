@@ -398,27 +398,26 @@ struct Canvas:
         """
         return OverlayGuard[origin_of(self)](self)
 
-    def fill(mut self, color: Optional[Color] = None, enabled: Bool = True):
-        """Paint the inside of shapes. `color` left unset keeps the current
-        fill color — a plain `fill()` only re-enables it.
+    def fill(mut self, color: Color):
+        """Paint the inside of shapes in `color`, switching the fill on if
+        `fill_enabled(False)` had turned it off.
 
         Holds until changed or until the frame ends — every frame starts from
         the `Style` defaults, so nothing set here leaks into the next one.
         """
-        if color:
-            self._style.fill_color = color.value()
-        self._style.fill_enabled = enabled
+        self._style.fill_color = color
+        self._style.fill_enabled = True
 
     def outline(
         mut self,
         color: Optional[Color] = None,
         thickness: Optional[Int] = None,
-        enabled: Bool = True,
     ):
-        """Outline shapes. `color`/`thickness` left unset keep their current
-        values — a plain `outline()` only re-enables it. Worth knowing outline
-        is *on* by default, in black, 1 unit thick — a `rectangle` rendered
-        without `outline_enabled(False)` gets one nobody asked for.
+        """Outline shapes, switching the outline on if `outline_enabled(False)`
+        had turned it off. `color`/`thickness` left unset keep their current
+        values. Worth knowing outline is *on* by default, in black, 1 unit
+        thick — a `rectangle` rendered without `outline_enabled(False)` gets
+        one nobody asked for.
 
         Thickness is in world units, scaled by autoscale like every other
         coordinate, and never rendered thinner than one pixel.
@@ -427,7 +426,7 @@ struct Canvas:
             self._style.outline_color = color.value()
         if thickness:
             self._style.outline_thickness = thickness.value()
-        self._style.outline_enabled = enabled
+        self._style.outline_enabled = True
 
     def fill_enabled(mut self, enabled: Bool):
         """Switch the fill off or back on. The fill color is kept while off,
