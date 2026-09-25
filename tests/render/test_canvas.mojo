@@ -673,6 +673,59 @@ def test_style_guard_restores_on_scope_exit() raises -> None:
 
 
 @fieldwise_init
+struct KeywordStyle(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> KeywordStyle:
+        return KeywordStyle(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.GREEN, thickness=4)
+        canvas.fill(Color.RED)
+        # Names only the fill, so the green outline set above is kept.
+        with canvas.style(fill=Color.BLUE):
+            canvas.rectangle((-25, 0), 20, 20)
+        canvas.rectangle((25, 0), 20, 20)
+
+
+def test_style_keywords_change_only_what_they_name() raises -> None:
+    var m = run_headless[KeywordStyle](100, 100)
+    assert_equal(m.pixel(25, 50), Color.BLUE)
+    assert_equal(m.pixel(16, 50), Color.GREEN)  # outline kept
+    assert_equal(m.pixel(75, 50), Color.RED)  # restored on exit
+    assert_equal(m.pixel(66, 50), Color.GREEN)
+
+
+@fieldwise_init
+struct KeywordSwitches(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> KeywordSwitches:
+        return KeywordSwitches(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.GREEN, thickness=4)
+        canvas.fill(Color.RED)
+        with canvas.style(outline_enabled=False):
+            canvas.rectangle((-30, 0), 16, 16)
+        # A color switches fill on, but an explicit `fill_enabled` beside it
+        # wins.
+        with canvas.style(fill=Color.BLUE, fill_enabled=False):
+            canvas.rectangle((30, 0), 16, 16)
+
+
+def test_style_keywords_switch_fill_and_outline() raises -> None:
+    var m = run_headless[KeywordSwitches](100, 100)
+    assert_equal(m.pixel(13, 50), Color.RED)  # outline off, fill reaches edge
+    assert_equal(m.pixel(80, 50), Color.BLACK)  # fill off
+    assert_equal(m.pixel(73, 50), Color.GREEN)  # outline untouched
+
+
+@fieldwise_init
 struct AppliedStyle(Program):
     var _unused: Int
 

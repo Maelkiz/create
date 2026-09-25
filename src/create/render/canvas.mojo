@@ -339,14 +339,59 @@ struct Canvas:
         self._push_transform(m)
         return TransformGuard[origin_of(self)](self)
 
-    def style(mut self) -> StyleGuard[origin_of(self)]:
-        """Scope the fill, outline and font settings to a `with` block.
+    def style(
+        mut self,
+        *,
+        fill: Optional[Color] = None,
+        fill_enabled: Optional[Bool] = None,
+        outline: Optional[Color] = None,
+        outline_thickness: Optional[Int] = None,
+        outline_enabled: Optional[Bool] = None,
+        corner_radius: Optional[Int] = None,
+        text_color: Optional[Color] = None,
+        font_size: Optional[Int] = None,
+        font_weight: Optional[Int] = None,
+        text_align: Optional[Align] = None,
+        opacity: Optional[Float64] = None,
+    ) -> StyleGuard[origin_of(self)]:
+        """Scope style changes to a `with` block, restoring the previous style
+        on exit.
 
-        For helpers that set style before rendering: without this, a callee's
-        `outline_enabled(False)` silently applies to whatever the caller
-        renders next.
+        Each keyword applied goes through the setter of the same name, so it
+        behaves exactly like calling that setter; the rest of the style is kept.
+        With no keywords it only scopes: for helpers that set style before
+        rendering, where without it a callee's `outline_enabled(False)`
+        silently applies to whatever the caller renders next.
+
+        ```mojo
+        with canvas.style(fill=Color.RED, outline_enabled=False):
+            canvas.circle(pos, 10)
+        ```
         """
-        return StyleGuard[origin_of(self)](self)
+        var guard = StyleGuard[origin_of(self)](self)
+        if fill:
+            self.fill(fill.value())
+        if outline or outline_thickness:
+            self.outline(outline, outline_thickness)
+        # After the colors, which switch fill and outline on: an explicit
+        # `*_enabled=False` beside a color wins.
+        if fill_enabled:
+            self.fill_enabled(fill_enabled.value())
+        if outline_enabled:
+            self.outline_enabled(outline_enabled.value())
+        if corner_radius:
+            self.corner_radius(corner_radius.value())
+        if text_color:
+            self.text_color(text_color.value())
+        if font_size:
+            self.font_size(font_size.value())
+        if font_weight:
+            self.font_weight(font_weight.value())
+        if text_align:
+            self.text_align(text_align.value())
+        if opacity:
+            self.opacity(opacity.value())
+        return guard^
 
     def style(mut self, style: Style) -> StyleGuard[origin_of(self)]:
         """Render with `style` for a `with` block, then restore the previous
