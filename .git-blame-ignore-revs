@@ -3,3 +3,6 @@
 
 # Format the repo with mojo format
 388b99fcca0593e1d8fd50ddc4c41653c21a0b18
+
+# Rename Options→Context, Frame→Canvas
+daceb034448035e59c6eb0698cd25fcac1a1d913
