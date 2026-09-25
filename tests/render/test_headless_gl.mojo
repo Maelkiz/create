@@ -3,7 +3,7 @@
 # `MemorySurface` back out, the letterbox painted, several frames advancing
 # state. Skips with no GL context, same as the parity test.
 
-from std.testing import TestSuite, assert_equal
+from std.testing import TestSuite, assert_equal, assert_true
 
 from create import *
 from create.core.headless import run_headless
@@ -165,6 +165,40 @@ def test_the_gpu_backend_rounds_triangle_corners() raises -> None:
     assert_equal(m.pixel(33, 67), Color.RED, "inside the fillet arc")
     # Deep interior, unaffected by rounding either way.
     assert_equal(m.pixel(45, 55), Color.RED, "interior")
+
+
+@fieldwise_init
+struct GPUTextWithoutFill(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> GPUTextWithoutFill:
+        return GPUTextWithoutFill(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.fill(enabled=False)
+        canvas.text_color(Color.WHITE)
+        canvas.font_size(32)
+        canvas.text("X", 0.0, 0.0)
+
+
+def test_the_gpu_backend_renders_text_with_fill_disabled() raises -> None:
+    """Text is painted in `text_color`, independent of `fill` — disabling
+    the fill must not hide it."""
+    var m: MemorySurface
+    try:
+        m = run_headless[GPUTextWithoutFill](64, 64, backend=RenderBackend.GPU)
+    except e:
+        print("SKIP — no GL context:", e)
+        return
+
+    var inked = 0
+    for y in range(m.height):
+        for x in range(m.width):
+            if m.pixel(x, y) != Color.BLACK:
+                inked += 1
+    assert_true(inked > 0, "no glyph pixels")
 
 
 def main() raises:

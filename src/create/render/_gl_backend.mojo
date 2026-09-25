@@ -534,7 +534,7 @@ struct GLRenderer(Movable):
         mut self, c: RenderCommand, mut text: TextRenderer, scale: Float64
     ) raises:
         """`CMD_TEXT`, laid out by the same function the CPU replay uses."""
-        if not c.style.fill_enabled:
+        if c.style.text_color.a == 0:
             return
         if text.font_generation != self.font_generation:
             # A different face behind the same keys: the packed masks are the
