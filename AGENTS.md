@@ -157,7 +157,7 @@ can't leak into the caller's next render.
 **Not Processing's coordinates.** Origin at the screen centre, **y up**; `x ∈ [-w/2, w/2]`,
 `y ∈ [-h/2, h/2]`. So `rotate` is counter-clockwise, gravity is negative `y`, and `canvas.left()`/
 `bottom()` are negative — use the edge methods, not `width`/`height` arithmetic. Glyphs and sprites
-are not flipped. **All shapes are centre-positioned**, including `Rectangle.x/y`.
+are not flipped. **All shapes are centre-positioned**, including `Rectangle.pos`.
 
 **Camera:** `canvas.camera(cam)` maps world space onto screen space for every later render call and
 nested transform, reset every frame. `canvas.overlay()` suspends it for HUD content.

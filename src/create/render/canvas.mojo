@@ -630,7 +630,7 @@ struct Canvas:
         )
 
     def line(mut self, l: Line):
-        self.line(Point2D(l.x0, l.y0), Point2D(l.x1, l.y1))
+        self.line(l.start, l.end)
 
     def triangle(mut self, a: Point2D, b: Point2D, c: Point2D):
         self._state.backend.record(
@@ -640,9 +640,7 @@ struct Canvas:
         )
 
     def triangle(mut self, t: Triangle):
-        self.triangle(
-            Point2D(t.x1, t.y1), Point2D(t.x2, t.y2), Point2D(t.x3, t.y3)
-        )
+        self.triangle(t.a, t.b, t.c)
 
     def sprite(mut self, s: Sprite, pos: Point2D):
         """Render `s` at its own pixel size.

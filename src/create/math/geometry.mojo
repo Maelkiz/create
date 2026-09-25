@@ -3,22 +3,17 @@ from .point2d import Point2D
 from .vector2d import Vector2D
 
 
-def _closest_on_segment(
-    px: Float64, py: Float64, ax: Float64, ay: Float64, bx: Float64, by: Float64
-) -> Point2D:
-    var dx = bx - ax
-    var dy = by - ay
-    var len_sq = dx * dx + dy * dy
+def _closest_on_segment(p: Point2D, a: Point2D, b: Point2D) -> Point2D:
+    var ab = b - a
+    var len_sq = ab.dot(ab)
     if len_sq == 0.0:
-        return Point2D(ax, ay)
-    var t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / len_sq))
-    return Point2D(ax + t * dx, ay + t * dy)
+        return a
+    var t = max(0.0, min(1.0, (p - a).dot(ab) / len_sq))
+    return a + ab * t
 
 
-def _orientation(
-    ax: Float64, ay: Float64, bx: Float64, by: Float64, cx: Float64, cy: Float64
-) -> Int:
-    var cross = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
+def _orientation(a: Point2D, b: Point2D, c: Point2D) -> Int:
+    var cross = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
     if cross > 0.0:
         return 1
     if cross < 0.0:
@@ -26,13 +21,17 @@ def _orientation(
     return 0
 
 
-def _point_on_segment(
-    px: Float64, py: Float64, ax: Float64, ay: Float64, bx: Float64, by: Float64
-) -> Bool:
-    var cross = (bx - ax) * (py - ay) - (by - ay) * (px - ax)
-    if cross != 0.0:
+def _point_on_segment(p: Point2D, a: Point2D, b: Point2D) -> Bool:
+    if _orientation(a, b, p) != 0:
         return False
-    return min(ax, bx) <= px <= max(ax, bx) and min(ay, by) <= py <= max(ay, by)
+    return min(a.x, b.x) <= p.x <= max(a.x, b.x) and min(
+        a.y, b.y
+    ) <= p.y <= max(a.y, b.y)
+
+
+def _dist_sq(p: Point2D, q: Point2D) -> Float64:
+    var d = p - q
+    return d.dot(d)
 
 
 def _project_range[
@@ -109,11 +108,11 @@ struct Rectangle:
     displacement. `Rectangle(pos, size)` is the one signature naming both.
     Either takes a bare tuple, so the distinction costs a call site nothing.
 
-    `x`/`y` is the centre, not a corner -- consistent with every shape in
+    `pos` is the centre, not a corner -- consistent with every shape in
     this module and with `canvas.rectangle`. `w`/`h` are full width and
     height, so `left()`/`right()`/`bottom()`/`top()` are `+-w/2`/`+-h/2`
     from the centre. Coordinates follow world space: y grows upward, so
-    `top()` is `y + h/2` and `bottom()` is `y - h/2`.
+    `top()` is `pos.y + h/2` and `bottom()` is `pos.y - h/2`.
 
     `contains` and `closest_point` treat the boundary as inside -- a point
     exactly on an edge is contained, and `closest_point` returns it
@@ -122,14 +121,12 @@ struct Rectangle:
     a false containment or overlap. `w`/`h` are assumed non-negative.
     """
 
-    var x: Float64
-    var y: Float64
+    var pos: Point2D
     var w: Float64
     var h: Float64
 
     def __init__(out self, pos: Point2D, size: Vector2D):
-        self.x = pos.x
-        self.y = pos.y
+        self.pos = pos
         self.w = size.x
         self.h = size.y
 
@@ -140,7 +137,7 @@ struct Rectangle:
         self = Rectangle(pos, Vector2D(w, h))
 
     def center(self) -> Point2D:
-        return Point2D(self.x, self.y)
+        return self.pos
 
     def area(self) -> Float64:
         return self.w * self.h
@@ -149,31 +146,27 @@ struct Rectangle:
         return Vector2D(self.w, self.h)
 
     def closest_point(self, p: Point2D) -> Point2D:
-        var px = p.x
-        var py = p.y
         return Point2D(
-            max(self.left(), min(px, self.right())),
-            max(self.bottom(), min(py, self.top())),
+            max(self.left(), min(p.x, self.right())),
+            max(self.bottom(), min(p.y, self.top())),
         )
 
     def left(self) -> Float64:
-        return self.x - self.w / 2.0
+        return self.pos.x - self.w / 2.0
 
     def right(self) -> Float64:
-        return self.x + self.w / 2.0
+        return self.pos.x + self.w / 2.0
 
     def bottom(self) -> Float64:
-        return self.y - self.h / 2.0
+        return self.pos.y - self.h / 2.0
 
     def top(self) -> Float64:
-        return self.y + self.h / 2.0
+        return self.pos.y + self.h / 2.0
 
     def contains(self, p: Point2D) -> Bool:
-        var px = p.x
-        var py = p.y
         return (
-            self.left() <= px <= self.right()
-            and self.bottom() <= py <= self.top()
+            self.left() <= p.x <= self.right()
+            and self.bottom() <= p.y <= self.top()
         )
 
     def contains(self, other: Rectangle) -> Bool:
@@ -186,10 +179,10 @@ struct Rectangle:
 
     def contains(self, c: Circle) -> Bool:
         return (
-            self.left() <= c.x - c.r
-            and c.x + c.r <= self.right()
-            and self.bottom() <= c.y - c.r
-            and c.y + c.r <= self.top()
+            self.left() <= c.pos.x - c.r
+            and c.pos.x + c.r <= self.right()
+            and self.bottom() <= c.pos.y - c.r
+            and c.pos.y + c.r <= self.top()
         )
 
     def contains(self, t: Triangle) -> Bool:
@@ -199,17 +192,13 @@ struct Rectangle:
         return True
 
     def contains(self, l: Line) -> Bool:
-        return self.contains(Point2D(l.x0, l.y0)) and self.contains(
-            Point2D(l.x1, l.y1)
-        )
+        return self.contains(l.start) and self.contains(l.end)
 
     def move_to(mut self, pos: Point2D):
-        self.x = pos.x
-        self.y = pos.y
+        self.pos = pos
 
     def translate(mut self, delta: Vector2D):
-        self.x += delta.x
-        self.y += delta.y
+        self.pos = self.pos + delta
 
     def _points(self) -> Array[Point2D, 4]:
         return [
@@ -224,7 +213,7 @@ struct Circle:
     """A circle: `center`, `area`, `diameter`, `closest_point`, `contains`,
     `move_to`, `translate`.
 
-    `x`/`y` is the centre and `r` the radius -- there is no orientation, so
+    `pos` is the centre and `r` the radius -- there is no orientation, so
     unlike `Rectangle`/`Triangle` there is nothing y-up affects beyond the
     centre's own coordinates.
 
@@ -236,20 +225,18 @@ struct Circle:
     remain exact rather than always-false. `r` is assumed non-negative.
     """
 
-    var x: Float64
-    var y: Float64
+    var pos: Point2D
     var r: Float64
 
     def __init__(out self, pos: Point2D, r: Float64):
-        self.x = pos.x
-        self.y = pos.y
+        self.pos = pos
         self.r = r
 
     def __init__(out self, pos: Point2D, r: Int):
         self = Circle(pos, Float64(r))
 
     def center(self) -> Point2D:
-        return Point2D(self.x, self.y)
+        return self.pos
 
     def area(self) -> Float64:
         return pi * self.r * self.r
@@ -258,27 +245,17 @@ struct Circle:
         return self.r * 2.0
 
     def closest_point(self, p: Point2D) -> Point2D:
-        var px = p.x
-        var py = p.y
-        var dx = px - self.x
-        var dy = py - self.y
-        var dist_sq = dx * dx + dy * dy
+        var d = p - self.pos
+        var dist_sq = d.dot(d)
         if dist_sq == 0.0 or dist_sq <= self.r * self.r:
-            return Point2D(px, py)
-        var dist = sqrt(dist_sq)
-        return Point2D(self.x + dx / dist * self.r, self.y + dy / dist * self.r)
+            return p
+        return self.pos + d * (self.r / sqrt(dist_sq))
 
     def contains(self, p: Point2D) -> Bool:
-        var px = p.x
-        var py = p.y
-        var dx = px - self.x
-        var dy = py - self.y
-        return dx * dx + dy * dy <= self.r * self.r
+        return _dist_sq(p, self.pos) <= self.r * self.r
 
     def contains(self, other: Circle) -> Bool:
-        var dx = other.x - self.x
-        var dy = other.y - self.y
-        var dist = sqrt(dx * dx + dy * dy)
+        var dist = sqrt(_dist_sq(other.pos, self.pos))
         return dist + other.r <= self.r
 
     def contains(self, r: Rectangle) -> Bool:
@@ -294,21 +271,17 @@ struct Circle:
         return True
 
     def contains(self, l: Line) -> Bool:
-        return self.contains(Point2D(l.x0, l.y0)) and self.contains(
-            Point2D(l.x1, l.y1)
-        )
+        return self.contains(l.start) and self.contains(l.end)
 
     def move_to(mut self, pos: Point2D):
-        self.x = pos.x
-        self.y = pos.y
+        self.pos = pos
 
     def translate(mut self, delta: Vector2D):
-        self.x += delta.x
-        self.y += delta.y
+        self.pos = self.pos + delta
 
 
 struct Line:
-    """A line segment from `(x0, y0)` to `(x1, y1)`: `length`, `length_sq`,
+    """A line segment from `start` to `end`: `length`, `length_sq`,
     `midpoint`, `closest_point`, `intersects`, `move_to`, `translate`.
 
     Unlike `Rectangle`/`Circle`/`Triangle`, `Line` has no interior and is
@@ -320,43 +293,29 @@ struct Line:
 
     `intersects` and `_point_on_segment`-based checks treat the endpoints
     and any touching/collinear-overlapping point as inclusive. A
-    zero-length line (`x0,y0 == x1,y1`) is a degenerate point segment:
+    zero-length line (`start == end`) is a degenerate point segment:
     `intersects` and `closest_point` remain exact for it (a point can
     still "intersect" the collapsed line if it coincides with it).
     """
 
-    var x0: Float64
-    var y0: Float64
-    var x1: Float64
-    var y1: Float64
+    var start: Point2D
+    var end: Point2D
 
     def __init__(out self, start: Point2D, end: Point2D):
-        self.x0 = start.x
-        self.y0 = start.y
-        self.x1 = end.x
-        self.y1 = end.y
+        self.start = start
+        self.end = end
 
     def length_sq(self) -> Float64:
-        var dx = self.x1 - self.x0
-        var dy = self.y1 - self.y0
-        return dx * dx + dy * dy
+        return _dist_sq(self.end, self.start)
 
     def length(self) -> Float64:
         return sqrt(self.length_sq())
 
     def intersects(self, other: Line) -> Bool:
-        var o1 = _orientation(
-            self.x0, self.y0, self.x1, self.y1, other.x0, other.y0
-        )
-        var o2 = _orientation(
-            self.x0, self.y0, self.x1, self.y1, other.x1, other.y1
-        )
-        var o3 = _orientation(
-            other.x0, other.y0, other.x1, other.y1, self.x0, self.y0
-        )
-        var o4 = _orientation(
-            other.x0, other.y0, other.x1, other.y1, self.x1, self.y1
-        )
+        var o1 = _orientation(self.start, self.end, other.start)
+        var o2 = _orientation(self.start, self.end, other.end)
+        var o3 = _orientation(other.start, other.end, self.start)
+        var o4 = _orientation(other.start, other.end, self.end)
 
         if (
             o1 != 0
@@ -368,21 +327,13 @@ struct Line:
         ):
             return True
         # Collinear arms -- inclusive: touching or overlapping counts.
-        if o1 == 0 and _point_on_segment(
-            other.x0, other.y0, self.x0, self.y0, self.x1, self.y1
-        ):
+        if o1 == 0 and _point_on_segment(other.start, self.start, self.end):
             return True
-        if o2 == 0 and _point_on_segment(
-            other.x1, other.y1, self.x0, self.y0, self.x1, self.y1
-        ):
+        if o2 == 0 and _point_on_segment(other.end, self.start, self.end):
             return True
-        if o3 == 0 and _point_on_segment(
-            self.x0, self.y0, other.x0, other.y0, other.x1, other.y1
-        ):
+        if o3 == 0 and _point_on_segment(self.start, other.start, other.end):
             return True
-        if o4 == 0 and _point_on_segment(
-            self.x1, self.y1, other.x0, other.y0, other.x1, other.y1
-        ):
+        if o4 == 0 and _point_on_segment(self.end, other.start, other.end):
             return True
         return False
 
@@ -395,18 +346,13 @@ struct Line:
     # `Triangle` via endpoint containment (covers a segment wholly inside,
     # which no edge test would catch) plus their edges as `Line`s.
     def intersects(self, p: Point2D) -> Bool:
-        var px = p.x
-        var py = p.y
-        return _point_on_segment(px, py, self.x0, self.y0, self.x1, self.y1)
+        return _point_on_segment(p, self.start, self.end)
 
     def intersects(self, c: Circle) -> Bool:
-        var closest = self.closest_point(c.center())
-        return c.contains(closest)
+        return c.contains(self.closest_point(c.pos))
 
     def intersects(self, r: Rectangle) -> Bool:
-        if r.contains(Point2D(self.x0, self.y0)) or r.contains(
-            Point2D(self.x1, self.y1)
-        ):
+        if r.contains(self.start) or r.contains(self.end):
             return True
         var pts = r._points()
         for i in range(4):
@@ -416,9 +362,7 @@ struct Line:
         return False
 
     def intersects(self, t: Triangle) -> Bool:
-        if t.contains(Point2D(self.x0, self.y0)) or t.contains(
-            Point2D(self.x1, self.y1)
-        ):
+        if t.contains(self.start) or t.contains(self.end):
             return True
         var pts = t._points()
         for i in range(3):
@@ -428,27 +372,22 @@ struct Line:
         return False
 
     def closest_point(self, p: Point2D) -> Point2D:
-        var px = p.x
-        var py = p.y
-        return _closest_on_segment(px, py, self.x0, self.y0, self.x1, self.y1)
+        return _closest_on_segment(p, self.start, self.end)
 
     def midpoint(self) -> Point2D:
-        return Point2D((self.x0 + self.x1) / 2.0, (self.y0 + self.y1) / 2.0)
+        return self.start.lerp(self.end, 0.5)
 
     def move_to(mut self, pos: Point2D):
         self.translate(pos - self.midpoint())
 
     def translate(mut self, delta: Vector2D):
-        self.x0 += delta.x
-        self.y0 += delta.y
-        self.x1 += delta.x
-        self.y1 += delta.y
+        self.start = self.start + delta
+        self.end = self.end + delta
 
 
 struct Triangle:
-    """A triangle defined by its three vertices `(x1,y1)`, `(x2,y2)`,
-    `(x3,y3)`: `center`, `area`, `closest_point`, `contains`, `move_to`,
-    `translate`.
+    """A triangle defined by its three vertices `a`, `b`, `c`: `center`,
+    `area`, `closest_point`, `contains`, `move_to`, `translate`.
 
     Unlike `Rectangle`/`Circle`, a `Triangle` is not centre-positioned in
     its fields -- `center()` (the centroid) is derived, and `move_to`
@@ -465,47 +404,38 @@ struct Triangle:
     containment, overlap, or a divide-by-zero.
     """
 
-    var x1: Float64
-    var y1: Float64
-    var x2: Float64
-    var y2: Float64
-    var x3: Float64
-    var y3: Float64
+    var a: Point2D
+    var b: Point2D
+    var c: Point2D
 
     def __init__(out self, a: Point2D, b: Point2D, c: Point2D):
-        self.x1 = a.x
-        self.y1 = a.y
-        self.x2 = b.x
-        self.y2 = b.y
-        self.x3 = c.x
-        self.y3 = c.y
+        self.a = a
+        self.b = b
+        self.c = c
 
     def center(self) -> Point2D:
         return Point2D(
-            (self.x1 + self.x2 + self.x3) / 3.0,
-            (self.y1 + self.y2 + self.y3) / 3.0,
+            (self.a.x + self.b.x + self.c.x) / 3.0,
+            (self.a.y + self.b.y + self.c.y) / 3.0,
         )
+
+    def _signed_area2(self) -> Float64:
+        var ab = self.b - self.a
+        var ac = self.c - self.a
+        return ab.x * ac.y - ab.y * ac.x
 
     def area(self) -> Float64:
-        return (
-            abs(
-                (self.x2 - self.x1) * (self.y3 - self.y1)
-                - (self.y2 - self.y1) * (self.x3 - self.x1)
-            )
-            / 2.0
-        )
+        return abs(self._signed_area2()) / 2.0
 
     def closest_point(self, p: Point2D) -> Point2D:
-        var px = p.x
-        var py = p.y
         if self.contains(p):
-            return Point2D(px, py)
-        var p1 = _closest_on_segment(px, py, self.x1, self.y1, self.x2, self.y2)
-        var p2 = _closest_on_segment(px, py, self.x2, self.y2, self.x3, self.y3)
-        var p3 = _closest_on_segment(px, py, self.x3, self.y3, self.x1, self.y1)
-        var d1 = (p1.x - px) * (p1.x - px) + (p1.y - py) * (p1.y - py)
-        var d2 = (p2.x - px) * (p2.x - px) + (p2.y - py) * (p2.y - py)
-        var d3 = (p3.x - px) * (p3.x - px) + (p3.y - py) * (p3.y - py)
+            return p
+        var p1 = _closest_on_segment(p, self.a, self.b)
+        var p2 = _closest_on_segment(p, self.b, self.c)
+        var p3 = _closest_on_segment(p, self.c, self.a)
+        var d1 = _dist_sq(p1, p)
+        var d2 = _dist_sq(p2, p)
+        var d3 = _dist_sq(p3, p)
         if d1 <= d2 and d1 <= d3:
             return p1
         if d2 <= d3:
@@ -513,41 +443,20 @@ struct Triangle:
         return p3
 
     def contains(self, p: Point2D) -> Bool:
-        var px = p.x
-        var py = p.y
-        var signed_area2 = (self.x2 - self.x1) * (self.y3 - self.y1) - (
-            self.y2 - self.y1
-        ) * (self.x3 - self.x1)
-        if signed_area2 == 0.0:
+        if self._signed_area2() == 0.0:
             # Degenerate hull: a segment (or a point). Contained iff on the
             # longest edge -- the other two edges are contained within it.
-            var len12 = (self.x2 - self.x1) * (self.x2 - self.x1) + (
-                self.y2 - self.y1
-            ) * (self.y2 - self.y1)
-            var len23 = (self.x3 - self.x2) * (self.x3 - self.x2) + (
-                self.y3 - self.y2
-            ) * (self.y3 - self.y2)
-            var len31 = (self.x1 - self.x3) * (self.x1 - self.x3) + (
-                self.y1 - self.y3
-            ) * (self.y1 - self.y3)
-            if len12 >= len23 and len12 >= len31:
-                return _point_on_segment(
-                    px, py, self.x1, self.y1, self.x2, self.y2
-                )
-            if len23 >= len31:
-                return _point_on_segment(
-                    px, py, self.x2, self.y2, self.x3, self.y3
-                )
-            return _point_on_segment(px, py, self.x3, self.y3, self.x1, self.y1)
-        var d1 = (self.x2 - self.x1) * (py - self.y1) - (self.y2 - self.y1) * (
-            px - self.x1
-        )
-        var d2 = (self.x3 - self.x2) * (py - self.y2) - (self.y3 - self.y2) * (
-            px - self.x2
-        )
-        var d3 = (self.x1 - self.x3) * (py - self.y3) - (self.y1 - self.y3) * (
-            px - self.x3
-        )
+            var len_ab = _dist_sq(self.b, self.a)
+            var len_bc = _dist_sq(self.c, self.b)
+            var len_ca = _dist_sq(self.a, self.c)
+            if len_ab >= len_bc and len_ab >= len_ca:
+                return _point_on_segment(p, self.a, self.b)
+            if len_bc >= len_ca:
+                return _point_on_segment(p, self.b, self.c)
+            return _point_on_segment(p, self.c, self.a)
+        var d1 = _orientation(self.a, self.b, p)
+        var d2 = _orientation(self.b, self.c, p)
+        var d3 = _orientation(self.c, self.a, p)
         var has_neg = (d1 < 0) or (d2 < 0) or (d3 < 0)
         var has_pos = (d1 > 0) or (d2 > 0) or (d3 > 0)
         return not (has_neg and has_pos)
@@ -565,52 +474,30 @@ struct Triangle:
         return True
 
     def contains(self, c: Circle) -> Bool:
-        if not self.contains(c.center()):
+        if not self.contains(c.pos):
             return False
-        var p1 = _closest_on_segment(
-            c.x, c.y, self.x1, self.y1, self.x2, self.y2
-        )
-        var p2 = _closest_on_segment(
-            c.x, c.y, self.x2, self.y2, self.x3, self.y3
-        )
-        var p3 = _closest_on_segment(
-            c.x, c.y, self.x3, self.y3, self.x1, self.y1
-        )
-        var dx1 = p1.x - c.x
-        var dy1 = p1.y - c.y
-        var dx2 = p2.x - c.x
-        var dy2 = p2.y - c.y
-        var dx3 = p3.x - c.x
-        var dy3 = p3.y - c.y
         var r_sq = c.r * c.r
         return (
-            dx1 * dx1 + dy1 * dy1 >= r_sq
-            and dx2 * dx2 + dy2 * dy2 >= r_sq
-            and dx3 * dx3 + dy3 * dy3 >= r_sq
+            _dist_sq(_closest_on_segment(c.pos, self.a, self.b), c.pos) >= r_sq
+            and _dist_sq(_closest_on_segment(c.pos, self.b, self.c), c.pos)
+            >= r_sq
+            and _dist_sq(_closest_on_segment(c.pos, self.c, self.a), c.pos)
+            >= r_sq
         )
 
     def contains(self, l: Line) -> Bool:
-        return self.contains(Point2D(l.x0, l.y0)) and self.contains(
-            Point2D(l.x1, l.y1)
-        )
+        return self.contains(l.start) and self.contains(l.end)
 
     def move_to(mut self, pos: Point2D):
         self.translate(pos - self.center())
 
     def translate(mut self, delta: Vector2D):
-        self.x1 += delta.x
-        self.y1 += delta.y
-        self.x2 += delta.x
-        self.y2 += delta.y
-        self.x3 += delta.x
-        self.y3 += delta.y
+        self.a = self.a + delta
+        self.b = self.b + delta
+        self.c = self.c + delta
 
     def _points(self) -> Array[Point2D, 3]:
-        return [
-            Point2D(self.x1, self.y1),
-            Point2D(self.x2, self.y2),
-            Point2D(self.x3, self.y3),
-        ]
+        return [self.a, self.b, self.c]
 
 
 # `overlaps(a, b)` is the whole overlap-testing surface for regions: one
@@ -642,14 +529,12 @@ def overlaps(a: Rectangle, b: Rectangle) -> Bool:
 
 
 def overlaps(a: Circle, b: Circle) -> Bool:
-    var dx = a.x - b.x
-    var dy = a.y - b.y
     var rsum = a.r + b.r
-    return dx * dx + dy * dy <= rsum * rsum
+    return _dist_sq(a.pos, b.pos) <= rsum * rsum
 
 
 def overlaps(a: Circle, b: Rectangle) -> Bool:
-    return a.contains(b.closest_point(a.center()))
+    return a.contains(b.closest_point(a.pos))
 
 
 def overlaps(a: Rectangle, b: Circle) -> Bool:
@@ -657,7 +542,7 @@ def overlaps(a: Rectangle, b: Circle) -> Bool:
 
 
 def overlaps(a: Circle, b: Triangle) -> Bool:
-    return a.contains(b.closest_point(a.center()))
+    return a.contains(b.closest_point(a.pos))
 
 
 def overlaps(a: Triangle, b: Circle) -> Bool:

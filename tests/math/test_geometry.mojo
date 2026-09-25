@@ -67,8 +67,8 @@ def test_rect_closest_point_vector2d() raises -> None:
 
 def test_rect_vector2d_int_constructor() raises -> None:
     var r = Rectangle(Point2D(1.0, 2.0), 10, 6)
-    assert_equal(r.x, 1.0)
-    assert_equal(r.y, 2.0)
+    assert_equal(r.pos.x, 1.0)
+    assert_equal(r.pos.y, 2.0)
     assert_equal(r.w, 10.0)
     assert_equal(r.h, 6.0)
 
@@ -76,15 +76,15 @@ def test_rect_vector2d_int_constructor() raises -> None:
 def test_rect_move_to() raises -> None:
     var r = Rectangle((0.0, 0.0), 10.0, 10.0)
     r.move_to((5.0, 5.0))
-    assert_equal(r.x, 5.0)
-    assert_equal(r.y, 5.0)
+    assert_equal(r.pos.x, 5.0)
+    assert_equal(r.pos.y, 5.0)
 
 
 def test_rect_translate() raises -> None:
     var r = Rectangle((0.0, 0.0), 10.0, 10.0)
     r.translate((2.0, 3.0))
-    assert_equal(r.x, 2.0)
-    assert_equal(r.y, 3.0)
+    assert_equal(r.pos.x, 2.0)
+    assert_equal(r.pos.y, 3.0)
 
 
 # Circle
@@ -135,15 +135,15 @@ def test_circle_closest_point_vector2d() raises -> None:
 def test_circle_move_to() raises -> None:
     var c = Circle((0.0, 0.0), 5.0)
     c.move_to((3.0, 4.0))
-    assert_equal(c.x, 3.0)
-    assert_equal(c.y, 4.0)
+    assert_equal(c.pos.x, 3.0)
+    assert_equal(c.pos.y, 4.0)
 
 
 def test_circle_translate() raises -> None:
     var c = Circle((0.0, 0.0), 5.0)
     c.translate((2.0, 3.0))
-    assert_equal(c.x, 2.0)
-    assert_equal(c.y, 3.0)
+    assert_equal(c.pos.x, 2.0)
+    assert_equal(c.pos.y, 3.0)
 
 
 # Line
@@ -192,19 +192,19 @@ def test_line_move_to_places_midpoint() raises -> None:
     var m = l.midpoint()
     assert_equal(m.x, 10.0)
     assert_equal(m.y, 10.0)
-    assert_equal(l.x0, 8.0)
-    assert_equal(l.y0, 10.0)
-    assert_equal(l.x1, 12.0)
-    assert_equal(l.y1, 10.0)
+    assert_equal(l.start.x, 8.0)
+    assert_equal(l.start.y, 10.0)
+    assert_equal(l.end.x, 12.0)
+    assert_equal(l.end.y, 10.0)
 
 
 def test_line_translate() raises -> None:
     var l = Line((0.0, 0.0), (4.0, 0.0))
     l.translate((1.0, 2.0))
-    assert_equal(l.x0, 1.0)
-    assert_equal(l.y0, 2.0)
-    assert_equal(l.x1, 5.0)
-    assert_equal(l.y1, 2.0)
+    assert_equal(l.start.x, 1.0)
+    assert_equal(l.start.y, 2.0)
+    assert_equal(l.end.x, 5.0)
+    assert_equal(l.end.y, 2.0)
 
 
 def test_line_intersects_crossing() raises -> None:
@@ -346,22 +346,22 @@ def test_triangle_contains_vertex() raises -> None:
 def test_triangle_translate() raises -> None:
     var t = Triangle((0.0, 0.0), (2.0, 0.0), (1.0, 2.0))
     t.translate((1.0, 1.0))
-    assert_equal(t.x1, 1.0)
-    assert_equal(t.y1, 1.0)
-    assert_equal(t.x2, 3.0)
-    assert_equal(t.y2, 1.0)
+    assert_equal(t.a.x, 1.0)
+    assert_equal(t.a.y, 1.0)
+    assert_equal(t.b.x, 3.0)
+    assert_equal(t.b.y, 1.0)
 
 
 def test_triangle_move_to() raises -> None:
     # Triangle with center (1.5, 1.0); move center to (4.5, 4.0)
     var t = Triangle((0.0, 0.0), (3.0, 0.0), (1.5, 3.0))
     t.move_to((4.5, 4.0))
-    assert_almost_equal(t.x1, 3.0, atol=1e-9)
-    assert_almost_equal(t.y1, 3.0, atol=1e-9)
-    assert_almost_equal(t.x2, 6.0, atol=1e-9)
-    assert_almost_equal(t.y2, 3.0, atol=1e-9)
-    assert_almost_equal(t.x3, 4.5, atol=1e-9)
-    assert_almost_equal(t.y3, 6.0, atol=1e-9)
+    assert_almost_equal(t.a.x, 3.0, atol=1e-9)
+    assert_almost_equal(t.a.y, 3.0, atol=1e-9)
+    assert_almost_equal(t.b.x, 6.0, atol=1e-9)
+    assert_almost_equal(t.b.y, 3.0, atol=1e-9)
+    assert_almost_equal(t.c.x, 4.5, atol=1e-9)
+    assert_almost_equal(t.c.y, 6.0, atol=1e-9)
 
 
 def test_rect_contains_vector2d() raises -> None:
@@ -538,7 +538,7 @@ def test_overlaps_circle_triangle_symmetric_edge_case() raises -> None:
     var circ = Circle((6.0, -3.0), 2.0)
     var tri = Triangle((7.0, -4.0), (9.0, 2.0), (11.0, -4.0))
     assert_equal(circ.contains(tri.center()), False)
-    assert_equal(tri.contains((circ.x, circ.y)), False)
+    assert_equal(tri.contains(circ.pos), False)
     assert_equal(overlaps(circ, tri), overlaps(tri, circ))
 
 
