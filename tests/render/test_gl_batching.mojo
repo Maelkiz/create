@@ -168,12 +168,12 @@ def test_gl_batching_behaviours() raises -> None:
     assert_equal(
         clear_mid_frame.pixel(32, 32),
         Color.RED,
-        "clear mid-canvas: earlier render leaked through",
+        "clear mid-frame: earlier render leaked through",
     )
     assert_equal(
         clear_mid_frame.pixel(42, 22),
         Color.GREEN,
-        "clear mid-canvas: later render missing",
+        "clear mid-frame: later render missing",
     )
 
     # Case 2: a second distinct sprite texture in one frame forces a batch

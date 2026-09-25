@@ -623,17 +623,17 @@ def test_png_sprite_blits_unflipped() raises -> None:
 struct StyleAcrossFrames(Program):
     # Frame 1 sets a style and renders nothing; frame 2 renders without setting
     # one. Style is per-frame, so frame 2 must get the defaults back.
-    var canvas: Int
+    var frame: Int
 
     @staticmethod
     def create(mut context: Context) raises -> StyleAcrossFrames:
         return StyleAcrossFrames(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.canvas = canvas.time.frame_count
+        self.frame = canvas.time.frame_count
 
         canvas.background(Color.BLACK)
-        if self.canvas == 1:
+        if self.frame == 1:
             canvas.fill(Color.RED)
             canvas.outline(enabled=False)
         else:
@@ -1136,25 +1136,25 @@ def test_font_size_grows_the_text_extent() raises -> None:
 
 
 struct QuitOnFrameTwo(Program):
-    var canvas: Int
+    var frame: Int
 
     def __init__(out self):
-        self.canvas = 0
+        self.frame = 0
 
     @staticmethod
     def create(mut context: Context) raises -> QuitOnFrameTwo:
         return QuitOnFrameTwo()
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.canvas = canvas.time.frame_count
-        if self.canvas == 2:
+        self.frame = canvas.time.frame_count
+        if self.frame == 2:
             context.quit()
 
         canvas.background(Color.BLACK)
         canvas.outline(enabled=False)
-        if self.canvas == 1:
+        if self.frame == 1:
             canvas.fill(Color.RED)
-        elif self.canvas == 2:
+        elif self.frame == 2:
             canvas.fill(Color.GREEN)
         else:
             canvas.fill(Color.BLUE)
