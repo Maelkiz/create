@@ -82,7 +82,7 @@ def test_rect_move_to() raises -> None:
 
 def test_rect_translate() raises -> None:
     var r = Rectangle((0.0, 0.0), 10.0, 10.0)
-    r.translate((2.0, 3.0))
+    r.translate(Vector2D(2.0, 3.0))
     assert_equal(r.pos.x, 2.0)
     assert_equal(r.pos.y, 3.0)
 
@@ -141,7 +141,7 @@ def test_circle_move_to() raises -> None:
 
 def test_circle_translate() raises -> None:
     var c = Circle((0.0, 0.0), 5.0)
-    c.translate((2.0, 3.0))
+    c.translate(Vector2D(2.0, 3.0))
     assert_equal(c.pos.x, 2.0)
     assert_equal(c.pos.y, 3.0)
 
@@ -200,7 +200,7 @@ def test_line_move_to_places_midpoint() raises -> None:
 
 def test_line_translate() raises -> None:
     var l = Line((0.0, 0.0), (4.0, 0.0))
-    l.translate((1.0, 2.0))
+    l.translate(Vector2D(1.0, 2.0))
     assert_equal(l.start.x, 1.0)
     assert_equal(l.start.y, 2.0)
     assert_equal(l.end.x, 5.0)
@@ -345,7 +345,7 @@ def test_triangle_contains_vertex() raises -> None:
 
 def test_triangle_translate() raises -> None:
     var t = Triangle((0.0, 0.0), (2.0, 0.0), (1.0, 2.0))
-    t.translate((1.0, 1.0))
+    t.translate(Vector2D(1.0, 1.0))
     assert_equal(t.a.x, 1.0)
     assert_equal(t.a.y, 1.0)
     assert_equal(t.b.x, 3.0)

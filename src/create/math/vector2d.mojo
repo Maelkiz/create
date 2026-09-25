@@ -6,15 +6,17 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     `dot`, `dist`, `lerp`, and `xy`/`xyz` to hand the components to another
     type.
 
-    The tuple constructors are `@implicit` on purpose: every displacement
-    argument in the library takes a `Vector2D`, so `rect.translate((3, 4))`
-    works without naming the type, and a program only spells `Vector2D` when
-    it is storing one.
+    Unlike `Point2D`, a bare tuple does not convert to one implicitly: a
+    displacement literal names its type, `rect.translate(Vector2D(3, 4))`.
+    Only one type taking a bare tuple is what keeps `canvas.circle((0, 0), 20)`
+    unambiguous, and locations are the literals a program writes most;
+    displacements mostly arrive from arithmetic (`b - a`, `vel * dt`), which
+    already yields a `Vector2D`.
 
-    `xy` and `xyz` return plain tuples rather than another vector type, which
-    is strictly more capable given those same `@implicit` constructors:
-    `v.xyz()` still binds to a `Vector3D` parameter, and it destructures as
-    well. Having to name the accessor is what keeps the conversion visible.
+    `xy` and `xyz` return plain tuples, which destructure and bind to a
+    `Point2D` parameter; the explicit tuple constructors take them the rest of
+    the way: `Vector3D(v.xyz())`. Having to name the accessor is what keeps
+    the conversion visible.
     """
 
     var x: Float64
@@ -27,21 +29,8 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def __init__(out self, x: Int, y: Int):
         self = Vector2D(Float64(x), Float64(y))
 
-    @implicit
     def __init__(out self, t: Tuple[Float64, Float64]):
         self = Vector2D(t[0], t[1])
-
-    @implicit
-    def __init__(out self, t: Tuple[Int, Int]):
-        self = Vector2D(Float64(t[0]), Float64(t[1]))
-
-    @implicit
-    def __init__(out self, t: Tuple[Int, Float64]):
-        self = Vector2D(Float64(t[0]), t[1])
-
-    @implicit
-    def __init__(out self, t: Tuple[Float64, Int]):
-        self = Vector2D(t[0], Float64(t[1]))
 
     @staticmethod
     def zero() -> Vector2D:

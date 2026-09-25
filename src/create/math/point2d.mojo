@@ -9,7 +9,8 @@ struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     `Rectangle.center()`, `input.mouse` — and no signature takes a location
     as a loose x/y pair instead. The tuple constructors are `@implicit`, so
     `canvas.circle((0, 0), 20)` works without naming the type and a program
-    only spells `Point2D` when it is storing one.
+    only spells `Point2D` when it is storing one. It is the only type here
+    that converts from a bare tuple, which is what keeps that unambiguous.
 
     The surface is strictly affine, which is the whole point of the type
     existing beside `Vector2D`: subtracting two positions gives the
@@ -20,24 +21,18 @@ struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     mistake this split exists to catch. A program that genuinely wants a
     position's components as a direction says so: `Vector2D(p.xy())`.
 
-    Subtraction is the one place a bare tuple does not work: `p - (1, 2)` is
-    ambiguous, because subtraction has two meanings on a position — the
-    displacement to another position, or a move backwards by a displacement —
-    and a tuple cannot say which. Name the type: `p - Vector2D(1, 2)` for a
-    move, `p - Point2D(1, 2)` for the displacement between them. `p + (1, 2)`
-    needs no annotation because addition has only one meaning: `Point2D +
-    Point2D` does not exist, so a displacement is the only thing the tuple
-    could be. The asymmetry is the algebra's, not an artifact of how the
-    overloads happen to be written.
+    A displacement is always named: `p + Vector2D(1, 2)` moves a position.
+    Mind `p - (1, 2)`: the tuple can only become a `Point2D`, so it is the
+    displacement from `(1, 2)` to `p` -- a `Vector2D`, not a moved position.
+    Moving backwards is `p - Vector2D(1, 2)`.
 
     There are no `zero()`/`one()` factories either. `(0, 0)` through the
     implicit constructor is shorter than any name for the origin, and `one()`
     has no meaning for a position at all.
 
-    `xy` and `xyz` return plain tuples rather than a vector type, which is
-    strictly more capable given those same `@implicit` constructors: the
-    return still binds to a `Vector2D` or `Vector3D` parameter, and it
-    destructures as well. Having to name the accessor is what keeps the
+    `xy` and `xyz` return plain tuples rather than a vector type: they
+    destructure, and go through a vector's explicit tuple constructor,
+    `Vector2D(p.xy())`. Having to name the accessor is what keeps the
     conversion visible.
     """
 

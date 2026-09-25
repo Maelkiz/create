@@ -207,7 +207,7 @@ except `frame_cap()` and `quit()`, read after `update` returns.
 | World space | What render calls use once a `Camera` is set; identical to screen space without one. `canvas.to_world`/`to_local` convert a `Point2D` between world space and the current transform |
 | Asset vs. playhead | `SpriteAnimation`/`Sound` are shared immutable assets; `SpriteAnimator`/an `Audio` voice are one entity's position in one. `fps` belongs to the asset |
 | `Easing` / `Tween` | An `Easing` is a stateless curve over a 0-to-1 fraction (`ease(curve, t)`); a `Tween` walks that fraction over a duration. Each entity owns its own `Tween` |
-| `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(pos, r)`, `context.input.mouse`); a displacement is a `Vector2D` (`translate(delta)`, velocities); an extent is a scalar (`w`, `h`, `r`). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Both take a bare tuple implicitly |
+| `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(pos, r)`, `context.input.mouse`); a displacement is a `Vector2D` (`translate(delta)`, velocities); an extent is a scalar (`w`, `h`, `r`). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Only `Point2D` takes a bare tuple implicitly; a vector literal names its type (`p + Vector2D(1, 2)`), and `p - (1, 2)` is the displacement from `(1, 2)`, not a move |
 | `overlaps` / `intersects` / `contains` | `overlaps(a, b)`: free, symmetric, regions only (`Rectangle`/`Circle`/`Triangle`). `line.intersects(x)`: `Line` only, since a line has no interior. `region.contains(x)`: asymmetric. A `Line` is never a region |
 
 ## Do
@@ -229,7 +229,6 @@ except `frame_cap()` and `quit()`, read after `update` returns.
 - Don't take a location as separate `x, y` scalars, not even as a convenience overload beside the
   `Point2D` one: a bare tuple already fills a `Point2D` parameter, and `(x, y)` keeps the pairs
   readable where a run of numbers doesn't.
-- Don't add a `Point2D` overload beside a `Vector2D` one: both have `@implicit` tuple constructors,
-  so `canvas.circle((0, 0), 20)` becomes ambiguous. Change the parameter's type instead. That's also why
-  `p - Vector2D(1, 2)` must name the type while `p + (1, 2)` need not. Don't "fix" that by adding
-  `Point2D.__add__(Point2D)` — the type exists to refuse it.
+- Don't give any type but `Point2D` an `@implicit` tuple constructor: a second one makes every
+  overload pair taking the two types ambiguous for a bare tuple, and locations are the literals worth
+  the shorthand. Don't add `Point2D.__add__(Point2D)` either — the type exists to refuse it.

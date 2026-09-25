@@ -156,16 +156,16 @@ def test_xy_is_the_escape_hatch_to_a_vector2d() raises -> None:
     assert_equal(v.mag(), 5.0)
 
 
-def test_xyz_binds_to_a_vector3d() raises -> None:
-    var w: Vector3D = Point2D(1.5, 2.5).xyz(3.5)
+def test_xyz_converts_to_a_vector3d() raises -> None:
+    var w = Vector3D(Point2D(1.5, 2.5).xyz(3.5))
     assert_equal(w, Vector3D(1.5, 2.5, 3.5))
 
 
-def test_add_accepts_a_bare_tuple() raises -> None:
-    """`__add__` has one overload, so a tuple binds. `__sub__` has two and a
-    bare tuple is ambiguous there -- see the docstring."""
-    var p = Point2D(1.0, 2.0) + (3.0, 4.0)
-    assert_equal(p, Point2D(4.0, 6.0))
+def test_subtracting_a_bare_tuple_is_a_displacement() raises -> None:
+    """A bare tuple only converts to a `Point2D`, so `p - (1, 2)` is the
+    displacement between two positions, not a move -- see the docstring."""
+    var d: Vector2D = Point2D(4.0, 6.0) - (1.0, 2.0)
+    assert_equal(d, Vector2D(3.0, 4.0))
 
 
 def main() raises:

@@ -9,11 +9,11 @@ struct Vector3D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     Rendering is 2D, so nothing in the library takes one — it is here for a
     program doing its own 3D work.
 
-    Both accessors return plain tuples rather than a `Vector2D`, which is
-    strictly more capable given the `@implicit` tuple constructors every
-    vector type here has: `v.xy()` still binds to a `Vector2D` parameter, and
-    it destructures as well. Having to name the accessor is what keeps the
-    conversion visible.
+    A bare tuple does not convert to one implicitly -- a literal names its
+    type, `Vector3D(1, 2, 3)`. Both accessors return plain tuples, which
+    destructure and go through the explicit tuple constructor to another
+    vector: `Vector2D(v.xy())`. Having to name the accessor is what keeps
+    the conversion visible.
     """
 
     var x: Float64
@@ -28,37 +28,8 @@ struct Vector3D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def __init__(out self, x: Int, y: Int, z: Int):
         self = Vector3D(Float64(x), Float64(y), Float64(z))
 
-    @implicit
     def __init__(out self, t: Tuple[Float64, Float64, Float64]):
         self = Vector3D(t[0], t[1], t[2])
-
-    @implicit
-    def __init__(out self, t: Tuple[Int, Int, Int]):
-        self = Vector3D(Float64(t[0]), Float64(t[1]), Float64(t[2]))
-
-    @implicit
-    def __init__(out self, t: Tuple[Float64, Int, Int]):
-        self = Vector3D(t[0], Float64(t[1]), Float64(t[2]))
-
-    @implicit
-    def __init__(out self, t: Tuple[Int, Float64, Int]):
-        self = Vector3D(Float64(t[0]), t[1], Float64(t[2]))
-
-    @implicit
-    def __init__(out self, t: Tuple[Int, Int, Float64]):
-        self = Vector3D(Float64(t[0]), Float64(t[1]), t[2])
-
-    @implicit
-    def __init__(out self, t: Tuple[Float64, Float64, Int]):
-        self = Vector3D(t[0], t[1], Float64(t[2]))
-
-    @implicit
-    def __init__(out self, t: Tuple[Int, Float64, Float64]):
-        self = Vector3D(Float64(t[0]), t[1], t[2])
-
-    @implicit
-    def __init__(out self, t: Tuple[Float64, Int, Float64]):
-        self = Vector3D(t[0], Float64(t[1]), t[2])
 
     @staticmethod
     def zero() -> Vector3D:
