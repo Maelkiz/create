@@ -673,6 +673,79 @@ def test_style_guard_restores_on_scope_exit() raises -> None:
 
 
 @fieldwise_init
+struct AppliedStyle(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> AppliedStyle:
+        return AppliedStyle(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.GREEN, thickness=4)
+        canvas.fill(Color.RED)
+        # Sets no outline, so the block renders with the default 1-unit
+        # black one rather than the green set above.
+        with canvas.style(Style(fill=Color.BLUE)):
+            canvas.rectangle((-25, 0), 20, 20)
+        canvas.rectangle((25, 0), 20, 20)
+
+
+def test_style_object_replaces_the_whole_style_in_scope() raises -> None:
+    var m = run_headless[AppliedStyle](100, 100)
+    assert_equal(m.pixel(25, 50), Color.BLUE)
+    assert_equal(m.pixel(15, 50), Color.BLACK)  # default outline, not green
+    assert_equal(m.pixel(75, 50), Color.RED)  # restored on exit
+    assert_equal(m.pixel(66, 50), Color.GREEN)
+
+
+@fieldwise_init
+struct NestedStyles(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> NestedStyles:
+        return NestedStyles(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        var outer = Style(fill=Color.RED, outline_enabled=False)
+        var inner = Style(fill=Color.BLUE, outline_enabled=False)
+        with canvas.style(outer):
+            with canvas.style(inner):
+                canvas.rectangle((-30, 0), 16, 16)
+            canvas.rectangle((0, 0), 16, 16)
+        canvas.rectangle((30, 0), 16, 16)
+
+
+def test_style_objects_nest() raises -> None:
+    var m = run_headless[NestedStyles](100, 100)
+    assert_equal(m.pixel(20, 50), Color.BLUE)
+    assert_equal(m.pixel(50, 50), Color.RED)
+    # Back to the frame's own style: transparent fill, black outline.
+    assert_equal(m.pixel(80, 50), Color.BLACK)
+
+
+@fieldwise_init
+struct BareStyleCall(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> BareStyleCall:
+        return BareStyleCall(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        _ = canvas.style(Style(fill=Color.BLUE, outline_enabled=False))
+        canvas.rectangle((0, 0), 20, 20)
+
+
+def test_style_object_outside_a_with_block_holds() raises -> None:
+    var m = run_headless[BareStyleCall](100, 100)
+    assert_equal(m.pixel(50, 50), Color.BLUE)
+
+
+@fieldwise_init
 struct StrokedRect(Program):
     var _unused: Int
 

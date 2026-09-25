@@ -141,6 +141,12 @@ struct StyleGuard[origin: Origin[mut=True]](Movable):
         self._saved = canvas._style.copy()
         self._canvas = Pointer(to=canvas)
 
+    def __init__(out self, ref[Self.origin] canvas: Canvas, style: Style):
+        """Snapshot, then replace the canvas's style with `style`."""
+        self._saved = canvas._style.copy()
+        canvas._style = style.copy()
+        self._canvas = Pointer(to=canvas)
+
     def __enter__(mut self):
         pass
 
@@ -341,6 +347,22 @@ struct Canvas:
         renders next.
         """
         return StyleGuard[origin_of(self)](self)
+
+    def style(mut self, style: Style) -> StyleGuard[origin_of(self)]:
+        """Render with `style` for a `with` block, then restore the previous
+        one.
+
+        Replaces the whole style: a field `style` doesn't set is at its
+        `Style()` default inside the block, not whatever was set before.
+        Applied as soon as this is called, like `transform(m)`, so outside a
+        `with` it holds for the rest of the frame.
+
+        ```mojo
+        with canvas.style(self.label_style):
+            canvas.text("Score", (0, canvas.top() - 20))
+        ```
+        """
+        return StyleGuard[origin_of(self)](self, style)
 
     def _push_transform(mut self, m: Matrix[3, 3]):
         # Parent first, then child: a point is mapped by the innermost matrix

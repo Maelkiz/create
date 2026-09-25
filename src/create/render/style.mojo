@@ -9,10 +9,13 @@ struct Style(Copyable, Movable):
     The canvas holds one, set piece by piece through `canvas.fill`,
     `canvas.outline` and the other style setters, read by every render call
     until changed and rebuilt fresh each frame. A program can also build its
-    own, to reuse one look across render calls, frames or entities:
+    own and apply it whole with `canvas.style(s)`, to reuse one look across
+    render calls, frames or entities:
 
     ```mojo
     var label = Style(outline_enabled=False, text_color=Color.WHITE, font_size=24)
+    with canvas.style(label):
+        canvas.text("Score", (0, canvas.top() - 20))
     ```
 
     The constructor's keywords are named after the canvas setters, and each
