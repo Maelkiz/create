@@ -7,6 +7,17 @@
 # library type-check run on push.
 set -u
 
+# A commit that stages only inert files (see _inert.sh) skips every check below.
+. "$(dirname "$0")/_inert.sh"
+inert=1
+for path in $(git diff --cached --name-only); do
+    is_inert "$path" || { inert=0; break; }
+done
+if [ "$inert" = 1 ]; then
+    echo "Only docs and editor config staged — skipping checks."
+    exit 0
+fi
+
 out=$(mktemp -d)
 trap 'rm -rf "$out"' EXIT
 

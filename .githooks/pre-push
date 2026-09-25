@@ -5,17 +5,8 @@
 # build only type-checks the `def` bodies it actually reaches.
 set -u
 
-# A push that changes only files on this allowlist skips every check below:
-# nothing here can reach a build or a test. It is an allowlist on purpose —
-# pixi.toml, scripts/, fixtures and assets look inert and are not, so any
-# path not named here means the full run.
-is_inert() {
-    case "$1" in
-        *.md | LICENSE | .gitignore | .git-blame-ignore-revs \
-            | .agents/* | .claude/* | .vscode/* | skills-lock.json) return 0 ;;
-    esac
-    return 1
-}
+# A push that changes only inert files (see _inert.sh) skips every check below.
+. "$(dirname "$0")/_inert.sh"
 
 # Git hands a pre-push hook one "local_ref local_sha remote_ref remote_sha"
 # line per pushed ref. Any ref whose diff cannot be taken — a new branch with

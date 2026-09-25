@@ -52,7 +52,10 @@ There is no CI. Two git hooks, active after `pixi run setup`, are the only autom
 | Hook | Runs |
 |---|---|
 | `pre-commit` | Formatting check on staged `.mojo` files, then builds `tests/core/test_smoke.mojo`. Constant cost |
-| `pre-push` | `mojo precompile`, every example, the test suite. Skipped when every pushed path is inert (`*.md`, `LICENSE`, agent/editor config) |
+| `pre-push` | `mojo precompile`, every example, the test suite |
+
+Both skip entirely when every staged or pushed path is inert (`*.md`, `LICENSE`, agent/editor
+config) — the allowlist is in `.githooks/_inert.sh`.
 
 `--no-verify` is only for WIP on a scratch branch that gets squashed, never on `main`.
 
