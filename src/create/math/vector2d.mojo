@@ -2,14 +2,14 @@ from std.math import sqrt
 
 
 struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
-    """A 2D extent or displacement: arithmetic operators, `mag`, `normalize`,
+    """A 2D displacement or direction: arithmetic operators, `mag`, `normalize`,
     `dot`, `dist`, `lerp`, and `xy`/`xyz` to hand the components to another
     type.
 
-    The tuple constructors are `@implicit` on purpose: every extent or
-    displacement argument in the library takes a `Vector2D`, so
-    `canvas.rectangle((0, 0), (100, 50))` works without naming the type, and a
-    program only spells `Vector2D` when it is storing one.
+    The tuple constructors are `@implicit` on purpose: every displacement
+    argument in the library takes a `Vector2D`, so `rect.translate((3, 4))`
+    works without naming the type, and a program only spells `Vector2D` when
+    it is storing one.
 
     `xy` and `xyz` return plain tuples rather than another vector type, which
     is strictly more capable given those same `@implicit` constructors:

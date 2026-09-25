@@ -207,7 +207,7 @@ except `frame_cap()` and `quit()`, read after `update` returns.
 | World space | What render calls use once a `Camera` is set; identical to screen space without one. `canvas.to_world`/`to_local` convert a `Point2D` between world space and the current transform |
 | Asset vs. playhead | `SpriteAnimation`/`Sound` are shared immutable assets; `SpriteAnimator`/an `Audio` voice are one entity's position in one. `fps` belongs to the asset |
 | `Easing` / `Tween` | An `Easing` is a stateless curve over a 0-to-1 fraction (`ease(curve, t)`); a `Tween` walks that fraction over a duration. Each entity owns its own `Tween` |
-| `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(pos, r)`, `context.input.mouse`); an extent or displacement is a `Vector2D` (`Rectangle.size()`, velocities). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Both take a bare tuple implicitly |
+| `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(pos, r)`, `context.input.mouse`); a displacement is a `Vector2D` (`translate(delta)`, velocities); an extent is a scalar (`w`, `h`, `r`). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Both take a bare tuple implicitly |
 | `overlaps` / `intersects` / `contains` | `overlaps(a, b)`: free, symmetric, regions only (`Rectangle`/`Circle`/`Triangle`). `line.intersects(x)`: `Line` only, since a line has no interior. `region.contains(x)`: asymmetric. A `Line` is never a region |
 
 ## Do
@@ -216,8 +216,8 @@ except `frame_cap()` and `quit()`, read after `update` returns.
 - Run only the tests a change can reach (`pixi run test render`); pre-push runs the whole suite.
 - Make `canvas.background(...)` the first render call in `update`, or set `context.clear_color` in
   `create` if the colour never changes.
-- Use `Point2D` for new locations and `Vector2D` for extents/deltas;
-  `canvas.rectangle(pos: Point2D, size: Vector2D)` is the shape to copy.
+- Use `Point2D` for new locations, `Vector2D` for displacements and scalars for extents;
+  `canvas.rectangle(pos: Point2D, w: Float64, h: Float64)` is the shape to copy.
 
 ## Don't
 

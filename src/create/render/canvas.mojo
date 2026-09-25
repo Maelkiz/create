@@ -9,7 +9,6 @@ from .context import Context
 from .camera import Camera
 from create.math.geometry import Rectangle, Circle, Line, Triangle
 from create.math.point2d import Point2D
-from create.math.vector2d import Vector2D
 from create.math.matrix import (
     Matrix,
     identity,
@@ -593,18 +592,16 @@ struct Canvas:
         """
         self._state.backend.request_screenshot(path)
 
-    def rectangle(mut self, pos: Point2D, size: Vector2D):
+    def rectangle(mut self, pos: Point2D, w: Float64, h: Float64):
         self._state.backend.record(
-            rect_command(
-                self._transform, self._style, pos.x, pos.y, size.x, size.y
-            )
+            rect_command(self._transform, self._style, pos.x, pos.y, w, h)
         )
 
-    def rectangle(mut self, pos: Point2D, w: Float64, h: Float64):
-        self.rectangle(pos, Vector2D(w, h))
+    def rectangle(mut self, pos: Point2D, w: Int, h: Int):
+        self.rectangle(pos, Float64(w), Float64(h))
 
     def rectangle(mut self, r: Rectangle):
-        self.rectangle(r.center(), r.size())
+        self.rectangle(r.pos, r.w, r.h)
 
     def circle(mut self, pos: Point2D, r: Float64):
         self._state.backend.record(

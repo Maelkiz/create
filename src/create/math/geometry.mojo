@@ -99,14 +99,14 @@ def _polygons_overlap[
 
 
 struct Rectangle:
-    """An axis-aligned rectangle: `center`, `size`, `area`, `left`/`right`/
-    `bottom`/`top`, `closest_point`, `contains`, `move_to`, `translate`.
+    """An axis-aligned rectangle: `center`, `area`, `left`/`right`/`bottom`/
+    `top`, `closest_point`, `contains`, `move_to`, `translate`.
 
-    Positions are `Point2D` and extents are `Vector2D`, throughout this
-    module: `center()`, `closest_point()` and `move_to()` deal in locations,
-    while `size()` and `translate()` deal in a width/height pair and a
-    displacement. `Rectangle(pos, size)` is the one signature naming both.
-    Either takes a bare tuple, so the distinction costs a call site nothing.
+    Locations are `Point2D` and displacements `Vector2D`, throughout this
+    module; extents are plain scalars, like `Circle`'s radius. Width and
+    height are two independent lengths rather than a coordinate pair, so
+    they are not grouped: read them as `w`/`h` and pair them however the
+    caller needs.
 
     `pos` is the centre, not a corner -- consistent with every shape in
     this module and with `canvas.rectangle`. `w`/`h` are full width and
@@ -125,25 +125,19 @@ struct Rectangle:
     var w: Float64
     var h: Float64
 
-    def __init__(out self, pos: Point2D, size: Vector2D):
-        self.pos = pos
-        self.w = size.x
-        self.h = size.y
-
     def __init__(out self, pos: Point2D, w: Float64, h: Float64):
-        self = Rectangle(pos, Vector2D(w, h))
+        self.pos = pos
+        self.w = w
+        self.h = h
 
     def __init__(out self, pos: Point2D, w: Int, h: Int):
-        self = Rectangle(pos, Vector2D(w, h))
+        self = Rectangle(pos, Float64(w), Float64(h))
 
     def center(self) -> Point2D:
         return self.pos
 
     def area(self) -> Float64:
         return self.w * self.h
-
-    def size(self) -> Vector2D:
-        return Vector2D(self.w, self.h)
 
     def closest_point(self, p: Point2D) -> Point2D:
         return Point2D(

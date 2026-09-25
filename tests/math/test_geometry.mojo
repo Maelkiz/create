@@ -65,7 +65,7 @@ def test_rect_closest_point_vector2d() raises -> None:
     assert_equal(p.y, 0.0)
 
 
-def test_rect_vector2d_int_constructor() raises -> None:
+def test_rect_int_constructor() raises -> None:
     var r = Rectangle(Point2D(1.0, 2.0), 10, 6)
     assert_equal(r.pos.x, 1.0)
     assert_equal(r.pos.y, 2.0)
@@ -829,13 +829,6 @@ def test_rect_area() raises -> None:
     assert_equal(r.area(), 20.0)
 
 
-def test_rect_size() raises -> None:
-    var r = Rectangle((0.0, 0.0), 4.0, 5.0)
-    var s = r.size()
-    assert_equal(s.x, 4.0)
-    assert_equal(s.y, 5.0)
-
-
 def test_circle_area() raises -> None:
     var c = Circle((0.0, 0.0), 2.0)
     assert_almost_equal(c.area(), pi * 4.0)
@@ -856,8 +849,8 @@ def test_triangle_area_degenerate_is_zero() raises -> None:
     assert_equal(t.area(), 0.0)
 
 
-# The Point2D/Vector2D boundary — positions are locations, extents and
-# displacements are vectors, and these are the signatures naming both.
+# The Point2D/Vector2D boundary — positions are locations, displacements
+# are vectors, and these are the signatures naming both.
 def test_center_difference_is_a_displacement() raises -> None:
     var r = Rectangle(Point2D(10.0, 0.0), 4.0, 4.0)
     var c = Circle(Point2D(4.0, 0.0), 1.0)
@@ -871,12 +864,6 @@ def test_move_to_a_displaced_center() raises -> None:
     var r = Rectangle(Point2D(1.0, 2.0), 4.0, 4.0)
     r.move_to(r.center() + Vector2D(3.0, 4.0))
     assert_equal(r.center(), Point2D(4.0, 6.0))
-
-
-def test_rect_from_a_position_and_an_extent() raises -> None:
-    var r = Rectangle(Point2D(1.0, 2.0), Vector2D(10.0, 6.0))
-    assert_equal(r.center(), Point2D(1.0, 2.0))
-    assert_equal(r.size(), Vector2D(10.0, 6.0))
 
 
 def test_translate_by_a_displacement() raises -> None:

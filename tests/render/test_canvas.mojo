@@ -20,7 +20,6 @@ from std.memory import ArcPointer
 from create.math.geometry import Circle, Line, Rectangle, Triangle
 from create.math.matrix import rotate, scale, translate
 from create.math.point2d import Point2D
-from create.math.vector2d import Vector2D
 
 
 @fieldwise_init
@@ -1084,10 +1083,6 @@ struct GeometryOverloads(Program):
             Point2D(90.0, -30.0), Point2D(80.0, -50.0), Point2D(100.0, -50.0)
         )
 
-        # The one overload naming both types: a position and an extent.
-        canvas.fill(Color.WHITE)
-        canvas.rectangle(Point2D(-90.0, 0.0), Vector2D(20.0, 20.0))
-
 
 def test_geometry_overloads_dispatch_correctly() raises -> None:
     # These are one-line forwards, so the value is dispatch and argument
@@ -1102,7 +1097,6 @@ def test_geometry_overloads_dispatch_correctly() raises -> None:
     assert_equal(m.pixel(90, 160), Color.YELLOW)  # circle(Point2D, r)
     assert_equal(m.pixel(150, 160), Color.ORANGE)  # line(Point2D, Point2D)
     assert_equal(m.pixel(210, 165), Color.LIGHT_GRAY)  # triangle(Point2D x3)
-    assert_equal(m.pixel(30, 120), Color.WHITE)  # rect(Point2D, Vector2D)
     assert_equal(m.pixel(5, 5), Color.BLACK)
 
 
