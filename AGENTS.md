@@ -31,23 +31,8 @@ it makes the library better.
 | `_bytes` | `src/create/_bytes.mojo` | Internal leaf: little-endian integer decoding |
 | `_window` | `src/create/_window/` | Internal platform layer: `Window`, `GLWindow`, typed `Event`s, SDL3 video bindings |
 
-Files worth knowing by name (each type's own surface is in its docstring):
-
-| File | Role |
-|---|---|
-| `core/_step.mojo` | `step` — one frame's body, shared by every loop so they cannot drift |
-| `core/_events.mojo` | `apply_events` — the one SDL-event-to-`Input` fold, shared by both windowed loops |
-| `core/_run_gl.mojo`, `core/_headless_gl.mojo` | GPU counterparts of `run` and `run_headless` |
-| `render/frame.mojo` | `Frame` (records commands, touches no pixels), `PersistentFrameState`, the guards |
-| `render/_command.mojo` | `RenderCommand` and its kind constants |
-| `render/_backend.mojo` | `Backend` — fonts, glyph cache, interned images; replays commands via `present` (CPU) or `present_gpu` |
-| `render/_raster.mojo` | CPU rasteriser over a `Surface`; called only from `_backend.mojo` |
-| `render/_gl.mojo` | GL entry points resolved at runtime; the only file that talks to the driver |
-| `render/_gl_backend.mojo` | `GLRenderer` — shader, vertex buffer, glyph atlas, sprite textures, batching |
-| `render/_tessellate.mojo` | `RenderCommand` to triangles for the GPU |
-| `render/_transform.mojo`, `render/_image.mojo`, `render/_fillet.mojo` | Shared by both replay paths (split out to avoid an import cycle, or so both agree on the numbers) |
-| `render/_gl_target.mojo` | Offscreen FBO of an exact size, for the parity test and headless GPU |
-| `_window/_sdl.mojo` | Raw SDL3 video bindings; the only file in `_window` that touches SDL |
+Package internals are documented in scoped files: [src/create/render/AGENTS.md](src/create/render/AGENTS.md),
+[src/create/core/AGENTS.md](src/create/core/AGENTS.md), [tests/AGENTS.md](tests/AGENTS.md).
 
 ## Build & Test
 
@@ -77,43 +62,6 @@ reaches (catches API drift, not an uncalled broken function); `mojo precompile` 
 `mojo format`'s grammar is narrower than the compiler's and will abort a commit: `where` is
 reserved (not usable as a name), and `;` statement separators don't parse.
 
-## Testing
-
-Tests use `std.testing.TestSuite`; each `tests/**/test_*.mojo` is a program:
-
-```mojo
-from std.testing import TestSuite, assert_equal
-
-def test_thing_does_what_it_says() raises -> None:
-    assert_equal(actual, expected)
-
-def main() raises:
-    TestSuite.discover_tests[__functions_in_module()]().run()
-```
-
-`pixi run test` runs files concurrently, prints a failing file's full output and one `PASS` line per
-passing file. Each file is its own process; namespace any scratch path under `/tmp` per file.
-
-**Rendering is tested for real.** `run_headless` returns the `MemorySurface`, and
-`MemorySurface.pixel(x, y)` reads it back — assert on pixels, don't eyeball.
-`tests/core/test_step.mojo` scripts an `Input` and calls `step` directly for input-driven behaviour.
-
-**GPU coverage, two tiers:**
-- `test_gl_parity.mojo` renders one shape kind per frame through both backends and compares
-  structurally (bounding box, centroid, ink coverage within tolerance, interior colour), not pixel by
-  pixel — rasterisers may legitimately differ at edges, and exactness would forbid GPU antialiasing.
-- `run_headless(..., backend=RenderBackend.GPU)` for what parity can't see across several commands
-  in one frame: batch breaks and buffer growth (`test_gl_batching.mojo`), and the GPU capture paths
-  (`test_gl_capture.mojo`).
-
-GL tests skip without a context. `pixi run test` uses SDL's offscreen driver when no display is set
-(`DISPLAY`, `WAYLAND_DISPLAY`, `XDG_RUNTIME_DIR` all unset), which gives a software GL 3.3 context —
-enough for library-logic bugs, blind to driver-specific ones. Window tests that open a window pin
-`SDL_VIDEODRIVER=dummy` in their own `main`.
-
-`tests/core/test_smoke.mojo` is built on every commit and run by the suite. Its uncalled
-`_windowed_entry_point` still gets type-checked, which gates the windowed path. Keep it minimal.
-
 ## Code Conventions
 
 ### Programs
@@ -123,7 +71,8 @@ to `run[T]`. Minimum: [tests/core/test_smoke.mojo](tests/core/test_smoke.mojo); 
 [examples/sidescroller/src/main.mojo](examples/sidescroller/src/main.mojo).
 
 `create` gets no `Frame` — none exists before the loop — so rendering or reading geometry there is a
-compile error. Input arrives as `frame.input`; there are no event callbacks.
+compile error. Input arrives as `frame.input`; there are no event callbacks. A `Frame` is built fresh
+each frame; nothing may hold one across frames.
 
 **Multiple screens:** a root `Program` holds each screen as a plain field (not implementing
 `Program`) and switches with an int field and `if`/`elif`. A scene's `update` takes only what it uses
@@ -167,89 +116,24 @@ A program writes `from create import *`. Otherwise import by name from the ownin
 - **`_window`** imports nothing from `create`; `core` is its only consumer; nothing re-exports it.
 - **`render`→`sprite` is nominal:** only `frame.sprite`'s overloads name `Sprite`/`SpriteAnimator`.
   A `render` function that needs pixels takes a pointer plus width/height, not an image type.
-- **`render` reaches GL without `_window`:** `_gl.mojo` `dlopen`s SDL itself and resolves through
-  `SDL_GL_GetProcAddress`. A GL context must be current before `GL()` is constructed.
 
-### Frame, commands and backends
-
-A `Frame` render call **records, never paints**: it appends a `RenderCommand` (local geometry,
-transform at record time, style resolved now) to the `Backend`. Nothing rasterises until
-`present`/`present_gpu` replays the frame, so later style calls can't reach back. Sprites are interned
-into the backend at record time (the command carries an id); text is recorded as an owned `String`
-and laid out at replay. Add a shape by extending `_command.mojo`'s kinds and `_backend.mojo`'s replay
-(plus `_tessellate.mojo`), never by calling `_raster.mojo` from `Frame`.
-
-`Frame` is built fresh each frame and dropped before presenting; nothing may hold one across frames.
-It holds no `Surface` and takes its geometry from the `Viewport` alone — don't add a `Surface` field
-or parameter, and don't import `_window` from `frame.mojo`. What survives the frame boundary:
-`PersistentFrameState` (the `Backend`, `Viewport`, clock — moved in and back out by `_release`) and
-`Options` (owned by the loop). The transform stack, style and camera reset every frame by design.
-
-`Backend.kind` selects the replay (`RenderBackend.CPU` onto a `Surface`, `GPU` through `GLRenderer`);
-a field rather than a trait because Mojo has no dynamic dispatch. Users pick with
-`run[T](..., backend=RenderBackend.GPU)`.
-
-The CPU `Surface` passed to `present` must be taken **after** event processing, with its size from
-the window, never the viewport: `Window._resize` reallocates the buffer during events, and a stale
-extent defeats every raster loop's clipping (memory corruption, not just a crooked frame).
-
-**Captures** are requests filed on the `Backend` and serviced inside `present`/`present_gpu`, the only
-place holding both the finished framebuffer and the unconsumed command buffer; a failed write raises
-from there.
-- `frame.save_image(path, scale, transparent)` — what the program drew: design resolution × `scale`,
-  no letterbox, CPU-replayed from the commands under **both** backends (glyph cache and images live
-  on `Backend`, not `GLRenderer`). Reproducible across machines.
-- `frame.save_screenshot(path)` — what the user saw: drawable resolution, bars included. On GPU this
-  is a `glReadPixels` stall — fine on a keypress, not per frame.
-
-See [examples/screenshot/src/main.mojo](examples/screenshot/src/main.mojo).
-
-### CPU rasteriser
-
-Compute each row's covered run analytically and hand `(start, count)` to `fill_span` once — never
-test every pixel in a bounding box. `fill_span` owns the opaque-store and vectorised compositing.
-`blend` is only for genuinely per-pixel alpha (glyph coverage, sprite texels).
-
-### GPU path (OpenGL 3.3)
-
-`_tessellate.mojo` bakes each command's transform into its vertices (9 × `Float32`: `x, y, u, v, r,
-g, b, a, mode`; `mode` picks solid/glyph/texture in the shader), so everything accumulates into one
-buffer and flushes as one `glBufferData` + `glDrawArrays`. A batch breaks only on an opaque
-`CMD_CLEAR`, a second distinct sprite texture, or frame end — glyph atlas on texture unit 0, sprites
-on unit 1. Per frame, only the viewport is written, and only on resize.
-
-Before optimising: `examples/gl_bench.mojo` runs ~1.1 ms/frame; the vertex list stops reallocating
-after frame 1; orphan-then-`glBufferSubData` measured identical to the current single `glBufferData`.
-`examples/cpu_bench.mojo` measures CPU rasterisation headless.
-
-**FFI rules for `_gl.mojo`** (calls go through bitcast `thin abi("C")` pointers; this works):
-1. A `String` whose pointer goes to C must outlive the call — put `_ = s` after it. Check every
-   resolved address against 0.
-2. Read C out-parameters from heap memory (`List`), not a local `InlineArray` — the optimizer may
-   serve the local stale.
-3. Keep the GL context owner alive past the last GL call (`_ = win^` in tests and spikes).
-
-### Style, clear and outlines
+### Style and clear
 
 `Style()` defaults are not blank: **outline `BLACK`, enabled, 1 unit**; transparent fill; `BLACK`
-text. Every frame opens with a recorded `CMD_CLEAR` to `options.clear_color` (gray 200) so those
-defaults are visible.
-- An opaque `frame.background()` replaces that clear (`Backend.record_clear`); a translucent one
-  blends over it.
+text. Every frame opens with a clear to `options.clear_color` (gray 200) so those defaults are
+visible.
+- An opaque `frame.background()` replaces that clear rather than painting a second time; a
+  translucent one blends over it.
 - `options.autoclear` is read at frame construction, so set it in `create`. Off lets ink accumulate
   (CPU backend only — GPU swaps buffers).
 
 `fill`, `outline` and `text_color` set three independent colours; `fill(enabled=False)` does not
 hide text. Text is hidden by a zero-alpha `text_color`.
 
-Outlines mean different things per shape, and `corner_radius` must preserve that: a rectangle's is
-an **inset ring** inside the fill; a triangle's is **centred device-space bands**. Spelled out in
-`emit_triangle`'s docstring in [_tessellate.mojo](src/create/render/_tessellate.mojo).
-
 **Scope with the guards.** `frame.transform(m)`, `frame.style()` and `frame.overlay()` return
-`with`-block guards that unwind on exit. Bare style mutators straight from `update` are fine (style
-resets next frame); a *helper* that sets style wraps it in `frame.style()` so it can't leak into the
-caller's next render.
+`with`-block guards that unwind on exit. Bare style mutators straight from `update` are fine (style,
+transform and camera reset every frame); a *helper* that sets style wraps it in `frame.style()` so it
+can't leak into the caller's next render.
 
 ### Coordinates, camera, autoscale
 
@@ -260,8 +144,7 @@ are not flipped. **All shapes are centre-positioned**, including `Rectangle.x/y`
 
 **Camera:** `frame.camera(cam)` maps world space onto screen space for every later render call and
 nested transform, reset every frame. `frame.overlay()` suspends it for HUD content.
-`frame.input.mouse` is in screen space; use `cam.to_world(frame.input.mouse)` for picking. Nothing
-below `Frame` knows about cameras — it's folded into `RenderCommand.transform`.
+`frame.input.mouse` is in screen space; use `cam.to_world(frame.input.mouse)` for picking.
 
 ```mojo
 frame.camera(self.cam)
@@ -280,9 +163,6 @@ anchor layout to the edges. Font size, outline thickness and sprite size scale b
 `Options` dials are read at frame construction, so a change mid-`update` applies next frame —
 except `frame_cap()` and `quit()`, read after `update` returns.
 
-`Input._set_mouse(x, y)` is the only writer of `mouse`/`mouse_x`/`mouse_y`; every positional event arm
-in [core/_events.mojo](src/create/core/_events.mojo) calls it.
-
 ## Critical Gotchas
 
 1. **`-I src` is required for every `mojo run`**, or `from create import *` fails. Pixi tasks add it.
@@ -292,10 +172,8 @@ in [core/_events.mojo](src/create/core/_events.mojo) calls it.
    binary only resolves from another directory if built with absolute paths, and only while the
    source exists. Tests assume the repo root as CWD, which `pixi run test` guarantees.
 
-3. **A window's first reported size can be wrong.** Fullscreen fires a bogus `(1, 1)` resize first
-   (`_wait_for_dimensions` pumps past it), and on Wayland frame 1 reports the requested size, the
-   display size from frame 2. The loop refreshes every frame; don't cache pixel dimensions from
-   `create` or the first frame.
+3. **Don't cache pixel dimensions from `create` or the first frame.** A window's first reported size
+   can be wrong (fullscreen, Wayland); the loop corrects it from the next frame on.
 
 4. **No function can return a reference to a `List` element** in this Mojo version, so
    `SpriteAnimation` has no `frame()` accessor. Index inline at the use site. Don't retry it.
@@ -303,9 +181,6 @@ in [core/_events.mojo](src/create/core/_events.mojo) calls it.
 5. **An uncalled overload is type-checked by nothing.** [tests/render/test_frame.mojo](tests/render/test_frame.mojo)
    renders through all of `frame.sprite`'s animator overloads for this reason — extend it when adding
    one.
-
-6. **Size `glViewport` from `drawable_size()`, never `width()`/`height()`** — those are logical sizes
-   and differ under HiDPI. Re-read after event processing, like the CPU `Surface`.
 
 ## Terminology
 
