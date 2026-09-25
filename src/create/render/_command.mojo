@@ -29,7 +29,7 @@ def _scaled_alpha(color: Color, opacity: Float64) -> Color:
 struct RenderCommand(Copyable, Movable):
     """One recorded render, everything a backend needs to replay it.
 
-    `Frame` appends one of these per render call instead of rasterising, and a
+    `Canvas` appends one of these per render call instead of rasterising, and a
     backend consumes the whole buffer at the end of the frame. That seam is
     what lets a GPU backend exist at all: a `Surface` is a pixel pointer, which
     a GPU does not have, whereas this is just data.
@@ -67,7 +67,7 @@ struct RenderCommand(Copyable, Movable):
     var geom: Array[Float64, _GEOM_SLOTS]
     var transform: Matrix[3, 3]
     var style: Style
-    """Resolved at record time. A later `frame.fill()` cannot reach back and
+    """Resolved at record time. A later `canvas.fill()` cannot reach back and
     change what an already-recorded command paints."""
     var text: String
     """`CMD_TEXT` only, and owned — layout happens at replay, in the backend

@@ -44,8 +44,8 @@ struct Bench(Program):
     var worst: Float64
 
     @staticmethod
-    def create(mut options: Options) raises -> Bench:
-        options.autoscale = AutoScale.OFF
+    def create(mut context: Context) raises -> Bench:
+        context.autoscale = AutoScale.OFF
         return Bench(
             0.0,
             Sprite.load(source_path("../assets/logo/png/logo-cutout.png")),
@@ -54,11 +54,11 @@ struct Bench(Program):
             0.0,
         )
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        self.t += frame.time.delta
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        self.t += canvas.time.delta
         self.frames += 1
-        self.elapsed += frame.time.delta
-        self.worst = max(self.worst, frame.time.delta)
+        self.elapsed += canvas.time.delta
+        self.worst = max(self.worst, canvas.time.delta)
         if self.frames == _WINDOW:
             var mean_ms = self.elapsed / Float64(_WINDOW) * 1000.0
             print(
@@ -68,40 +68,40 @@ struct Bench(Program):
                 + " ms worst, "
                 + _round(1000.0 / mean_ms)
                 + " fps, "
-                + String(frame.width)
+                + String(canvas.width)
                 + "x"
-                + String(frame.height)
+                + String(canvas.height)
             )
             self.frames = 0
             self.elapsed = 0.0
             self.worst = 0.0
 
-        frame.background(Color.WHITE)
+        canvas.background(Color.WHITE)
 
         # One generator re-seeded every frame, so the layout is identical from
         # frame to frame and the two backends render the same sketch — only the
         # phase of the animation moves.
         var rng = Random(1234)
-        var w = frame.right()
-        var h = frame.top()
-        with frame.style():
-            frame.outline(enabled=False)
+        var w = canvas.right()
+        var h = canvas.top()
+        with canvas.style():
+            canvas.outline(enabled=False)
             for i in range(_SHAPES):
                 var x = rng.float(-w, w)
                 var y = rng.float(-h, h)
                 var size = rng.float(8.0, 34.0)
                 var phase = self.t + rng.float(0.0, 6.283)
                 var hue = Color.hsv(rng.float(0.0, 360.0), 0.7, 1.0)
-                frame.fill(Color(hue.r, hue.g, hue.b, 0xC0))
+                canvas.fill(Color(hue.r, hue.g, hue.b, 0xC0))
                 var kind = i % 3
                 if kind == 0:
-                    frame.rectangle(
+                    canvas.rectangle(
                         (x + 20.0 * cos(phase), y), size, size * 0.7
                     )
                 elif kind == 1:
-                    frame.circle((x, y + 20.0 * sin(phase)), size * 0.5)
+                    canvas.circle((x, y + 20.0 * sin(phase)), size * 0.5)
                 else:
-                    frame.triangle(
+                    canvas.triangle(
                         (x, y + size),
                         (x - size, y - size),
                         (x + size, y - size),
@@ -109,15 +109,15 @@ struct Bench(Program):
 
         # Two sprites: one texture, so one extra batch for the pair rather
         # than one each.
-        frame.sprite(self.logo, -w + 90, h - 90, 140, 140)
-        frame.sprite(self.logo, -w + 220, h - 90, 100, 100)
+        canvas.sprite(self.logo, -w + 90, h - 90, 140, 140)
+        canvas.sprite(self.logo, -w + 220, h - 90, 100, 100)
 
-        with frame.style():
-            frame.outline(enabled=False)
-            frame.font_size(48)
-            frame.font_weight(FontWeight.MEDIUM)
-            frame.text_align(Align.CENTER)
-            frame.text(
+        with canvas.style():
+            canvas.outline(enabled=False)
+            canvas.font_size(48)
+            canvas.font_weight(FontWeight.MEDIUM)
+            canvas.text_align(Align.CENTER)
+            canvas.text(
                 String(_SHAPES) + " shapes, two sprites, this text", 0, 0
             )
 

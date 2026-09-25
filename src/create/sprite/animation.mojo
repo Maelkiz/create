@@ -20,7 +20,7 @@ struct SpriteAnimation(Movable):
 
     There is no `frame()` accessor and cannot be one: a `List` element's origin
     is not spellable from user code, so a `-> ref Sprite` signature does not
-    compile. Index `frames` inline at the use site instead, as `frame.sprite`
+    compile. Index `frames` inline at the use site instead, as `canvas.sprite`
     does.
     """
 

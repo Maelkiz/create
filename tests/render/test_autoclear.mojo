@@ -10,7 +10,7 @@ stacking a second full-framebuffer paint on it.
 from std.testing import TestSuite, assert_equal, assert_true
 
 from create import *
-from create.render.frame import Frame, PersistentFrameState
+from create.render.canvas import Canvas, PersistentCanvasState
 
 
 @fieldwise_init
@@ -18,10 +18,10 @@ struct RendersNothing(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> RendersNothing:
+    def create(mut context: Context) raises -> RendersNothing:
         return RendersNothing(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         pass
 
 
@@ -30,11 +30,11 @@ struct NoAutoclear(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> NoAutoclear:
-        options.autoclear = False
+    def create(mut context: Context) raises -> NoAutoclear:
+        context.autoclear = False
         return NoAutoclear(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         pass
 
 
@@ -43,17 +43,17 @@ struct InkOnFirstFrameOnly(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> InkOnFirstFrameOnly:
-        options.autoclear = False
+    def create(mut context: Context) raises -> InkOnFirstFrameOnly:
+        context.autoclear = False
         return InkOnFirstFrameOnly(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         # `_tick` runs before `update`, so the first frame is count 1.
-        if frame.time.frame_count > 1:
+        if canvas.time.frame_count > 1:
             return
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        frame.rectangle((0, 0), 40, 40)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.rectangle((0, 0), 40, 40)
 
 
 @fieldwise_init
@@ -61,11 +61,11 @@ struct OwnBackground(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> OwnBackground:
+    def create(mut context: Context) raises -> OwnBackground:
         return OwnBackground(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLUE)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLUE)
 
 
 def test_a_frame_starts_cleared_to_the_default_gray() raises -> None:
@@ -90,33 +90,33 @@ def test_a_program_background_wins_over_the_autoclear() raises -> None:
 
 
 def test_an_opaque_background_replaces_the_autoclear() raises -> None:
-    var options = Options()
-    var state = PersistentFrameState()
-    state._set_viewport(options, 200, 100)
-    var frame = Frame(state^, options, Input())
-    frame.background(Color.BLUE)
-    var out = frame^._release()
+    var context = Context()
+    var state = PersistentCanvasState()
+    state._set_viewport(context, 200, 100)
+    var canvas = Canvas(state^, context, Input())
+    canvas.background(Color.BLUE)
+    var out = canvas^._release()
     assert_equal(len(out.backend.commands), 1)
 
 
 def test_a_translucent_background_keeps_both() raises -> None:
     # It blends with what the clear painted, so the clear has to survive.
-    var options = Options()
-    var state = PersistentFrameState()
-    state._set_viewport(options, 200, 100)
-    var frame = Frame(state^, options, Input())
-    frame.background(Color(0x11, 0x11, 0x11, 24))
-    var out = frame^._release()
+    var context = Context()
+    var state = PersistentCanvasState()
+    state._set_viewport(context, 200, 100)
+    var canvas = Canvas(state^, context, Input())
+    canvas.background(Color(0x11, 0x11, 0x11, 24))
+    var out = canvas^._release()
     assert_equal(len(out.backend.commands), 2)
 
 
 def test_autoclear_records_nothing_when_off() raises -> None:
-    var options = Options()
-    options.autoclear = False
-    var state = PersistentFrameState()
-    state._set_viewport(options, 200, 100)
-    var frame = Frame(state^, options, Input())
-    var out = frame^._release()
+    var context = Context()
+    context.autoclear = False
+    var state = PersistentCanvasState()
+    state._set_viewport(context, 200, 100)
+    var canvas = Canvas(state^, context, Input())
+    var out = canvas^._release()
     assert_equal(len(out.backend.commands), 0)
 
 

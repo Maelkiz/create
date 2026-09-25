@@ -22,7 +22,7 @@ def _packaged_font(name: String) -> String:
 
 
 def default_font_path() -> String:
-    """Noto Sans, the face every text render uses unless `frame.font` swaps
+    """Noto Sans, the face every text render uses unless `canvas.font` swaps
     it."""
     return _packaged_font("NotoSans.ttf")
 
@@ -33,7 +33,7 @@ def fallback_font_path() -> String:
 
 
 struct FontWeight:
-    """Named stroke weights for `frame.font_weight`.
+    """Named stroke weights for `canvas.font_weight`.
 
     Design-space values on the packaged variable faces, so they interpolate
     rather than selecting a file — any number in 100..900 is valid, these are
@@ -143,8 +143,8 @@ struct Font(Movable):
     """One loaded face, rendered through freetype over the C ABI.
 
     A face is a heavy handle, not a per-frame value — `TextRenderer` loads the
-    packaged faces once and caches what they render; `frame.font` swaps in
-    another and it survives the frame in `PersistentFrameState`.
+    packaged faces once and caches what they render; `canvas.font` swaps in
+    another and it survives the frame in `PersistentCanvasState`.
 
     Size and weight are sticky state on the face rather than arguments to
     `render`, which is why both setters return early when nothing changed:

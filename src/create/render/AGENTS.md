@@ -7,7 +7,7 @@ and the layering rules.
 
 | File | Role |
 |---|---|
-| `frame.mojo` | `Frame` (records commands, touches no pixels), `PersistentFrameState`, the guards |
+| `canvas.mojo` | `Canvas` (records commands, touches no pixels), `PersistentCanvasState`, the guards |
 | `_command.mojo` | `RenderCommand` and its kind constants |
 | `_backend.mojo` | `Backend` — fonts, glyph cache, interned images; replays commands via `present` (CPU) or `present_gpu` |
 | `_raster.mojo` | CPU rasteriser over a `Surface`; called only from `_backend.mojo` |
@@ -17,37 +17,37 @@ and the layering rules.
 | `_transform.mojo`, `_image.mojo`, `_fillet.mojo` | Shared by both replay paths (split out to avoid an import cycle, or so both agree on the numbers) |
 | `_gl_target.mojo` | Offscreen FBO of an exact size, for the parity test and headless GPU |
 
-## Frame, commands and backends
+## Canvas, commands and backends
 
-A `Frame` render call **records, never paints**: it appends a `RenderCommand` (local geometry,
+A `Canvas` render call **records, never paints**: it appends a `RenderCommand` (local geometry,
 transform at record time, style resolved now) to the `Backend`. Nothing rasterises until
 `present`/`present_gpu` replays the frame, so later style calls can't reach back. Sprites are interned
 into the backend at record time (the command carries an id); text is recorded as an owned `String`
 and laid out at replay. Add a shape by extending `_command.mojo`'s kinds and `_backend.mojo`'s replay
-(plus `_tessellate.mojo`), never by calling `_raster.mojo` from `Frame`.
+(plus `_tessellate.mojo`), never by calling `_raster.mojo` from `Canvas`.
 
-`Frame` holds no `Surface` and takes its geometry from the `Viewport` alone — don't add a `Surface`
-field or parameter, and don't import `_window` from `frame.mojo`. What survives the frame boundary:
-`PersistentFrameState` (the `Backend`, `Viewport`, clock — moved in and back out by `_release`) and
-`Options` (owned by the loop). The transform stack, style and camera deliberately don't.
+`Canvas` holds no `Surface` and takes its geometry from the `Viewport` alone — don't add a `Surface`
+field or parameter, and don't import `_window` from `canvas.mojo`. What survives the frame boundary:
+`PersistentCanvasState` (the `Backend`, `Viewport`, clock — moved in and back out by `_release`) and
+`Context` (owned by the loop). The transform stack, style and camera deliberately don't.
 
-The camera is folded into `RenderCommand.transform`; nothing below `Frame` knows it exists.
+The camera is folded into `RenderCommand.transform`; nothing below `Canvas` knows it exists.
 
 `Backend.kind` selects the replay (`RenderBackend.CPU` onto a `Surface`, `GPU` through `GLRenderer`);
 a field rather than a trait because Mojo has no dynamic dispatch.
 
 The autoclear is a recorded `CMD_CLEAR`, so every path handles it: the GPU turns it into `glClear`,
-an opaque `frame.background()` replaces it via `Backend.record_clear`, and a transparent
+an opaque `canvas.background()` replaces it via `Backend.record_clear`, and a transparent
 `save_image` masks it out.
 
 ## Captures
 
 Requests filed on the `Backend` and serviced inside `present`/`present_gpu`, the only place holding
 both the finished framebuffer and the unconsumed command buffer; a failed write raises from there.
-- `frame.save_image(path, scale, transparent)` — what the program drew: design resolution × `scale`,
+- `canvas.save_image(path, scale, transparent)` — what the program drew: design resolution × `scale`,
   no letterbox, CPU-replayed from the commands under **both** backends (glyph cache and images live
   on `Backend`, not `GLRenderer`). Reproducible across machines.
-- `frame.save_screenshot(path)` — what the user saw: drawable resolution, bars included. On GPU this
+- `canvas.save_screenshot(path)` — what the user saw: drawable resolution, bars included. On GPU this
   is a `glReadPixels` stall — fine on a keypress, not per frame.
 
 See [examples/screenshot/src/main.mojo](../../../examples/screenshot/src/main.mojo).

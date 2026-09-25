@@ -2,8 +2,8 @@ from std.time import sleep
 
 from create._window.window import Window
 from create.render.render_backend import RenderBackend
-from create.render.frame import PersistentFrameState
-from create.render.options import Options
+from create.render.canvas import PersistentCanvasState
+from create.render.context import Context
 from ._events import apply_events
 from ._step import step
 from create.render.surface import Surface
@@ -15,38 +15,38 @@ from ._run_gl import run_gl
 
 
 def _update_dimensions(
-    mut win: Window, mut state: PersistentFrameState, options: Options
+    mut win: Window, mut state: PersistentCanvasState, context: Context
 ) raises:
-    state._set_viewport(options, win.width(), win.height())
+    state._set_viewport(context, win.width(), win.height())
 
 
 def _wait_for_dimensions(
-    mut win: Window, mut state: PersistentFrameState, options: Options
+    mut win: Window, mut state: PersistentCanvasState, context: Context
 ) raises:
     # For fullscreen, SDL fires a bogus (1, 1) Resized before reporting real
     # dimensions — pump events until the window reports a usable size.
-    _update_dimensions(win, state, options)
+    _update_dimensions(win, state, context)
     while state.view.width <= 1 or state.view.height <= 1:
         _ = win.events()
-        _update_dimensions(win, state, options)
+        _update_dimensions(win, state, context)
 
 
 def _process_events(
     mut win: Window,
-    state: PersistentFrameState,
-    options: Options,
+    state: PersistentCanvasState,
+    context: Context,
     mut input: Input,
 ) raises:
-    if apply_events(win.events(), state.view, options, input):
+    if apply_events(win.events(), state.view, context, input):
         win.close()
 
 
-def _cap_frame_rate(mut win: Window, options: Options, frame_start: Int) raises:
+def _cap_frame_rate(mut win: Window, context: Context, frame_start: Int) raises:
     """Sleep off whatever is left of the target frame duration, if any."""
-    if options._fps_cap <= 0:
+    if context._fps_cap <= 0:
         return
     var worked_ms = win.ticks() - frame_start
-    var target_ms = 1000.0 / Float64(options._fps_cap)
+    var target_ms = 1000.0 / Float64(context._fps_cap)
     var remaining_ms = target_ms - Float64(worked_ms)
     if remaining_ms > 0.0:
         sleep(remaining_ms / 1000.0)
@@ -57,24 +57,24 @@ def _run_loop[
 ](
     mut program: P,
     mut win: Window,
-    var state: PersistentFrameState,
-    mut options: Options,
+    var state: PersistentCanvasState,
+    mut context: Context,
     mut input: Input,
 ) raises:
     # Seeded here rather than in run() so the program's create() — which may
     # load fonts or decode audio — does not land in the first frame's delta.
     state.time._start(win.ticks())
-    while win.is_open() and not options._quit:
+    while win.is_open() and not context._quit:
         # Dimensions are refreshed before events so pointer positions are
         # mapped with this frame's scale, not the previous one's.
-        _update_dimensions(win, state, options)
-        _process_events(win, state, options, input)
+        _update_dimensions(win, state, context)
+        _process_events(win, state, context, input)
         # Re-derive after events: a resize this frame reallocated the pixel
         # buffer, so the mapping taken above is one frame stale while the
         # framebuffer is already the new size. Rendering that frame against the
         # old mapping puts it in a corner of the new buffer — one crooked
         # frame, and a permanent ghost in a program that never clears.
-        _update_dimensions(win, state, options)
+        _update_dimensions(win, state, context)
         var frame_start = win.ticks()
         state.time._tick(frame_start)
         # The Surface is taken here, after events, because Window._resize
@@ -85,12 +85,12 @@ def _run_loop[
         # buffer.
         var pixel_w = win.width()
         var pixel_h = win.height()
-        state = step(program, options, input, state^)
+        state = step(program, context, input, state^)
         state.backend.present(
             Surface(win.pixels(), pixel_w, pixel_h), state.view.scale
         )
         win.present()
-        _cap_frame_rate(win, options, frame_start)
+        _cap_frame_rate(win, context, frame_start)
 
 
 def run[
@@ -106,14 +106,14 @@ def run[
     """Open a window and run `P` in it until it quits.
 
     `width`/`height` are the resolution the program is **authored** in — the
-    space `frame.width`/`height`, the frame edges and `input.mouse` are
+    space `canvas.width`/`height`, the frame edges and `input.mouse` are
     reported in. They are not a window size that happens to double as one: a
     `WINDOWED` or `BORDERLESS` launch opens a window of that size because the
     two coincide there, while `FULLSCREEN` and `MAXIMIZED` take the display or
     its work area and the design is scaled onto it. `mode=FULLSCREEN` with a
     size therefore means *author at that size, present fullscreen*.
 
-    The scaling is `AutoScale.FIT` unless `create` sets `options.autoscale`, so
+    The scaling is `AutoScale.FIT` unless `create` sets `context.autoscale`, so
     a program keeps its layout on any display:
 
     | call                                          | FIT / EXTEND             | OFF            |
@@ -127,7 +127,7 @@ def run[
     the window's own pixels, which is how a program authors against the
     display rather than against a fixed space.
 
-    `options.design_resolution(w, h, mode)` pins the same space from inside `create`, which
+    `context.design_resolution(w, h, mode)` pins the same space from inside `create`, which
     is where a program with an opinion of its own states it. The size here is
     the shorthand for the common case where the window and the design agree.
 
@@ -157,10 +157,10 @@ def run[
         borderless=borderless,
         maximized=maximized,
     )
-    # Style and loaded fonts live here rather than in the Frame, which is
+    # Style and loaded fonts live here rather than in the Canvas, which is
     # rebuilt every frame; the transform stack deliberately does not, so each
     # frame starts unrotated and untranslated.
-    var state = PersistentFrameState()
+    var state = PersistentCanvasState()
     # The size the program is authored against is always what the caller asked
     # for, never what the display handed back. In fullscreen SDL ignores the
     # requested size, so seeding this from the window would make the design
@@ -169,12 +169,12 @@ def run[
     # Scaling that design to the window is the default because the alternative
     # punishes the obvious way to write a program: laid-out coordinates that
     # break on a display the author never had. `create` can opt back out with
-    # `options.autoscale = AutoScale.OFF`.
-    var options = Options()
-    options.design_resolution(width, height, AutoScale.FIT)
-    var program = P.create(options)
+    # `context.autoscale = AutoScale.OFF`.
+    var context = Context()
+    context.design_resolution(width, height, AutoScale.FIT)
+    var program = P.create(context)
     # create() may have changed the mode or pinned its own design size, so the
-    # mapping is derived from `options` only once it has returned.
-    _wait_for_dimensions(win, state, options)
+    # mapping is derived from `context` only once it has returned.
+    _wait_for_dimensions(win, state, context)
     var input = Input()
-    _run_loop(program, win, state^, options, input)
+    _run_loop(program, win, state^, context, input)

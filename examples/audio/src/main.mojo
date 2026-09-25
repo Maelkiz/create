@@ -12,8 +12,8 @@ struct AudioDemo(Program):
     var looping: Bool
 
     @staticmethod
-    def create(mut options: Options) raises -> AudioDemo:
-        options.quit_on_escape = True
+    def create(mut context: Context) raises -> AudioDemo:
+        context.quit_on_escape = True
         var audio = Audio()
         var chime = ArcPointer(Sound.load(source_path("../assets/chime.wav")))
         var ambience = ArcPointer(
@@ -21,25 +21,25 @@ struct AudioDemo(Program):
         )
         return AudioDemo(audio^, chime, ambience, 0, False)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         self.audio.update()
 
-        if frame.input.just_pressed("space"):
+        if canvas.input.just_pressed("space"):
             _ = self.audio.play(self.chime)
 
-        if frame.input.just_pressed("h"):
+        if canvas.input.just_pressed("h"):
             self.loop_id = self.audio.play(self.ambience, loop=True)
             self.looping = True
-        if frame.input.just_released("h"):
+        if canvas.input.just_released("h"):
             self.audio.stop(self.loop_id)
             self.looping = False
 
-        frame.background(Color.WHITE)
-        frame.text_color(Color.BLACK)
-        frame.font_size(24)
-        frame.text_align(Align.TOP)
-        frame.text("space: chime    hold h: loop ambience", 0, 20)
-        frame.text("looping: " + String(self.looping), 0, -20)
+        canvas.background(Color.WHITE)
+        canvas.text_color(Color.BLACK)
+        canvas.font_size(24)
+        canvas.text_align(Align.TOP)
+        canvas.text("space: chime    hold h: loop ambience", 0, 20)
+        canvas.text("looping: " + String(self.looping), 0, -20)
 
 
 def main() raises:

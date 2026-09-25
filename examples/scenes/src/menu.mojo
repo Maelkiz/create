@@ -11,16 +11,16 @@ struct Menu:
 
     var start_pressed: Bool
 
-    def update(mut self, mut frame: Frame) raises:
-        self.start_pressed = frame.input.mouse_just_pressed()
+    def update(mut self, mut canvas: Canvas) raises:
+        self.start_pressed = canvas.input.mouse_just_pressed()
 
-        frame.background(Color(24, 24, 28))
-        with frame.style():
-            frame.text_color(Color.WHITE)
-            frame.font_size(48)
-            frame.text_align(Align.TOP)
-            frame.text("Scenes", 0, 40)
+        canvas.background(Color(24, 24, 28))
+        with canvas.style():
+            canvas.text_color(Color.WHITE)
+            canvas.font_size(48)
+            canvas.text_align(Align.TOP)
+            canvas.text("Scenes", 0, 40)
 
-            frame.text_color(Color(180, 180, 190))
-            frame.font_size(20)
-            frame.text("click to start painting", 0, -20)
+            canvas.text_color(Color(180, 180, 190))
+            canvas.font_size(20)
+            canvas.text("click to start painting", 0, -20)

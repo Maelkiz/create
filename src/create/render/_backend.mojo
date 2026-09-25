@@ -674,7 +674,7 @@ def _render_fillet_arc_mapped[
 
 @fieldwise_init
 struct _ImageRequest(Movable):
-    """A `frame.save_image` that has not been serviced yet.
+    """A `canvas.save_image` that has not been serviced yet.
 
     Filed while recording and flushed at present, because present is the only
     place holding both the finished command buffer and a target to replay it
@@ -734,7 +734,7 @@ struct Backend(Movable):
     var commands: List[RenderCommand]
     """The frame being recorded.
 
-    The buffer lives here rather than travelling out of `Frame` because a
+    The buffer lives here rather than travelling out of `Canvas` because a
     `Tuple` of move-only values cannot be unpacked in this Mojo version — see
     `present`, which is also where the buffer is reset. Keeping it means the
     allocation is reused frame to frame instead of being rebuilt per frame.
@@ -765,7 +765,7 @@ struct Backend(Movable):
         immediately before it — with no render in between to survive — paints
         nothing. Dropping it here rather than at replay keeps both backends
         and both captures agreeing, and costs the common case nothing: a
-        program that sets `options.autoclear` and also opens `update` with
+        program that sets `context.autoclear` and also opens `update` with
         `background()` records one clear, not two.
         """
         if (
@@ -931,7 +931,7 @@ struct Backend(Movable):
 
         `pre` multiplies every command's transform on the left, and exists
         because a capture replays a frame whose commands were recorded against
-        a *different* mapping: `Frame` bakes the window's base matrix into
+        a *different* mapping: `Canvas` bakes the window's base matrix into
         each one, so writing that same frame into a design-sized buffer needs
         `capture_base @ window_base_inverse` in front of it. Identity on the
         live path, which is therefore unchanged.
@@ -1741,7 +1741,7 @@ struct Backend(Movable):
         m: Matrix[3, 3],
     ) raises:
         # Only the anchor is mapped — the layout itself happens in pixel space.
-        # `frame.text` already skips recording when `text_color` is fully
+        # `canvas.text` already skips recording when `text_color` is fully
         # transparent; text has no other visibility gate (fill is unrelated).
         var p = mat_apply(m, c.geom[0], c.geom[1])
         self.text.render(s, c.text, p[0], p[1], c.style, pixel_scale(m, scale))

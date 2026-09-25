@@ -32,14 +32,14 @@ def _px(s: Sprite, x: Int, y: Int) -> Color:
     )
 
 
-def _scene(mut frame: Frame):
+def _scene(mut canvas: Canvas):
     """A black ground with a 20x20 red square on the origin — the same
-    layout `test_frame.mojo`'s capture tests use, so the sample points
+    layout `test_canvas.mojo`'s capture tests use, so the sample points
     below are proven-safe coordinates rather than newly guessed ones."""
-    frame.background(Color.BLACK)
-    frame.outline(enabled=False)
-    frame.fill(Color.RED)
-    frame.rectangle(0.0, 0.0, 20.0, 20.0)
+    canvas.background(Color.BLACK)
+    canvas.outline(enabled=False)
+    canvas.fill(Color.RED)
+    canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 
 
 @fieldwise_init
@@ -47,12 +47,12 @@ struct GPUScreenshot(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> GPUScreenshot:
+    def create(mut context: Context) raises -> GPUScreenshot:
         return GPUScreenshot(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        _scene(frame)
-        frame.save_screenshot(_SHOT)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        _scene(canvas)
+        canvas.save_screenshot(_SHOT)
 
 
 def test_gpu_screenshot_has_the_framebuffer_resolution_and_is_opaque() raises -> (
@@ -70,7 +70,7 @@ def test_gpu_screenshot_has_the_framebuffer_resolution_and_is_opaque() raises ->
     assert_equal(shot.width, 640)
     assert_equal(shot.height, 480)
     # The design area, scaled 3.2x and centred, with the bars either side —
-    # same layout `test_frame.mojo`'s CPU screenshot test checks.
+    # same layout `test_canvas.mojo`'s CPU screenshot test checks.
     assert_equal(_px(shot, 320, 240), Color.RED)
     assert_equal(_px(shot, 320, 5), Color(0x22))
     # _force_opaque runs on this path only: every alpha byte must read 255,
@@ -85,12 +85,12 @@ struct CaptureImageCPU(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> CaptureImageCPU:
+    def create(mut context: Context) raises -> CaptureImageCPU:
         return CaptureImageCPU(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        _scene(frame)
-        frame.save_image(_IMG_CPU)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        _scene(canvas)
+        canvas.save_image(_IMG_CPU)
 
 
 @fieldwise_init
@@ -98,12 +98,12 @@ struct CaptureImageGPU(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> CaptureImageGPU:
+    def create(mut context: Context) raises -> CaptureImageGPU:
         return CaptureImageGPU(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        _scene(frame)
-        frame.save_image(_IMG_GPU)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        _scene(canvas)
+        canvas.save_image(_IMG_GPU)
 
 
 def test_gpu_save_image_matches_cpu_save_image_byte_for_byte() raises -> None:

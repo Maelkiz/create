@@ -17,8 +17,8 @@ from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.render_backend import RenderBackend
 from create.render.autoscale import AutoScale
-from create.render.frame import PersistentFrameState
-from create.render.options import Options
+from create.render.canvas import PersistentCanvasState
+from create.render.context import Context
 from create.render.surface import MemorySurface
 
 from ._step import step
@@ -74,21 +74,21 @@ def _run_headless_gl[
     var target = _GLTarget(GL(), pw, ph)
 
     # After the window: its GL resources need a current context.
-    var state = PersistentFrameState(RenderBackend.GPU)
-    var options = Options()
-    options.design_resolution(width, height, AutoScale.FIT)
-    var program = P.create(options)
+    var state = PersistentCanvasState(RenderBackend.GPU)
+    var context = Context()
+    context.design_resolution(width, height, AutoScale.FIT)
+    var program = P.create(context)
     # After create(), which may have pinned its own design size or mode.
-    state._set_viewport(options, pw, ph)
+    state._set_viewport(context, pw, ph)
     var input = Input()
     var now = 0
     state.time._start(now)
     for _ in range(frames):
-        if options._quit:
+        if context._quit:
             break
         now += _FRAME_MILLIS
         state.time._tick(now)
-        state = step(program, options, input, state^)
+        state = step(program, context, input, state^)
         state.backend.present_gpu(pw, ph, state.view.scale)
 
     var pixels = state.backend.gl.value().read_frame(pw, ph)

@@ -133,7 +133,7 @@ def test_unused_slots_are_zero() raises -> None:
 
 
 def test_commands_collect_into_a_buffer() raises -> None:
-    # The recording shape Frame will use: one heterogeneous list, in order.
+    # The recording shape Canvas will use: one heterogeneous list, in order.
     var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(rect_command(identity[3](), Style(), 0.0, 0.0, 4.0, 4.0))

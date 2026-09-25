@@ -15,7 +15,7 @@ struct App(Program):
     var dir: Float64
 
     @staticmethod
-    def create(mut options: Options) raises -> App:
+    def create(mut context: Context) raises -> App:
         # Everything below is authored against the 1280x720 passed to run().
         # Space cycles the three modes:
         #   FIT     resize and the whole scene scales, letterboxed
@@ -25,43 +25,43 @@ struct App(Program):
         #           the scene stays put while the space around it grows
         # The origin is the middle of the design area and y grows upward, so
         # the labels below centre sit at negative y.
-        options.autoscale = AutoScale.FIT
+        context.autoscale = AutoScale.FIT
         return App(100.0, 1.0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        if frame.input.just_pressed("space"):
-            if options.autoscale == AutoScale.FIT:
-                options.autoscale = AutoScale.EXTEND
-            elif options.autoscale == AutoScale.EXTEND:
-                options.autoscale = AutoScale.OFF
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        if canvas.input.just_pressed("space"):
+            if context.autoscale == AutoScale.FIT:
+                context.autoscale = AutoScale.EXTEND
+            elif context.autoscale == AutoScale.EXTEND:
+                context.autoscale = AutoScale.OFF
             else:
-                options.autoscale = AutoScale.FIT
-        self.x += self.dir * 200.0 * frame.time.delta
+                context.autoscale = AutoScale.FIT
+        self.x += self.dir * 200.0 * canvas.time.delta
         # Set the sign rather than flip it: under EXTEND/OFF a shrinking
-        # window can move frame.right()/left() past the ball between frames,
+        # window can move canvas.right()/left() past the ball between frames,
         # and a flip on an already-true condition alternates forever instead
         # of turning the ball back inward.
-        if self.x > frame.right() - 40.0:
+        if self.x > canvas.right() - 40.0:
             self.dir = -1.0
-        elif self.x < frame.left() + 40.0:
+        elif self.x < canvas.left() + 40.0:
             self.dir = 1.0
 
-        frame.background(Color(0x99))
+        canvas.background(Color(0x99))
 
-        frame.fill(Color.RED)
-        frame.circle((self.x, 150), 40)
+        canvas.fill(Color.RED)
+        canvas.circle((self.x, 150), 40)
 
-        frame.fill(Color.BLUE)
-        frame.rectangle((0, 0), 200, 120)
+        canvas.fill(Color.BLUE)
+        canvas.rectangle((0, 0), 200, 120)
 
-        frame.text_color(Color.BLACK)
-        frame.font_size(28)
-        frame.text_align(Align.TOP)
-        frame.text("Autoscale Mode: " + _mode_name(options.autoscale), 0, -140)
-        frame.font_size(20)
-        frame.text("(space to cycle)", 0, -180)
-        frame.font_size(28)
-        frame.text("Current scale: " + String(frame.scale), 0, -220)
+        canvas.text_color(Color.BLACK)
+        canvas.font_size(28)
+        canvas.text_align(Align.TOP)
+        canvas.text("Autoscale Mode: " + _mode_name(context.autoscale), 0, -140)
+        canvas.font_size(20)
+        canvas.text("(space to cycle)", 0, -180)
+        canvas.font_size(28)
+        canvas.text("Current scale: " + String(canvas.scale), 0, -220)
 
 
 def main() raises:

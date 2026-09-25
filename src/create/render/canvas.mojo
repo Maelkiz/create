@@ -5,7 +5,7 @@ from .align import Align
 from .autoscale import AutoScale
 from .font import Font
 from .viewport import Viewport
-from .options import Options
+from .context import Context
 from .time import Time
 from .camera import Camera
 from .input import Input
@@ -35,10 +35,10 @@ from ._command import (
 from ._style import Style
 
 
-struct PersistentFrameState(Movable):
-    """The part of a `Frame` that outlives the frame it was rendered in.
+struct PersistentCanvasState(Movable):
+    """The part of a `Canvas` that outlives the frame it was rendered in.
 
-    A `Frame` is built fresh each frame, so anything it must remember between
+    A `Canvas` is built fresh each frame, so anything it must remember between
     frames — the backend, and through it the loaded fonts, the glyph cache and
     the interned sprite images — is moved out at the end of one frame and into
     the next. The transform stack and the style are deliberately absent: both
@@ -46,10 +46,10 @@ struct PersistentFrameState(Movable):
     `outline(enabled=False)` cannot leak into the next frame.
 
     Machinery, not dials. What the *program* sets between frames lives in
-    `Options`, which the loop carries beside this and never hands to a
-    `Frame` to own — that is what lets `update` be given both at once.
+    `Context`, which the loop carries beside this and never hands to a
+    `Canvas` to own — that is what lets `update` be given both at once.
 
-    It also owns what the run loop needs *before* a `Frame` exists: event
+    It also owns what the run loop needs *before* a `Canvas` exists: event
     processing maps pointer positions through `view`, and the dimension wait
     reads `view.width`/`height` before the first frame exists at all.
     """
@@ -57,10 +57,10 @@ struct PersistentFrameState(Movable):
     var backend: Backend
     var view: Viewport
     """The authoritative design-to-pixel mapping, re-derived by the loop every
-    frame from `Options`. A `Frame` copies it; `Frame._release` deliberately
+    frame from `Context`. A `Canvas` copies it; `Canvas._release` deliberately
     does not write it back, which would undo the loop's own resize handling."""
     var time: Time
-    """The frame clock. The loop is its only writer — a `Frame` carries a
+    """The frame clock. The loop is its only writer — a `Canvas` carries a
     read-only snapshot taken at construction."""
 
     def __init__(out self, kind: RenderBackend = RenderBackend.CPU) raises:
@@ -70,67 +70,67 @@ struct PersistentFrameState(Movable):
         self.view = Viewport()
         self.time = Time()
 
-    def _set_viewport(mut self, options: Options, pixel_w: Int, pixel_h: Int):
-        """Remap onto a framebuffer of this size, under `options`.
+    def _set_viewport(mut self, context: Context, pixel_w: Int, pixel_h: Int):
+        """Remap onto a framebuffer of this size, under `context`.
 
-        The design size and the autoscale mode are pushed in from `Options`
+        The design size and the autoscale mode are pushed in from `Context`
         rather than stored here, so there is one authority for both and a
         dial the last frame turned is picked up at exactly one place — the
         top of the next frame.
         """
-        self.view.autoscale = options.autoscale
-        self.view.set_design(options._design_w, options._design_h)
+        self.view.autoscale = context.autoscale
+        self.view.set_design(context._design_w, context._design_h)
         self.view.set_size(pixel_w, pixel_h)
 
 
 struct TransformGuard[origin: Origin[mut=True]](Movable):
-    """Pops the matrix `frame.transform` pushed, on scope exit."""
+    """Pops the matrix `canvas.transform` pushed, on scope exit."""
 
-    var _frame: Pointer[Frame, Self.origin]
+    var _canvas: Pointer[Canvas, Self.origin]
 
-    def __init__(out self, ref[Self.origin] frame: Frame):
-        self._frame = Pointer(to=frame)
+    def __init__(out self, ref[Self.origin] canvas: Canvas):
+        self._canvas = Pointer(to=canvas)
 
     def __enter__(mut self):
         pass
 
     def __exit__(mut self):
-        self._frame[]._pop_transform()
+        self._canvas[]._pop_transform()
 
 
 struct OverlayGuard[origin: Origin[mut=True]](Movable):
-    """Restores the camera and transform `frame.overlay` suspended, on scope
+    """Restores the camera and transform `canvas.overlay` suspended, on scope
     exit."""
 
-    var _frame: Pointer[Frame, Self.origin]
+    var _canvas: Pointer[Canvas, Self.origin]
     var _saved_camera: Camera
     var _saved_user: Matrix[3, 3]
     var _saved_user_inv: Matrix[3, 3]
     var _saved_transform: Matrix[3, 3]
     var _saved_transform_inv: Matrix[3, 3]
 
-    def __init__(out self, ref[Self.origin] frame: Frame):
-        self._saved_camera = frame._camera.copy()
-        self._saved_user = frame._user.copy()
-        self._saved_user_inv = frame._user_inv.copy()
-        self._saved_transform = frame._transform.copy()
-        self._saved_transform_inv = frame._transform_inv.copy()
-        frame._camera = Camera()
-        frame._user = identity[3]()
-        frame._user_inv = identity[3]()
-        frame._transform = frame._base.copy()
-        frame._transform_inv = frame._base_inv.copy()
-        self._frame = Pointer(to=frame)
+    def __init__(out self, ref[Self.origin] canvas: Canvas):
+        self._saved_camera = canvas._camera.copy()
+        self._saved_user = canvas._user.copy()
+        self._saved_user_inv = canvas._user_inv.copy()
+        self._saved_transform = canvas._transform.copy()
+        self._saved_transform_inv = canvas._transform_inv.copy()
+        canvas._camera = Camera()
+        canvas._user = identity[3]()
+        canvas._user_inv = identity[3]()
+        canvas._transform = canvas._base.copy()
+        canvas._transform_inv = canvas._base_inv.copy()
+        self._canvas = Pointer(to=canvas)
 
     def __enter__(mut self):
         pass
 
     def __exit__(mut self):
-        self._frame[]._camera = self._saved_camera.copy()
-        self._frame[]._user = self._saved_user
-        self._frame[]._user_inv = self._saved_user_inv
-        self._frame[]._transform = self._saved_transform
-        self._frame[]._transform_inv = self._saved_transform_inv
+        self._canvas[]._camera = self._saved_camera.copy()
+        self._canvas[]._user = self._saved_user
+        self._canvas[]._user_inv = self._saved_user_inv
+        self._canvas[]._transform = self._saved_transform
+        self._canvas[]._transform_inv = self._saved_transform_inv
 
 
 struct StyleGuard[origin: Origin[mut=True]](Movable):
@@ -140,21 +140,21 @@ struct StyleGuard[origin: Origin[mut=True]](Movable):
     stack is needed — nesting works because each guard restores what it saw.
     """
 
-    var _frame: Pointer[Frame, Self.origin]
+    var _canvas: Pointer[Canvas, Self.origin]
     var _saved: Style
 
-    def __init__(out self, ref[Self.origin] frame: Frame):
-        self._saved = frame._style.copy()
-        self._frame = Pointer(to=frame)
+    def __init__(out self, ref[Self.origin] canvas: Canvas):
+        self._saved = canvas._style.copy()
+        self._canvas = Pointer(to=canvas)
 
     def __enter__(mut self):
         pass
 
     def __exit__(mut self):
-        self._frame[]._style = self._saved.copy()
+        self._canvas[]._style = self._saved.copy()
 
 
-struct Frame:
+struct Canvas:
     """One frame: the geometry, the clock and the rendering API.
 
     This is the object a program is handed to render a frame with. `width`/`height`
@@ -168,20 +168,20 @@ struct Frame:
 
     A `mut` parameter because the program renders on it, and the recording it
     appends to is the frame's whole output. What it does *not* carry is a
-    setting: everything that outlives a frame is in `Options`, handed to
-    `update` beside it. A `Frame` that carried a dial would be offering to
+    setting: everything that outlives a frame is in `Context`, handed to
+    `update` beside it. A `Canvas` that carried a dial would be offering to
     change something it is not around to see the effect of.
 
     Built fresh each frame and dropped before the frame is presented. The
     machinery that must survive the frame goes in and out through
-    `PersistentFrameState`.
+    `PersistentCanvasState`.
 
     **It takes no parameters, and holds no `Surface`.** It used to need one
     origin parameter for the framebuffer it borrowed, which constrained the
     whole API: a second parameter would have broken every
-    `Program.update` signature at once, and pointing an existing `Frame` at a
+    `Program.update` signature at once, and pointing an existing `Canvas` at a
     new framebuffer could not compile at all. Both
-    limits are gone because a `Frame` no longer touches pixels — it records,
+    limits are gone because a `Canvas` no longer touches pixels — it records,
     and the backend replays onto a `Surface` the frame never sees. Don't
     reintroduce a `Surface` field or a parameter to hold one.
 
@@ -192,7 +192,7 @@ struct Frame:
 
     A render call touches no pixels: it appends a `RenderCommand` to the backend's
     recording, and the backend replays the whole frame afterwards. So a
-    `Frame` is a recorder, and the geometry it records is *local* — the shape
+    `Canvas` is a recorder, and the geometry it records is *local* — the shape
     as the program asked for it, paired with the current transform — never
     device pixels. A style is resolved at record time, so a later `fill()`
     cannot reach back and change what an earlier command paints.
@@ -221,11 +221,11 @@ struct Frame:
     writing to it reaches nothing, since the copy dies with the frame.
     """
     var _letterbox: Color
-    """This frame's bar colour, snapshotted from `Options` at construction —
+    """This frame's bar colour, snapshotted from `Context` at construction —
     the frame is rendered under one set of dials, whatever `update` does to them
     for the next."""
-    var _state: PersistentFrameState
-    # Style is per-frame, not carried in `_state`: `Frame` is only reachable
+    var _state: PersistentCanvasState
+    # Style is per-frame, not carried in `_state`: `Canvas` is only reachable
     # from `render`, so nothing can seed a style outside a frame and carrying
     # one across would only preserve a forgotten setting.
     var _style: Style
@@ -248,14 +248,14 @@ struct Frame:
 
     def __init__(
         out self,
-        var state: PersistentFrameState,
-        options: Options,
+        var state: PersistentCanvasState,
+        context: Context,
         input: Input,
     ):
         """Adopt the carried-over state, and this frame's mapping, dials and
         input.
 
-        `options` is read here and not held: the frame is rendered under the
+        `context` is read here and not held: the frame is rendered under the
         dials as they stood when it began, so a program turning one mid-frame
         changes the next frame rather than this one halfway through. `input`
         is copied for the same reason — the loop owns the real one across
@@ -267,7 +267,7 @@ struct Frame:
         self.scale = state.view.scale
         self.time = state.time.copy()
         self.input = input.copy()
-        self._letterbox = options.letterbox
+        self._letterbox = context.letterbox
         self._state = state^
         self._style = Style()
         self._base = self.view.base_matrix()
@@ -282,18 +282,18 @@ struct Frame:
         self._transform_stack = List[Matrix[3, 3]]()
         # Recorded here rather than by the loop so both loops get it from one
         # place, and so a program's own `background()` can coalesce with it.
-        if options.autoclear:
-            self._state.backend.record_clear(clear_command(options.clear_color))
+        if context.autoclear:
+            self._state.backend.record_clear(clear_command(context.clear_color))
 
-    def _release(deinit self) -> PersistentFrameState:
-        """Hand back the state the next frame's `Frame` should start from.
+    def _release(deinit self) -> PersistentCanvasState:
+        """Hand back the state the next frame's `Canvas` should start from.
 
         Consumes the frame, so the recording is complete before the loop
         presents it — nothing can append to a frame that is being replayed.
 
         Nothing is written back. `self.view` is this frame's copy of a mapping
         the loop re-derives every frame, the loop is the only writer of the
-        clock, and the dials a program turns are in `Options`, which a `Frame`
+        clock, and the dials a program turns are in `Context`, which a `Canvas`
         never owned — so there is no merge to get wrong here.
         """
         return self._state^
@@ -361,8 +361,8 @@ struct Frame:
         """Apply `m` to everything rendered inside a `with` block.
 
         ```mojo
-        with frame.transform(translate(50.0, 50.0)):
-            frame.rectangle((0, 0), 100, 100)
+        with canvas.transform(translate(50.0, 50.0)):
+            canvas.rectangle((0, 0), 100, 100)
         ```
 
         The matrix pops on exit, including on an early return or a raise.
@@ -413,15 +413,15 @@ struct Frame:
 
     def camera(mut self, cam: Camera):
         """Set the active camera. Applies to every render call and every nested
-        `transform()` from here on, until changed again or `frame.overlay()`
+        `transform()` from here on, until changed again or `canvas.overlay()`
         suspends it — and resets to identity next frame, like the rest of the
         transform state.
 
         ```mojo
-        frame.camera(self.cam)
-        frame.sprite(self.player.pos, ...)  # world-space coordinates
-        with frame.overlay():
-            frame.text("Score: " + str(self.score), (0, frame.top() - 20))
+        canvas.camera(self.cam)
+        canvas.sprite(self.player.pos, ...)  # world-space coordinates
+        with canvas.overlay():
+            canvas.text("Score: " + str(self.score), (0, canvas.top() - 20))
         ```
         """
         self._camera = cam.copy()
@@ -472,15 +472,15 @@ struct Frame:
         """Paint the whole framebuffer — the usual first call in `update`.
 
         A translucent color blends instead of clearing, which is how motion
-        trails are rendered: `frame.background(Color(0x11, 0x11, 0x11, 24))`
+        trails are rendered: `canvas.background(Color(0x11, 0x11, 0x11, 24))`
         fades the previous frame a little further each time. Trails need
-        `options.autoclear = False` set in `create`, or the frame's own clear wipes
+        `context.autoclear = False` set in `create`, or the frame's own clear wipes
         what they were fading.
 
-        An opaque color replaces `options.autoclear`'s clear rather than stacking on
+        An opaque color replaces `context.autoclear`'s clear rather than stacking on
         it, so opening `update` with this costs one clear, not two. It does
-        not change `options.clear_color`: this paints now, at the point it is
-        called, while `options.clear_color` is what every frame starts from.
+        not change `context.clear_color`: this paints now, at the point it is
+        called, while `context.clear_color` is what every frame starts from.
         """
         self._state.backend.record_clear(clear_command(color))
 
@@ -760,7 +760,7 @@ struct Frame:
         self.text(s, pos.x, pos.y)
 
     def font(mut self, var f: Font):
-        """Swap the face. Lives in `PersistentFrameState`, so unlike the style
+        """Swap the face. Lives in `PersistentCanvasState`, so unlike the style
         settings a font outlives the frame that set it."""
         self._state.backend.text.set_font(f^)
 

@@ -12,7 +12,7 @@ struct Camera(Copyable, Movable):
     `position` is the world point centred on screen; `zoom` scales around it
     (1.0 = no scaling). A field the program owns and moves on its own
     schedule — like `Sprite` or `Tween` — not something the run loop writes.
-    `frame.camera(cam)` applies it to every render call from that point on;
+    `canvas.camera(cam)` applies it to every render call from that point on;
     the default identity camera behaves exactly like no camera at all.
     """
 

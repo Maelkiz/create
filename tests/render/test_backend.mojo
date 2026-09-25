@@ -1,6 +1,6 @@
 # The CPU backend replays a recorded command list onto a Surface. These tests
-# hand-build the list — no Frame involved — so they check the replay itself,
-# and the last one pins it against the Frame output it has to reproduce.
+# hand-build the list — no Canvas involved — so they check the replay itself,
+# and the last one pins it against the Canvas output it has to reproduce.
 
 from std.math import pi, max, min
 from std.testing import TestSuite, assert_equal, assert_true
@@ -67,7 +67,7 @@ def test_clear_covers_every_pixel() raises -> None:
 
 def test_rect_replays_centred_and_y_up() raises -> None:
     # A 20x20 rect at the world origin covers pixels [40, 60) on both axes —
-    # the same centring promise the Frame tests assert.
+    # the same centring promise the Canvas tests assert.
     var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(rect_command(_base(), _solid(Color.RED), 0.0, 0.0, 20.0, 20.0))
@@ -433,26 +433,26 @@ comptime _RECT_H = 18.0
 
 
 struct RotatedRect(Program):
-    """The Frame side of the equivalence check below."""
+    """The Canvas side of the equivalence check below."""
 
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> RotatedRect:
+    def create(mut context: Context) raises -> RotatedRect:
         return RotatedRect(0)
 
     def __init__(out self, unused: Int):
         self._unused = unused
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        with frame.transform(rotate(_ANGLE)):
-            frame.rectangle(12.0, 6.0, _RECT_W, _RECT_H)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        with canvas.transform(rotate(_ANGLE)):
+            canvas.rectangle(12.0, 6.0, _RECT_W, _RECT_H)
 
 
-def test_a_rotated_rect_replays_identically_to_frame() raises -> None:
+def test_a_rotated_rect_replays_identically_to_canvas() raises -> None:
     # Rotation defeats the axis-aligned fast path, so this is the per-pixel
     # inverse-mapping route — the one the command buffer most has to preserve,
     # since a pre-mapped device rect could not express it at all.

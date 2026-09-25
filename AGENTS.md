@@ -24,7 +24,7 @@ it makes the library better.
 |---|---|---|
 | root | `src/create/__init__.mojo` | The preamble: star-imports all five subpackages below |
 | `core` | `src/create/core/` | `Program`, the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path` |
-| `render` | `src/create/render/` | `Frame`, `Options`, `Time`, `Input`, `Camera`, `Viewport`, colour/font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
+| `render` | `src/create/render/` | `Canvas`, `Context`, `Time`, `Input`, `Camera`, `Viewport`, colour/font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
 | `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes, `Random`, easing and `Tween`, util functions |
 | `sprite` | `src/create/sprite/` | `Sprite` (BMP/PNG/JPEG), `SpriteAnimation`, `SpriteAnimator` |
 | `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |
@@ -69,31 +69,31 @@ reserved (not usable as a name), and `;` statement separators don't parse.
 
 ### Programs
 
-Implement `Program` (`create(mut options)` + `update(mut self, mut options, mut frame)`) and pass it
+Implement `Program` (`create(mut context)` + `update(mut self, mut context, mut canvas)`) and pass it
 to `run[T]`. Minimum: [tests/core/test_smoke.mojo](tests/core/test_smoke.mojo); full shape:
 [examples/sidescroller/src/main.mojo](examples/sidescroller/src/main.mojo).
 
-`create` gets no `Frame` — none exists before the loop — so rendering or reading geometry there is a
-compile error. Input arrives as `frame.input`; there are no event callbacks. A `Frame` is built fresh
+`create` gets no `Canvas` — none exists before the loop — so rendering or reading geometry there is a
+compile error. Input arrives as `canvas.input`; there are no event callbacks. A `Canvas` is built fresh
 each frame; nothing may hold one across frames.
 
 **Multiple screens:** a root `Program` holds each screen as a plain field (not implementing
 `Program`) and switches with an int field and `if`/`elif`. A scene's `update` takes only what it uses
-(often just `frame`); a one-shot reset is a plain `enter(...)` method the parent calls before
+(often just `canvas`); a one-shot reset is a plain `enter(...)` method the parent calls before
 switching, taking whatever that transition carries. No trait: it would force one `update`/`enter`
 signature on every scene, and those must vary. See [examples/scenes/src/main.mojo](examples/scenes/src/main.mojo).
 (Mojo 1.1 has no dynamic trait dispatch; heterogeneous storage is `Variant` from `std.utils`, with
 `isa[T]()` to dispatch.)
 
-**Parameter vs. field:** what the loop hands the program every frame (`Options`, `Frame`) is a
+**Parameter vs. field:** what the loop hands the program every frame (`Context`, `Canvas`) is a
 parameter. What the program drives on its own schedule (`Sprite`, `Font`, `Sound`, `Audio`,
 `SpriteAnimator`, `Camera`, `Tween`) is a field it constructs in `create` — so adding one touches
-neither `Program` nor the run loop. `Time` and `Input` ride on `Frame`; `frame.input` is a per-frame
+neither `Program` nor the run loop. `Time` and `Input` ride on `Canvas`; `canvas.input` is a per-frame
 copy, so writing to it reaches nothing that outlives the frame.
 
 **Per-frame obligations**, not enforced by anything:
 - `audio.update()` — otherwise looping streams stall and one-shot voice slots leak.
-- `animator.update(frame.time.delta)` / `tween.update(frame.time.delta)` — otherwise the playhead
+- `animator.update(canvas.time.delta)` / `tween.update(canvas.time.delta)` — otherwise the playhead
   never moves.
 
 Shared assets (`SpriteAnimation`, `Sound`) are held as `ArcPointer` fields. Read
@@ -117,53 +117,53 @@ A program writes `from create import *`. Otherwise import by name from the ownin
   and `_bytes`, so it works without a run loop.
 - **`_bytes`** is a leaf imported by `sprite` and `render`, re-exported by nothing.
 - **`_window`** imports nothing from `create`; `core` is its only consumer; nothing re-exports it.
-- **`render`→`sprite` is nominal:** only `frame.sprite`'s overloads name `Sprite`/`SpriteAnimator`.
+- **`render`→`sprite` is nominal:** only `canvas.sprite`'s overloads name `Sprite`/`SpriteAnimator`.
   A `render` function that needs pixels takes a pointer plus width/height, not an image type.
 
 ### Style and clear
 
 `Style()` defaults are not blank: **outline `BLACK`, enabled, 1 unit**; transparent fill; `BLACK`
-text. Every frame opens with a clear to `options.clear_color` (gray 200) so those defaults are
+text. Every frame opens with a clear to `context.clear_color` (gray 200) so those defaults are
 visible.
-- An opaque `frame.background()` replaces that clear rather than painting a second time; a
+- An opaque `canvas.background()` replaces that clear rather than painting a second time; a
   translucent one blends over it.
-- `options.autoclear` is read at frame construction, so set it in `create`. Off lets ink accumulate
+- `context.autoclear` is read at frame construction, so set it in `create`. Off lets ink accumulate
   (CPU backend only — GPU swaps buffers).
 
 `fill`, `outline` and `text_color` set three independent colours; `fill(enabled=False)` does not
 hide text. Text is hidden by a zero-alpha `text_color`.
 
-**Scope with the guards.** `frame.transform(m)`, `frame.style()` and `frame.overlay()` return
+**Scope with the guards.** `canvas.transform(m)`, `canvas.style()` and `canvas.overlay()` return
 `with`-block guards that unwind on exit. Bare style mutators straight from `update` are fine (style,
-transform and camera reset every frame); a *helper* that sets style wraps it in `frame.style()` so it
+transform and camera reset every frame); a *helper* that sets style wraps it in `canvas.style()` so it
 can't leak into the caller's next render.
 
 ### Coordinates, camera, autoscale
 
 **Not Processing's coordinates.** Origin at the screen centre, **y up**; `x ∈ [-w/2, w/2]`,
-`y ∈ [-h/2, h/2]`. So `rotate` is counter-clockwise, gravity is negative `y`, and `frame.left()`/
+`y ∈ [-h/2, h/2]`. So `rotate` is counter-clockwise, gravity is negative `y`, and `canvas.left()`/
 `bottom()` are negative — use the edge methods, not `width`/`height` arithmetic. Glyphs and sprites
 are not flipped. **All shapes are centre-positioned**, including `Rectangle.x/y`.
 
-**Camera:** `frame.camera(cam)` maps world space onto screen space for every later render call and
-nested transform, reset every frame. `frame.overlay()` suspends it for HUD content.
-`frame.input.mouse` is in screen space; use `cam.to_world(frame.input.mouse)` for picking.
+**Camera:** `canvas.camera(cam)` maps world space onto screen space for every later render call and
+nested transform, reset every frame. `canvas.overlay()` suspends it for HUD content.
+`canvas.input.mouse` is in screen space; use `cam.to_world(canvas.input.mouse)` for picking.
 
 ```mojo
-frame.camera(self.cam)
-frame.sprite(self.player.sprite, self.player.pos)     # world space
-with frame.overlay():
-    frame.text("Score: " + String(self.score), (0, frame.top() - 20))  # screen space
+canvas.camera(self.cam)
+canvas.sprite(self.player.sprite, self.player.pos)     # world space
+with canvas.overlay():
+    canvas.text("Score: " + String(self.score), (0, canvas.top() - 20))  # screen space
 ```
 
-**Design resolution** is the `width`/`height` passed to `run` (or `options.design_resolution()` from
+**Design resolution** is the `width`/`height` passed to `run` (or `context.design_resolution()` from
 `create`): the space the program is authored in, not a window size. Fullscreen/maximized scale the
-design onto the display. `options.autoscale` is `FIT` (default), `EXTEND` or `OFF`; `OFF` makes
+design onto the display. `context.autoscale` is `FIT` (default), `EXTEND` or `OFF`; `OFF` makes
 coordinates the window's own pixels. Under `EXTEND` the reported size grows with the window, so
-anchor layout to the edges. Font size, outline thickness and sprite size scale by `frame.scale`. See
+anchor layout to the edges. Font size, outline thickness and sprite size scale by `canvas.scale`. See
 [examples/autoscale.mojo](examples/autoscale.mojo).
 
-`Options` dials are read at frame construction, so a change mid-`update` applies next frame —
+`Context` dials are read at frame construction, so a change mid-`update` applies next frame —
 except `frame_cap()` and `quit()`, read after `update` returns.
 
 ## Critical Gotchas
@@ -181,38 +181,38 @@ except `frame_cap()` and `quit()`, read after `update` returns.
 4. **No function can return a reference to a `List` element** in this Mojo version, so
    `SpriteAnimation` has no `frame()` accessor. Index inline at the use site. Don't retry it.
 
-5. **An uncalled overload is type-checked by nothing.** [tests/render/test_frame.mojo](tests/render/test_frame.mojo)
-   renders through all of `frame.sprite`'s animator overloads for this reason — extend it when adding
+5. **An uncalled overload is type-checked by nothing.** [tests/render/test_canvas.mojo](tests/render/test_canvas.mojo)
+   renders through all of `canvas.sprite`'s animator overloads for this reason — extend it when adding
    one.
 
 ## Terminology
 
 | Term | Meaning |
 |---|---|
-| Screen space | Origin-centred, y-up, camera-independent. `frame.left()`…`top()` and `frame.input.mouse` live here |
-| World space | What render calls use once a `Camera` is set; identical to screen space without one. `frame.to_world`/`to_local` convert between world space and the current transform (two `Float64` in, a tuple out) |
+| Screen space | Origin-centred, y-up, camera-independent. `canvas.left()`…`top()` and `canvas.input.mouse` live here |
+| World space | What render calls use once a `Camera` is set; identical to screen space without one. `canvas.to_world`/`to_local` convert between world space and the current transform (two `Float64` in, a tuple out) |
 | Asset vs. playhead | `SpriteAnimation`/`Sound` are shared immutable assets; `SpriteAnimator`/an `Audio` voice are one entity's position in one. `fps` belongs to the asset |
 | `Easing` / `Tween` | An `Easing` is a stateless curve over a 0-to-1 fraction (`ease(curve, t)`); a `Tween` walks that fraction over a duration. Each entity owns its own `Tween` |
-| `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`frame.circle(pos, r)`, `frame.input.mouse`); an extent or displacement is a `Vector2D` (`Rectangle.size()`, velocities). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Both take a bare tuple implicitly |
+| `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(pos, r)`, `canvas.input.mouse`); an extent or displacement is a `Vector2D` (`Rectangle.size()`, velocities). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Both take a bare tuple implicitly |
 | `overlaps` / `intersects` / `contains` | `overlaps(a, b)`: free, symmetric, regions only (`Rectangle`/`Circle`/`Triangle`). `line.intersects(x)`: `Line` only, since a line has no interior. `region.contains(x)`: asymmetric. A `Line` is never a region |
 
 ## Do
 
 - Use `@fieldwise_init` on program structs.
 - Run only the tests a change can reach (`pixi run test render`); pre-push runs the whole suite.
-- Make `frame.background(...)` the first render call in `update`, or set `options.clear_color` in
+- Make `canvas.background(...)` the first render call in `update`, or set `context.clear_color` in
   `create` if the colour never changes.
 - Use `Point2D` for new locations and `Vector2D` for extents/deltas;
-  `frame.rectangle(pos: Point2D, size: Vector2D)` is the shape to copy.
+  `canvas.rectangle(pos: Point2D, size: Vector2D)` is the shape to copy.
 
 ## Don't
 
 - Don't use `alias` — deprecated for `comptime`.
 - Don't use `UnsafePointer` — deprecated for `Pointer`.
 - Don't use `fn` — removed; use `def`.
-- Don't hold a raw `Pointer` to `Frame` outside the guards; use origin-tracked references.
+- Don't hold a raw `Pointer` to `Canvas` outside the guards; use origin-tracked references.
 - Don't name a test file without the `test_` prefix; the runner won't find it.
 - Don't add a `Point2D` overload beside a `Vector2D` one: both have `@implicit` tuple constructors,
-  so `frame.circle((0, 0), 20)` becomes ambiguous. Change the parameter's type instead. That's also why
+  so `canvas.circle((0, 0), 20)` becomes ambiguous. Change the parameter's type instead. That's also why
   `p - Vector2D(1, 2)` must name the type while `p + (1, 2)` need not. Don't "fix" that by adding
   `Point2D.__add__(Point2D)` — the type exists to refuse it.

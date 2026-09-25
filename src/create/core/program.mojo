@@ -1,5 +1,5 @@
-from create.render.frame import Frame
-from create.render.options import Options
+from create.render.canvas import Canvas
+from create.render.context import Context
 
 
 trait Program(Deinitable, Movable):
@@ -14,21 +14,21 @@ trait Program(Deinitable, Movable):
     work, so they are the same method's.
 
     There are no event callbacks. Input arrives on the frame, as
-    `frame.input`, and nowhere else — so there is one place a frame's
+    `canvas.input`, and nowhere else — so there is one place a frame's
     decisions are made and no ordering question between a callback and the
     frame body.
     """
 
     @staticmethod
-    def create(mut options: Options) raises -> Self:
+    def create(mut context: Context) raises -> Self:
         """Build the program, before the first frame.
 
         Where resources the program drives on its own schedule are
         constructed — sprites, fonts, sounds, an `Audio` device — and where
-        `options.design_resolution` or `options.autoscale` is set if the
+        `context.design_resolution` or `context.autoscale` is set if the
         defaults don't suit.
 
-        No `Frame`: there is no frame yet, and one handed over here could only
+        No `Canvas`: there is no frame yet, and one handed over here could only
         be a frame nothing presents. So the dials are all `create` is given,
         and a render call it cannot make is a render call that cannot silently go
         nowhere. Geometry is not readable here either, which is deliberate —
@@ -37,14 +37,14 @@ trait Program(Deinitable, Movable):
         """
         ...
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         """Advance the program by one frame, and render it.
 
-        Two parameters, two lifetimes. `options` outlives the frame and is
+        Two parameters, two lifetimes. `context` outlives the frame and is
         written for the *next* one — the autoscale mode, the clear, `quit()`.
-        `frame` is this frame alone: it is built fresh, rendered on, and dropped
+        `canvas` is this frame alone: it is built fresh, rendered on, and dropped
         before presentation, so it must not be stored anywhere. Keyboard and
-        mouse are `frame.input`, alongside `frame.time`, so a sketch that
+        mouse are `canvas.input`, alongside `canvas.time`, so a sketch that
         reads neither names neither.
         """
         ...

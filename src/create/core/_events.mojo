@@ -25,7 +25,7 @@ from create._window.event import (
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
-from create.render.options import Options
+from create.render.context import Context
 from create.render.viewport import Viewport
 
 from create.render.input import Input
@@ -34,7 +34,7 @@ from create.render.input import Input
 def apply_events(
     events: List[Event],
     view: Viewport,
-    options: Options,
+    context: Context,
     mut input: Input,
     px_per_point: Float64 = 1.0,
 ) -> Bool:
@@ -57,7 +57,7 @@ def apply_events(
             quit = True
         elif event.isa[KeyDown]():
             var keycode = event[KeyDown].keycode
-            if keycode == 27 and options.quit_on_escape:
+            if keycode == 27 and context.quit_on_escape:
                 quit = True
             if not input.is_key_down(keycode):
                 input._held_keys.set(keycode)
@@ -69,7 +69,7 @@ def apply_events(
         elif event.isa[MouseMoved]():
             var e = event[MouseMoved]
             # Pointer positions reach the program in screen space — the same
-            # camera-independent space `frame.left`/`right`/`bottom`/`top` use.
+            # camera-independent space `canvas.left`/`right`/`bottom`/`top` use.
             var p = view.to_screen(
                 Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
             )

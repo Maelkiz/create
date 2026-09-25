@@ -26,7 +26,7 @@ struct Game(Program):
     var spinning: Bool
 
     @staticmethod
-    def create(mut options: Options) raises -> Game:
+    def create(mut context: Context) raises -> Game:
         var sheet = Sprite.load(source_path("../assets/character.png"))
 
         # Row-major: the first four cells are the idle cycle, the next four
@@ -50,10 +50,10 @@ struct Game(Program):
         animator.loop()
         return Game(idle^, run^, spin^, animator^, 0.0, False)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        var speed = 240.0 * frame.time.delta
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        var speed = 240.0 * canvas.time.delta
 
-        if frame.input.just_pressed("space") and not self.spinning:
+        if canvas.input.just_pressed("space") and not self.spinning:
             # A one-shot: it holds its last frame and reports is_finished().
             self.animator.play(self.spin.copy())
             self.spinning = True
@@ -63,9 +63,13 @@ struct Game(Program):
                 self.spinning = False
         else:
             var dx = 0.0
-            if frame.input.is_key_down("a") or frame.input.is_key_down("left"):
+            if canvas.input.is_key_down("a") or canvas.input.is_key_down(
+                "left"
+            ):
                 dx -= speed
-            if frame.input.is_key_down("d") or frame.input.is_key_down("right"):
+            if canvas.input.is_key_down("d") or canvas.input.is_key_down(
+                "right"
+            ):
                 dx += speed
             self.x += dx
 
@@ -77,31 +81,31 @@ struct Game(Program):
             else:
                 self.animator.loop(self.idle.copy())
 
-        if frame.input.just_pressed("p"):
+        if canvas.input.just_pressed("p"):
             if self.animator.is_playing():
                 self.animator.pause()
             else:
                 self.animator.resume()
 
         var margin = Float64(_SIZE) / 2.0
-        self.x = clamp(self.x, frame.left() + margin, frame.right() - margin)
-        self.animator.update(frame.time.delta)
+        self.x = clamp(self.x, canvas.left() + margin, canvas.right() - margin)
+        self.animator.update(canvas.time.delta)
 
-        frame.background(Color(24, 26, 34))
+        canvas.background(Color(24, 26, 34))
 
-        frame.outline(enabled=False)
+        canvas.outline(enabled=False)
 
         # The ground runs from its surface all the way to the bottom edge, so
         # it never floats over the background however tall the window is.
-        var height = _GROUND - frame.bottom()
-        frame.fill(Color(38, 42, 54))
-        frame.rectangle(
-            (0.0, frame.bottom() + height / 2.0), frame.right() * 2.0, height
+        var height = _GROUND - canvas.bottom()
+        canvas.fill(Color(38, 42, 54))
+        canvas.rectangle(
+            (0.0, canvas.bottom() + height / 2.0), canvas.right() * 2.0, height
         )
 
         # Rendered four times the 32x32 source size -- pixel art wants to be
         # scaled up, and the sized overload does it without touching the asset.
-        frame.sprite(
+        canvas.sprite(
             self.animator,
             self.x,
             _GROUND + _SIZE / 2.0 - _FOOT_PAD,
@@ -109,10 +113,10 @@ struct Game(Program):
             _SIZE,
         )
 
-        frame.text_color(Color(150, 160, 180))
-        frame.text_align(Align.TOP)
-        frame.font_size(20)
-        frame.text(
+        canvas.text_color(Color(150, 160, 180))
+        canvas.text_align(Align.TOP)
+        canvas.font_size(20)
+        canvas.text(
             "A / D to run  -  SPACE to spin  -  P to pause spin animation",
             (0.0, 140.0),
         )

@@ -13,15 +13,15 @@ struct IdentityCameraRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> IdentityCameraRect:
+    def create(mut context: Context) raises -> IdentityCameraRect:
         return IdentityCameraRect(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.camera(Camera())
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        frame.rectangle(0.0, 0.0, 20.0, 20.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.camera(Camera())
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 
 
 def test_identity_camera_matches_no_camera() raises -> None:
@@ -39,15 +39,15 @@ struct PannedCameraRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> PannedCameraRect:
+    def create(mut context: Context) raises -> PannedCameraRect:
         return PannedCameraRect(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.camera(Camera(Point2D(20.0, 0.0), 1.0))
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        frame.rectangle(0.0, 0.0, 20.0, 20.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.camera(Camera(Point2D(20.0, 0.0), 1.0))
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 
 
 def test_camera_position_pans_world_content() raises -> None:
@@ -63,15 +63,15 @@ struct ZoomedCameraRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> ZoomedCameraRect:
+    def create(mut context: Context) raises -> ZoomedCameraRect:
         return ZoomedCameraRect(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.camera(Camera(Point2D(0.0, 0.0), 2.0))
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        frame.rectangle(0.0, 0.0, 20.0, 20.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.camera(Camera(Point2D(0.0, 0.0), 2.0))
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 
 
 def test_camera_zoom_scales_world_content() raises -> None:
@@ -87,16 +87,16 @@ struct OverlayIgnoresCamera(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> OverlayIgnoresCamera:
+    def create(mut context: Context) raises -> OverlayIgnoresCamera:
         return OverlayIgnoresCamera(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.camera(Camera(Point2D(50.0, 0.0), 1.0))
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        with frame.overlay():
-            frame.rectangle(0.0, 0.0, 20.0, 20.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.camera(Camera(Point2D(50.0, 0.0), 1.0))
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        with canvas.overlay():
+            canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 
 
 def test_overlay_ignores_the_active_camera() raises -> None:
@@ -112,18 +112,18 @@ struct OverlayRestoresCamera(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> OverlayRestoresCamera:
+    def create(mut context: Context) raises -> OverlayRestoresCamera:
         return OverlayRestoresCamera(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.camera(Camera(Point2D(20.0, 0.0), 1.0))
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        with frame.overlay():
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.camera(Camera(Point2D(20.0, 0.0), 1.0))
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        with canvas.overlay():
             pass
         # The camera set before overlay() must still be active afterwards.
-        frame.rectangle(0.0, 0.0, 20.0, 20.0)
+        canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 
 
 def test_overlay_restores_the_camera_on_exit() raises -> None:

@@ -10,7 +10,7 @@ from .autoscale import AutoScale
 struct Viewport(Copyable, Movable):
     """The design-space mapping: how world coordinates land on the framebuffer.
 
-    One home for the geometry `Frame` reports and renders through, so the two
+    One home for the geometry `Canvas` reports and renders through, so the two
     cannot drift. Owns no window and no pixels — it is pure arithmetic over a
     framebuffer size, which is what makes it unit-testable on its own.
     """
@@ -119,7 +119,7 @@ struct Viewport(Copyable, Movable):
         introduces when it stores the extended size as an Int.
 
         Screen space, not world space: this knows nothing of `Camera`, which
-        sits between the two and is `Frame`'s concern, not `Viewport`'s.
+        sits between the two and is `Canvas`'s concern, not `Viewport`'s.
         """
         return mat_translate(
             Float64(self.pixel_w) / 2.0, Float64(self.pixel_h) / 2.0
@@ -130,7 +130,7 @@ struct Viewport(Copyable, Movable):
 
         The inverse of `base_matrix`, done in arithmetic: pointer positions
         reach the program in the same space
-        `frame.left`/`right`/`bottom`/`top` describe. Camera-independent, like
+        `canvas.left`/`right`/`bottom`/`top` describe. Camera-independent, like
         the rest of `Viewport` — a program using a `Camera` converts on top
         with `Camera.to_world`.
         """

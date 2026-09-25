@@ -5,8 +5,8 @@ from create import *
 struct Paint:
     """The painting scene. Left-drag paints, right-click returns to the menu.
 
-    Deliberately never calls `frame.background()` per frame — `App.create`
-    turns `options.autoclear` off, so skipping the clear here is what lets ink
+    Deliberately never calls `canvas.background()` per frame — `App.create`
+    turns `context.autoclear` off, so skipping the clear here is what lets ink
     accumulate frame to frame. `enter()` is the one exception: it's a plain method, not
     part of `Program`, that `App` calls the frame it switches in, so this
     scene gets a one-shot clear instead of showing the menu bleeding through
@@ -21,31 +21,31 @@ struct Paint:
     def enter(mut self):
         self._entering = True
 
-    def update(mut self, mut frame: Frame) raises:
-        self.back_pressed = frame.input.mouse_just_pressed(MouseButton.RIGHT)
-        self.painting = frame.input.is_mouse_down(MouseButton.LEFT)
-        self.pen = frame.input.mouse
+    def update(mut self, mut canvas: Canvas) raises:
+        self.back_pressed = canvas.input.mouse_just_pressed(MouseButton.RIGHT)
+        self.painting = canvas.input.is_mouse_down(MouseButton.LEFT)
+        self.pen = canvas.input.mouse
 
         if self._entering:
-            frame.background(Color(24, 24, 28))
+            canvas.background(Color(24, 24, 28))
             self._entering = False
 
         if self.painting:
-            with frame.style():
-                frame.outline(enabled=False)
-                frame.fill(Color(240, 200, 90))
-                frame.circle(self.pen, 14.0)
+            with canvas.style():
+                canvas.outline(enabled=False)
+                canvas.fill(Color(240, 200, 90))
+                canvas.circle(self.pen, 14.0)
 
-        with frame.style():
-            frame.text_color(Color(180, 180, 190))
-            frame.font_size(18)
+        with canvas.style():
+            canvas.text_color(Color(180, 180, 190))
+            canvas.font_size(18)
             # Align.BOTTOM anchors the text box's bottom edge at y, so it
             # grows upward from the margin instead of straddling it — the
             # default Align.CENTER would hang half the line below the margin,
-            # its descenders against frame.bottom() and the letterbox clip.
-            frame.text_align(Align.BOTTOM)
-            frame.text(
+            # its descenders against canvas.bottom() and the letterbox clip.
+            canvas.text_align(Align.BOTTOM)
+            canvas.text(
                 "left-drag to paint    right-click for menu",
                 0,
-                frame.bottom() + 14.0,
+                canvas.bottom() + 14.0,
             )

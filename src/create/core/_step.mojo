@@ -1,5 +1,5 @@
-from create.render.frame import Frame, PersistentFrameState
-from create.render.options import Options
+from create.render.canvas import Canvas, PersistentCanvasState
+from create.render.context import Context
 from create.render.input import Input
 from .program import Program
 
@@ -8,10 +8,10 @@ def step[
     P: Program
 ](
     mut program: P,
-    mut options: Options,
+    mut context: Context,
     input: Input,
-    var state: PersistentFrameState,
-) raises -> PersistentFrameState:
+    var state: PersistentCanvasState,
+) raises -> PersistentCanvasState:
     """Advance `program` by one frame and hand its recorded state back.
 
     The windowed and headless loops differ in how they get a frame started —
@@ -20,13 +20,13 @@ def step[
     *is*. It lives in its own module rather than in `run.mojo` because the
     headless path must not pull in the window.
 
-    `state` travels in and out because a `Frame` is a per-frame view: it is
-    built for this frame and dropped before the frame is presented. `options`
+    `state` travels in and out because a `Canvas` is a per-frame view: it is
+    built for this frame and dropped before the frame is presented. `context`
     is borrowed rather than moved for the opposite reason — it is never a
-    `Frame`'s to own, which is what lets `update` be handed both at once.
+    `Canvas`'s to own, which is what lets `update` be handed both at once.
     `input` is borrowed and copied onto the frame: the loop owns the one that
     persists across frames, and the program reads this frame's snapshot as
-    `frame.input`.
+    `canvas.input`.
 
     **The caller presents.** A frame ends with the recording complete and the
     state handed back; `state.backend.present(surface, scale)` is the caller's
@@ -37,9 +37,9 @@ def step[
     know how to build; in the windowed case that is only valid after events
     have been pumped.
     """
-    var frame = Frame(state^, options, input)
-    program.update(options, frame)
+    var canvas = Canvas(state^, context, input)
+    program.update(context, canvas)
     # Recorded last, so it doubles as the clip for anything rendered out of
     # bounds — the replay honours the buffer's order.
-    frame._render_letterbox()
-    return frame^._release()
+    canvas._render_letterbox()
+    return canvas^._release()

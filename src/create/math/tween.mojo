@@ -15,11 +15,11 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable):
     def create(out self):
         self.fade = Tween(0.0, 1.0, 0.4, Easing.OUT_CUBIC)
 
-    def update(mut self, mut frame: Frame, input: Input) raises:
-        self.fade.update(frame.time.delta)
+    def update(mut self, mut canvas: Canvas, input: Input) raises:
+        self.fade.update(canvas.time.delta)
         if input.key_pressed(Key.SPACE):
             self.fade.play()
-        frame.fill(Color(255, 255, 255, Int(255 * self.fade.value)))
+        canvas.fill(Color(255, 255, 255, Int(255 * self.fade.value)))
     ```
 
     Unlike an animation, a tween carries no shared artwork -- its whole

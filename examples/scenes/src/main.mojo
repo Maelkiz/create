@@ -24,22 +24,22 @@ struct App(Program):
     var paint: Paint
 
     @staticmethod
-    def create(mut options: Options) raises -> App:
-        options.autoscale = AutoScale.FIT
+    def create(mut context: Context) raises -> App:
+        context.autoscale = AutoScale.FIT
         # The painting scene accumulates ink across frames, so the per-frame
         # clear is off for the whole program: `Menu` paints its own background
         # every frame, and `Paint` clears once on entry.
-        options.autoclear = False
+        context.autoclear = False
         return App(MENU, Menu(False), Paint(False, False, False, Point2D(0, 0)))
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         if self.scene == MENU:
-            self.menu.update(frame)
+            self.menu.update(canvas)
             if self.menu.start_pressed:
                 self.paint.enter()
                 self.scene = DRAWING
         else:
-            self.paint.update(frame)
+            self.paint.update(canvas)
             if self.paint.back_pressed:
                 self.scene = MENU
 

@@ -1,7 +1,7 @@
 # The consumer-side gate — a program built from outside the library.
 #
 # Type-checks the trait surface, `run[T]` instantiation, and the
-# Frame/Input signatures, none of which `mojo precompile` sees. The
+# Canvas/Input signatures, none of which `mojo precompile` sees. The
 # pre-commit hook builds this file; the suite also runs it, which the windowed
 # version could not do. Keep it minimal: it runs on every commit, and its cost
 # must not grow with the example count.
@@ -19,22 +19,22 @@ struct Smoke(Program):
     var audio: Audio
 
     @staticmethod
-    def create(mut options: Options) raises -> Smoke:
-        options.quit_on_escape = True
+    def create(mut context: Context) raises -> Smoke:
+        context.quit_on_escape = True
         return Smoke(0.0, Audio())
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         self.audio.update()
-        if frame.input.is_key_down("right"):
-            self.x += 100.0 * frame.time.delta
-        if frame.input.just_pressed("space"):
+        if canvas.input.is_key_down("right"):
+            self.x += 100.0 * canvas.time.delta
+        if canvas.input.just_pressed("space"):
             _ = self.audio.play(
                 ArcPointer(Sound.from_pcm(List[Int16](length=1, fill=0)))
             )
 
-        frame.background(Color.WHITE)
-        frame.fill(Color.RED)
-        frame.circle((self.x, 0.0), 20)
+        canvas.background(Color.WHITE)
+        canvas.fill(Color.RED)
+        canvas.circle((self.x, 0.0), 20)
 
 
 def _windowed_entry_point() raises:

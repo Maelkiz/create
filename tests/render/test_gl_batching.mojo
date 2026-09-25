@@ -15,7 +15,7 @@ from create.render.input import Input
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.autoscale import AutoScale
-from create.render.frame import PersistentFrameState
+from create.render.canvas import PersistentCanvasState
 from create.render.render_backend import RenderBackend
 from create.sprite.sprite import Sprite
 from std.testing import TestSuite, assert_equal, assert_true
@@ -40,19 +40,19 @@ struct ClearMidFrame(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> ClearMidFrame:
+    def create(mut context: Context) raises -> ClearMidFrame:
         return ClearMidFrame(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.BLUE)
-        frame.rectangle(0.0, 0.0, 40.0, 40.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.BLUE)
+        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
         # An opaque clear must flush the blue rect to the framebuffer before
         # wiping it, not queue it behind the clear where it would survive.
-        frame.background(Color.RED)
-        frame.fill(Color.GREEN)
-        frame.rectangle(10.0, 10.0, 16.0, 16.0)
+        canvas.background(Color.RED)
+        canvas.fill(Color.GREEN)
+        canvas.rectangle(10.0, 10.0, 16.0, 16.0)
 
 
 @fieldwise_init
@@ -60,15 +60,15 @@ struct TwoSprites(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> TwoSprites:
+    def create(mut context: Context) raises -> TwoSprites:
         return TwoSprites(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
         var a = Sprite.solid(2, 2, 255, 0, 255)
         var b = Sprite.solid(2, 2, 0, 255, 255)
-        frame.sprite(a, -20, 0, 16, 16)
-        frame.sprite(b, 20, 0, 16, 16)
+        canvas.sprite(a, -20, 0, 16, 16)
+        canvas.sprite(b, 20, 0, 16, 16)
 
 
 @fieldwise_init
@@ -76,17 +76,17 @@ struct TextAndSprite(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> TextAndSprite:
+    def create(mut context: Context) raises -> TextAndSprite:
         return TextAndSprite(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
         var img = Sprite.solid(2, 2, 255, 0, 0)
-        frame.sprite(img, -30, 0, 16, 16)
-        frame.text_color(Color.WHITE)
-        frame.font_size(24)
-        frame.text_align(Align.TOP_LEFT)
-        frame.text("Hi", 0.0, 20.0)
+        canvas.sprite(img, -30, 0, 16, 16)
+        canvas.text_color(Color.WHITE)
+        canvas.font_size(24)
+        canvas.text_align(Align.TOP_LEFT)
+        canvas.text("Hi", 0.0, 20.0)
 
 
 @fieldwise_init
@@ -94,23 +94,23 @@ struct ManyShapes(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> ManyShapes:
+    def create(mut context: Context) raises -> ManyShapes:
         return ManyShapes(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
         for gy in range(_GRID):
             for gx in range(_GRID):
                 var idx = gy * _GRID + gx
-                frame.fill(Color.RED if idx % 2 == 0 else Color.BLUE)
+                canvas.fill(Color.RED if idx % 2 == 0 else Color.BLUE)
                 var wx = (
                     Float64(gx) - Float64(_GRID) / 2.0
                 ) * _CELL + _CELL / 2.0
                 var wy = (
                     Float64(gy) - Float64(_GRID) / 2.0
                 ) * _CELL + _CELL / 2.0
-                frame.rectangle(wx, wy, _CELL - 2.0, _CELL - 2.0)
+                canvas.rectangle(wx, wy, _CELL - 2.0, _CELL - 2.0)
 
 
 def _gpu_frame[
@@ -127,18 +127,18 @@ def _gpu_frame[
     """
     var target = _GLTarget(GL(), width, height)
 
-    var state = PersistentFrameState(RenderBackend.GPU)
-    var options = Options()
-    options.design_resolution(width, height)
-    var program = P.create(options)
-    state._set_viewport(options, width, height)
+    var state = PersistentCanvasState(RenderBackend.GPU)
+    var context = Context()
+    context.design_resolution(width, height)
+    var program = P.create(context)
+    state._set_viewport(context, width, height)
     var input = Input()
     var now = 0
     state.time._start(now)
     for _ in range(frames):
         now += 16
         state.time._tick(now)
-        state = step(program, options, input, state^)
+        state = step(program, context, input, state^)
         state.backend.present_gpu(width, height, state.view.scale)
 
     var pixels = state.backend.gl.value().read_frame(width, height)
@@ -168,12 +168,12 @@ def test_gl_batching_behaviours() raises -> None:
     assert_equal(
         clear_mid_frame.pixel(32, 32),
         Color.RED,
-        "clear mid-frame: earlier render leaked through",
+        "clear mid-canvas: earlier render leaked through",
     )
     assert_equal(
         clear_mid_frame.pixel(42, 22),
         Color.GREEN,
-        "clear mid-frame: later render missing",
+        "clear mid-canvas: later render missing",
     )
 
     # Case 2: a second distinct sprite texture in one frame forces a batch

@@ -6,18 +6,18 @@ from .key import Key, _KeyBits
 
 
 struct Input(Copyable, Movable):
-    """Keyboard and mouse state for one frame, read as `frame.input`.
+    """Keyboard and mouse state for one frame, read as `canvas.input`.
 
     The whole input surface — there are no event callbacks, because every
     window event either lands on a field here or is already reflected in
-    `Frame` (`frame.width`/`height` are rebuilt every frame, so a resize needs
+    `Canvas` (`canvas.width`/`height` are rebuilt every frame, so a resize needs
     no notification of its own).
 
-    A field on `Frame` rather than a parameter of its own, alongside `time`
+    A field on `Canvas` rather than a parameter of its own, alongside `time`
     and for the same reason: both are per-frame readings the loop takes, and
     reaching them the same way is one thing less to remember. It costs the
-    checkable one-way flow a parameter gave — `frame` is `mut` for every render
-    call, so `frame.input` is writable too, exactly as `frame.time` is — and
+    checkable one-way flow a parameter gave — `canvas` is `mut` for every render
+    call, so `canvas.input` is writable too, exactly as `canvas.time` is — and
     buys a sketch that reads neither naming neither. The copy is the
     consolation: the loop owns the `Input` that persists across frames, this
     one is a snapshot, and a program writing to it reaches nothing that
@@ -29,7 +29,7 @@ struct Input(Copyable, Movable):
 
     `mouse` is in screen coordinates, so it is negative left of and below the
     origin — camera-independent, since the loop folds a frame's events before
-    the `Frame` (and any `Camera` it sets) exists. Convert with
+    the `Canvas` (and any `Camera` it sets) exists. Convert with
     `Camera.to_world` where a program uses one. It and `mouse_press_pos` are
     `Point2D` because they are locations; `wheel` stays a `Vector2D` because a
     scroll delta is a displacement.

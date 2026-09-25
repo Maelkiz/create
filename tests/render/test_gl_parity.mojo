@@ -48,7 +48,7 @@ from create.core._step import step
 from create.render.render_backend import RenderBackend
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
-from create.render.frame import PersistentFrameState
+from create.render.canvas import PersistentCanvasState
 from create._window import GLWindow
 
 comptime _DESIGN_W = 200
@@ -135,79 +135,79 @@ struct _Parity(Program):
     var shape: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> _Parity:
-        return _Parity.create(options, _SHAPE_RECT)
+    def create(mut context: Context) raises -> _Parity:
+        return _Parity.create(context, _SHAPE_RECT)
 
     @staticmethod
-    def create(mut options: Options, shape: Int) raises -> _Parity:
-        options.design_resolution(_DESIGN_W, _DESIGN_H)
+    def create(mut context: Context, shape: Int) raises -> _Parity:
+        context.design_resolution(_DESIGN_W, _DESIGN_H)
         return _Parity(Sprite.load("tests/fixtures/test_2x2.png"), shape)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(_BACKGROUND)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(_BACKGROUND)
 
         if self.shape == _SHAPE_RECT:
-            with frame.style():
-                frame.outline(enabled=False)
-                frame.fill(Color(0xE0, 0x40, 0x40))
-                frame.rectangle((-20, 20), 50, 30)
+            with canvas.style():
+                canvas.outline(enabled=False)
+                canvas.fill(Color(0xE0, 0x40, 0x40))
+                canvas.rectangle((-20, 20), 50, 30)
         elif self.shape == _SHAPE_STROKED_RECT:
-            with frame.style():
-                frame.fill(Color(0x40, 0xC0, 0xE0))
-                frame.outline(Color.BLACK, thickness=4)
-                frame.rectangle((10, 40), 50, 30)
+            with canvas.style():
+                canvas.fill(Color(0x40, 0xC0, 0xE0))
+                canvas.outline(Color.BLACK, thickness=4)
+                canvas.rectangle((10, 40), 50, 30)
         elif self.shape == _SHAPE_CIRCLE:
-            with frame.style():
-                frame.outline(enabled=False)
-                frame.fill(Color(0xF0, 0xC0, 0x30))
-                frame.circle((-60, -20), 24)
+            with canvas.style():
+                canvas.outline(enabled=False)
+                canvas.fill(Color(0xF0, 0xC0, 0x30))
+                canvas.circle((-60, -20), 24)
         elif self.shape == _SHAPE_LINE:
-            with frame.style():
-                frame.outline(Color(0x80, 0xFF, 0x80), thickness=3)
-                frame.line((-90, -60), (90, -60))
+            with canvas.style():
+                canvas.outline(Color(0x80, 0xFF, 0x80), thickness=3)
+                canvas.line((-90, -60), (90, -60))
         elif self.shape == _SHAPE_TRIANGLE:
-            with frame.style():
-                frame.outline(enabled=False)
-                frame.fill(Color(0xA0, 0x60, 0xF0))
-                frame.triangle((20, -50), (70, -50), (45, -5))
+            with canvas.style():
+                canvas.outline(enabled=False)
+                canvas.fill(Color(0xA0, 0x60, 0xF0))
+                canvas.triangle((20, -50), (70, -50), (45, -5))
         elif self.shape == _SHAPE_SPRITE:
             # Native size: at a scale of 1 neither backend resamples, so this
             # is testing the blit, not the filter.
-            frame.sprite(self.image, 70, 50, 2, 2)
+            canvas.sprite(self.image, 70, 50, 2, 2)
         elif self.shape == _SHAPE_TEXT:
-            with frame.style():
-                frame.outline(enabled=False)
-                frame.text_color(Color.WHITE)
-                frame.font_size(16)
-                frame.text_align(Align.CENTER)
-                frame.text("parity", 0, 0)
+            with canvas.style():
+                canvas.outline(enabled=False)
+                canvas.text_color(Color.WHITE)
+                canvas.font_size(16)
+                canvas.text_align(Align.CENTER)
+                canvas.text("parity", 0, 0)
         elif self.shape == _SHAPE_ROTATED_RECT:
             # Rotation defeats the axis-aligned fast path on both backends,
             # so this exercises the CPU's non-uniform inverse-mapping branch
             # against the GL tessellator's per-vertex transform — the one
             # shape kind the parity set otherwise never touches.
-            with frame.style():
-                frame.outline(enabled=False)
-                frame.fill(Color(0x60, 0xE0, 0x90))
-                with frame.transform(rotate(0.5)):
-                    frame.rectangle((30, -70), 40, 20)
+            with canvas.style():
+                canvas.outline(enabled=False)
+                canvas.fill(Color(0x60, 0xE0, 0x90))
+                with canvas.transform(rotate(0.5)):
+                    canvas.rectangle((30, -70), 40, 20)
         elif self.shape == _SHAPE_ROUNDED_RECT:
             # Filled and outlined, so both the fill's cross decomposition and
             # the outline's inset ring get exercised on both backends.
-            with frame.style():
-                frame.fill(Color(0xE0, 0x90, 0x40))
-                frame.outline(Color.BLACK, thickness=4)
-                frame.corner_radius(10)
-                frame.rectangle((-70, 40), 44, 30)
+            with canvas.style():
+                canvas.fill(Color(0xE0, 0x90, 0x40))
+                canvas.outline(Color.BLACK, thickness=4)
+                canvas.corner_radius(10)
+                canvas.rectangle((-70, 40), 44, 30)
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline
             # convention are exercised against the CPU's.
-            with frame.style():
-                frame.fill(Color(0x50, 0xA0, 0xD0))
-                frame.outline(Color.BLACK, thickness=4)
-                frame.corner_radius(9)
-                frame.triangle((40, 5), (95, 15), (65, 70))
+            with canvas.style():
+                canvas.fill(Color(0x50, 0xA0, 0xD0))
+                canvas.outline(Color.BLACK, thickness=4)
+                canvas.corner_radius(9)
+                canvas.triangle((40, 5), (95, 15), (65, 70))
 
 
 def _mask(pixels: List[UInt8]) -> List[Bool]:
@@ -390,7 +390,7 @@ def _assert_interior_colour_matches(
 
 
 def _create(
-    mut options: Options, mut state: PersistentFrameState, shape: Int
+    mut context: Context, mut state: PersistentCanvasState, shape: Int
 ) raises -> _Parity:
     """`_Parity.create` with the extra `shape` argument, then the mapping.
 
@@ -399,8 +399,8 @@ def _create(
     it returns, exactly as the loops do it — `create` is where the design
     resolution is pinned.
     """
-    var program = _Parity.create(options, shape)
-    state._set_viewport(options, _PIXEL_W, _PIXEL_H)
+    var program = _Parity.create(context, shape)
+    state._set_viewport(context, _PIXEL_W, _PIXEL_H)
     return program^
 
 
@@ -412,13 +412,13 @@ def _cpu_frame(shape: Int) raises -> MemorySurface:
     which command it records this frame. Otherwise identical to it.
     """
     var mem = MemorySurface(_PIXEL_W, _PIXEL_H)
-    var state = PersistentFrameState()
-    var options = Options()
-    var program = _create(options, state, shape)
+    var state = PersistentCanvasState()
+    var context = Context()
+    var program = _create(context, state, shape)
     var input = Input()
     state.time._start(0)
     state.time._tick(16)
-    state = step(program, options, input, state^)
+    state = step(program, context, input, state^)
     state.backend.present(mem.surface(), state.view.scale)
     return mem^
 
@@ -436,13 +436,13 @@ def _gpu_frame(mut win: GLWindow, shape: Int) raises -> List[UInt8]:
     """
     var target = _GLTarget(GL(), _PIXEL_W, _PIXEL_H)
 
-    var state = PersistentFrameState(RenderBackend.GPU)
-    var options = Options()
-    var program = _create(options, state, shape)
+    var state = PersistentCanvasState(RenderBackend.GPU)
+    var context = Context()
+    var program = _create(context, state, shape)
     var input = Input()
     state.time._start(0)
     state.time._tick(16)
-    state = step(program, options, input, state^)
+    state = step(program, context, input, state^)
     state.backend.present_gpu(_PIXEL_W, _PIXEL_H, state.view.scale)
 
     # The same readback `save_screenshot` uses, so the parity test and the

@@ -3,7 +3,7 @@ from create import *
 
 @fieldwise_init
 struct Player:
-    # All rates are per second, integrated with frame.time.delta so the feel is
+    # All rates are per second, integrated with canvas.time.delta so the feel is
     # the same at any frame rate. y grows upward, so gravity is negative and a
     # jump is positive.
     comptime GRAVITY: Float64 = -5400.0  # units/s^2
@@ -19,19 +19,19 @@ struct Player:
     var on_ground: Bool
     var jumps_left: Int
 
-    def update(mut self, mut frame: Frame):
-        var dt = frame.time.delta
+    def update(mut self, mut canvas: Canvas):
+        var dt = canvas.time.delta
 
-        if frame.input.is_key_down("a"):
+        if canvas.input.is_key_down("a"):
             self.x -= self.SPEED * dt
-        if frame.input.is_key_down("d"):
+        if canvas.input.is_key_down("d"):
             self.x += self.SPEED * dt
 
-        if frame.input.just_pressed("w") and self.jumps_left > 0:
+        if canvas.input.just_pressed("w") and self.jumps_left > 0:
             self.vel_y = self.JUMP_FORCE
             self.jumps_left -= 1
 
-        if frame.input.is_key_down("w") and self.vel_y > 0:
+        if canvas.input.is_key_down("w") and self.vel_y > 0:
             self.vel_y += self.JUMP_HOLD_FORCE * dt
 
         self.vel_y += self.GRAVITY * dt
@@ -40,23 +40,23 @@ struct Player:
         var half_h = self.height / 2
 
         # Ceiling: moving up and past the top edge.
-        if self.y + half_h > frame.top():
-            self.y = frame.top() - half_h
+        if self.y + half_h > canvas.top():
+            self.y = canvas.top() - half_h
             if self.vel_y > 0:
                 self.vel_y = 0.0
 
-        if self.y - half_h <= frame.bottom():
-            self.y = frame.bottom() + half_h
+        if self.y - half_h <= canvas.bottom():
+            self.y = canvas.bottom() + half_h
             self.vel_y = 0.0
             self.on_ground = True
             self.jumps_left = 2
         else:
             self.on_ground = False
 
-    def render(self, mut frame: Frame) raises:
+    def render(self, mut canvas: Canvas) raises:
         # Scoped, because this is a callee: without the guard the caller's
         # next render would silently inherit this fill and outline(enabled=False).
-        with frame.style():
-            frame.fill(Color(220, 80, 80))
-            frame.outline(enabled=False)
-            frame.rectangle(self.x, self.y, self.width, self.height)
+        with canvas.style():
+            canvas.fill(Color(220, 80, 80))
+            canvas.outline(enabled=False)
+            canvas.rectangle(self.x, self.y, self.width, self.height)

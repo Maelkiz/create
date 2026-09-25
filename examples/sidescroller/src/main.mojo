@@ -13,14 +13,14 @@ struct Game(Program):
     var cam: Camera
 
     @staticmethod
-    def create(mut options: Options) raises -> Game:
-        options.autoscale = AutoScale.FIT
+    def create(mut context: Context) raises -> Game:
+        context.autoscale = AutoScale.FIT
         var w: Float64 = 60
         var h: Float64 = 80
         return Game(Player(0.0, 0.0, w, h, 0.0, False, 2), Camera())
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        self.player.update(frame)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        self.player.update(canvas)
 
         var half_w = self.player.width / 2
         if self.player.x - half_w < self.WORLD_LEFT:
@@ -32,14 +32,14 @@ struct Game(Program):
         # jumping doesn't move the camera vertically too.
         self.cam.position = Point2D(self.player.x, 0.0)
 
-        frame.background(Color(30, 30, 30))
-        frame.camera(self.cam)
+        canvas.background(Color(30, 30, 30))
+        canvas.camera(self.cam)
 
         # Ground markers every 200 world units, so panning past the edge of
         # any one screen is visible rather than looking like an empty void.
-        with frame.style():
-            frame.outline(enabled=False)
-            frame.fill(Color(70, 70, 70))
+        with canvas.style():
+            canvas.outline(enabled=False)
+            canvas.fill(Color(70, 70, 70))
             var first = Int((self.cam.position.x - 1000.0) / 200.0) * 200
             var last = first + 2200
             for i in range(
@@ -47,24 +47,24 @@ struct Game(Program):
                 min(last, Int(self.WORLD_RIGHT) + 1),
                 200,
             ):
-                frame.circle(i, 0, 5)
+                canvas.circle(i, 0, 5)
 
-        self.player.render(frame)
+        self.player.render(canvas)
 
         # Walls at the world edges; only the one in view actually renders.
-        with frame.style():
-            frame.outline(enabled=False)
-            frame.fill(Color(150, 60, 60))
-            var wall_h = frame.top() - frame.bottom()
-            frame.rectangle(self.WORLD_LEFT, 0.0, 30.0, wall_h)
-            frame.rectangle(self.WORLD_RIGHT, 0.0, 30.0, wall_h)
+        with canvas.style():
+            canvas.outline(enabled=False)
+            canvas.fill(Color(150, 60, 60))
+            var wall_h = canvas.top() - canvas.bottom()
+            canvas.rectangle(self.WORLD_LEFT, 0.0, 30.0, wall_h)
+            canvas.rectangle(self.WORLD_RIGHT, 0.0, 30.0, wall_h)
 
-        with frame.overlay():
-            frame.text_color(Color(220, 220, 220))
-            frame.text_align(Align.TOP_LEFT)
-            frame.text(
+        with canvas.overlay():
+            canvas.text_color(Color(220, 220, 220))
+            canvas.text_align(Align.TOP_LEFT)
+            canvas.text(
                 "A/D move, W jump (double-jump in air)",
-                (frame.left() + 20.0, frame.top() - 20.0),
+                (canvas.left() + 20.0, canvas.top() - 20.0),
             )
 
 

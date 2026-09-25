@@ -52,7 +52,7 @@ struct App(Program):
     var pick: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> App:
+    def create(mut context: Context) raises -> App:
         # Authored against the 1280x800 passed to run(): x runs -640..640 and
         # y runs -400..400, with y growing *upward*, so the gallery counts
         # down from +170.
@@ -77,27 +77,27 @@ struct App(Program):
             pick=_HERO,
         )
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         # Nothing else advances a tween. A tween never updated sits at its
         # start forever, exactly like an un-ticked SpriteAnimator.
-        self.clock.update(frame.time.delta)
-        self.slide.update(frame.time.delta)
+        self.clock.update(canvas.time.delta)
+        self.slide.update(canvas.time.delta)
 
-        if frame.input.just_pressed("space"):
+        if canvas.input.just_pressed("space"):
             self.pick = (self.pick + 1) % len(self.curves)
             self.slide.curve = self.curves[self.pick]
             self.slide.play()
 
-        frame.background(Color(18, 18, 24))
+        canvas.background(Color(18, 18, 24))
 
         # Tracks first, while outline is still enabled — the dots below turn it
         # off and a line rendered after that would not appear.
-        frame.outline(Color(44, 44, 58), thickness=3)
-        frame.line((-420.0, 300.0), (420.0, 300.0))
+        canvas.outline(Color(44, 44, 58), thickness=3)
+        canvas.line((-420.0, 300.0), (420.0, 300.0))
         for i in range(len(self.curves)):
-            frame.line((-360.0, self._row_y(i)), (580.0, self._row_y(i)))
+            canvas.line((-360.0, self._row_y(i)), (580.0, self._row_y(i)))
 
-        frame.outline(enabled=False)
+        canvas.outline(enabled=False)
 
         # The hero: a point moved by lerping between two positions with the
         # tween's eased value. OUT_BACK and OUT_ELASTIC leave 0..1 mid-run, so
@@ -105,32 +105,32 @@ struct App(Program):
         var pos = Point2D(-420.0, 300.0).lerp(
             Point2D(420.0, 300.0), self.slide.value
         )
-        frame.fill(Color(235, 120, 70))
-        frame.rectangle(pos, 44, 44)
+        canvas.fill(Color(235, 120, 70))
+        canvas.rectangle(pos, 44, 44)
 
         # One dot per curve, all reading the same progress.
-        frame.fill(Color(90, 170, 255))
+        canvas.fill(Color(90, 170, 255))
         for i in range(len(self.curves)):
             var t = ease(self.curves[i], self.clock.progress)
-            frame.circle((lerp(-360.0, 580.0, t), self._row_y(i)), 11)
+            canvas.circle((lerp(-360.0, 580.0, t), self._row_y(i)), 11)
 
-        frame.text_color(Color(200, 200, 212))
-        frame.font_size(30)
-        frame.text_align(Align.TOP)
-        frame.text("Easing and Tweens", 0, 362)
-        frame.font_size(18)
-        frame.text(
+        canvas.text_color(Color(200, 200, 212))
+        canvas.font_size(30)
+        canvas.text_align(Align.TOP)
+        canvas.text("Easing and Tweens", 0, 362)
+        canvas.font_size(18)
+        canvas.text(
             "space  cycles the hero curve: " + self.names[self.pick], 0, 238
         )
 
-        frame.font_size(18)
-        frame.text_align(Align.LEFT)
+        canvas.font_size(18)
+        canvas.text_align(Align.LEFT)
         for i in range(len(self.curves)):
             if i == self.pick:
-                frame.text_color(Color(235, 120, 70))
+                canvas.text_color(Color(235, 120, 70))
             else:
-                frame.text_color(Color(140, 140, 155))
-            frame.text(self.names[i], -614.0, self._row_y(i))
+                canvas.text_color(Color(140, 140, 155))
+            canvas.text(self.names[i], -614.0, self._row_y(i))
 
     def _row_y(self, i: Int) -> Float64:
         return 170.0 - Float64(i) * 66.0

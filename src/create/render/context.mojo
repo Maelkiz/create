@@ -2,10 +2,10 @@ from .autoscale import AutoScale
 from .color import Color
 
 
-struct Options(Copyable, Movable):
+struct Context(Copyable, Movable):
     """The dials that outlive a frame: what the program sets, the loop reads.
 
-    A `Frame` is built and dropped inside one frame, so a setting that has to
+    A `Canvas` is built and dropped inside one frame, so a setting that has to
     survive the frame boundary cannot live on it. These do — the autoscale
     mode and design resolution the next frame's mapping is derived from, the
     clear the next frame opens with, the letterbox colour, and the two the run
@@ -13,12 +13,12 @@ struct Options(Copyable, Movable):
 
     Handed to `Program.create` on its own, before any frame exists, and
     alongside the frame to `Program.update`. That is the whole reason it is a
-    separate object rather than fields on `Frame`: `create` has dials to turn
+    separate object rather than fields on `Canvas`: `create` has dials to turn
     and nothing to render on, so it is given exactly that — a program cannot
     record a command that will never be presented, and there is no discarded
     frame to explain.
 
-    **Read at frame construction.** `Frame` takes its copy of `autoclear`,
+    **Read at frame construction.** `Canvas` takes its copy of `autoclear`,
     `clear_color` and `letterbox` when it is built, and the loop re-derives
     the viewport from `autoscale` and the design size at the top of each
     frame. So a dial turned part-way through `update` applies to the *next*
@@ -34,7 +34,7 @@ struct Options(Copyable, Movable):
     var autoclear: Bool
     """Whether each frame opens with a clear to `clear_color`."""
     var clear_color: Color
-    """What `autoclear` clears to, every frame. `frame.background()` is the
+    """What `autoclear` clears to, every frame. `canvas.background()` is the
     per-frame version: it paints at the point it is called and leaves this
     alone."""
     var letterbox: Color

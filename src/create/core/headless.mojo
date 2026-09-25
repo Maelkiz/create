@@ -1,6 +1,6 @@
 from create.render.autoscale import AutoScale
-from create.render.frame import PersistentFrameState
-from create.render.options import Options
+from create.render.canvas import PersistentCanvasState
+from create.render.context import Context
 from create.render.render_backend import RenderBackend
 from ._step import step
 from ._headless_gl import _run_headless_gl
@@ -49,20 +49,20 @@ def run_headless[
     var pw = pixel_width if pixel_width > 0 else width
     var ph = pixel_height if pixel_height > 0 else height
     var mem = MemorySurface(pw, ph)
-    var state = PersistentFrameState()
-    var options = Options()
-    options.design_resolution(width, height, AutoScale.FIT)
-    var program = P.create(options)
+    var state = PersistentCanvasState()
+    var context = Context()
+    context.design_resolution(width, height, AutoScale.FIT)
+    var program = P.create(context)
     # After create(), which may have pinned its own design size or mode.
-    state._set_viewport(options, pw, ph)
+    state._set_viewport(context, pw, ph)
     var input = Input()
     var now = 0
     state.time._start(now)
     for _ in range(frames):
-        if options._quit:
+        if context._quit:
             break
         now += _FRAME_MILLIS
         state.time._tick(now)
-        state = step(program, options, input, state^)
+        state = step(program, context, input, state^)
         state.backend.present(mem.surface(), state.view.scale)
     return mem^

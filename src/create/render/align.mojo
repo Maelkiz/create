@@ -2,7 +2,7 @@ struct Align(Copyable, Equatable, ImplicitlyCopyable, Movable):
     """Which point of a box a position names — one value for both axes.
 
     The nine constants are the nine points of the box, so a single argument
-    says everything `frame.text_align` needs:
+    says everything `canvas.text_align` needs:
 
     ```
     # # # # # # # # # # # # # # # # # # # # # #

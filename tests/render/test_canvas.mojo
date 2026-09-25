@@ -1,4 +1,4 @@
-# The rendering tests: render through the real Frame into an owned buffer and
+# The rendering tests: render through the real Canvas into an owned buffer and
 # assert on the pixels that come out. Everything here runs headless, so the
 # geometry conventions the library promises — centred origin, y up, centred
 # shapes, source-over alpha — are checked rather than eyeballed.
@@ -28,11 +28,11 @@ struct Background(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> Background:
+    def create(mut context: Context) raises -> Background:
         return Background(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color(10, 20, 30))
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color(10, 20, 30))
 
 
 def test_background_fills_every_pixel() raises -> None:
@@ -50,14 +50,14 @@ struct CentredRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> CentredRect:
+    def create(mut context: Context) raises -> CentredRect:
         return CentredRect(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        frame.rectangle(0.0, 0.0, 20.0, 20.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 
 
 def test_rect_is_centre_positioned() raises -> None:
@@ -78,14 +78,14 @@ struct HighRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> HighRect:
+    def create(mut context: Context) raises -> HighRect:
         return HighRect(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.GREEN)
-        frame.rectangle(0.0, 30.0, 10.0, 10.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.GREEN)
+        canvas.rectangle(0.0, 30.0, 10.0, 10.0)
 
 
 def test_positive_y_renders_above_centre() raises -> None:
@@ -102,14 +102,14 @@ struct CentredCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> CentredCircle:
+    def create(mut context: Context) raises -> CentredCircle:
         return CentredCircle(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.CYAN)
-        frame.circle(0.0, 0.0, 20.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.CYAN)
+        canvas.circle(0.0, 0.0, 20.0)
 
 
 def test_circle_is_centred_and_radial() raises -> None:
@@ -131,15 +131,15 @@ struct UprightTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> UprightTriangle:
+    def create(mut context: Context) raises -> UprightTriangle:
         return UprightTriangle(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.MAGENTA)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.MAGENTA)
         # Apex up, base below — in world terms, since y grows upward.
-        frame.triangle(0.0, 30.0, -30.0, -30.0, 30.0, -30.0)
+        canvas.triangle(0.0, 30.0, -30.0, -30.0, 30.0, -30.0)
 
 
 def test_triangle_fills_its_interior_only() raises -> None:
@@ -159,14 +159,14 @@ struct AlphaOverRed(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> AlphaOverRed:
+    def create(mut context: Context) raises -> AlphaOverRed:
         return AlphaOverRed(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.RED)
-        frame.outline(enabled=False)
-        frame.fill(Color(0, 0, 255, 128))
-        frame.rectangle(0.0, 0.0, 40.0, 40.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.RED)
+        canvas.outline(enabled=False)
+        canvas.fill(Color(0, 0, 255, 128))
+        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
 
 
 def test_alpha_composites_source_over() raises -> None:
@@ -180,13 +180,13 @@ struct ThickLine(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> ThickLine:
+    def create(mut context: Context) raises -> ThickLine:
         return ThickLine(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(Color.WHITE, thickness=3)
-        frame.line(-10.0, 0.0, 10.0, 0.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.WHITE, thickness=3)
+        canvas.line(-10.0, 0.0, 10.0, 0.0)
 
 
 def test_outline_thickness_scales_to_pixels() raises -> None:
@@ -204,11 +204,11 @@ struct FitBars(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> FitBars:
+    def create(mut context: Context) raises -> FitBars:
         return FitBars(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLUE)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLUE)
 
 
 @fieldwise_init
@@ -216,12 +216,12 @@ struct ExtendNoBars(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> ExtendNoBars:
-        options.autoscale = AutoScale.EXTEND
+    def create(mut context: Context) raises -> ExtendNoBars:
+        context.autoscale = AutoScale.EXTEND
         return ExtendNoBars(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLUE)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLUE)
 
 
 def test_fit_paints_letterbox_bars() raises -> None:
@@ -245,15 +245,15 @@ struct RotatedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> RotatedRect:
+    def create(mut context: Context) raises -> RotatedRect:
         return RotatedRect(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.YELLOW)
-        with frame.transform(rotate(pi / 4.0)):
-            frame.rectangle(0.0, 0.0, 20.0, 20.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.YELLOW)
+        with canvas.transform(rotate(pi / 4.0)):
+            canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 
 
 def test_rotation_takes_the_inverse_mapped_path() raises -> None:
@@ -272,15 +272,15 @@ struct SharpRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> SharpRect:
+    def create(mut context: Context) raises -> SharpRect:
         return SharpRect(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        frame.corner_radius(0)
-        frame.rectangle(0.0, 0.0, 40.0, 40.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(0)
+        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
 
 
 def test_corner_radius_zero_matches_sharp_rect() raises -> None:
@@ -296,15 +296,15 @@ struct RoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> RoundedRect:
+    def create(mut context: Context) raises -> RoundedRect:
         return RoundedRect(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        frame.corner_radius(10)
-        frame.rectangle(0.0, 0.0, 40.0, 40.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(10)
+        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
 
 
 def test_rect_corner_radius_rounds_the_corner() raises -> None:
@@ -322,15 +322,15 @@ struct RoundedRectOutlined(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> RoundedRectOutlined:
+    def create(mut context: Context) raises -> RoundedRectOutlined:
         return RoundedRectOutlined(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(Color.BLUE, thickness=2)
-        frame.fill(Color.RED)
-        frame.corner_radius(10)
-        frame.rectangle(0.0, 0.0, 40.0, 40.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.BLUE, thickness=2)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(10)
+        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
 
 
 def test_rect_corner_radius_outline_follows_the_arc() raises -> None:
@@ -361,15 +361,15 @@ struct ScaledRoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> ScaledRoundedRect:
+    def create(mut context: Context) raises -> ScaledRoundedRect:
         return ScaledRoundedRect(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        frame.corner_radius(5)
-        frame.rectangle(0.0, 0.0, 20.0, 20.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(5)
+        canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 
 
 def test_corner_radius_scales_to_pixels() raises -> None:
@@ -386,16 +386,16 @@ struct RotatedRoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> RotatedRoundedRect:
+    def create(mut context: Context) raises -> RotatedRoundedRect:
         return RotatedRoundedRect(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.YELLOW)
-        frame.corner_radius(6)
-        with frame.transform(rotate(pi / 4.0)):
-            frame.rectangle(0.0, 0.0, 20.0, 20.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.YELLOW)
+        canvas.corner_radius(6)
+        with canvas.transform(rotate(pi / 4.0)):
+            canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 
 
 def test_rect_corner_radius_under_rotation() raises -> None:
@@ -415,16 +415,16 @@ struct SharpTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> SharpTriangle:
+    def create(mut context: Context) raises -> SharpTriangle:
         return SharpTriangle(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        frame.corner_radius(0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(0)
         # Right angle at world (-20, -20), legs of length 20 along +x and +y.
-        frame.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
+        canvas.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
 
 
 def test_corner_radius_zero_matches_sharp_triangle() raises -> None:
@@ -440,14 +440,14 @@ struct RoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> RoundedTriangle:
+    def create(mut context: Context) raises -> RoundedTriangle:
         return RoundedTriangle(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        frame.corner_radius(5)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(5)
         # Right angle at world (-20, -20), legs of length 20 along +x and +y —
         # same corner shape as corner_fillet's own known right-angle test.
         # The other two vertices are 45 degrees, which clamp the requested
@@ -455,7 +455,7 @@ struct RoundedTriangle(Program):
         # triangle_corner_radius), so the right angle's own fillet centre
         # ends up at world (-15.86, -15.86), device pixel (34, 66) — offset
         # from the vertex by the clamped radius, not the requested one.
-        frame.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
+        canvas.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
 
 
 def test_triangle_corner_radius_rounds_the_corner() raises -> None:
@@ -475,15 +475,15 @@ struct RoundedTriangleOutlined(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> RoundedTriangleOutlined:
+    def create(mut context: Context) raises -> RoundedTriangleOutlined:
         return RoundedTriangleOutlined(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(Color.BLUE, thickness=4)
-        frame.fill(Color.RED)
-        frame.corner_radius(5)
-        frame.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.BLUE, thickness=4)
+        canvas.fill(Color.RED)
+        canvas.corner_radius(5)
+        canvas.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
 
 
 def test_triangle_corner_radius_outline_is_centred() raises -> None:
@@ -511,18 +511,18 @@ struct ThinRoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> ThinRoundedTriangle:
+    def create(mut context: Context) raises -> ThinRoundedTriangle:
         return ThinRoundedTriangle(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
         # A requested radius far larger than this sliver triangle could ever
         # support — triangle_corner_radius must clamp it, not let the
         # fillets balloon past the triangle's own edges.
-        frame.corner_radius(1000)
-        frame.triangle(0.0, 20.0, -30.0, -20.0, 30.0, -21.0)
+        canvas.corner_radius(1000)
+        canvas.triangle(0.0, 20.0, -30.0, -20.0, 30.0, -21.0)
 
 
 def test_triangle_corner_radius_clamps_to_incircle() raises -> None:
@@ -541,16 +541,16 @@ struct RotatedRoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> RotatedRoundedTriangle:
+    def create(mut context: Context) raises -> RotatedRoundedTriangle:
         return RotatedRoundedTriangle(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.YELLOW)
-        frame.corner_radius(6)
-        with frame.transform(rotate(pi / 4.0)):
-            frame.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.YELLOW)
+        canvas.corner_radius(6)
+        with canvas.transform(rotate(pi / 4.0)):
+            canvas.triangle(-20.0, -20.0, 0.0, -20.0, -20.0, 0.0)
 
 
 def test_triangle_corner_radius_under_rotation() raises -> None:
@@ -574,12 +574,12 @@ struct SpriteBlit(Program):
         self.sprite = sprite^
 
     @staticmethod
-    def create(mut options: Options) raises -> SpriteBlit:
+    def create(mut context: Context) raises -> SpriteBlit:
         return SpriteBlit(Sprite.load("tests/fixtures/test_2x2.bmp"))
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.sprite(self.sprite, 0.0, 0.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.sprite(self.sprite, 0.0, 0.0)
 
 
 def test_sprite_blits_unflipped() raises -> None:
@@ -600,12 +600,12 @@ struct PngSpriteBlit(Program):
         self.sprite = sprite^
 
     @staticmethod
-    def create(mut options: Options) raises -> PngSpriteBlit:
+    def create(mut context: Context) raises -> PngSpriteBlit:
         return PngSpriteBlit(Sprite.load("tests/fixtures/test_2x2.png"))
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.sprite(self.sprite, 0.0, 0.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.sprite(self.sprite, 0.0, 0.0)
 
 
 def test_png_sprite_blits_unflipped() raises -> None:
@@ -623,21 +623,21 @@ def test_png_sprite_blits_unflipped() raises -> None:
 struct StyleAcrossFrames(Program):
     # Frame 1 sets a style and renders nothing; frame 2 renders without setting
     # one. Style is per-frame, so frame 2 must get the defaults back.
-    var frame: Int
+    var canvas: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> StyleAcrossFrames:
+    def create(mut context: Context) raises -> StyleAcrossFrames:
         return StyleAcrossFrames(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        self.frame = frame.time.frame_count
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        self.canvas = canvas.time.frame_count
 
-        frame.background(Color.BLACK)
-        if self.frame == 1:
-            frame.fill(Color.RED)
-            frame.outline(enabled=False)
+        canvas.background(Color.BLACK)
+        if self.canvas == 1:
+            canvas.fill(Color.RED)
+            canvas.outline(enabled=False)
         else:
-            frame.rectangle((0, 0), 20, 20)
+            canvas.rectangle((0, 0), 20, 20)
 
 
 def test_style_does_not_survive_the_frame_boundary() raises -> None:
@@ -653,17 +653,17 @@ struct GuardedStyle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> GuardedStyle:
+    def create(mut context: Context) raises -> GuardedStyle:
         return GuardedStyle(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        with frame.style():
-            frame.fill(Color.BLUE)
-            frame.rectangle((-25, 0), 20, 20)
-        frame.rectangle((25, 0), 20, 20)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        with canvas.style():
+            canvas.fill(Color.BLUE)
+            canvas.rectangle((-25, 0), 20, 20)
+        canvas.rectangle((25, 0), 20, 20)
 
 
 def test_style_guard_restores_on_scope_exit() raises -> None:
@@ -677,14 +677,14 @@ struct StrokedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> StrokedRect:
+    def create(mut context: Context) raises -> StrokedRect:
         return StrokedRect(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.fill(Color.RED)
-        frame.outline(Color.BLUE, thickness=4)
-        frame.rectangle(0.0, 0.0, 40.0, 40.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.fill(Color.RED)
+        canvas.outline(Color.BLUE, thickness=4)
+        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
 
 
 def test_rect_outline_renders_all_four_bands() raises -> None:
@@ -703,14 +703,14 @@ struct StrokedCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> StrokedCircle:
+    def create(mut context: Context) raises -> StrokedCircle:
         return StrokedCircle(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.fill(Color.GREEN)
-        frame.outline(Color.WHITE, thickness=4)
-        frame.circle(0.0, 0.0, 20.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.fill(Color.GREEN)
+        canvas.outline(Color.WHITE, thickness=4)
+        canvas.circle(0.0, 0.0, 20.0)
 
 
 def test_circle_outline_renders_the_ring() raises -> None:
@@ -726,14 +726,14 @@ struct StrokedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> StrokedTriangle:
+    def create(mut context: Context) raises -> StrokedTriangle:
         return StrokedTriangle(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.fill(Color.ORANGE)
-        frame.outline(Color.WHITE, thickness=4)
-        frame.triangle(0.0, 30.0, -30.0, -30.0, 30.0, -30.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.fill(Color.ORANGE)
+        canvas.outline(Color.WHITE, thickness=4)
+        canvas.triangle(0.0, 30.0, -30.0, -30.0, 30.0, -30.0)
 
 
 def test_triangle_outline_renders_the_edges() raises -> None:
@@ -748,14 +748,14 @@ struct NoFillRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> NoFillRect:
+    def create(mut context: Context) raises -> NoFillRect:
         return NoFillRect(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.fill(enabled=False)
-        frame.outline(Color.WHITE, thickness=4)
-        frame.rectangle(0.0, 0.0, 40.0, 40.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.fill(enabled=False)
+        canvas.outline(Color.WHITE, thickness=4)
+        canvas.rectangle(0.0, 0.0, 40.0, 40.0)
 
 
 def test_no_fill_leaves_the_rect_interior_untouched() raises -> None:
@@ -769,14 +769,14 @@ struct NoFillCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> NoFillCircle:
+    def create(mut context: Context) raises -> NoFillCircle:
         return NoFillCircle(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.fill(enabled=False)
-        frame.outline(Color.WHITE, thickness=4)
-        frame.circle(0.0, 0.0, 20.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.fill(enabled=False)
+        canvas.outline(Color.WHITE, thickness=4)
+        canvas.circle(0.0, 0.0, 20.0)
 
 
 def test_no_fill_leaves_the_circle_interior_untouched() raises -> None:
@@ -790,15 +790,15 @@ struct RotatedCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> RotatedCircle:
+    def create(mut context: Context) raises -> RotatedCircle:
         return RotatedCircle(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.CYAN)
-        with frame.transform(rotate(pi / 4.0)):
-            frame.circle(0.0, 0.0, 20.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.CYAN)
+        with canvas.transform(rotate(pi / 4.0)):
+            canvas.circle(0.0, 0.0, 20.0)
 
 
 def test_circle_under_rotation_matches_the_axis_aligned_result() raises -> None:
@@ -821,15 +821,15 @@ struct QuarterTurnRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> QuarterTurnRect:
+    def create(mut context: Context) raises -> QuarterTurnRect:
         return QuarterTurnRect(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.YELLOW)
-        with frame.transform(rotate(pi / 2.0)):
-            frame.rectangle(0.0, 0.0, 20.0, 40.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.YELLOW)
+        with canvas.transform(rotate(pi / 2.0)):
+            canvas.rectangle(0.0, 0.0, 20.0, 40.0)
 
 
 @fieldwise_init
@@ -837,14 +837,14 @@ struct SwappedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> SwappedRect:
+    def create(mut context: Context) raises -> SwappedRect:
         return SwappedRect(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.YELLOW)
-        frame.rectangle(0.0, 0.0, 40.0, 20.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.YELLOW)
+        canvas.rectangle(0.0, 0.0, 40.0, 20.0)
 
 
 def _assert_quarter_turn_pixels(m: MemorySurface) raises:
@@ -867,44 +867,44 @@ struct GeometryOverloads(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> GeometryOverloads:
+    def create(mut context: Context) raises -> GeometryOverloads:
         return GeometryOverloads(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
 
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        frame.rectangle(Rectangle(-90.0, 40.0, 20.0, 20.0))
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.rectangle(Rectangle(-90.0, 40.0, 20.0, 20.0))
 
-        frame.fill(Color.GREEN)
-        frame.circle(Circle(-30.0, 40.0, 10.0))
+        canvas.fill(Color.GREEN)
+        canvas.circle(Circle(-30.0, 40.0, 10.0))
 
-        frame.outline(Color.BLUE, thickness=3)
-        frame.line(Line(20.0, 40.0, 40.0, 40.0))
+        canvas.outline(Color.BLUE, thickness=3)
+        canvas.line(Line(20.0, 40.0, 40.0, 40.0))
 
-        frame.outline(enabled=False)
-        frame.fill(Color.CYAN)
-        frame.triangle(Triangle(90.0, 50.0, 80.0, 30.0, 100.0, 30.0))
+        canvas.outline(enabled=False)
+        canvas.fill(Color.CYAN)
+        canvas.triangle(Triangle(90.0, 50.0, 80.0, 30.0, 100.0, 30.0))
 
-        frame.fill(Color.MAGENTA)
-        frame.rectangle(Point2D(-90.0, -40.0), 20.0, 20.0)
+        canvas.fill(Color.MAGENTA)
+        canvas.rectangle(Point2D(-90.0, -40.0), 20.0, 20.0)
 
-        frame.fill(Color.YELLOW)
-        frame.circle(Point2D(-30.0, -40.0), 10.0)
+        canvas.fill(Color.YELLOW)
+        canvas.circle(Point2D(-30.0, -40.0), 10.0)
 
-        frame.outline(Color.ORANGE, thickness=3)
-        frame.line(Point2D(20.0, -40.0), Point2D(40.0, -40.0))
+        canvas.outline(Color.ORANGE, thickness=3)
+        canvas.line(Point2D(20.0, -40.0), Point2D(40.0, -40.0))
 
-        frame.outline(enabled=False)
-        frame.fill(Color.LIGHT_GRAY)
-        frame.triangle(
+        canvas.outline(enabled=False)
+        canvas.fill(Color.LIGHT_GRAY)
+        canvas.triangle(
             Point2D(90.0, -30.0), Point2D(80.0, -50.0), Point2D(100.0, -50.0)
         )
 
         # The one overload naming both types: a position and an extent.
-        frame.fill(Color.WHITE)
-        frame.rectangle(Point2D(-90.0, 0.0), Vector2D(20.0, 20.0))
+        canvas.fill(Color.WHITE)
+        canvas.rectangle(Point2D(-90.0, 0.0), Vector2D(20.0, 20.0))
 
 
 def test_geometry_overloads_dispatch_correctly() raises -> None:
@@ -929,22 +929,22 @@ struct ToWorldRoundTrip(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> ToWorldRoundTrip:
+    def create(mut context: Context) raises -> ToWorldRoundTrip:
         return ToWorldRoundTrip(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        with frame.transform(translate(10.0, 20.0)):
-            var origin = frame.to_local(10.0, 20.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        with canvas.transform(translate(10.0, 20.0)):
+            var origin = canvas.to_local(10.0, 20.0)
             assert_almost_equal(origin[0], 0.0)
             assert_almost_equal(origin[1], 0.0)
-            var back = frame.to_world(0.0, 0.0)
+            var back = canvas.to_world(0.0, 0.0)
             assert_almost_equal(back[0], 10.0)
             assert_almost_equal(back[1], 20.0)
 
-        with frame.transform(translate(5.0, -8.0) @ rotate(pi / 3.0)):
-            var world = frame.to_world(7.0, -2.0)
-            var local = frame.to_local(world[0], world[1])
+        with canvas.transform(translate(5.0, -8.0) @ rotate(pi / 3.0)):
+            var world = canvas.to_world(7.0, -2.0)
+            var local = canvas.to_local(world[0], world[1])
             assert_almost_equal(local[0], 7.0)
             assert_almost_equal(local[1], -2.0)
 
@@ -960,21 +960,21 @@ struct ThickLineUnderNonUniformScale(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> ThickLineUnderNonUniformScale:
+    def create(mut context: Context) raises -> ThickLineUnderNonUniformScale:
         return ThickLineUnderNonUniformScale(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(Color.WHITE, thickness=3)
-        with frame.transform(scale(3.0, 1.0)):
-            frame.line(-10.0 / 3.0, 0.0, 10.0 / 3.0, 0.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.WHITE, thickness=3)
+        with canvas.transform(scale(3.0, 1.0)):
+            canvas.line(-10.0 / 3.0, 0.0, 10.0 / 3.0, 0.0)
 
 
 def test_outline_thickness_under_non_uniform_transform_follows_autoscale() raises -> (
     None
 ):
     # scale(3.0, 1.0) makes the transform non-uniform, so _pixel_scale must
-    # fall back to frame.scale (the autoscale factor, 2x here) rather than
+    # fall back to canvas.scale (the autoscale factor, 2x here) rather than
     # the local transform's own 3x — a 3-unit outline comes out 6 pixels
     # thick, not 18.
     var m = run_headless[ThickLineUnderNonUniformScale](50, 50, 1, 100, 100)
@@ -1011,27 +1011,27 @@ def _non_background_box(
 
 
 @fieldwise_init
-struct TextThroughFrame(Program):
+struct TextThroughCanvas(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> TextThroughFrame:
-        return TextThroughFrame(0)
+    def create(mut context: Context) raises -> TextThroughCanvas:
+        return TextThroughCanvas(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.text_color(Color.WHITE)
-        frame.font_size(24)
-        frame.text_align(Align.TOP_LEFT)
-        frame.text("Hi", 0.0, 0.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.text_color(Color.WHITE)
+        canvas.font_size(24)
+        canvas.text_align(Align.TOP_LEFT)
+        canvas.text("Hi", 0.0, 0.0)
 
 
 def test_text_renders_below_and_right_of_a_top_left_anchor() raises -> None:
     # The anchor is the buffer centre (100, 100); LEFT/TOP must put the ink
     # at or past it on both axes, the same shape test_text.mojo checks
-    # against TextRenderer directly, but now through Frame's own style and
+    # against TextRenderer directly, but now through Canvas's own style and
     # transform plumbing.
-    var m = run_headless[TextThroughFrame](200, 200)
+    var m = run_headless[TextThroughCanvas](200, 200)
     var box = _non_background_box(m, Color.BLACK)
     assert_true(box[2] >= 0, "nothing was rendered")
     assert_true(box[0] >= 100, "ink started left of the anchor")
@@ -1043,13 +1043,13 @@ struct TransparentText(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> TransparentText:
+    def create(mut context: Context) raises -> TransparentText:
         return TransparentText(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.text_color(Color(255, 255, 255, 0))
-        frame.text("Hi", 0.0, 0.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.text_color(Color(255, 255, 255, 0))
+        canvas.text("Hi", 0.0, 0.0)
 
 
 def test_a_transparent_text_color_suppresses_text() raises -> None:
@@ -1062,18 +1062,18 @@ struct TextBesideShape(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> TextBesideShape:
+    def create(mut context: Context) raises -> TextBesideShape:
         return TextBesideShape(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        frame.fill(Color.RED)
-        frame.rectangle((-60.0, 0.0), 40.0, 40.0)
-        frame.text_color(Color.GREEN)
-        frame.font_size(48)
-        frame.text_align(Align.CENTER)
-        frame.text("Hi", 40.0, 0.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        canvas.fill(Color.RED)
+        canvas.rectangle((-60.0, 0.0), 40.0, 40.0)
+        canvas.text_color(Color.GREEN)
+        canvas.font_size(48)
+        canvas.text_align(Align.CENTER)
+        canvas.text("Hi", 40.0, 0.0)
 
 
 def test_text_color_is_independent_of_fill() raises -> None:
@@ -1097,15 +1097,15 @@ struct SmallText(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> SmallText:
+    def create(mut context: Context) raises -> SmallText:
         return SmallText(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.text_color(Color.WHITE)
-        frame.font_size(12)
-        frame.text_align(Align.TOP_LEFT)
-        frame.text("Hi", 0.0, 0.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.text_color(Color.WHITE)
+        canvas.font_size(12)
+        canvas.text_align(Align.TOP_LEFT)
+        canvas.text("Hi", 0.0, 0.0)
 
 
 @fieldwise_init
@@ -1113,15 +1113,15 @@ struct BigText(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> BigText:
+    def create(mut context: Context) raises -> BigText:
         return BigText(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.text_color(Color.WHITE)
-        frame.font_size(48)
-        frame.text_align(Align.TOP_LEFT)
-        frame.text("Hi", 0.0, 0.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.text_color(Color.WHITE)
+        canvas.font_size(48)
+        canvas.text_align(Align.TOP_LEFT)
+        canvas.text("Hi", 0.0, 0.0)
 
 
 def test_font_size_grows_the_text_extent() raises -> None:
@@ -1136,52 +1136,52 @@ def test_font_size_grows_the_text_extent() raises -> None:
 
 
 struct QuitOnFrameTwo(Program):
-    var frame: Int
+    var canvas: Int
 
     def __init__(out self):
-        self.frame = 0
+        self.canvas = 0
 
     @staticmethod
-    def create(mut options: Options) raises -> QuitOnFrameTwo:
+    def create(mut context: Context) raises -> QuitOnFrameTwo:
         return QuitOnFrameTwo()
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        self.frame = frame.time.frame_count
-        if self.frame == 2:
-            options.quit()
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        self.canvas = canvas.time.frame_count
+        if self.canvas == 2:
+            context.quit()
 
-        frame.background(Color.BLACK)
-        frame.outline(enabled=False)
-        if self.frame == 1:
-            frame.fill(Color.RED)
-        elif self.frame == 2:
-            frame.fill(Color.GREEN)
+        canvas.background(Color.BLACK)
+        canvas.outline(enabled=False)
+        if self.canvas == 1:
+            canvas.fill(Color.RED)
+        elif self.canvas == 2:
+            canvas.fill(Color.GREEN)
         else:
-            frame.fill(Color.BLUE)
-        frame.rectangle(0.0, 0.0, 100.0, 100.0)
+            canvas.fill(Color.BLUE)
+        canvas.rectangle(0.0, 0.0, 100.0, 100.0)
 
 
 def test_frame_quit_stops_the_loop() raises -> None:
-    # update() quits on frame 2; run_headless checks frame._quit before each
+    # update() quits on frame 2; run_headless checks canvas._quit before each
     # iteration, so frames 3-5 must never run. If they did, the buffer would
     # show frame 5's blue rather than frame 2's green.
     var m = run_headless[QuitOnFrameTwo](50, 50, 5)
     assert_equal(m.pixel(25, 25), Color.GREEN)
 
 
-def _takes_a_bare_frame(mut frame: Frame) raises:
+def _takes_a_bare_frame(mut canvas: Canvas) raises:
     """Never called — an uncalled `def` body is still type-checked, so this is
-    a compile-time guard against `Frame` ever gaining a second parameter. A
-    bare `Frame` reference is what every `update` signature in the library
-    relies on; see AGENTS.md's "Frame must keep exactly one parameter."
+    a compile-time guard against `Canvas` ever gaining a second parameter. A
+    bare `Canvas` reference is what every `update` signature in the library
+    relies on; see AGENTS.md's "Canvas must keep exactly one parameter."
     """
-    frame.background(Color.BLACK)
+    canvas.background(Color.BLACK)
 
 
 struct AnimatorBlit(Program):
     """Eight 2x2 frames, frame i tinted R = i * 20, advanced by the run loop.
 
-    `SpriteAnimation`, `SpriteAnimator` and the `frame.sprite` overload all
+    `SpriteAnimation`, `SpriteAnimator` and the `canvas.sprite` overload all
     arrive through `from create import *` alone.
     """
 
@@ -1191,7 +1191,7 @@ struct AnimatorBlit(Program):
         self.animator = animator^
 
     @staticmethod
-    def create(mut options: Options) raises -> AnimatorBlit:
+    def create(mut context: Context) raises -> AnimatorBlit:
         var frames = List[Sprite]()
         for i in range(8):
             frames.append(Sprite.solid(2, 2, UInt8(i * 20), 0, 0))
@@ -1199,11 +1199,11 @@ struct AnimatorBlit(Program):
         a.play()
         return AnimatorBlit(a^)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        self.animator.update(frame.time.delta)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        self.animator.update(canvas.time.delta)
 
-        frame.background(Color.BLACK)
-        frame.sprite(self.animator, 0.0, 0.0)
+        canvas.background(Color.BLACK)
+        canvas.sprite(self.animator, 0.0, 0.0)
 
 
 def test_animator_blits_the_current_frame() raises -> None:
@@ -1229,16 +1229,16 @@ struct AnimatorSized(Program):
         self.animator = animator^
 
     @staticmethod
-    def create(mut options: Options) raises -> AnimatorSized:
+    def create(mut context: Context) raises -> AnimatorSized:
         var frames = List[Sprite]()
         frames.append(Sprite.solid(2, 2, 255, 0, 0))
         return AnimatorSized(
             SpriteAnimator(ArcPointer(SpriteAnimation(frames^)))
         )
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
-        frame.sprite(self.animator, Point2D(0.0, 0.0), 40, 40)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.sprite(self.animator, Point2D(0.0, 0.0), 40, 40)
 
 
 def test_animator_sized_overload_scales() raises -> None:
@@ -1251,7 +1251,7 @@ def test_animator_sized_overload_scales() raises -> None:
 
 
 struct AnimatorEveryOverload(Program):
-    """Renders through all six `frame.sprite(SpriteAnimator, ...)` overloads.
+    """Renders through all six `canvas.sprite(SpriteAnimator, ...)` overloads.
 
     Five of them delegate to the two that index the frame, so without a call
     site each they are never type-checked: a library build only checks the
@@ -1266,24 +1266,24 @@ struct AnimatorEveryOverload(Program):
         self.animator = animator^
 
     @staticmethod
-    def create(mut options: Options) raises -> AnimatorEveryOverload:
+    def create(mut context: Context) raises -> AnimatorEveryOverload:
         var frames = List[Sprite]()
         frames.append(Sprite.solid(2, 2, 255, 0, 0))
         return AnimatorEveryOverload(
             SpriteAnimator(ArcPointer(SpriteAnimation(frames^)))
         )
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        frame.background(Color.BLACK)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
         # Top row: the unsized overloads, at 1:1 so the 2x2 frame covers its
         # own anchor pixel.
-        frame.sprite(self.animator, -40.0, 40.0)
-        frame.sprite(self.animator, -20, 40)
-        frame.sprite(self.animator, Point2D(0.0, 40.0))
+        canvas.sprite(self.animator, -40.0, 40.0)
+        canvas.sprite(self.animator, -20, 40)
+        canvas.sprite(self.animator, Point2D(0.0, 40.0))
         # Bottom row: the sized overloads, scaled up to 4x4.
-        frame.sprite(self.animator, -40.0, -40.0, 4, 4)
-        frame.sprite(self.animator, -20, -40, 4, 4)
-        frame.sprite(self.animator, Point2D(0.0, -40.0), 4, 4)
+        canvas.sprite(self.animator, -40.0, -40.0, 4, 4)
+        canvas.sprite(self.animator, -20, -40, 4, 4)
+        canvas.sprite(self.animator, Point2D(0.0, -40.0), 4, 4)
 
 
 def test_every_animator_overload_renders_at_its_anchor() raises -> None:
@@ -1299,7 +1299,7 @@ def test_every_animator_overload_renders_at_its_anchor() raises -> None:
     assert_equal(m.pixel(50, 50), Color.BLACK)
 
 
-# --- frame.save_image -------------------------------------------------------
+# --- canvas.save_image -------------------------------------------------------
 #
 # Every one of these runs a design of 200x100 into a 640x480 buffer, so the
 # live frame is scaled by 3.2 and letterboxed — the export is only proving
@@ -1324,16 +1324,16 @@ def _px(s: Sprite, x: Int, y: Int) -> Color:
     )
 
 
-def _scene(mut frame: Frame):
+def _scene(mut canvas: Canvas):
     """A black ground with a 20x20 red square on the origin.
 
     In design space the square covers x in [90, 110) and y in [40, 60), so the
     export can be checked against design coordinates directly.
     """
-    frame.background(Color.BLACK)
-    frame.outline(enabled=False)
-    frame.fill(Color.RED)
-    frame.rectangle(0.0, 0.0, 20.0, 20.0)
+    canvas.background(Color.BLACK)
+    canvas.outline(enabled=False)
+    canvas.fill(Color.RED)
+    canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 
 
 @fieldwise_init
@@ -1341,12 +1341,12 @@ struct SaveImage(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> SaveImage:
+    def create(mut context: Context) raises -> SaveImage:
         return SaveImage(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        _scene(frame)
-        frame.save_image(_IMG_1X)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        _scene(canvas)
+        canvas.save_image(_IMG_1X)
 
 
 @fieldwise_init
@@ -1354,12 +1354,12 @@ struct SaveImage2x(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> SaveImage2x:
+    def create(mut context: Context) raises -> SaveImage2x:
         return SaveImage2x(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        _scene(frame)
-        frame.save_image(_IMG_2X, scale=2.0)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        _scene(canvas)
+        canvas.save_image(_IMG_2X, scale=2.0)
 
 
 @fieldwise_init
@@ -1367,12 +1367,12 @@ struct SaveImageTransparent(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> SaveImageTransparent:
+    def create(mut context: Context) raises -> SaveImageTransparent:
         return SaveImageTransparent(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        _scene(frame)
-        frame.save_image(_IMG_ALPHA, transparent=True)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        _scene(canvas)
+        canvas.save_image(_IMG_ALPHA, transparent=True)
 
 
 def test_save_image_writes_the_design_resolution() raises -> None:
@@ -1436,12 +1436,12 @@ struct SaveScreenshot(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> SaveScreenshot:
+    def create(mut context: Context) raises -> SaveScreenshot:
         return SaveScreenshot(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        _scene(frame)
-        frame.save_screenshot(_SHOT)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        _scene(canvas)
+        canvas.save_screenshot(_SHOT)
 
 
 @fieldwise_init
@@ -1449,13 +1449,13 @@ struct SaveBoth(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> SaveBoth:
+    def create(mut context: Context) raises -> SaveBoth:
         return SaveBoth(0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        _scene(frame)
-        frame.save_screenshot(_BOTH_SHOT)
-        frame.save_image(_BOTH_IMG)
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        _scene(canvas)
+        canvas.save_screenshot(_BOTH_SHOT)
+        canvas.save_image(_BOTH_IMG)
 
 
 def test_save_screenshot_writes_the_framebuffer_resolution() raises -> None:

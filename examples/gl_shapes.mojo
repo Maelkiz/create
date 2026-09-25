@@ -26,112 +26,112 @@ struct App(Program):
     var fps: Int
 
     @staticmethod
-    def create(mut options: Options) raises -> App:
+    def create(mut context: Context) raises -> App:
         # FIT with a 4:3 design in a 16:9 window, so the letterbox bars are
         # on screen from the first frame.
-        options.autoscale = AutoScale.FIT
-        options.design_resolution(800, 600)
+        context.autoscale = AutoScale.FIT
+        context.design_resolution(800, 600)
         # Twice, below, from one interned image and so one GL upload.
         var logo = Sprite.load(source_path("../assets/logo/png/logo.png"))
         return App(0.0, logo^, 0)
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        self.angle += frame.time.delta
-        self.fps = Int(frame.framerate())
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        self.angle += canvas.time.delta
+        self.fps = Int(canvas.framerate())
 
-        frame.background(Color(0x20, 0x24, 0x2C))
+        canvas.background(Color(0x20, 0x24, 0x2C))
 
         # A plain filled rect and an outlined one, side by side.
-        with frame.style():
-            frame.outline(enabled=False)
-            frame.fill(Color(0x3D, 0x8B, 0xFD))
-            frame.rectangle((-260, 180), 160, 100)
+        with canvas.style():
+            canvas.outline(enabled=False)
+            canvas.fill(Color(0x3D, 0x8B, 0xFD))
+            canvas.rectangle((-260, 180), 160, 100)
 
-        with frame.style():
-            frame.fill(Color(0xFD, 0xA4, 0x3D))
-            frame.outline(Color.BLACK, thickness=6)
-            frame.rectangle((-60, 180), 160, 100)
+        with canvas.style():
+            canvas.fill(Color(0xFD, 0xA4, 0x3D))
+            canvas.outline(Color.BLACK, thickness=6)
+            canvas.rectangle((-60, 180), 160, 100)
 
         # An outline wider than the shape: all outline, no interior.
-        with frame.style():
-            frame.fill(Color.RED)
-            frame.outline(Color.WHITE, thickness=30)
-            frame.rectangle((160, 180), 40, 40)
+        with canvas.style():
+            canvas.fill(Color.RED)
+            canvas.outline(Color.WHITE, thickness=30)
+            canvas.rectangle((160, 180), 40, 40)
 
         # Translucent over the blue rect — the case a double-blended fill
         # under its own outline would get visibly wrong.
-        with frame.style():
-            frame.fill(Color(0x00, 0xFF, 0x88, 0x80))
-            frame.outline(Color(0xFF, 0xFF, 0xFF, 0x80), thickness=8)
-            frame.circle((-260, 180), 70)
+        with canvas.style():
+            canvas.fill(Color(0x00, 0xFF, 0x88, 0x80))
+            canvas.outline(Color(0xFF, 0xFF, 0xFF, 0x80), thickness=8)
+            canvas.circle((-260, 180), 70)
 
-        with frame.style():
-            frame.outline(enabled=False)
-            frame.fill(Color(0xE0, 0x50, 0x90))
-            frame.circle((0, 0), 90)
+        with canvas.style():
+            canvas.outline(enabled=False)
+            canvas.fill(Color(0xE0, 0x50, 0x90))
+            canvas.circle((0, 0), 90)
 
-        with frame.style():
-            frame.fill(Color(0x30, 0x30, 0x38))
-            frame.outline(Color(0x9C, 0xE8, 0x6E), thickness=10)
-            frame.circle((220, 0), 80)
+        with canvas.style():
+            canvas.fill(Color(0x30, 0x30, 0x38))
+            canvas.outline(Color(0x9C, 0xE8, 0x6E), thickness=10)
+            canvas.circle((220, 0), 80)
 
         # A rotating rect: the transform is baked per vertex, so a rotated
         # outline ring has to follow the shape rather than stay axis-aligned.
-        with frame.transform(translate(-230, 0) @ rotate(self.angle)):
-            with frame.style():
-                frame.fill(Color(0xFF, 0xD5, 0x4F))
-                frame.outline(Color.BLACK, thickness=4)
-                frame.rectangle((0, 0), 120, 120)
+        with canvas.transform(translate(-230, 0) @ rotate(self.angle)):
+            with canvas.style():
+                canvas.fill(Color(0xFF, 0xD5, 0x4F))
+                canvas.outline(Color.BLACK, thickness=4)
+                canvas.rectangle((0, 0), 120, 120)
 
-        with frame.style():
-            frame.outline(Color(0x6E, 0xD8, 0xE8), thickness=5)
-            frame.line((-340, -140), (340, -260))
+        with canvas.style():
+            canvas.outline(Color(0x6E, 0xD8, 0xE8), thickness=5)
+            canvas.line((-340, -140), (340, -260))
 
-        with frame.style():
-            frame.fill(Color(0x88, 0x5F, 0xE8))
-            frame.outline(Color.WHITE, thickness=3)
-            frame.triangle((-140, -180), (40, -180), (-50, -30))
+        with canvas.style():
+            canvas.fill(Color(0x88, 0x5F, 0xE8))
+            canvas.outline(Color.WHITE, thickness=3)
+            canvas.triangle((-140, -180), (40, -180), (-50, -30))
 
         # The same image at two sizes: one texture, one upload, and — since
         # the two renders are adjacent — one extra batch for the pair.
         # Text before the sprites: solids and glyphs share the atlas binding
         # and so share one batch, which the sprite texture then breaks.
-        with frame.style():
-            frame.outline(enabled=False)
-            frame.text_color(Color.WHITE)
-            frame.font_size(28)
-            frame.text_align(Align.CENTER)
-            frame.text("centre / middle", 0, 0)
+        with canvas.style():
+            canvas.outline(enabled=False)
+            canvas.text_color(Color.WHITE)
+            canvas.font_size(28)
+            canvas.text_align(Align.CENTER)
+            canvas.text("centre / middle", 0, 0)
 
-        with frame.style():
-            frame.outline(enabled=False)
-            frame.text_color(Color(0x9C, 0xE8, 0x6E))
-            frame.font_size(20)
-            frame.text_align(Align.TOP_LEFT)
-            frame.text("left / top", frame.left() + 12, frame.top() - 12)
+        with canvas.style():
+            canvas.outline(enabled=False)
+            canvas.text_color(Color(0x9C, 0xE8, 0x6E))
+            canvas.font_size(20)
+            canvas.text_align(Align.TOP_LEFT)
+            canvas.text("left / top", canvas.left() + 12, canvas.top() - 12)
 
-        with frame.style():
-            frame.outline(enabled=False)
-            frame.text_color(Color(0xFF, 0xD5, 0x4F, 0xA0))
-            frame.font_size(20)
-            frame.text_align(Align.BOTTOM_RIGHT)
-            frame.text(
+        with canvas.style():
+            canvas.outline(enabled=False)
+            canvas.text_color(Color(0xFF, 0xD5, 0x4F, 0xA0))
+            canvas.font_size(20)
+            canvas.text_align(Align.BOTTOM_RIGHT)
+            canvas.text(
                 "right / bottom — translucent",
-                frame.right() - 12,
-                frame.bottom() + 12,
+                canvas.right() - 12,
+                canvas.bottom() + 12,
             )
 
-        frame.sprite(self.logo, 250, -170, 140, 140)
-        frame.sprite(self.logo, 90, -230, 70, 70)
+        canvas.sprite(self.logo, 250, -170, 140, 140)
+        canvas.sprite(self.logo, 90, -230, 70, 70)
 
-        with frame.style():
-            frame.font_size(20)
-            frame.text_color(Color.WHITE)
-            frame.text_align(Align.TOP_RIGHT)
-            frame.text(
+        with canvas.style():
+            canvas.font_size(20)
+            canvas.text_color(Color.WHITE)
+            canvas.text_align(Align.TOP_RIGHT)
+            canvas.text(
                 "fps: " + String(self.fps),
-                frame.right() - 12,
-                frame.top() - 12,
+                canvas.right() - 12,
+                canvas.top() - 12,
             )
 
 

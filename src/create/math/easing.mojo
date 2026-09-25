@@ -15,7 +15,7 @@ a fraction can bend it:
 
 ```mojo
 var t = norm(self.x, 0.0, 300.0)
-frame.circle((0.0, lerp(-200.0, 200.0, ease(Easing.OUT_CUBIC, t))), 20.0)
+canvas.circle((0.0, lerp(-200.0, 200.0, ease(Easing.OUT_CUBIC, t))), 20.0)
 ```
 
 `smoothstep` in [util.mojo](util.mojo) is a near relative but a different

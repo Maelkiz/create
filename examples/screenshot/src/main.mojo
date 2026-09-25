@@ -24,48 +24,48 @@ struct App(Program):
     var saved: String
 
     @staticmethod
-    def create(mut options: Options) raises -> App:
-        options.autoscale = AutoScale.FIT
-        options.design_resolution(_DESIGN_W, _DESIGN_H)
+    def create(mut context: Context) raises -> App:
+        context.autoscale = AutoScale.FIT
+        context.design_resolution(_DESIGN_W, _DESIGN_H)
         return App(0.0, "")
 
-    def update(mut self, mut options: Options, mut frame: Frame) raises:
-        self.angle += 0.6 * frame.time.delta
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        self.angle += 0.6 * canvas.time.delta
 
         # Filed the moment the key is read, and written at `present` — the
         # file holds the whole frame however early in `update` it was asked
         # for, so nothing has to be rendered before asking.
-        if frame.input.just_pressed("s"):
-            frame.save_screenshot(source_path("../out/screenshot.png"))
+        if canvas.input.just_pressed("s"):
+            canvas.save_screenshot(source_path("../out/screenshot.png"))
             self.saved = "screenshot.png — the window, bars included"
-        elif frame.input.just_pressed("i"):
-            if frame.input.is_key_down("shift"):
-                frame.save_image(
+        elif canvas.input.just_pressed("i"):
+            if canvas.input.is_key_down("shift"):
+                canvas.save_image(
                     source_path("../out/image@2x.png"), 2.0, transparent=True
                 )
                 self.saved = "image@2x.png — 1600x1000, transparent"
             else:
-                frame.save_image(source_path("../out/image.png"))
+                canvas.save_image(source_path("../out/image.png"))
                 self.saved = "image.png — 800x500, no bars"
 
-        frame.background(Color(0x14, 0x1C, 0x26))
+        canvas.background(Color(0x14, 0x1C, 0x26))
 
-        with frame.style():
-            frame.outline(enabled=False)
-            with frame.transform(rotate(self.angle)):
-                frame.fill(Color(0xE0, 0x50, 0x50))
-                frame.rectangle((0, 0), 220, 220)
-                frame.fill(Color(0x50, 0xC0, 0xE0))
-                frame.circle((0, 0), 70)
+        with canvas.style():
+            canvas.outline(enabled=False)
+            with canvas.transform(rotate(self.angle)):
+                canvas.fill(Color(0xE0, 0x50, 0x50))
+                canvas.rectangle((0, 0), 220, 220)
+                canvas.fill(Color(0x50, 0xC0, 0xE0))
+                canvas.circle((0, 0), 70)
 
-        frame.text_color(Color.WHITE)
-        frame.text_align(Align.TOP)
-        frame.font_size(26)
-        frame.text("S - screenshot     I - image     Shift+I - 2x", 0, 220)
-        frame.font_size(20)
+        canvas.text_color(Color.WHITE)
+        canvas.text_align(Align.TOP)
+        canvas.font_size(26)
+        canvas.text("S - screenshot     I - image     Shift+I - 2x", 0, 220)
+        canvas.font_size(20)
         if self.saved:
-            frame.text("wrote " + self.saved, 0, -200)
+            canvas.text("wrote " + self.saved, 0, -200)
 
 
 def main() raises:
-    run[App]("Saving the frame", width=_DESIGN_W, height=_DESIGN_H)
+    run[App]("Saving the canvas", width=_DESIGN_W, height=_DESIGN_H)

@@ -21,8 +21,8 @@ from create._window import GLWindow
 
 from create.render.render_backend import RenderBackend
 from create.render.autoscale import AutoScale
-from create.render.frame import PersistentFrameState
-from create.render.options import Options
+from create.render.canvas import PersistentCanvasState
+from create.render.context import Context
 
 from ._events import apply_events
 from ._step import step
@@ -77,7 +77,7 @@ def _open_window(
 
 
 def _update_dimensions(
-    mut win: GLWindow, mut state: PersistentFrameState, options: Options
+    mut win: GLWindow, mut state: PersistentCanvasState, context: Context
 ) raises -> Float64:
     """Point the viewport at the backing pixels; return pixels per point.
 
@@ -86,29 +86,29 @@ def _update_dimensions(
     pixels.
     """
     var drawable = win.drawable_size()
-    state._set_viewport(options, drawable[0], drawable[1])
+    state._set_viewport(context, drawable[0], drawable[1])
     var logical = win.width()
     return Float64(drawable[0]) / Float64(logical) if logical > 0 else 1.0
 
 
 def _wait_for_dimensions(
-    mut win: GLWindow, mut state: PersistentFrameState, options: Options
+    mut win: GLWindow, mut state: PersistentCanvasState, context: Context
 ) raises:
     # Same bogus (1, 1) as the windowed loop: pump until the size is usable.
-    _ = _update_dimensions(win, state, options)
+    _ = _update_dimensions(win, state, context)
     while state.view.width <= 1 or state.view.height <= 1:
         _ = win.events()
-        _ = _update_dimensions(win, state, options)
+        _ = _update_dimensions(win, state, context)
 
 
 def _cap_frame_rate(
-    mut win: GLWindow, options: Options, frame_start: Int
+    mut win: GLWindow, context: Context, frame_start: Int
 ) raises:
     """Sleep off whatever is left of the target frame duration, if any."""
-    if options._fps_cap <= 0:
+    if context._fps_cap <= 0:
         return
     var worked_ms = win.ticks() - frame_start
-    var target_ms = 1000.0 / Float64(options._fps_cap)
+    var target_ms = 1000.0 / Float64(context._fps_cap)
     var remaining_ms = target_ms - Float64(worked_ms)
     if remaining_ms > 0.0:
         sleep(remaining_ms / 1000.0)
@@ -119,14 +119,14 @@ def _run_loop[
 ](
     mut program: P,
     mut win: GLWindow,
-    var state: PersistentFrameState,
-    mut options: Options,
+    var state: PersistentCanvasState,
+    mut context: Context,
     mut input: Input,
 ) raises:
     state.time._start(win.ticks())
-    while win.is_open() and not options._quit:
-        var px_per_point = _update_dimensions(win, state, options)
-        if apply_events(win.events(), state.view, options, input, px_per_point):
+    while win.is_open() and not context._quit:
+        var px_per_point = _update_dimensions(win, state, context)
+        if apply_events(win.events(), state.view, context, input, px_per_point):
             win.close()
         var frame_start = win.ticks()
         state.time._tick(frame_start)
@@ -135,12 +135,12 @@ def _run_loop[
         # re-derived from it too — the mapping taken before the events is one
         # frame stale, and rendering against it puts the whole frame in a corner
         # of the resized drawable.
-        _ = _update_dimensions(win, state, options)
+        _ = _update_dimensions(win, state, context)
         var drawable = win.drawable_size()
-        state = step(program, options, input, state^)
+        state = step(program, context, input, state^)
         state.backend.present_gpu(drawable[0], drawable[1], state.view.scale)
         win.swap_buffers()
-        _cap_frame_rate(win, options, frame_start)
+        _cap_frame_rate(win, context, frame_start)
     # Rule 3 from `_gl.mojo`: the context owner must outlive the last GL call,
     # and the renderer inside `state` makes them when it is destroyed.
     _ = state^
@@ -177,12 +177,12 @@ def run_gl[
     # Built after the window because its GL resources need a current context;
     # the state now carries the viewport too, so it has to exist before
     # `_wait_for_dimensions` rather than inside the loop.
-    var state = PersistentFrameState(RenderBackend.GPU)
-    var options = Options()
-    options.design_resolution(width, height, AutoScale.FIT)
-    var program = P.create(options)
+    var state = PersistentCanvasState(RenderBackend.GPU)
+    var context = Context()
+    context.design_resolution(width, height, AutoScale.FIT)
+    var program = P.create(context)
     # The mapping is derived once create() has had its say about the design
     # size and the mode.
-    _wait_for_dimensions(win, state, options)
+    _wait_for_dimensions(win, state, context)
     var input = Input()
-    _run_loop(program, win, state^, options, input)
+    _run_loop(program, win, state^, context, input)
