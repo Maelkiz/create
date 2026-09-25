@@ -51,7 +51,7 @@ struct InkOnFirstFrameOnly(Program):
         # `_tick` runs before `update`, so the first frame is count 1.
         if context.time.frame_count > 1:
             return
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.rectangle((0, 0), 40, 40)
 

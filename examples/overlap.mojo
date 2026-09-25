@@ -21,7 +21,7 @@ struct App(Program):
         else:
             canvas.background(Color(20, 20, 30))
 
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color(220, 60, 60))
         canvas.circle(self.center)
         canvas.fill(Color(60, 120, 220))

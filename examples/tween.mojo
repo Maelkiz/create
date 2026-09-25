@@ -97,7 +97,7 @@ struct App(Program):
         for i in range(len(self.curves)):
             canvas.line((-360.0, self._row_y(i)), (580.0, self._row_y(i)))
 
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
 
         # The hero: a point moved by lerping between two positions with the
         # tween's eased value. OUT_BACK and OUT_ELASTIC leave 0..1 mid-run, so

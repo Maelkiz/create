@@ -19,7 +19,7 @@ struct App(Program):
         # clearing it, leaving motion trails.
         canvas.background(Color(0x11, 0x11, 0x11, 24))
 
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
 
         # Overlapping translucent fills mix where they cross. The origin is the
         # middle of the screen, so these are absolute world coordinates.

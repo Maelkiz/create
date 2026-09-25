@@ -28,7 +28,7 @@ struct CameraDemo(Program):
         # World content: a strip of posts stretching far past what any single
         # screen shows, plus a marker at the world origin — panning the
         # camera with left/right scrolls this whole strip underneath it.
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         for i in range(-20, 20):
             var x = Float64(i) * 120.0
             var t = (sin(self.elapsed + Float64(i)) + 1.0) / 2.0
@@ -41,7 +41,7 @@ struct CameraDemo(Program):
         # HUD: fixed to the screen regardless of where the camera looks or
         # how far it has zoomed.
         with canvas.overlay():
-            canvas.outline(enabled=False)
+            canvas.outline_enabled(False)
             canvas.fill(Color(230, 230, 230))
             canvas.rectangle(0.0, canvas.top() - 20.0, 300.0, 30.0)
             canvas.text_color(Color(20, 20, 20))

@@ -32,7 +32,7 @@ struct Paint:
 
         if self.painting:
             with canvas.style():
-                canvas.outline(enabled=False)
+                canvas.outline_enabled(False)
                 canvas.fill(Color(240, 200, 90))
                 canvas.circle(self.pen, 14.0)
 

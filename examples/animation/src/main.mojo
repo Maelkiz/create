@@ -93,7 +93,7 @@ struct Game(Program):
 
         canvas.background(Color(24, 26, 34))
 
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
 
         # The ground runs from its surface all the way to the bottom edge, so
         # it never floats over the background however tall the window is.

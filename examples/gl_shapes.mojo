@@ -43,7 +43,7 @@ struct App(Program):
 
         # A plain filled rect and an outlined one, side by side.
         with canvas.style():
-            canvas.outline(enabled=False)
+            canvas.outline_enabled(False)
             canvas.fill(Color(0x3D, 0x8B, 0xFD))
             canvas.rectangle((-260, 180), 160, 100)
 
@@ -66,7 +66,7 @@ struct App(Program):
             canvas.circle((-260, 180), 70)
 
         with canvas.style():
-            canvas.outline(enabled=False)
+            canvas.outline_enabled(False)
             canvas.fill(Color(0xE0, 0x50, 0x90))
             canvas.circle((0, 0), 90)
 
@@ -97,21 +97,21 @@ struct App(Program):
         # Text before the sprites: solids and glyphs share the atlas binding
         # and so share one batch, which the sprite texture then breaks.
         with canvas.style():
-            canvas.outline(enabled=False)
+            canvas.outline_enabled(False)
             canvas.text_color(Color.WHITE)
             canvas.font_size(28)
             canvas.text_align(Align.CENTER)
             canvas.text("centre / middle", 0, 0)
 
         with canvas.style():
-            canvas.outline(enabled=False)
+            canvas.outline_enabled(False)
             canvas.text_color(Color(0x9C, 0xE8, 0x6E))
             canvas.font_size(20)
             canvas.text_align(Align.TOP_LEFT)
             canvas.text("left / top", canvas.left() + 12, canvas.top() - 12)
 
         with canvas.style():
-            canvas.outline(enabled=False)
+            canvas.outline_enabled(False)
             canvas.text_color(Color(0xFF, 0xD5, 0x4F, 0xA0))
             canvas.font_size(20)
             canvas.text_align(Align.BOTTOM_RIGHT)

@@ -148,7 +148,7 @@ struct _Parity(Program):
 
         if self.shape == _SHAPE_RECT:
             with canvas.style():
-                canvas.outline(enabled=False)
+                canvas.outline_enabled(False)
                 canvas.fill(Color(0xE0, 0x40, 0x40))
                 canvas.rectangle((-20, 20), 50, 30)
         elif self.shape == _SHAPE_STROKED_RECT:
@@ -158,7 +158,7 @@ struct _Parity(Program):
                 canvas.rectangle((10, 40), 50, 30)
         elif self.shape == _SHAPE_CIRCLE:
             with canvas.style():
-                canvas.outline(enabled=False)
+                canvas.outline_enabled(False)
                 canvas.fill(Color(0xF0, 0xC0, 0x30))
                 canvas.circle((-60, -20), 24)
         elif self.shape == _SHAPE_LINE:
@@ -167,7 +167,7 @@ struct _Parity(Program):
                 canvas.line((-90, -60), (90, -60))
         elif self.shape == _SHAPE_TRIANGLE:
             with canvas.style():
-                canvas.outline(enabled=False)
+                canvas.outline_enabled(False)
                 canvas.fill(Color(0xA0, 0x60, 0xF0))
                 canvas.triangle((20, -50), (70, -50), (45, -5))
         elif self.shape == _SHAPE_SPRITE:
@@ -176,7 +176,7 @@ struct _Parity(Program):
             canvas.sprite(self.image, 70, 50, 2, 2)
         elif self.shape == _SHAPE_TEXT:
             with canvas.style():
-                canvas.outline(enabled=False)
+                canvas.outline_enabled(False)
                 canvas.text_color(Color.WHITE)
                 canvas.font_size(16)
                 canvas.text_align(Align.CENTER)
@@ -187,7 +187,7 @@ struct _Parity(Program):
             # against the GL tessellator's per-vertex transform — the one
             # shape kind the parity set otherwise never touches.
             with canvas.style():
-                canvas.outline(enabled=False)
+                canvas.outline_enabled(False)
                 canvas.fill(Color(0x60, 0xE0, 0x90))
                 with canvas.transform(rotate(0.5)):
                     canvas.rectangle((30, -70), 40, 20)

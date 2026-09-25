@@ -55,7 +55,7 @@ struct CentredRect(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 
@@ -83,7 +83,7 @@ struct HighRect(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.GREEN)
         canvas.rectangle(0.0, 30.0, 10.0, 10.0)
 
@@ -107,7 +107,7 @@ struct CentredCircle(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.CYAN)
         canvas.circle(0.0, 0.0, 20.0)
 
@@ -136,7 +136,7 @@ struct UprightTriangle(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.MAGENTA)
         # Apex up, base below — in world terms, since y grows upward.
         canvas.triangle(0.0, 30.0, -30.0, -30.0, 30.0, -30.0)
@@ -164,7 +164,7 @@ struct AlphaOverRed(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.RED)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color(0, 0, 255, 128))
         canvas.rectangle(0.0, 0.0, 40.0, 40.0)
 
@@ -250,7 +250,7 @@ struct RotatedRect(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.YELLOW)
         with canvas.transform(rotate(pi / 4.0)):
             canvas.rectangle(0.0, 0.0, 20.0, 20.0)
@@ -277,7 +277,7 @@ struct SharpRect(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.corner_radius(0)
         canvas.rectangle(0.0, 0.0, 40.0, 40.0)
@@ -301,7 +301,7 @@ struct RoundedRect(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.corner_radius(10)
         canvas.rectangle(0.0, 0.0, 40.0, 40.0)
@@ -366,7 +366,7 @@ struct ScaledRoundedRect(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.corner_radius(5)
         canvas.rectangle(0.0, 0.0, 20.0, 20.0)
@@ -391,7 +391,7 @@ struct RotatedRoundedRect(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.YELLOW)
         canvas.corner_radius(6)
         with canvas.transform(rotate(pi / 4.0)):
@@ -420,7 +420,7 @@ struct SharpTriangle(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.corner_radius(0)
         # Right angle at world (-20, -20), legs of length 20 along +x and +y.
@@ -445,7 +445,7 @@ struct RoundedTriangle(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.corner_radius(5)
         # Right angle at world (-20, -20), legs of length 20 along +x and +y —
@@ -516,7 +516,7 @@ struct ThinRoundedTriangle(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         # A requested radius far larger than this sliver triangle could ever
         # support — triangle_corner_radius must clamp it, not let the
@@ -546,7 +546,7 @@ struct RotatedRoundedTriangle(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.YELLOW)
         canvas.corner_radius(6)
         with canvas.transform(rotate(pi / 4.0)):
@@ -635,7 +635,7 @@ struct StyleAcrossFrames(Program):
         canvas.background(Color.BLACK)
         if self.frame == 1:
             canvas.fill(Color.RED)
-            canvas.outline(enabled=False)
+            canvas.outline_enabled(False)
         else:
             canvas.rectangle((0, 0), 20, 20)
 
@@ -658,7 +658,7 @@ struct GuardedStyle(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         with canvas.style():
             canvas.fill(Color.BLUE)
@@ -753,7 +753,7 @@ struct NoFillRect(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.fill(enabled=False)
+        canvas.fill_enabled(False)
         canvas.outline(Color.WHITE, thickness=4)
         canvas.rectangle(0.0, 0.0, 40.0, 40.0)
 
@@ -774,7 +774,7 @@ struct NoFillCircle(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.fill(enabled=False)
+        canvas.fill_enabled(False)
         canvas.outline(Color.WHITE, thickness=4)
         canvas.circle(0.0, 0.0, 20.0)
 
@@ -783,6 +783,62 @@ def test_no_fill_leaves_the_circle_interior_untouched() raises -> None:
     var m = run_headless[NoFillCircle](100, 100)
     assert_equal(m.pixel(60, 50), Color.BLACK)  # interior stayed background
     assert_equal(m.pixel(69, 50), Color.WHITE)  # ring still outlines
+
+
+@fieldwise_init
+struct FillSwitching(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> FillSwitching:
+        return FillSwitching(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline_enabled(False)
+        canvas.fill(Color.RED)
+        canvas.fill_enabled(False)
+        canvas.rectangle((-30, 0), 16, 16)  # off
+        canvas.fill_enabled(True)
+        canvas.rectangle((0, 0), 16, 16)  # back on, color remembered
+        canvas.fill_enabled(False)
+        canvas.fill(Color.BLUE)
+        canvas.rectangle((30, 0), 16, 16)  # a new color switches it on
+
+
+def test_fill_enabled_switches_fill_and_keeps_its_color() raises -> None:
+    var m = run_headless[FillSwitching](100, 100)
+    assert_equal(m.pixel(20, 50), Color.BLACK)
+    assert_equal(m.pixel(50, 50), Color.RED)
+    assert_equal(m.pixel(80, 50), Color.BLUE)
+
+
+@fieldwise_init
+struct OutlineSwitching(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> OutlineSwitching:
+        return OutlineSwitching(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.RED, thickness=4)
+        canvas.outline_enabled(False)
+        canvas.rectangle((-30, 0), 16, 16)  # off
+        canvas.outline_enabled(True)
+        canvas.rectangle((0, 0), 16, 16)  # back on, color remembered
+        canvas.outline_enabled(False)
+        canvas.outline(Color.BLUE)
+        canvas.rectangle((30, 0), 16, 16)  # a new color switches it on
+
+
+def test_outline_enabled_switches_outline_and_keeps_its_color() raises -> None:
+    # Sampled one pixel inside each rectangle's left edge, on the inset ring.
+    var m = run_headless[OutlineSwitching](100, 100)
+    assert_equal(m.pixel(13, 50), Color.BLACK)
+    assert_equal(m.pixel(43, 50), Color.RED)
+    assert_equal(m.pixel(73, 50), Color.BLUE)
 
 
 @fieldwise_init
@@ -795,7 +851,7 @@ struct RotatedCircle(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.CYAN)
         with canvas.transform(rotate(pi / 4.0)):
             canvas.circle(0.0, 0.0, 20.0)
@@ -826,7 +882,7 @@ struct QuarterTurnRect(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.YELLOW)
         with canvas.transform(rotate(pi / 2.0)):
             canvas.rectangle(0.0, 0.0, 20.0, 40.0)
@@ -842,7 +898,7 @@ struct SwappedRect(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.YELLOW)
         canvas.rectangle(0.0, 0.0, 40.0, 20.0)
 
@@ -873,7 +929,7 @@ struct GeometryOverloads(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
 
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.rectangle(Rectangle(-90.0, 40.0, 20.0, 20.0))
 
@@ -883,7 +939,7 @@ struct GeometryOverloads(Program):
         canvas.outline(Color.BLUE, thickness=3)
         canvas.line(Line(20.0, 40.0, 40.0, 40.0))
 
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.CYAN)
         canvas.triangle(Triangle(90.0, 50.0, 80.0, 30.0, 100.0, 30.0))
 
@@ -896,7 +952,7 @@ struct GeometryOverloads(Program):
         canvas.outline(Color.ORANGE, thickness=3)
         canvas.line(Point2D(20.0, -40.0), Point2D(40.0, -40.0))
 
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.LIGHT_GRAY)
         canvas.triangle(
             Point2D(90.0, -30.0), Point2D(80.0, -50.0), Point2D(100.0, -50.0)
@@ -1067,7 +1123,7 @@ struct TextBesideShape(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.rectangle((-60.0, 0.0), 40.0, 40.0)
         canvas.text_color(Color.GREEN)
@@ -1151,7 +1207,7 @@ struct QuitOnFrameTwo(Program):
             context.quit()
 
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         if self.frame == 1:
             canvas.fill(Color.RED)
         elif self.frame == 2:
@@ -1331,7 +1387,7 @@ def _scene(mut canvas: Canvas):
     export can be checked against design coordinates directly.
     """
     canvas.background(Color.BLACK)
-    canvas.outline(enabled=False)
+    canvas.outline_enabled(False)
     canvas.fill(Color.RED)
     canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 

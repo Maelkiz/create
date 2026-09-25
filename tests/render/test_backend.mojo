@@ -446,7 +446,7 @@ struct RotatedRect(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         with canvas.transform(rotate(_ANGLE)):
             canvas.rectangle(12.0, 6.0, _RECT_W, _RECT_H)

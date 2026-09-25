@@ -20,7 +20,7 @@ struct GPURect(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color(10, 20, 30))
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 
@@ -49,7 +49,7 @@ struct GPUMover(Program):
         self.x += 20.0
 
         canvas.background(Color(10, 20, 30))
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.rectangle(self.x, 0.0, 16.0, 16.0)
 
@@ -101,7 +101,7 @@ struct GPURoundedRect(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color(10, 20, 30))
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.corner_radius(8)
         canvas.rectangle(0.0, 0.0, 40.0, 40.0)
@@ -138,7 +138,7 @@ struct GPURoundedTriangle(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color(10, 20, 30))
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.corner_radius(8)
         canvas.triangle((-20, -20), (20, -20), (-20, 20))
@@ -177,7 +177,7 @@ struct GPUTextWithoutFill(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.fill(enabled=False)
+        canvas.fill_enabled(False)
         canvas.text_color(Color.WHITE)
         canvas.font_size(32)
         canvas.text("X", 0.0, 0.0)

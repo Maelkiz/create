@@ -41,7 +41,7 @@ struct PersistentCanvasState(Movable):
     the interned sprite images — is moved out at the end of one frame and into
     the next. The transform stack and the style are deliberately absent: both
     start fresh every frame by construction, so a missing pop or a forgotten
-    `outline(enabled=False)` cannot leak into the next frame.
+    `outline_enabled(False)` cannot leak into the next frame.
 
     Machinery, not dials. What the *program* sets between frames lives in
     `Context`, which the loop carries beside this and never hands to a
@@ -337,7 +337,7 @@ struct Canvas:
         """Scope the fill, outline and font settings to a `with` block.
 
         For helpers that set style before rendering: without this, a callee's
-        `outline(enabled=False)` silently applies to whatever the caller
+        `outline_enabled(False)` silently applies to whatever the caller
         renders next.
         """
         return StyleGuard[origin_of(self)](self)
@@ -418,7 +418,7 @@ struct Canvas:
         """Outline shapes. `color`/`thickness` left unset keep their current
         values — a plain `outline()` only re-enables it. Worth knowing outline
         is *on* by default, in black, 1 unit thick — a `rectangle` rendered
-        without `outline(enabled=False)` gets one nobody asked for.
+        without `outline_enabled(False)` gets one nobody asked for.
 
         Thickness is in world units, scaled by autoscale like every other
         coordinate, and never rendered thinner than one pixel.
@@ -427,6 +427,18 @@ struct Canvas:
             self._style.outline_color = color.value()
         if thickness:
             self._style.outline_thickness = thickness.value()
+        self._style.outline_enabled = enabled
+
+    def fill_enabled(mut self, enabled: Bool):
+        """Switch the fill off or back on. The fill color is kept while off,
+        so `fill_enabled(True)` brings back the same color; `fill(color)`
+        switches it on too."""
+        self._style.fill_enabled = enabled
+
+    def outline_enabled(mut self, enabled: Bool):
+        """Switch the outline off or back on. Color and thickness are kept
+        while off, so `outline_enabled(True)` brings back the same outline;
+        `outline(...)` switches it on too."""
         self._style.outline_enabled = enabled
 
     def background(mut self, color: Color):

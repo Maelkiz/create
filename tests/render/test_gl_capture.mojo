@@ -37,7 +37,7 @@ def _scene(mut canvas: Canvas):
     layout `test_canvas.mojo`'s capture tests use, so the sample points
     below are proven-safe coordinates rather than newly guessed ones."""
     canvas.background(Color.BLACK)
-    canvas.outline(enabled=False)
+    canvas.outline_enabled(False)
     canvas.fill(Color.RED)
     canvas.rectangle(0.0, 0.0, 20.0, 20.0)
 

@@ -44,7 +44,7 @@ struct ClearMidFrame(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.BLUE)
         canvas.rectangle(0.0, 0.0, 40.0, 40.0)
         # An opaque clear must flush the blue rect to the framebuffer before
@@ -98,7 +98,7 @@ struct ManyShapes(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         for gy in range(_GRID):
             for gx in range(_GRID):
                 var idx = gy * _GRID + gx

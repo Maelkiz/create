@@ -22,7 +22,7 @@ struct Painter(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLUE)
-        canvas.outline(enabled=False)
+        canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.rectangle(0.0, 0.0, 10.0, 10.0)
 

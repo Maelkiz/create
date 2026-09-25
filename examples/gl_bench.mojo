@@ -85,7 +85,7 @@ struct Bench(Program):
         var w = canvas.right()
         var h = canvas.top()
         with canvas.style():
-            canvas.outline(enabled=False)
+            canvas.outline_enabled(False)
             for i in range(_SHAPES):
                 var x = rng.float(-w, w)
                 var y = rng.float(-h, h)
@@ -113,7 +113,7 @@ struct Bench(Program):
         canvas.sprite(self.logo, -w + 220, h - 90, 100, 100)
 
         with canvas.style():
-            canvas.outline(enabled=False)
+            canvas.outline_enabled(False)
             canvas.font_size(48)
             canvas.font_weight(FontWeight.MEDIUM)
             canvas.text_align(Align.CENTER)
