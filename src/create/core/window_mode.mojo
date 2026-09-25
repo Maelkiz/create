@@ -13,7 +13,7 @@ sized window.
 """
 
 
-struct WindowMode(Copyable, Equatable, ImplicitlyCopyable, Movable):
+struct WindowMode(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     var value: Int
 
     comptime WINDOWED = WindowMode(0)
@@ -29,3 +29,15 @@ struct WindowMode(Copyable, Equatable, ImplicitlyCopyable, Movable):
 
     def __ne__(self, other: WindowMode) -> Bool:
         return self.value != other.value
+
+    def write_to[W: Writer](self, mut writer: W):
+        if self == WindowMode.WINDOWED:
+            writer.write("WindowMode.WINDOWED")
+        elif self == WindowMode.FULLSCREEN:
+            writer.write("WindowMode.FULLSCREEN")
+        elif self == WindowMode.BORDERLESS:
+            writer.write("WindowMode.BORDERLESS")
+        elif self == WindowMode.MAXIMIZED:
+            writer.write("WindowMode.MAXIMIZED")
+        else:
+            writer.write("WindowMode(", self.value, ")")

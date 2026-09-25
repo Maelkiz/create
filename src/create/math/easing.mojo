@@ -26,7 +26,7 @@ that is already normalised.
 from std.math import sin, cos, pow, pi, tau, clamp
 
 
-struct Easing(Copyable, Equatable, ImplicitlyCopyable, Movable):
+struct Easing(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """Which curve `ease` applies. A `Tween` stores one as a field.
 
     A wrapped `Int` rather than a bare one so a stray number cannot be passed
@@ -74,6 +74,54 @@ struct Easing(Copyable, Equatable, ImplicitlyCopyable, Movable):
 
     def __ne__(self, other: Easing) -> Bool:
         return self.value != other.value
+
+    def write_to[W: Writer](self, mut writer: W):
+        if self == Easing.LINEAR:
+            writer.write("Easing.LINEAR")
+        elif self == Easing.IN_QUAD:
+            writer.write("Easing.IN_QUAD")
+        elif self == Easing.OUT_QUAD:
+            writer.write("Easing.OUT_QUAD")
+        elif self == Easing.IN_OUT_QUAD:
+            writer.write("Easing.IN_OUT_QUAD")
+        elif self == Easing.IN_CUBIC:
+            writer.write("Easing.IN_CUBIC")
+        elif self == Easing.OUT_CUBIC:
+            writer.write("Easing.OUT_CUBIC")
+        elif self == Easing.IN_OUT_CUBIC:
+            writer.write("Easing.IN_OUT_CUBIC")
+        elif self == Easing.IN_SINE:
+            writer.write("Easing.IN_SINE")
+        elif self == Easing.OUT_SINE:
+            writer.write("Easing.OUT_SINE")
+        elif self == Easing.IN_OUT_SINE:
+            writer.write("Easing.IN_OUT_SINE")
+        elif self == Easing.IN_EXPO:
+            writer.write("Easing.IN_EXPO")
+        elif self == Easing.OUT_EXPO:
+            writer.write("Easing.OUT_EXPO")
+        elif self == Easing.IN_OUT_EXPO:
+            writer.write("Easing.IN_OUT_EXPO")
+        elif self == Easing.IN_BACK:
+            writer.write("Easing.IN_BACK")
+        elif self == Easing.OUT_BACK:
+            writer.write("Easing.OUT_BACK")
+        elif self == Easing.IN_OUT_BACK:
+            writer.write("Easing.IN_OUT_BACK")
+        elif self == Easing.IN_ELASTIC:
+            writer.write("Easing.IN_ELASTIC")
+        elif self == Easing.OUT_ELASTIC:
+            writer.write("Easing.OUT_ELASTIC")
+        elif self == Easing.IN_OUT_ELASTIC:
+            writer.write("Easing.IN_OUT_ELASTIC")
+        elif self == Easing.IN_BOUNCE:
+            writer.write("Easing.IN_BOUNCE")
+        elif self == Easing.OUT_BOUNCE:
+            writer.write("Easing.OUT_BOUNCE")
+        elif self == Easing.IN_OUT_BOUNCE:
+            writer.write("Easing.IN_OUT_BOUNCE")
+        else:
+            writer.write("Easing(", self.value, ")")
 
 
 # Overshoot constant for the BACK curves, and its IN_OUT variant — the amount

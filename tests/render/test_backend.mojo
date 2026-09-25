@@ -481,5 +481,11 @@ def test_a_rotated_rect_replays_identically_to_canvas() raises -> None:
             )
 
 
+def test_render_backend_writes_its_constant_name() raises -> None:
+    assert_equal(String(RenderBackend.CPU), "RenderBackend.CPU")
+    assert_equal(String(RenderBackend.GPU), "RenderBackend.GPU")
+    assert_equal(String(RenderBackend(99)), "RenderBackend(99)")
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

@@ -1,4 +1,4 @@
-struct AutoScale(Copyable, Equatable, ImplicitlyCopyable, Movable):
+struct AutoScale(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """How the program's design resolution maps onto the window.
 
     The design resolution is the coordinate space a program is authored in --
@@ -50,3 +50,13 @@ struct AutoScale(Copyable, Equatable, ImplicitlyCopyable, Movable):
 
     def __ne__(self, other: AutoScale) -> Bool:
         return self.value != other.value
+
+    def write_to[W: Writer](self, mut writer: W):
+        if self == AutoScale.OFF:
+            writer.write("AutoScale.OFF")
+        elif self == AutoScale.FIT:
+            writer.write("AutoScale.FIT")
+        elif self == AutoScale.EXTEND:
+            writer.write("AutoScale.EXTEND")
+        else:
+            writer.write("AutoScale(", self.value, ")")

@@ -113,5 +113,11 @@ def test_scripted_click_drives_rendering() raises -> None:
     _ = clicked_state^
 
 
+def test_window_mode_writes_its_constant_name() raises -> None:
+    assert_equal(String(WindowMode.WINDOWED), "WindowMode.WINDOWED")
+    assert_equal(String(WindowMode.MAXIMIZED), "WindowMode.MAXIMIZED")
+    assert_equal(String(WindowMode(99)), "WindowMode(99)")
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

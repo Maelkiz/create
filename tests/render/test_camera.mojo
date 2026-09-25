@@ -149,5 +149,12 @@ def test_to_world_accounts_for_position_and_zoom() raises -> None:
     assert_almost_equal(world.y, 0.0)
 
 
+def test_camera_writes_keyword_form() raises -> None:
+    assert_equal(
+        String(Camera(Point2D(1.0, 2.0), 1.5)),
+        "Camera(position=Point2D(1.0, 2.0), zoom=1.5)",
+    )
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

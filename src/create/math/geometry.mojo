@@ -98,7 +98,7 @@ def _polygons_overlap[
     return True
 
 
-struct Rectangle:
+struct Rectangle(Writable):
     """An axis-aligned rectangle: `center`, `area`, `left`/`right`/`bottom`/
     `top`, `closest_point`, `contains`, `move_to`, `translate`.
 
@@ -132,6 +132,11 @@ struct Rectangle:
 
     def __init__(out self, pos: Point2D, w: Int, h: Int):
         self = Rectangle(pos, Float64(w), Float64(h))
+
+    def write_to[W: Writer](self, mut writer: W):
+        writer.write(
+            "Rectangle(pos=", self.pos, ", w=", self.w, ", h=", self.h, ")"
+        )
 
     def center(self) -> Point2D:
         return self.pos
@@ -203,7 +208,7 @@ struct Rectangle:
         ]
 
 
-struct Circle:
+struct Circle(Writable):
     """A circle: `center`, `area`, `diameter`, `closest_point`, `contains`,
     `move_to`, `translate`.
 
@@ -228,6 +233,9 @@ struct Circle:
 
     def __init__(out self, pos: Point2D, r: Int):
         self = Circle(pos, Float64(r))
+
+    def write_to[W: Writer](self, mut writer: W):
+        writer.write("Circle(pos=", self.pos, ", r=", self.r, ")")
 
     def center(self) -> Point2D:
         return self.pos
@@ -274,7 +282,7 @@ struct Circle:
         self.pos = self.pos + delta
 
 
-struct Line:
+struct Line(Writable):
     """A line segment from `start` to `end`: `length`, `length_sq`,
     `midpoint`, `closest_point`, `intersects`, `move_to`, `translate`.
 
@@ -298,6 +306,9 @@ struct Line:
     def __init__(out self, start: Point2D, end: Point2D):
         self.start = start
         self.end = end
+
+    def write_to[W: Writer](self, mut writer: W):
+        writer.write("Line(start=", self.start, ", end=", self.end, ")")
 
     def length_sq(self) -> Float64:
         return _dist_sq(self.end, self.start)
@@ -379,7 +390,7 @@ struct Line:
         self.end = self.end + delta
 
 
-struct Triangle:
+struct Triangle(Writable):
     """A triangle defined by its three vertices `a`, `b`, `c`: `center`,
     `area`, `closest_point`, `contains`, `move_to`, `translate`.
 
@@ -406,6 +417,9 @@ struct Triangle:
         self.a = a
         self.b = b
         self.c = c
+
+    def write_to[W: Writer](self, mut writer: W):
+        writer.write("Triangle(a=", self.a, ", b=", self.b, ", c=", self.c, ")")
 
     def center(self) -> Point2D:
         return Point2D(

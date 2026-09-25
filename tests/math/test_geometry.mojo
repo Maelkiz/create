@@ -889,5 +889,32 @@ def test_shapes_still_take_bare_tuples() raises -> None:
     assert_true(r.contains((1.0, 2.0)))
 
 
+# --- write_to -----------------------------------------------------------------
+
+
+def test_shapes_write_keyword_form() raises -> None:
+    assert_equal(
+        String(Rectangle(Point2D(1.0, 2.0), 3.0, 4.0)),
+        "Rectangle(pos=Point2D(1.0, 2.0), w=3.0, h=4.0)",
+    )
+    assert_equal(
+        String(Circle(Point2D(1.0, 2.0), 3.0)),
+        "Circle(pos=Point2D(1.0, 2.0), r=3.0)",
+    )
+    assert_equal(
+        String(Line(Point2D(0.0, 0.0), Point2D(1.0, 1.0))),
+        "Line(start=Point2D(0.0, 0.0), end=Point2D(1.0, 1.0))",
+    )
+    assert_equal(
+        String(
+            Triangle(Point2D(0.0, 0.0), Point2D(1.0, 0.0), Point2D(0.0, 1.0))
+        ),
+        (
+            "Triangle(a=Point2D(0.0, 0.0), b=Point2D(1.0, 0.0), c=Point2D(0.0,"
+            " 1.0))"
+        ),
+    )
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

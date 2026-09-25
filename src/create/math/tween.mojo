@@ -4,7 +4,7 @@ from .easing import Easing, ease
 from .util import lerp, fmod
 
 
-struct Tween(Copyable, ImplicitlyCopyable, Movable):
+struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
     """A value moving from one number to another over a fixed duration.
 
     A tween is a playhead, in the same sense as `SpriteAnimator`: the program
@@ -195,6 +195,28 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable):
         """True once a `play` reached `end`. Never true for `loop` or
         `ping_pong`, which have no end to reach."""
         return self._finished
+
+    def write_to[W: Writer](self, mut writer: W):
+        # The public state only: the loop and direction flags have no reader.
+        writer.write(
+            "Tween(value=",
+            self.value,
+            ", progress=",
+            self.progress,
+            ", start=",
+            self.start,
+            ", end=",
+            self.end,
+            ", duration=",
+            self.duration,
+            ", curve=",
+            self.curve,
+            ", playing=",
+            self._playing,
+            ", finished=",
+            self._finished,
+            ")",
+        )
 
     def _apply(mut self):
         self.value = lerp(self.start, self.end, ease(self.curve, self.progress))

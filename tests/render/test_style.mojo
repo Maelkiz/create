@@ -45,5 +45,17 @@ def test_each_keyword_lands_in_its_field() raises -> None:
     assert_equal(s.opacity, 0.5)
 
 
+def test_style_writes_constructor_keywords() raises -> None:
+    assert_equal(
+        String(Style()),
+        (
+            "Style(fill=Color(0, 0, 0, 0), fill_enabled=True, outline=Color(0,"
+            " 0, 0, 255), outline_thickness=1, outline_enabled=True,"
+            " corner_radius=0, text_color=Color(0, 0, 0, 255), font_size=16,"
+            " font_weight=400, text_align=Align.CENTER, opacity=1.0)"
+        ),
+    )
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

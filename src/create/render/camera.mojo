@@ -6,7 +6,7 @@ from create.math.matrix import (
 )
 
 
-struct Camera(Copyable, Movable):
+struct Camera(Copyable, Movable, Writable):
     """What part of world space maps onto the screen.
 
     `position` is the world point centred on screen; `zoom` scales around it
@@ -24,6 +24,11 @@ struct Camera(Copyable, Movable):
     ):
         self.position = position
         self.zoom = zoom
+
+    def write_to[W: Writer](self, mut writer: W):
+        writer.write(
+            "Camera(position=", self.position, ", zoom=", self.zoom, ")"
+        )
 
     def matrix(self) -> Matrix[3, 3]:
         """World-to-screen mapping: scale around `position`, then recentre."""

@@ -1,4 +1,4 @@
-struct Align(Copyable, Equatable, ImplicitlyCopyable, Movable):
+struct Align(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """Which point of a box a position names — one value for both axes.
 
     The nine constants are the nine points of the box, so a single argument
@@ -45,6 +45,28 @@ struct Align(Copyable, Equatable, ImplicitlyCopyable, Movable):
 
     def __ne__(self, other: Align) -> Bool:
         return self.value != other.value
+
+    def write_to[W: Writer](self, mut writer: W):
+        if self == Align.TOP:
+            writer.write("Align.TOP")
+        elif self == Align.CENTER:
+            writer.write("Align.CENTER")
+        elif self == Align.BOTTOM:
+            writer.write("Align.BOTTOM")
+        elif self == Align.LEFT:
+            writer.write("Align.LEFT")
+        elif self == Align.RIGHT:
+            writer.write("Align.RIGHT")
+        elif self == Align.TOP_LEFT:
+            writer.write("Align.TOP_LEFT")
+        elif self == Align.BOTTOM_LEFT:
+            writer.write("Align.BOTTOM_LEFT")
+        elif self == Align.TOP_RIGHT:
+            writer.write("Align.TOP_RIGHT")
+        elif self == Align.BOTTOM_RIGHT:
+            writer.write("Align.BOTTOM_RIGHT")
+        else:
+            writer.write("Align(", self.value, ")")
 
     # The two axes, decoded for layout. Internal: a consumer picks a point,
     # not an axis, so only the text layout ever asks which half of one it is.

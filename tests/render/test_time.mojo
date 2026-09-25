@@ -86,5 +86,18 @@ def test_restart_rebases_without_disturbing_totals() raises -> None:
     assert_equal(t.frame_count, 2)
 
 
+def test_time_writes_its_public_fields() raises -> None:
+    var t = Time()
+    t._start(1000)
+    t._tick(1250)
+    assert_equal(
+        String(t),
+        (
+            "Time(frame_count=1, delta=0.25, delta_millis=250, elapsed=0.25,"
+            " elapsed_millis=250)"
+        ),
+    )
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

@@ -232,5 +232,11 @@ def test_to_screen_corners_under_extend() raises -> None:
     assert_almost_equal(p.y, -100.0)
 
 
+def test_autoscale_writes_its_constant_name() raises -> None:
+    assert_equal(String(AutoScale.OFF), "AutoScale.OFF")
+    assert_equal(String(AutoScale.EXTEND), "AutoScale.EXTEND")
+    assert_equal(String(AutoScale(99)), "AutoScale(99)")
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

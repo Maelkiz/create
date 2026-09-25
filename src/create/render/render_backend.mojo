@@ -9,7 +9,9 @@ The constructor is deliberately not `@implicit` for the same reason.
 """
 
 
-struct RenderBackend(Copyable, Equatable, ImplicitlyCopyable, Movable):
+struct RenderBackend(
+    Copyable, Equatable, ImplicitlyCopyable, Movable, Writable
+):
     var value: Int
 
     comptime CPU = RenderBackend(0)
@@ -25,3 +27,11 @@ struct RenderBackend(Copyable, Equatable, ImplicitlyCopyable, Movable):
 
     def __ne__(self, other: RenderBackend) -> Bool:
         return self.value != other.value
+
+    def write_to[W: Writer](self, mut writer: W):
+        if self == RenderBackend.CPU:
+            writer.write("RenderBackend.CPU")
+        elif self == RenderBackend.GPU:
+            writer.write("RenderBackend.GPU")
+        else:
+            writer.write("RenderBackend(", self.value, ")")

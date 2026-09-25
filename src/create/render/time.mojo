@@ -1,4 +1,4 @@
-struct Time(Copyable, Movable):
+struct Time(Copyable, Movable, Writable):
     """Per-frame timing, ticked once per frame by the run loop.
 
     Owns the previous tick stamp so the frame delta is derived in one place.
@@ -31,6 +31,21 @@ struct Time(Copyable, Movable):
         self.elapsed = 0.0
         self.elapsed_millis = 0
         self._last = 0
+
+    def write_to[W: Writer](self, mut writer: W):
+        writer.write(
+            "Time(frame_count=",
+            self.frame_count,
+            ", delta=",
+            self.delta,
+            ", delta_millis=",
+            self.delta_millis,
+            ", elapsed=",
+            self.elapsed,
+            ", elapsed_millis=",
+            self.elapsed_millis,
+            ")",
+        )
 
     def _start(mut self, now: Int):
         """Seed the tick stamp so the first frame's delta is a frame, not the

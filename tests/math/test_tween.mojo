@@ -363,5 +363,35 @@ def test_tween_ping_pong_survives_a_frame_longer_than_its_duration() raises -> (
     assert_true(t.value >= 0.0 and t.value <= 100.0)
 
 
+# --- write_to -----------------------------------------------------------------
+
+
+def test_easing_writes_its_constant_name() raises -> None:
+    assert_equal(String(Easing.LINEAR), "Easing.LINEAR")
+    assert_equal(String(Easing.OUT_BOUNCE), "Easing.OUT_BOUNCE")
+    assert_equal(String(Easing.IN_OUT_BOUNCE), "Easing.IN_OUT_BOUNCE")
+
+
+def test_easing_out_of_range_writes_its_value() raises -> None:
+    assert_equal(String(Easing(99)), "Easing(99)")
+
+
+def test_every_curve_writes_a_name() raises -> None:
+    for curve in _all_curves():
+        assert_true(String(curve).startswith("Easing."))
+
+
+def test_tween_writes_its_public_state() raises -> None:
+    var t = Tween(0.0, 10.0, 2.0, Easing.OUT_CUBIC)
+    t.play()
+    assert_equal(
+        String(t),
+        (
+            "Tween(value=0.0, progress=0.0, start=0.0, end=10.0, duration=2.0,"
+            " curve=Easing.OUT_CUBIC, playing=True, finished=False)"
+        ),
+    )
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

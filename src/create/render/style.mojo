@@ -3,7 +3,7 @@ from .color import Color
 from .font import FontWeight
 
 
-struct Style(Copyable, Movable):
+struct Style(Copyable, Movable, Writable):
     """How the next shape or glyph is painted, independent of where it goes.
 
     The canvas holds one, set piece by piece through `canvas.fill`,
@@ -62,6 +62,35 @@ struct Style(Copyable, Movable):
         self.font_weight = font_weight
         self.text_align = text_align
         self.opacity = opacity
+
+    def write_to[W: Writer](self, mut writer: W):
+        # Named by the constructor's keywords, not the fields, so the output
+        # reads back as a `Style(...)` call.
+        writer.write(
+            "Style(fill=",
+            self.fill_color,
+            ", fill_enabled=",
+            self.fill_enabled,
+            ", outline=",
+            self.outline_color,
+            ", outline_thickness=",
+            self.outline_thickness,
+            ", outline_enabled=",
+            self.outline_enabled,
+            ", corner_radius=",
+            self.corner_radius,
+            ", text_color=",
+            self.text_color,
+            ", font_size=",
+            self.font_size,
+            ", font_weight=",
+            self.font_weight,
+            ", text_align=",
+            self.text_align,
+            ", opacity=",
+            self.opacity,
+            ")",
+        )
 
     def _fill_visible(self) -> Bool:
         """Whether the fill actually paints anything.

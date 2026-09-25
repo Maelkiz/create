@@ -239,5 +239,11 @@ def test_the_cache_is_bounded() raises -> None:
     assert_true(_ink_box(m)[2] >= 0, "nothing was rendered after a cache drop")
 
 
+def test_align_writes_its_constant_name() raises -> None:
+    assert_equal(String(Align.TOP), "Align.TOP")
+    assert_equal(String(Align.BOTTOM_RIGHT), "Align.BOTTOM_RIGHT")
+    assert_equal(String(Align(99)), "Align(99)")
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

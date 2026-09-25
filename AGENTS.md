@@ -101,6 +101,15 @@ the loop carries both into the next frame.
 Shared assets (`SpriteAnimation`, `Sound`) are held as `ArcPointer` fields. Read
 [`SpriteAnimator.use`](src/create/sprite/animator.mojo) before driving an animator.
 
+### Printing
+
+A public value type implements `Writable` and prints as it would be written in source:
+`Point2D(1.0, 2.0)` positionally for the small math types and `Color`; `Easing.OUT_BOUNCE` for an
+`Int`-wrapping enum (an unnamed value falls back to `Easing(99)`); keyword form otherwise, labelled
+by the constructor's keywords where it has them (`Circle(pos=Point2D(0.0, 0.0), r=5.0)`) and by public
+field names where it doesn't (`Time`, `Tween`). Private fields are left out. Resource handles
+(`Font`, `Sprite`, `Sound`, `Audio`) are not printable.
+
 ### Imports and public surface
 
 A program writes `from create import *`. Otherwise import by name from the owning package
