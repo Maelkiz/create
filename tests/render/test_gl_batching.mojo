@@ -148,6 +148,28 @@ def _near(a: Color, b: Color) -> Bool:
     )
 
 
+@fieldwise_init
+struct BlurredShapes[shadows: Bool](Program):
+    """One of each analytically blurred kind, with or without its shadow."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> BlurredShapes[Self.shadows]:
+        return BlurredShapes[Self.shadows](0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        var st = Style(fill=Color.RED, outline=Color.WHITE, outline_thickness=3)
+        st.shadow_enabled = Self.shadows
+        st.shadow_blur = 8.0
+        with canvas.style(st):
+            canvas.rectangle((-20.0, 20.0), 20.0, 14.0)
+            canvas.circle((20.0, 20.0), 8.0)
+            canvas.triangle((-30.0, -30.0), (-10.0, -30.0), (-20.0, -10.0))
+            canvas.line((10.0, -30.0), (30.0, -10.0))
+
+
 def _gpu_frame[
     P: Program
 ](
@@ -184,6 +206,24 @@ def _gpu_frame[
     _ = state^
     _ = target^
     return mem^
+
+
+def _gpu_draw_calls[P: Program](mut win: GLWindow) raises -> Int:
+    """How many draw calls one frame of `P` takes through the GL backend."""
+    var target = _GLTarget(GL(), 100, 100)
+    var state = PersistentCanvasState(RenderBackend.GPU)
+    var context = Context()
+    context.design_resolution(100, 100)
+    var program = P.create(context)
+    state._set_viewport(context, 100, 100)
+    context.time._start(0)
+    context.time._tick(16)
+    state = step(program, context, state^)
+    state.backend.present_gpu(100, 100, state.view.scale)
+    var calls = state.backend.gl.value().draw_calls
+    _ = state^
+    _ = target^
+    return calls
 
 
 def test_gl_batching_behaviours() raises -> None:
@@ -257,6 +297,14 @@ def test_gl_batching_behaviours() raises -> None:
             _near(got, expected[i]),
             String("blend modes: square ", i, " is ", got),
         )
+
+    # Case 6: blurred shape shadows ride in the shapes' own batch — one quad
+    # each, same texture units, same blend mode — so they add no draw calls.
+    assert_equal(
+        _gpu_draw_calls[BlurredShapes[True]](win),
+        _gpu_draw_calls[BlurredShapes[False]](win),
+        "blurred shadows: extra draw calls",
+    )
 
     _ = win^
 

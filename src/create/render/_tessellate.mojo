@@ -30,6 +30,12 @@ from create.math.matrix import Matrix, apply as mat_apply
 
 from ._command import RenderCommand
 from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
+from ._shadow import (
+    SIL_RECT,
+    SIL_TRIANGLE,
+    BlurredSilhouette,
+    local_outline_thickness,
+)
 from ._transform import pixel_scale, outline_thickness_px
 from .color import Color
 
@@ -51,6 +57,13 @@ comptime MODE_TEXTURE: Float32 = 2.0
 """Sprite: the sampled RGBA multiplies the vertex colour."""
 comptime MODE_SILHOUETTE: Float32 = 3.0
 """Sprite shadow: the vertex colour, its alpha scaled by the sampled alpha."""
+comptime MODE_SHADOW_BOX: Float32 = 4.0
+"""Blurred rectangle, rounded rectangle, circle or line shadow: `uv` is the
+position relative to the box's centre, `s0, s1` its half-extents, `s2` its
+corner radius and `s3` its ring thickness, all over sigma."""
+comptime MODE_SHADOW_EDGES: Float32 = 5.0
+"""Blurred triangle shadow: `s0..s2` are the signed distances inside its
+three edges and `s3` its ring thickness, all over sigma."""
 
 comptime _MIN_CIRCLE_SEGMENTS = 12
 comptime _MAX_CIRCLE_SEGMENTS = 256
@@ -810,3 +823,102 @@ def emit_glyph(
     vb.push(x, y, u0, v0, color, MODE_MASK)
     vb.push(x + w, y + h, u1, v1, color, MODE_MASK)
     vb.push(x, y + h, u0, v1, color, MODE_MASK)
+
+
+def emit_blurred_shadow(
+    mut vb: VertexBuffer, sh: RenderCommand, scale: Float64
+):
+    """One quad covering the shadow command `sh` blurred, out to where its
+    coverage rounds to nothing.
+
+    The fragment shader evaluates `BlurredSilhouette.coverage` from the
+    vertex's shape parameters. Every one it interpolates — a position in the
+    silhouette's own frame, a distance inside an edge — is affine in the
+    local position, so the rasteriser's interpolation gives each fragment
+    exactly the value at its centre; the rest are constant across the quad.
+    """
+    var m = sh.transform
+    var shape = BlurredSilhouette(sh, local_outline_thickness(sh, m, scale))
+    var k = shape.inv_sigma
+    var reach = shape.reach()
+    var ring = shape.ring * k
+    var color = sh.style.shadow_color
+    ref g = shape.outer
+    # Local corners, in order around the quad.
+    var xs = Array[Float64, 4](fill=0.0)
+    var ys = Array[Float64, 4](fill=0.0)
+    if shape.kind == SIL_RECT or shape.kind == SIL_TRIANGLE:
+        xs[0] = shape.x0 - reach
+        ys[0] = shape.y0 - reach
+        xs[1] = shape.x1 + reach
+        ys[1] = ys[0]
+        xs[2] = xs[1]
+        ys[2] = shape.y1 + reach
+        xs[3] = xs[0]
+        ys[3] = ys[2]
+    else:
+        # A line's box in its own frame, so a diagonal stroke's quad hugs it
+        # rather than covering its axis-aligned bounds.
+        var ux = g[2]
+        var uy = g[3]
+        var along = Array[Float64, 4](fill=0.0)
+        var across = Array[Float64, 4](fill=0.0)
+        along[0] = -reach
+        along[1] = g[4] + reach
+        along[2] = along[1]
+        along[3] = along[0]
+        across[0] = -(g[5] + reach)
+        across[1] = across[0]
+        across[2] = g[5] + reach
+        across[3] = across[2]
+        for i in range(4):
+            xs[i] = g[0] + along[i] * ux + across[i] * uy
+            ys[i] = g[1] + along[i] * uy - across[i] * ux
+    # Two triangles: corners 0, 1, 2 and 0, 2, 3.
+    for t in range(6):
+        var i = t if t < 3 else (0 if t == 3 else t - 2)
+        var x = xs[i]
+        var y = ys[i]
+        var p = mat_apply(m, x, y)
+        if shape.kind == SIL_RECT:
+            vb.push(
+                p[0],
+                p[1],
+                (x - g[0]) * k,
+                (y - g[1]) * k,
+                color,
+                MODE_SHADOW_BOX,
+                g[2] * k,
+                g[3] * k,
+                g[4] * k,
+                ring,
+            )
+        elif shape.kind == SIL_TRIANGLE:
+            vb.push(
+                p[0],
+                p[1],
+                0.0,
+                0.0,
+                color,
+                MODE_SHADOW_EDGES,
+                (g[0] * x + g[1] * y + g[2]) * k,
+                (g[3] * x + g[4] * y + g[5]) * k,
+                (g[6] * x + g[7] * y + g[8]) * k,
+                ring,
+            )
+        else:
+            var dx = x - g[0]
+            var dy = y - g[1]
+            var half = g[4] / 2.0
+            vb.push(
+                p[0],
+                p[1],
+                (dx * g[2] + dy * g[3] - half) * k,
+                (dx * g[3] - dy * g[2]) * k,
+                color,
+                MODE_SHADOW_BOX,
+                half * k,
+                g[5] * k,
+                0.0,
+                0.0,
+            )

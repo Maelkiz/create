@@ -89,6 +89,7 @@ from ._image import _Image
 from ._tessellate import (
     MODE_SOLID,
     VertexBuffer,
+    emit_blurred_shadow,
     emit_circle,
     emit_glyph,
     emit_letterbox,
@@ -97,7 +98,7 @@ from ._tessellate import (
     emit_sprite,
     emit_triangle,
 )
-from ._shadow import casts_outer_shadow, shadow_command
+from ._shadow import blurs_analytically, casts_outer_shadow, shadow_command
 from ._text import PlacedGlyph, TextRenderer
 from ._transform import pixel_scale
 from .blend_mode import BlendMode
@@ -164,6 +165,36 @@ uniform int u_premultiply;
 
 out vec4 frag_color;
 
+// Blurred shadow coverage: `_shadow.mojo`'s functions, term for term.
+float gaussian_cdf(float x) {
+    if (x >= 4.0) return 1.0;
+    if (x <= -4.0) return 0.0;
+    float z = abs(x) * 0.70710678118654752;
+    float t = 1.0 / (1.0 + 0.3275911 * z);
+    float poly = t * (0.254829592 + t * (-0.284496736
+        + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))));
+    float erf = 1.0 - poly * exp(-z * z);
+    return x >= 0.0 ? 0.5 * (1.0 + erf) : 0.5 * (1.0 - erf);
+}
+
+float box_coverage(vec2 p, vec2 half_size, float radius) {
+    if (radius <= 0.0) {
+        float x = gaussian_cdf(half_size.x + p.x)
+            + gaussian_cdf(half_size.x - p.x) - 1.0;
+        float y = gaussian_cdf(half_size.y + p.y)
+            + gaussian_cdf(half_size.y - p.y) - 1.0;
+        return max(x, 0.0) * max(y, 0.0);
+    }
+    float r = min(radius, min(half_size.x, half_size.y));
+    vec2 q = abs(p) - (half_size - r);
+    float sdf = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+    return gaussian_cdf(-sdf);
+}
+
+float edge_coverage(vec3 d) {
+    return gaussian_cdf(d.x) * gaussian_cdf(d.y) * gaussian_cdf(d.z);
+}
+
 void main() {
     if (v_mode < 0.5) {
         frag_color = v_color;
@@ -171,8 +202,26 @@ void main() {
         frag_color = vec4(v_color.rgb, v_color.a * texture(u_atlas, v_uv).r);
     } else if (v_mode < 2.5) {
         frag_color = v_color * texture(u_sprite, v_uv);
-    } else {
+    } else if (v_mode < 3.5) {
         frag_color = vec4(v_color.rgb, v_color.a * texture(u_sprite, v_uv).a);
+    } else {
+        // `s3` is the ring: subtract the silhouette shrunk by it.
+        float ring = v_shape.w;
+        float c;
+        if (v_mode < 4.5) {
+            c = box_coverage(v_uv, v_shape.xy, v_shape.z);
+            if (ring > 0.0 && c > 0.0) {
+                c -= box_coverage(
+                    v_uv, v_shape.xy - ring, max(v_shape.z - ring, 0.0)
+                );
+            }
+        } else {
+            c = edge_coverage(v_shape.xyz);
+            if (ring > 0.0 && c > 0.0) {
+                c -= edge_coverage(v_shape.xyz - ring);
+            }
+        }
+        frag_color = vec4(v_color.rgb, v_color.a * max(c, 0.0));
     }
     // Every blend mode but NORMAL is written against premultiplied colour;
     // see `GLRenderer._blend_mode`.
@@ -512,9 +561,11 @@ struct GLRenderer(Movable):
             # The shadow shares the command's blend mode, so it joins the
             # same batch; a sprite's samples the sprite's own texture.
             if casts_outer_shadow(c):
-                self._one(
-                    shadow_command(c, scale), images, text, width, height, scale
-                )
+                var sh = shadow_command(c, scale)
+                if c.style.shadow_blur > 0.0 and blurs_analytically(c):
+                    emit_blurred_shadow(self.vertices, sh, scale)
+                else:
+                    self._one(sh, images, text, width, height, scale)
             self._one(c, images, text, width, height, scale)
         self._flush()
 

@@ -277,12 +277,12 @@ comptime BLUR_REACH = 4.0
 """How many sigma a blurred shadow reaches past its silhouette before
 `gaussian_cdf` rounds it to nothing."""
 
-comptime _SIL_RECT = 0
+comptime SIL_RECT = 0
 """`[cx, cy, half_w, half_h, radius]`: a rectangle, rounded or not; a
 circle is one with all three extents equal."""
-comptime _SIL_TRIANGLE = 1
+comptime SIL_TRIANGLE = 1
 """`[nx, ny, c] x 3`: each edge's inward unit normal and offset."""
-comptime _SIL_LINE = 2
+comptime SIL_LINE = 2
 """`[x0, y0, ux, uy, length, half_thickness]`: a stroke's rectangle, in its
 own frame."""
 
@@ -339,16 +339,24 @@ struct BlurredSilhouette(Copyable, Movable):
 
     Built from the command `shadow_command` returns, in that command's
     local units. A ring (an outline-only shape) is the outer shape minus the
-    inner one: blurring is linear, so the blurred ring is the difference of
-    the two blurred shapes, exactly. A triangle's `corner_radius` is left
-    out — its blurred corners are the product of their two edges'.
+    same shape shrunk by `ring`: blurring is linear, so the blurred ring is
+    the difference of the two blurred shapes, exactly. Shrinking by `ring`
+    moves every edge in by it and the corner radius down by it, which is
+    what both outlines are — a rectangle's inset ring and a triangle's
+    centred band, once the outer triangle has grown by half the band. A
+    triangle's `corner_radius` is left out: its blurred corners are the
+    product of their two edges'.
+
+    The GL path evaluates the same formulas from these fields, so the
+    fragment shader is the reference for which ones it reads.
     """
 
     var kind: Int
     var inv_sigma: Float64
     var outer: Array[Float64, 9]
-    var inner: Array[Float64, 9]
-    var has_inner: Bool
+    var ring: Float64
+    """How far in the inner edge of a ring sits; 0 for a filled
+    silhouette, or a ring too thick to leave a hole."""
     var x0: Float64
     var y0: Float64
     var x1: Float64
@@ -362,11 +370,10 @@ struct BlurredSilhouette(Copyable, Movable):
             2.0 / sh.style.shadow_blur if sh.style.shadow_blur > 0.0 else 0.0
         )
         self.outer = Array[Float64, 9](fill=0.0)
-        self.inner = Array[Float64, 9](fill=0.0)
-        self.has_inner = False
+        self.ring = 0.0
         var ring = not sh.style._fill_visible()
         if sh.kind == CMD_RECT or sh.kind == CMD_CIRCLE:
-            self.kind = _SIL_RECT
+            self.kind = SIL_RECT
             var hw = sh.geom[2] / 2.0
             var hh = sh.geom[3] / 2.0
             var r = rect_corner_radius(
@@ -387,21 +394,15 @@ struct BlurredSilhouette(Copyable, Movable):
             self.y1 = sh.geom[1] + hh
             # Both outlines are inset rings.
             if ring and hw - thickness > 0.0 and hh - thickness > 0.0:
-                self.has_inner = True
-                self.inner[0] = sh.geom[0]
-                self.inner[1] = sh.geom[1]
-                self.inner[2] = hw - thickness
-                self.inner[3] = hh - thickness
-                self.inner[4] = max(r - thickness, 0.0)
+                self.ring = thickness
         elif sh.kind == CMD_TRIANGLE:
-            self.kind = _SIL_TRIANGLE
+            self.kind = SIL_TRIANGLE
             var o = sh.copy()
-            var i = sh.copy()
             if ring:
                 # A centred band: half the stroke out, half in.
                 _grow_triangle(o, thickness / 2.0)
-                self.has_inner = _inradius(sh) > thickness / 2.0
-                _grow_triangle(i, -thickness / 2.0)
+                if _inradius(sh) > thickness / 2.0:
+                    self.ring = thickness
             var xs = Array[Float64, 3](fill=0.0)
             var ys = Array[Float64, 3](fill=0.0)
             for k in range(3):
@@ -412,13 +413,8 @@ struct BlurredSilhouette(Copyable, Movable):
             self.x1 = max(xs[0], max(xs[1], xs[2]))
             self.y0 = min(ys[0], min(ys[1], ys[2]))
             self.y1 = max(ys[0], max(ys[1], ys[2]))
-            if self.has_inner:
-                for k in range(3):
-                    xs[k] = i.geom[2 * k]
-                    ys[k] = i.geom[2 * k + 1]
-                self.inner = _triangle_edges(xs, ys)
         else:
-            self.kind = _SIL_LINE
+            self.kind = SIL_LINE
             var ax = sh.geom[0]
             var ay = sh.geom[1]
             var ex = sh.geom[2] - ax
@@ -440,26 +436,27 @@ struct BlurredSilhouette(Copyable, Movable):
         """How far past the silhouette, in local units, any coverage lands."""
         return BLUR_REACH / self.inv_sigma if self.inv_sigma > 0.0 else 0.0
 
-    def _one(self, g: Array[Float64, 9], x: Float64, y: Float64) -> Float64:
+    def _one(self, x: Float64, y: Float64, shrink: Float64) -> Float64:
+        """The outer silhouette's coverage, every edge moved in by
+        `shrink`."""
+        ref g = self.outer
         var k = self.inv_sigma
-        if self.kind == _SIL_RECT:
+        if self.kind == SIL_RECT:
             var dx = x - g[0]
             var dy = y - g[1]
-            if g[4] <= 0.0:
+            var hw = g[2] - shrink
+            var hh = g[3] - shrink
+            var r = max(g[4] - shrink, 0.0)
+            if r <= 0.0:
                 return box_coverage(
-                    (g[2] + dx) * k,
-                    (g[2] - dx) * k,
-                    (g[3] + dy) * k,
-                    (g[3] - dy) * k,
+                    (hw + dx) * k, (hw - dx) * k, (hh + dy) * k, (hh - dy) * k
                 )
-            return rounded_rect_coverage(
-                dx * k, dy * k, g[2] * k, g[3] * k, g[4] * k
-            )
-        if self.kind == _SIL_TRIANGLE:
+            return rounded_rect_coverage(dx * k, dy * k, hw * k, hh * k, r * k)
+        if self.kind == SIL_TRIANGLE:
             return edge_coverage(
-                (g[0] * x + g[1] * y + g[2]) * k,
-                (g[3] * x + g[4] * y + g[5]) * k,
-                (g[6] * x + g[7] * y + g[8]) * k,
+                (g[0] * x + g[1] * y + g[2] - shrink) * k,
+                (g[3] * x + g[4] * y + g[5] - shrink) * k,
+                (g[6] * x + g[7] * y + g[8] - shrink) * k,
             )
         var dx = x - g[0]
         var dy = y - g[1]
@@ -474,9 +471,9 @@ struct BlurredSilhouette(Copyable, Movable):
 
     def coverage(self, x: Float64, y: Float64) -> Float64:
         """The blurred silhouette's alpha, 0 to 1, at local `(x, y)`."""
-        var c = self._one(self.outer, x, y)
-        if self.has_inner and c > 0.0:
-            c -= self._one(self.inner, x, y)
+        var c = self._one(x, y, 0.0)
+        if self.ring > 0.0 and c > 0.0:
+            c -= self._one(x, y, self.ring)
         return max(c, 0.0)
 
 

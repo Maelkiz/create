@@ -18,11 +18,16 @@ from create.render._command import (
     triangle_command,
 )
 from create.render.style import Style
+from create.render._shadow import shadow_command
+from create.math.vector2d import Vector2D
 from create.render._tessellate import (
+    MODE_SHADOW_BOX,
+    MODE_SHADOW_EDGES,
     MODE_SOLID,
     MODE_TEXTURE,
     VertexBuffer,
     circle_segments,
+    emit_blurred_shadow,
     emit_circle,
     emit_letterbox,
     emit_line,
@@ -395,6 +400,92 @@ def test_shape_parameters_default_to_zero() raises -> None:
         assert_equal(vb.data[i], Float32(0.0))
     for i in range(4):
         assert_equal(vb.data[_FLOATS + 9 + i], Float32(3 + i))
+
+
+def _blurred(var s: Style) -> Style:
+    """`s` casting an unshifted shadow with blur 8: sigma 4, so the shape
+    parameters are local units times 1/4 and the quad reaches 16 past."""
+    s.shadow_enabled = True
+    s.shadow_offset = Vector2D(0, 0)
+    s.shadow_blur = 8.0
+    return s^
+
+
+def _shape_parameter(vb: VertexBuffer, vertex: Int, i: Int) -> Float64:
+    return Float64(vb.data[vertex * _FLOATS + 9 + i])
+
+
+def test_a_blurred_rect_shadow_is_one_box_quad() raises -> None:
+    var vb = VertexBuffer()
+    var v = _viewport(100, 100)
+    var c = rect_command(
+        v.base_matrix(), _blurred(_plain()), 0.0, 0.0, 20.0, 10.0
+    )
+    emit_blurred_shadow(vb, shadow_command(c, v.scale), v.scale)
+    assert_equal(vb.count(), 6)
+    for i in range(6):
+        assert_equal(vb.data[i * _FLOATS + 8], MODE_SHADOW_BOX)
+        assert_equal(_shape_parameter(vb, i, 0), 2.5)
+        assert_equal(_shape_parameter(vb, i, 1), 1.25)
+        assert_equal(_shape_parameter(vb, i, 2), 0.0)
+        assert_equal(_shape_parameter(vb, i, 3), 0.0)
+    # The first corner sits reach (16) past the half-extents, in sigmas.
+    assert_equal(vb.data[2], Float32(-6.5))
+    assert_equal(vb.data[3], Float32(-5.25))
+    assert_equal(_x(vb, 0), 50.0 - 26.0)
+
+
+def test_an_outline_only_blurred_rect_shadow_carries_its_ring() raises -> None:
+    var vb = VertexBuffer()
+    var v = _viewport(100, 100)
+    var s = Style()
+    s.fill_enabled = False
+    s.outline_thickness = 4
+    var c = rect_command(v.base_matrix(), _blurred(s^), 0.0, 0.0, 20.0, 20.0)
+    emit_blurred_shadow(vb, shadow_command(c, v.scale), v.scale)
+    assert_equal(_shape_parameter(vb, 0, 3), 1.0)
+
+
+def test_a_blurred_triangle_shadow_is_one_edges_quad() raises -> None:
+    var vb = VertexBuffer()
+    var v = _viewport(100, 100)
+    var c = triangle_command(
+        v.base_matrix(),
+        _blurred(_plain()),
+        -10.0,
+        -10.0,
+        10.0,
+        -10.0,
+        0.0,
+        10.0,
+    )
+    emit_blurred_shadow(vb, shadow_command(c, v.scale), v.scale)
+    assert_equal(vb.count(), 6)
+    for i in range(6):
+        assert_equal(vb.data[i * _FLOATS + 8], MODE_SHADOW_EDGES)
+        assert_equal(_shape_parameter(vb, i, 3), 0.0)
+    # Every quad corner lies outside the triangle, so some edge distance is
+    # negative there.
+    for i in range(6):
+        var d0 = _shape_parameter(vb, i, 0)
+        var d1 = _shape_parameter(vb, i, 1)
+        var d2 = _shape_parameter(vb, i, 2)
+        assert_true(min(d0, min(d1, d2)) < 0.0)
+
+
+def test_a_blurred_line_shadow_is_a_box_along_the_stroke() raises -> None:
+    var vb = VertexBuffer()
+    var v = _viewport(100, 100)
+    var s = Style()
+    s.outline_thickness = 2
+    var c = line_command(v.base_matrix(), _blurred(s^), -10.0, 0.0, 10.0, 0.0)
+    emit_blurred_shadow(vb, shadow_command(c, v.scale), v.scale)
+    assert_equal(vb.count(), 6)
+    for i in range(6):
+        assert_equal(vb.data[i * _FLOATS + 8], MODE_SHADOW_BOX)
+        # Half the length and half the thickness, in sigmas.
+        assert_equal(_shape_parameter(vb, i, 0), 2.5)
+        assert_equal(_shape_parameter(vb, i, 1), 0.25)
 
 
 def main() raises:

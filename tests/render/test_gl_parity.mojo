@@ -107,7 +107,13 @@ comptime _SHAPE_SHADOWED_TRIANGLE = 12
 comptime _SHAPE_SHADOWED_LINE = 13
 comptime _SHAPE_SHADOWED_TEXT = 14
 comptime _SHAPE_SHADOWED_SPRITE = 15
-comptime _SHAPE_COUNT = 16
+comptime _SHAPE_BLURRED_RECT = 16
+comptime _SHAPE_BLURRED_RING = 17
+comptime _SHAPE_BLURRED_CIRCLE = 18
+comptime _SHAPE_BLURRED_TRIANGLE = 19
+comptime _SHAPE_BLURRED_TRIANGLE_RING = 20
+comptime _SHAPE_BLURRED_LINE = 21
+comptime _SHAPE_COUNT = 22
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -120,6 +126,15 @@ def _shadowed(var s: Style) -> Style:
     s.shadow_color = _SHADOW_INK
     s.shadow_offset = Vector2D(8, -8)
     s.shadow_blur = 0.0
+    return s^
+
+
+def _blurred(var s: Style) -> Style:
+    """`s` casting a soft shadow: sigma 4, so it fades out 16 pixels past
+    the silhouette. Both backends evaluate the same coverage functions at
+    pixel centres, so the soft band compares like any interior colour."""
+    s = _shadowed(s^)
+    s.shadow_blur = 8.0
     return s^
 
 
@@ -154,8 +169,20 @@ def _shape_name(shape: Int) -> String:
         return "shadowed line"
     elif shape == _SHAPE_SHADOWED_TEXT:
         return "shadowed text"
-    else:
+    elif shape == _SHAPE_SHADOWED_SPRITE:
         return "shadowed sprite"
+    elif shape == _SHAPE_BLURRED_RECT:
+        return "blurred rect"
+    elif shape == _SHAPE_BLURRED_RING:
+        return "blurred rounded ring"
+    elif shape == _SHAPE_BLURRED_CIRCLE:
+        return "blurred circle"
+    elif shape == _SHAPE_BLURRED_TRIANGLE:
+        return "blurred triangle"
+    elif shape == _SHAPE_BLURRED_TRIANGLE_RING:
+        return "blurred triangle ring"
+    else:
+        return "blurred line"
 
 
 @fieldwise_init
@@ -285,6 +312,59 @@ struct _Parity(Program):
             # blit through the sprite's alpha.
             with canvas.style(_shadowed(Style())):
                 canvas.sprite(self.image, (70, 50), 2, 2)
+        elif self.shape == _SHAPE_BLURRED_RECT:
+            # Sharp corners: the exact separable form.
+            with canvas.style(
+                _blurred(
+                    Style(fill=Color(0x40, 0xC0, 0xE0), outline_enabled=False)
+                )
+            ):
+                canvas.rectangle((-20, 10), 60, 40)
+        elif self.shape == _SHAPE_BLURRED_RING:
+            # Outline only, and thicker than sigma, so the hole shows.
+            with canvas.style(
+                _blurred(
+                    Style(
+                        outline=Color(0xE0, 0x90, 0x40),
+                        outline_thickness=12,
+                        corner_radius=14,
+                    )
+                )
+            ):
+                canvas.rectangle((-10, 10), 90, 70)
+        elif self.shape == _SHAPE_BLURRED_CIRCLE:
+            with canvas.style(
+                _blurred(
+                    Style(fill=Color(0xF0, 0xC0, 0x30), outline_enabled=False)
+                )
+            ):
+                canvas.circle((-40, 0), 28)
+        elif self.shape == _SHAPE_BLURRED_TRIANGLE:
+            with canvas.style(
+                _blurred(
+                    Style(
+                        fill=Color(0xA0, 0x60, 0xF0),
+                        outline=Color.BLACK,
+                        outline_thickness=4,
+                    )
+                )
+            ):
+                canvas.triangle((-50, -40), (40, -40), (0, 45))
+        elif self.shape == _SHAPE_BLURRED_TRIANGLE_RING:
+            with canvas.style(
+                _blurred(
+                    Style(outline=Color(0x80, 0xFF, 0x80), outline_thickness=12)
+                )
+            ):
+                canvas.triangle((-60, -45), (50, -45), (-5, 50))
+        elif self.shape == _SHAPE_BLURRED_LINE:
+            # Diagonal, so the quad follows the stroke's own frame.
+            with canvas.style(
+                _blurred(
+                    Style(outline=Color(0x80, 0xFF, 0x80), outline_thickness=6)
+                )
+            ):
+                canvas.line((-70, -40), (50, 40))
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline
