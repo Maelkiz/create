@@ -766,8 +766,12 @@ def emit_letterbox(
         vb.quad(cx1, cy0, w, cy0, w, cy1, cx1, cy1, col)
 
 
-def emit_sprite(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
-    """One textured quad, axis-aligned in device space.
+def emit_sprite(
+    mut vb: VertexBuffer, c: RenderCommand, scale: Float64, pad: Int = 0
+):
+    """One textured quad, axis-aligned in device space, grown by `pad`
+    pixels on every side — the margin a blurred silhouette's mask carries
+    (`BlurredMask.pad`), so its texels land one-to-one on device pixels.
 
     Deliberately not a `_mapped_quad`: the CPU replay maps the anchor and then
     blits an upright rectangle around it, so a rotated transform turns a
@@ -783,10 +787,10 @@ def emit_sprite(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
     var sf = pixel_scale(m, scale)
     var dw = Float64(max(Int(c.geom[2] * sf + 0.5), 1))
     var dh = Float64(max(Int(c.geom[3] * sf + 0.5), 1))
-    var x0 = Float64(Int(p[0]) - Int(dw) // 2)
-    var y0 = Float64(Int(p[1]) - Int(dh) // 2)
-    var x1 = x0 + dw
-    var y1 = y0 + dh
+    var x0 = Float64(Int(p[0]) - Int(dw) // 2 - pad)
+    var y0 = Float64(Int(p[1]) - Int(dh) // 2 - pad)
+    var x1 = x0 + dw + Float64(2 * pad)
+    var y1 = y0 + dh + Float64(2 * pad)
     # White, so `MODE_TEXTURE`'s multiply passes the sampled pixels through;
     # a silhouette paints its own colour through the sampled alpha instead.
     var tint = c.style.fill_color if c.silhouette else Color.WHITE

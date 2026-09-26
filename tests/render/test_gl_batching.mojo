@@ -170,6 +170,44 @@ struct BlurredShapes[shadows: Bool](Program):
             canvas.line((10.0, -30.0), (30.0, -10.0))
 
 
+@fieldwise_init
+struct BlurredText[shadows: Bool](Program):
+    """A line of text, with or without a blurred shadow."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> BlurredText[Self.shadows]:
+        return BlurredText[Self.shadows](0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        var st = Style(text_color=Color.WHITE, font_size=20)
+        st.shadow_enabled = Self.shadows
+        st.shadow_blur = 8.0
+        with canvas.style(st):
+            canvas.text("shadow", (0.0, 0.0))
+
+
+@fieldwise_init
+struct BlurredSprite[shadows: Bool](Program):
+    """One sprite, with or without a blurred shadow."""
+
+    var image: Sprite
+
+    @staticmethod
+    def create(mut context: Context) raises -> BlurredSprite[Self.shadows]:
+        return BlurredSprite[Self.shadows](Sprite.solid(20, 20, 255, 0, 0))
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        var st = Style()
+        st.shadow_enabled = Self.shadows
+        st.shadow_blur = 8.0
+        with canvas.style(st):
+            canvas.sprite(self.image, (0.0, 0.0), 20, 20)
+
+
 def _gpu_frame[
     P: Program
 ](
@@ -304,6 +342,22 @@ def test_gl_batching_behaviours() raises -> None:
         _gpu_draw_calls[BlurredShapes[True]](win),
         _gpu_draw_calls[BlurredShapes[False]](win),
         "blurred shadows: extra draw calls",
+    )
+
+    # Case 7: blurred glyphs are packed into the atlas beside the sharp ones,
+    # so a blurred text shadow adds no draw call either.
+    assert_equal(
+        _gpu_draw_calls[BlurredText[True]](win),
+        _gpu_draw_calls[BlurredText[False]](win),
+        "blurred text shadow: extra draw calls",
+    )
+
+    # Case 8: a blurred sprite shadow samples a mask texture of its own, so
+    # switching from it to the sprite breaks the batch exactly once.
+    assert_equal(
+        _gpu_draw_calls[BlurredSprite[True]](win),
+        _gpu_draw_calls[BlurredSprite[False]](win) + 1,
+        "blurred sprite shadow: expected one extra draw call",
     )
 
     _ = win^

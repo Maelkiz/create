@@ -17,6 +17,23 @@ from std.math import floor, sqrt
 comptime _PASSES = 3
 
 
+comptime SHADOW_MASK_LIMIT = 256
+"""Blurred sprite masks a cache keeps before it is dropped whole — the same
+policy, for the same reason, as `_text._GLYPH_CACHE_LIMIT`. Both backends'
+caches (CPU masks, GL textures) use it."""
+
+
+def shadow_mask_key(image: Int, width: Int, height: Int, blur: Int) -> Int:
+    """Pack what a blurred sprite mask depends on into one key: 24 bits of
+    image id, 15 each of device width and height, and 10 of blur."""
+    return (
+        image
+        | (min(width, 0x7FFF) << 24)
+        | (min(height, 0x7FFF) << 39)
+        | (min(blur, 0x3FF) << 54)
+    )
+
+
 struct BlurredMask(Movable):
     """An alpha mask blurred, grown by `pad` pixels on every side.
 
@@ -67,6 +84,18 @@ def box_widths(sigma: Float64) -> Array[Int, 3]:
     return widths^
 
 
+def blur_reach(sigma: Float64) -> Int:
+    """How far a blur of `sigma` pixels spreads past its source: the sum of
+    the three boxes' radii, and so `BlurredMask.pad`."""
+    if sigma <= 0.0:
+        return 0
+    var widths = box_widths(sigma)
+    var reach = 0
+    for i in range(_PASSES):
+        reach += (widths[i] - 1) // 2
+    return reach
+
+
 def _box_rows(
     src: List[Float32], mut dst: List[Float32], width: Int, height: Int, r: Int
 ):
@@ -115,9 +144,7 @@ def blur_alpha(
     if sigma <= 0.0:
         return BlurredMask(alpha.copy(), width, height, 0)
     var widths = box_widths(sigma)
-    var pad = 0
-    for i in range(_PASSES):
-        pad += (widths[i] - 1) // 2
+    var pad = blur_reach(sigma)
     var w = width + 2 * pad
     var h = height + 2 * pad
     var a = List[Float32](length=w * h, fill=0.0)

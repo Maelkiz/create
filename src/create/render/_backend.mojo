@@ -15,7 +15,12 @@ from ._command import (
     CMD_LETTERBOX,
     RenderCommand,
 )
-from ._blur import BlurredMask, blur_sprite_alpha
+from ._blur import (
+    SHADOW_MASK_LIMIT,
+    BlurredMask,
+    blur_sprite_alpha,
+    shadow_mask_key,
+)
 from ._raster import (
     blend,
     blit_alpha,
@@ -44,22 +49,6 @@ from .surface import MemorySurface, Surface, _force_opaque
 from ._text import TextRenderer
 from .render_backend import RenderBackend
 from .color import Color
-
-
-comptime _SHADOW_MASK_LIMIT = 256
-"""Blurred sprite masks kept before the cache is dropped whole — the same
-policy, for the same reason, as `_text._GLYPH_CACHE_LIMIT`."""
-
-
-def _shadow_mask_key(image: Int, width: Int, height: Int, blur: Int) -> Int:
-    """Pack what a blurred sprite mask depends on into one key: 24 bits of
-    image id, 15 each of device width and height, and 10 of blur."""
-    return (
-        image
-        | (min(width, 0x7FFF) << 24)
-        | (min(height, 0x7FFF) << 39)
-        | (min(blur, 0x3FF) << 54)
-    )
 
 
 def device_bounds(
@@ -780,7 +769,7 @@ struct Backend(Movable):
     var text: TextRenderer
     var images: Dict[Int, _Image]
     var shadow_masks: Dict[Int, BlurredMask]
-    """Blurred sprite silhouettes, keyed by `_shadow_mask_key`: a sprite's
+    """Blurred sprite silhouettes, keyed by `shadow_mask_key`: a sprite's
     shadow is blurred once per image, device size and blur, not per frame."""
     var gl: Optional[GLRenderer]
     """The GPU resources, present exactly when `kind == RenderBackend.GPU`.
@@ -1845,9 +1834,9 @@ struct Backend(Movable):
         var sf = pixel_scale(m, scale)
         var dw = max(Int(c.geom[2] * sf + 0.5), 1)
         var dh = max(Int(c.geom[3] * sf + 0.5), 1)
-        var key = _shadow_mask_key(c.image, dw, dh, blur)
+        var key = shadow_mask_key(c.image, dw, dh, blur)
         if key not in self.shadow_masks:
-            if len(self.shadow_masks) >= _SHADOW_MASK_LIMIT:
+            if len(self.shadow_masks) >= SHADOW_MASK_LIMIT:
                 self.shadow_masks.clear()
             ref img = self.images[c.image]
             self.shadow_masks[key] = blur_sprite_alpha(

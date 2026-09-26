@@ -113,7 +113,9 @@ comptime _SHAPE_BLURRED_CIRCLE = 18
 comptime _SHAPE_BLURRED_TRIANGLE = 19
 comptime _SHAPE_BLURRED_TRIANGLE_RING = 20
 comptime _SHAPE_BLURRED_LINE = 21
-comptime _SHAPE_COUNT = 22
+comptime _SHAPE_BLURRED_TEXT = 22
+comptime _SHAPE_BLURRED_SPRITE = 23
+comptime _SHAPE_COUNT = 24
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -181,6 +183,10 @@ def _shape_name(shape: Int) -> String:
         return "blurred triangle"
     elif shape == _SHAPE_BLURRED_TRIANGLE_RING:
         return "blurred triangle ring"
+    elif shape == _SHAPE_BLURRED_TEXT:
+        return "blurred text"
+    elif shape == _SHAPE_BLURRED_SPRITE:
+        return "blurred sprite"
     else:
         return "blurred line"
 
@@ -190,6 +196,10 @@ struct _Parity(Program):
     """One command kind the GL backend implements, picked by `shape`."""
 
     var image: Sprite
+    var block: Sprite
+    """Opaque and large enough that its blurred shadow clears the ink
+    threshold; drawn at native size, like `image`, so neither backend
+    resamples the sprite itself."""
     var shape: Int
 
     @staticmethod
@@ -199,7 +209,11 @@ struct _Parity(Program):
     @staticmethod
     def create(mut context: Context, shape: Int) raises -> _Parity:
         context.design_resolution(_DESIGN_W, _DESIGN_H)
-        return _Parity(Sprite.load("tests/fixtures/test_2x2.png"), shape)
+        return _Parity(
+            Sprite.load("tests/fixtures/test_2x2.png"),
+            Sprite.solid(30, 30, 0xE0, 0x90, 0x40),
+            shape,
+        )
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(_BACKGROUND)
@@ -365,6 +379,22 @@ struct _Parity(Program):
                 )
             ):
                 canvas.line((-70, -40), (50, 40))
+        elif self.shape == _SHAPE_BLURRED_TEXT:
+            # Large, so the blurred stems stay above the ink threshold.
+            with canvas.style(
+                _blurred(
+                    Style(
+                        outline_enabled=False,
+                        text_color=Color.WHITE,
+                        font_size=40,
+                    )
+                )
+            ):
+                canvas.text("Il", (0, 0))
+        elif self.shape == _SHAPE_BLURRED_SPRITE:
+            # Both backends blit the same cached mask one-to-one.
+            with canvas.style(_blurred(Style())):
+                canvas.sprite(self.block, (-20, 10), 30, 30)
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline
