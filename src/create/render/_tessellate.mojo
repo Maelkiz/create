@@ -33,8 +33,14 @@ from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
 from ._transform import pixel_scale, outline_thickness_px
 from .color import Color
 
-comptime _VERTEX_FLOATS = 9
-"""`x, y, u, v, r, g, b, a, mode` — one interleaved vertex."""
+comptime _VERTEX_FLOATS = 13
+"""`x, y, u, v, r, g, b, a, mode, s0, s1, s2, s3` — one interleaved vertex.
+
+`s0..s3` are per-mode shape parameters, zero for every mode that ignores
+them. They exist for blurred shadows, whose coverage the fragment shader
+computes from quantities that vary affinely across a triangle (edge
+distances, a position relative to a centre), so the rasteriser's
+interpolation evaluates them exactly."""
 
 comptime MODE_SOLID: Float32 = 0.0
 """Colour only — the fragment shader takes this branch without sampling, so a
@@ -104,6 +110,10 @@ struct VertexBuffer(Movable):
         v: Float64,
         color: Color,
         mode: Float32,
+        s0: Float64 = 0.0,
+        s1: Float64 = 0.0,
+        s2: Float64 = 0.0,
+        s3: Float64 = 0.0,
     ):
         """One vertex, already in device pixels."""
         self.data.append(Float32(x))
@@ -115,6 +125,10 @@ struct VertexBuffer(Movable):
         self.data.append(Float32(Int(color.b)) / 255.0)
         self.data.append(Float32(Int(color.a)) / 255.0)
         self.data.append(mode)
+        self.data.append(Float32(s0))
+        self.data.append(Float32(s1))
+        self.data.append(Float32(s2))
+        self.data.append(Float32(s3))
 
     def triangle(
         mut self,

@@ -35,7 +35,7 @@ from create.render.autoscale import AutoScale
 from create.render.color import Color
 from create.render.viewport import Viewport
 
-comptime _FLOATS = 9
+comptime _FLOATS = 13
 """Mirrors `_tessellate._VERTEX_FLOATS`; spelled out so a change to the vertex
 format fails here rather than silently re-slicing these assertions."""
 
@@ -384,6 +384,17 @@ def test_clearing_keeps_the_allocation() raises -> None:
     vb.clear()
     assert_equal(vb.count(), 0)
     assert_equal(vb.data.capacity(), cap)
+
+
+def test_shape_parameters_default_to_zero() raises -> None:
+    var vb = VertexBuffer()
+    vb.push(1.0, 2.0, 0.0, 0.0, Color.RED, MODE_SOLID)
+    vb.push(1.0, 2.0, 0.0, 0.0, Color.RED, MODE_SOLID, 3.0, 4.0, 5.0, 6.0)
+    assert_equal(len(vb.data), 2 * _FLOATS)
+    for i in range(9, 13):
+        assert_equal(vb.data[i], Float32(0.0))
+    for i in range(4):
+        assert_equal(vb.data[_FLOATS + 9 + i], Float32(3 + i))
 
 
 def main() raises:

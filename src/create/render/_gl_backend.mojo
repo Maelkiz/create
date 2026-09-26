@@ -103,9 +103,9 @@ from ._transform import pixel_scale
 from .blend_mode import BlendMode
 from .color import Color
 
-comptime _VERTEX_FLOATS = 9
+comptime _VERTEX_FLOATS = 13
 """Mirrors `_tessellate._VERTEX_FLOATS`, which the attribute layout below
-unpacks into four attributes."""
+unpacks into five attributes."""
 
 comptime ATLAS_SIZE = 1024
 """The glyph atlas is square and fixed: a resize would have to re-pack and
@@ -126,12 +126,14 @@ layout (location = 0) in vec2 a_pos;
 layout (location = 1) in vec2 a_uv;
 layout (location = 2) in vec4 a_color;
 layout (location = 3) in float a_mode;
+layout (location = 4) in vec4 a_shape;
 
 uniform vec2 u_viewport;
 
 out vec2 v_uv;
 out vec4 v_color;
 out float v_mode;
+out vec4 v_shape;
 
 void main() {
     // Device pixels, y down, to NDC. The y flip is here rather than in the
@@ -144,6 +146,7 @@ void main() {
     v_uv = a_uv;
     v_color = a_color;
     v_mode = a_mode;
+    v_shape = a_shape;
 }
 """
 )
@@ -153,6 +156,7 @@ comptime _FRAGMENT_SHADER = String(
 in vec2 v_uv;
 in vec4 v_color;
 in float v_mode;
+in vec4 v_shape;
 
 uniform sampler2D u_atlas;
 uniform sampler2D u_sprite;
@@ -424,6 +428,8 @@ struct GLRenderer(Movable):
         self.gl.enable_vertex_attrib_array(2)
         self.gl.vertex_attrib_pointer(3, 1, GL_FLOAT, GL_FALSE, stride, 32)
         self.gl.enable_vertex_attrib_array(3)
+        self.gl.vertex_attrib_pointer(4, 4, GL_FLOAT, GL_FALSE, stride, 36)
+        self.gl.enable_vertex_attrib_array(4)
 
     def _setup_atlas(mut self) raises:
         """A single-channel coverage atlas, allocated blank.
