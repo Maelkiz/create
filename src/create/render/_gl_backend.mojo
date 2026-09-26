@@ -97,6 +97,7 @@ from ._tessellate import (
     emit_sprite,
     emit_triangle,
 )
+from ._shadow import casts_outer_shadow, shadow_command
 from ._text import PlacedGlyph, TextRenderer
 from ._transform import pixel_scale
 from .blend_mode import BlendMode
@@ -500,25 +501,44 @@ struct GLRenderer(Movable):
             # must not force a flush; a translucent one sets it in `_clear`.
             if c.kind != CMD_CLEAR:
                 self._blend_mode(c.style.blend_mode)
-            if c.kind == CMD_CLEAR:
-                self._clear(c.style.fill_color, width, height)
-            elif c.kind == CMD_RECT:
-                emit_rect(self.vertices, c, scale)
-            elif c.kind == CMD_CIRCLE:
-                emit_circle(self.vertices, c, scale)
-            elif c.kind == CMD_LINE:
-                emit_line(self.vertices, c, scale)
-            elif c.kind == CMD_TRIANGLE:
-                emit_triangle(self.vertices, c, scale)
-            elif c.kind == CMD_SPRITE:
-                self._sprite(c, images, scale)
-            elif c.kind == CMD_TEXT:
-                self._text(c, text, scale)
-            elif c.kind == CMD_LETTERBOX:
-                # Bars are solid, but they must land over whatever texture is
-                # bound, so no rebind here — `MODE_SOLID` never samples.
-                emit_letterbox(self.vertices, c, width, height)
+            # The shadow shares the command's blend mode, so it joins the
+            # same batch. Sprites cast theirs once the shader can paint a
+            # silhouette.
+            if casts_outer_shadow(c) and c.kind != CMD_SPRITE:
+                self._one(
+                    shadow_command(c, scale), images, text, width, height, scale
+                )
+            self._one(c, images, text, width, height, scale)
         self._flush()
+
+    def _one(
+        mut self,
+        c: RenderCommand,
+        images: Dict[Int, _Image],
+        mut text: TextRenderer,
+        width: Int,
+        height: Int,
+        scale: Float64,
+    ) raises:
+        """Emit one command's geometry. The blend state is already set."""
+        if c.kind == CMD_CLEAR:
+            self._clear(c.style.fill_color, width, height)
+        elif c.kind == CMD_RECT:
+            emit_rect(self.vertices, c, scale)
+        elif c.kind == CMD_CIRCLE:
+            emit_circle(self.vertices, c, scale)
+        elif c.kind == CMD_LINE:
+            emit_line(self.vertices, c, scale)
+        elif c.kind == CMD_TRIANGLE:
+            emit_triangle(self.vertices, c, scale)
+        elif c.kind == CMD_SPRITE:
+            self._sprite(c, images, scale)
+        elif c.kind == CMD_TEXT:
+            self._text(c, text, scale)
+        elif c.kind == CMD_LETTERBOX:
+            # Bars are solid, but they must land over whatever texture is
+            # bound, so no rebind here — `MODE_SOLID` never samples.
+            emit_letterbox(self.vertices, c, width, height)
 
     def read_frame(mut self, width: Int, height: Int) raises -> List[UInt8]:
         """Read the current drawable back as `width` x `height` RGBA bytes.

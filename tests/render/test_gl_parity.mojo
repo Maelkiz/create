@@ -101,7 +101,25 @@ comptime _SHAPE_TEXT = 6
 comptime _SHAPE_ROTATED_RECT = 7
 comptime _SHAPE_ROUNDED_RECT = 8
 comptime _SHAPE_ROUNDED_TRIANGLE = 9
-comptime _SHAPE_COUNT = 10
+comptime _SHAPE_SHADOWED_RECT = 10
+comptime _SHAPE_SHADOWED_CIRCLE = 11
+comptime _SHAPE_SHADOWED_TRIANGLE = 12
+comptime _SHAPE_SHADOWED_LINE = 13
+comptime _SHAPE_SHADOWED_TEXT = 14
+comptime _SHAPE_COUNT = 15
+
+comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
+"""Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
+colour is compared like any fill's."""
+
+
+def _shadowed(var s: Style) -> Style:
+    """`s` casting a hard, opaque shadow down-right."""
+    s.shadow_enabled = True
+    s.shadow_color = _SHADOW_INK
+    s.shadow_offset = Vector2D(8, -8)
+    s.shadow_blur = 0.0
+    return s^
 
 
 def _shape_name(shape: Int) -> String:
@@ -123,8 +141,18 @@ def _shape_name(shape: Int) -> String:
         return "rotated rect"
     elif shape == _SHAPE_ROUNDED_RECT:
         return "rounded rect"
-    else:
+    elif shape == _SHAPE_ROUNDED_TRIANGLE:
         return "rounded triangle"
+    elif shape == _SHAPE_SHADOWED_RECT:
+        return "shadowed rect"
+    elif shape == _SHAPE_SHADOWED_CIRCLE:
+        return "shadowed circle"
+    elif shape == _SHAPE_SHADOWED_TRIANGLE:
+        return "shadowed triangle"
+    elif shape == _SHAPE_SHADOWED_LINE:
+        return "shadowed line"
+    else:
+        return "shadowed text"
 
 
 @fieldwise_init
@@ -199,6 +227,56 @@ struct _Parity(Program):
                 canvas.outline(Color.BLACK, thickness=4)
                 canvas.corner_radius(10)
                 canvas.rectangle((-70, 40), 44, 30)
+        elif self.shape == _SHAPE_SHADOWED_RECT:
+            # Outlined, so the silhouette has to cover the ring as one layer.
+            with canvas.style(
+                _shadowed(
+                    Style(
+                        fill=Color(0x40, 0xC0, 0xE0),
+                        outline=Color.BLACK,
+                        outline_thickness=4,
+                        corner_radius=6,
+                    )
+                )
+            ):
+                canvas.rectangle((10, 20), 50, 30)
+        elif self.shape == _SHAPE_SHADOWED_CIRCLE:
+            with canvas.style(
+                _shadowed(
+                    Style(fill=Color(0xF0, 0xC0, 0x30), outline_enabled=False)
+                )
+            ):
+                canvas.circle((-60, -20), 24)
+        elif self.shape == _SHAPE_SHADOWED_TRIANGLE:
+            # Outlined: the silhouette grows by half the centred band.
+            with canvas.style(
+                _shadowed(
+                    Style(
+                        fill=Color(0xA0, 0x60, 0xF0),
+                        outline=Color.BLACK,
+                        outline_thickness=4,
+                    )
+                )
+            ):
+                canvas.triangle((20, -50), (70, -50), (45, -5))
+        elif self.shape == _SHAPE_SHADOWED_LINE:
+            with canvas.style(
+                _shadowed(
+                    Style(outline=Color(0x80, 0xFF, 0x80), outline_thickness=3)
+                )
+            ):
+                canvas.line((-90, -40), (90, -40))
+        elif self.shape == _SHAPE_SHADOWED_TEXT:
+            with canvas.style(
+                _shadowed(
+                    Style(
+                        outline_enabled=False,
+                        text_color=Color.WHITE,
+                        font_size=16,
+                    )
+                )
+            ):
+                canvas.text("parity", (0, 0))
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline
