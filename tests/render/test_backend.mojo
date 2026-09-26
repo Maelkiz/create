@@ -487,5 +487,93 @@ def test_render_backend_writes_its_constant_name() raises -> None:
     assert_equal(String(RenderBackend(99)), "RenderBackend(99)")
 
 
+def _shadowed(fill: Color, shadow: Color) -> Style:
+    var s = _solid(fill)
+    s.shadow_enabled = True
+    s.shadow_color = shadow
+    s.shadow_offset = Vector2D(10, -10)
+    s.shadow_blur = 0.0
+    return s^
+
+
+def test_shadow_lands_down_right_and_under_the_shape() raises -> None:
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(
+        rect_command(
+            _base(), _shadowed(Color.WHITE, Color.RED), 0.0, 0.0, 20.0, 20.0
+        )
+    )
+    var m = _replay(cmds)
+    # Shape covers [40, 60); its shadow [50, 70), device rows running down.
+    assert_equal(m.pixel(50, 50), Color.WHITE)
+    assert_equal(m.pixel(65, 65), Color.RED)
+    assert_equal(m.pixel(55, 65), Color.RED)
+    assert_equal(m.pixel(45, 45), Color.WHITE)
+    assert_equal(m.pixel(35, 35), Color.BLACK)
+    assert_equal(m.pixel(72, 72), Color.BLACK)
+
+
+def test_translucent_shadow_is_one_even_layer_under_an_outline() raises -> None:
+    var s = _shadowed(Color.WHITE, Color(0, 0, 0, 128))
+    s.outline_enabled = True
+    s.outline_color = Color.BLUE
+    s.outline_thickness = 3
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.WHITE))
+    cmds.append(rect_command(_base(), s, 0.0, 0.0, 20.0, 20.0))
+    var m = _replay(cmds)
+    # Row 51 is where the shifted outline ring would run; it must not be any
+    # darker than the middle of the silhouette.
+    assert_equal(m.pixel(65, 51), m.pixel(65, 65))
+    assert_true(m.pixel(65, 65) != Color.WHITE)
+
+
+def test_a_later_shadow_falls_over_earlier_shapes() raises -> None:
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(
+        rect_command(_base(), _solid(Color.WHITE), 0.0, 0.0, 20.0, 20.0)
+    )
+    cmds.append(
+        rect_command(
+            _base(), _shadowed(Color.GREEN, Color.RED), -10.0, 10.0, 20.0, 20.0
+        )
+    )
+    var m = _replay(cmds)
+    assert_equal(m.pixel(55, 55), Color.RED)
+    assert_equal(m.pixel(45, 45), Color.GREEN)
+
+
+def test_disabled_shadow_paints_nothing() raises -> None:
+    var s = _shadowed(Color.WHITE, Color.RED)
+    s.shadow_enabled = False
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(rect_command(_base(), s, 0.0, 0.0, 20.0, 20.0))
+    var m = _replay(cmds)
+    assert_equal(m.pixel(65, 65), Color.BLACK)
+
+
+def test_circle_and_line_cast_shadows() raises -> None:
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(
+        circle_command(
+            _base(), _shadowed(Color.WHITE, Color.RED), 0.0, 0.0, 8.0
+        )
+    )
+    var ls = _shadowed(Color.WHITE, Color.RED)
+    ls.outline_enabled = True
+    ls.outline_color = Color.WHITE
+    ls.outline_thickness = 2
+    cmds.append(line_command(_base(), ls, -40.0, 40.0, -20.0, 40.0))
+    var m = _replay(cmds)
+    # Circle centre (50, 50) shadow centre (60, 60), outside the disc.
+    assert_equal(m.pixel(60, 60), Color.RED)
+    # Line at device row 10, cols 10..30; shadow at row 20, cols 20..40.
+    assert_equal(m.pixel(35, 20), Color.RED)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

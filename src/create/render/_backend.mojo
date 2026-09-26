@@ -28,6 +28,7 @@ from ._gl_backend import GLRenderer
 from ._image import _Image
 from .style import Style
 from ._transform import pixel_scale, outline_thickness_px, uniform
+from ._shadow import casts_outer_shadow, shadow_command
 from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
 from ._tessellate import _arc_segments
 from ._png import write_png
@@ -959,6 +960,11 @@ struct Backend(Movable):
         var m = pre @ c.transform
         # Likewise the blend mode: every raster loop reads it off the surface.
         var t = s._with_blend_mode(c.style.blend_mode)
+        # An outer shadow is the command's silhouette, replayed under it
+        # through this same dispatch. Sprites cast theirs once the raster can
+        # paint a silhouette.
+        if casts_outer_shadow(c) and c.kind != CMD_SPRITE:
+            self._one(s, shadow_command(c, scale), scale, pre)
         if c.kind == CMD_CLEAR:
             fill_all(t, c.style.fill_color)
         elif c.kind == CMD_RECT:
