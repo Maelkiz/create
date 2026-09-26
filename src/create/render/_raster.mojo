@@ -510,32 +510,47 @@ def blit_sprite[
 def blit_glyph[
     o: Origin[mut=True]
 ](s: Surface[o], g: _GlyphInfo, x0: Int, y0: Int, c: Color):
-    """Composite a glyph's coverage mask at `(x0, y0)` in `c`.
+    """Composite a glyph's coverage mask at `(x0, y0)` in `c`."""
+    blit_alpha(s, g.pixels.unsafe_ptr(), g.width, g.height, x0, y0, c)
 
-    Coverage scales the fill's alpha, so antialiasing and a translucent fill
-    compose rather than one overriding the other.
+
+def blit_alpha[
+    o: Origin[mut=True], so: Origin
+](
+    s: Surface[o],
+    src: Pointer[UInt8, so],
+    width: Int,
+    height: Int,
+    x0: Int,
+    y0: Int,
+    c: Color,
+):
+    """Composite the `width` x `height` 8-bit coverage mask at `src` at
+    `(x0, y0)` in `c` — a glyph, or a blurred silhouette.
+
+    Coverage scales the colour's alpha, so antialiasing and a translucent
+    colour compose rather than one overriding the other.
 
     Rows and columns are clipped once against the surface up front, as
-    `blit_sprite` now does, instead of testing `px_x` against the bounds on
-    every pixel. Coverage is still tested per pixel — a glyph mask is
-    genuinely scattered, not a run — so it keeps `blend` rather than moving
-    to `fill_span`.
+    `blit_sprite` does, instead of testing each pixel against the bounds.
+    Coverage is still tested per pixel — a mask is genuinely scattered, not a
+    run — so it keeps `blend` rather than moving to `fill_span`.
     """
     var W = s.width
     var H = s.height
     var ca = Int(c.a)
-    var gp = g.pixels.unsafe_ptr()
+    var gp = src
 
     var row_lo = max(0, -y0)
-    var row_hi = min(g.height, H - y0)
+    var row_hi = min(height, H - y0)
     var col_lo = max(0, -x0)
-    var col_hi = min(g.width, W - x0)
+    var col_hi = min(width, W - x0)
     if row_lo >= row_hi or col_lo >= col_hi:
         return
 
     for row in range(row_lo, row_hi):
         var dst_row_off = (y0 + row) * W * 4
-        var src_row_off = row * g.width
+        var src_row_off = row * width
         for col in range(col_lo, col_hi):
             var cov = Int(gp[unsafe_offset=src_row_off + col])
             if cov == 0:

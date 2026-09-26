@@ -683,5 +683,64 @@ def test_every_shape_kind_casts_a_blurred_shadow() raises -> None:
     assert_equal(m.pixel(80, 0), Color.BLACK)
 
 
+def _blurred_sprite_frame(mut backend: Backend, mut mem: MemorySurface) raises:
+    """A 20x20 opaque sprite at the world origin, its shadow blurred by 8
+    and thrown 40 units right: sprite over columns 30..49, shadow 70..89."""
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    var s = _blurred(Color.GREEN, 8.0)
+    s.shadow_offset = Vector2D(40, 0)
+    cmds.append(sprite_command(_base(), s^, -10.0, 0.0, 20.0, 20.0, 3, 2, 2))
+    backend.replay(mem.surface(), cmds, 1.0)
+
+
+def test_a_blurred_sprite_shadow_softens_past_its_silhouette() raises -> None:
+    var src = List[UInt8](length=16, fill=255)
+    var backend = Backend()
+    _ = backend.intern_image(3, src.unsafe_ptr(), 2, 2)
+    var mem = MemorySurface(_W, _H)
+    _blurred_sprite_frame(backend, mem)
+    # The silhouette spans columns 70..89 on row 50 (sprite at 30..49).
+    assert_true(mem.pixel(80, 50).r > 240, "the middle isn't solid")
+    var edge = Int(mem.pixel(89, 50).r) + Int(mem.pixel(90, 50).r)
+    assert_true(abs(edge - 255) <= 40, "the edge isn't half covered")
+    assert_true(mem.pixel(94, 50).r > 0, "the blur stops at the edge")
+    assert_true(mem.pixel(94, 50).r < 128)
+    # Once the frame is cached, a repeat blurs nothing new.
+    assert_equal(len(backend.shadow_masks), 1)
+    _blurred_sprite_frame(backend, mem)
+    assert_equal(len(backend.shadow_masks), 1)
+
+
+def test_a_blurred_text_shadow_is_softer_than_a_hard_one() raises -> None:
+    # Red under green, so a pixel with red and no green is shadow alone.
+    var hard = _shadowed(Color.GREEN, Color.RED)
+    hard.text_color = Color.GREEN
+    hard.font_size = 40
+    hard.shadow_offset = Vector2D(0, 0)
+    var soft = hard.copy()
+    soft.shadow_blur = 8.0
+    var a = List[RenderCommand]()
+    a.append(clear_command(Color.BLACK))
+    a.append(text_command(_base(), hard^, 0.0, 0.0, "l"))
+    var b = List[RenderCommand]()
+    b.append(clear_command(Color.BLACK))
+    b.append(text_command(_base(), soft^, 0.0, 0.0, "l"))
+    var ma = _replay(a)
+    var mb = _replay(b)
+    # The hard shadow sits exactly under the glyph; the blurred one spills
+    # out beside it in the shadow colour.
+    var spill_hard = 0
+    var spill_soft = 0
+    for y in range(_H):
+        for x in range(_W):
+            if ma.pixel(x, y).g == 0 and ma.pixel(x, y).r > 0:
+                spill_hard += 1
+            if mb.pixel(x, y).g == 0 and mb.pixel(x, y).r > 0:
+                spill_soft += 1
+    assert_equal(spill_hard, 0)
+    assert_true(spill_soft > 50)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

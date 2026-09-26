@@ -3,6 +3,7 @@ from std.math import max
 from .align import Align
 from .color import Color
 from .font import Font, _GlyphInfo, default_font_path, fallback_font_path
+from ._blur import blur_alpha
 from ._raster import blit_glyph
 from .style import Style
 from .surface import Surface
@@ -100,18 +101,27 @@ struct TextRenderer(Movable):
             except:
                 pass
 
-    def _glyph_key(self, codepoint: Int, size: Int, weight: Int) -> Int:
+    def _glyph_key(
+        self, codepoint: Int, size: Int, weight: Int, blur: Int = 0
+    ) -> Int:
         """Pack what a mask depends on into one key.
 
-        A codepoint is 21 bits and a weight 10, so all three pack into an Int
-        with room to spare.
+        A codepoint is 21 bits, a size 16 and a weight 10, which leaves the
+        top 16 bits of an Int for the blur.
         """
-        return codepoint | (size << 21) | (weight << 37)
+        return codepoint | (size << 21) | (weight << 37) | (blur << 47)
 
     def _ensure_glyph(
-        mut self, codepoint: Int, size: Int, weight: Int
+        mut self, codepoint: Int, size: Int, weight: Int, blur: Int = 0
     ) raises -> Int:
-        """Cache the mask for `(codepoint, size, weight)` and return its key.
+        """Cache the mask for `(codepoint, size, weight, blur)` and return its
+        key.
+
+        A `blur` above 0 is a shadow's: the plain mask blurred with sigma
+        `blur / 2` pixels, grown by the blur's reach and moved back by it, so
+        it lays out exactly where the plain glyph does. `blur` is a whole
+        number of pixels so that a zooming camera, which changes it
+        continuously, mints a new mask only once per pixel.
 
         Every FreeType call in the text path is behind this miss: rasterising a
         glyph costs an `FT_Load_Char` and an `FT_Render_Glyph` over the C ABI,
@@ -123,8 +133,26 @@ struct TextRenderer(Movable):
         depends on the fill, the position or the alignment; only these three
         inputs change what is stored.
         """
-        var key = self._glyph_key(codepoint, size, weight)
+        var key = self._glyph_key(codepoint, size, weight, blur)
         if key in self._glyphs:
+            return key
+        if blur > 0:
+            var plain = self._ensure_glyph(codepoint, size, weight)
+            ref g = self._glyphs[plain]
+            var mask = blur_alpha(
+                g.pixels, g.width, g.height, Float64(blur) / 2.0
+            )
+            var blurred = _GlyphInfo(
+                mask.width,
+                mask.height,
+                g.bearing_x - mask.pad,
+                g.bearing_y + mask.pad,
+                g.advance_x,
+            )
+            blurred.pixels = mask.pixels.copy()
+            if len(self._glyphs) >= _GLYPH_CACHE_LIMIT:
+                self._glyphs.clear()
+            self._glyphs[key] = blurred^
             return key
         if len(self._glyphs) >= _GLYPH_CACHE_LIMIT:
             self._glyphs.clear()
@@ -158,8 +186,10 @@ struct TextRenderer(Movable):
         ty: Float64,
         style: Style,
         pixel_scale: Float64,
+        blur: Int = 0,
     ) raises -> List[PlacedGlyph]:
-        """Place `s` around the already-mapped anchor `(tx, ty)`.
+        """Place `s` around the already-mapped anchor `(tx, ty)`, as masks
+        blurred by `blur` pixels (see `_ensure_glyph`).
 
         The caller maps the anchor; glyphs lay out upright in pixel space, so
         `Align.TOP`/`BOTTOM` keep meaning the top and bottom of the text box
@@ -175,7 +205,7 @@ struct TextRenderer(Movable):
         # Two passes: measure the total advance for alignment, then place.
         var tw = 0
         for cp in s.codepoints():
-            var key = self._ensure_glyph(Int(cp), size, weight)
+            var key = self._ensure_glyph(Int(cp), size, weight, blur)
             tw += self._glyphs[key].advance_x
 
         var pen_x = Int(tx)
@@ -201,11 +231,12 @@ struct TextRenderer(Movable):
         for cp in s.codepoints():
             # Bound by reference: the mask stays in the cache rather than
             # being copied out of it once per character.
-            ref g = self._glyphs[self._ensure_glyph(Int(cp), size, weight)]
+            var key = self._ensure_glyph(Int(cp), size, weight, blur)
+            ref g = self._glyphs[key]
             if g.width > 0 and g.height > 0:
                 placed.append(
                     PlacedGlyph(
-                        self._glyph_key(Int(cp), size, weight),
+                        key,
                         cx + g.bearing_x,
                         baseline_y - g.bearing_y,
                         g.width,
@@ -225,10 +256,11 @@ struct TextRenderer(Movable):
         ty: Float64,
         style: Style,
         pixel_scale: Float64,
+        blur: Int = 0,
     ) raises:
         """Blit `s` through `layout`, so the CPU and GL paths place a glyph
         with one function rather than two that have to agree."""
         var c = style.text_color
-        for ref p in self.layout(s, tx, ty, style, pixel_scale):
+        for ref p in self.layout(s, tx, ty, style, pixel_scale, blur):
             ref g = self._glyphs[p.key]
             blit_glyph(surf, g, p.x, p.y, c)

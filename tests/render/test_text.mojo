@@ -239,6 +239,46 @@ def test_the_cache_is_bounded() raises -> None:
     assert_true(_ink_box(m)[2] >= 0, "nothing was rendered after a cache drop")
 
 
+def _alpha_column_peak(m: MemorySurface, y: Int) -> Int:
+    """The column where row `y` is most opaque."""
+    var best = 0
+    for x in range(m.width):
+        if m.pixel(x, y).a > m.pixel(best, y).a:
+            best = x
+    return best
+
+
+def test_a_blurred_glyph_peaks_under_its_stem() raises -> None:
+    # "l" is one vertical stem: blurred, it spreads sideways but stays
+    # centred where the plain glyph's ink is.
+    var style = _style(Align.CENTER)
+    style.font_size = 40
+    var plain = MemorySurface(120, 120)
+    var blurred = MemorySurface(120, 120)
+    var t = TextRenderer()
+    t.render(plain.surface(), "l", 60.0, 60.0, style.copy(), 1.0)
+    t.render(blurred.surface(), "l", 60.0, 60.0, style^, 1.0, 6)
+    var box = _ink_box(plain)
+    var wide = _ink_box(blurred)
+    var mid = (box[1] + box[3]) // 2
+    var stem = (box[0] + box[2]) // 2
+    assert_true(abs(_alpha_column_peak(blurred, mid) - stem) <= 1)
+    assert_true(wide[0] < box[0] and wide[2] > box[2], "the blur didn't spread")
+    assert_true(blurred.pixel(stem, mid).a < 255, "the stem stayed hard")
+
+
+def test_a_repeated_blurred_render_hits_the_cache() raises -> None:
+    var t = TextRenderer()
+    var m = MemorySurface(200, 120)
+    t.render(m.surface(), "Hi", 40.0, 30.0, _style(Align.CENTER), 1.0, 4)
+    var entries = len(t._glyphs)
+    t.render(m.surface(), "Hi", 40.0, 30.0, _style(Align.CENTER), 1.0, 4)
+    assert_equal(len(t._glyphs), entries)
+    # A different blur is a different mask.
+    t.render(m.surface(), "Hi", 40.0, 30.0, _style(Align.CENTER), 1.0, 5)
+    assert_true(len(t._glyphs) > entries)
+
+
 def test_align_writes_its_constant_name() raises -> None:
     assert_equal(String(Align.TOP), "Align.TOP")
     assert_equal(String(Align.BOTTOM_RIGHT), "Align.BOTTOM_RIGHT")

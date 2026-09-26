@@ -15,8 +15,10 @@ from ._command import (
     CMD_LETTERBOX,
     RenderCommand,
 )
+from ._blur import BlurredMask, blur_sprite_alpha
 from ._raster import (
     blend,
+    blit_alpha,
     blit_sprite,
     fill_all,
     fill_pixels,
@@ -42,6 +44,22 @@ from .surface import MemorySurface, Surface, _force_opaque
 from ._text import TextRenderer
 from .render_backend import RenderBackend
 from .color import Color
+
+
+comptime _SHADOW_MASK_LIMIT = 256
+"""Blurred sprite masks kept before the cache is dropped whole — the same
+policy, for the same reason, as `_text._GLYPH_CACHE_LIMIT`."""
+
+
+def _shadow_mask_key(image: Int, width: Int, height: Int, blur: Int) -> Int:
+    """Pack what a blurred sprite mask depends on into one key: 24 bits of
+    image id, 15 each of device width and height, and 10 of blur."""
+    return (
+        image
+        | (min(width, 0x7FFF) << 24)
+        | (min(height, 0x7FFF) << 39)
+        | (min(blur, 0x3FF) << 54)
+    )
 
 
 def device_bounds(
@@ -761,6 +779,9 @@ struct Backend(Movable):
     var kind: RenderBackend
     var text: TextRenderer
     var images: Dict[Int, _Image]
+    var shadow_masks: Dict[Int, BlurredMask]
+    """Blurred sprite silhouettes, keyed by `_shadow_mask_key`: a sprite's
+    shadow is blurred once per image, device size and blur, not per frame."""
     var gl: Optional[GLRenderer]
     """The GPU resources, present exactly when `kind == RenderBackend.GPU`.
 
@@ -799,6 +820,7 @@ struct Backend(Movable):
         self.kind = kind
         self.text = TextRenderer()
         self.images = Dict[Int, _Image]()
+        self.shadow_masks = Dict[Int, BlurredMask]()
         self.commands = List[RenderCommand]()
         self.pending_image = Optional[_ImageRequest]()
         self.pending_screenshot = Optional[String]()
@@ -1015,10 +1037,17 @@ struct Backend(Movable):
         # through this same dispatch.
         if casts_outer_shadow(c):
             var sh = shadow_command(c, scale)
-            if c.style.shadow_blur > 0.0 and blurs_analytically(c):
-                _blurred_shadow(t, sh, scale, pre @ sh.transform)
-            else:
+            var sm = pre @ sh.transform
+            # The blur in whole device pixels; see `_ensure_glyph`.
+            var blur = Int(c.style.shadow_blur * pixel_scale(sm, scale) + 0.5)
+            if blur == 0:
                 self._one(s, sh, scale, pre)
+            elif blurs_analytically(c):
+                _blurred_shadow(t, sh, scale, sm)
+            elif c.kind == CMD_TEXT:
+                self._text(t, sh, scale, sm, blur)
+            elif c.kind == CMD_SPRITE:
+                self._sprite_shadow(t, sh, scale, sm, blur)
         if c.kind == CMD_CLEAR:
             fill_all(t, c.style.fill_color)
         elif c.kind == CMD_RECT:
@@ -1798,6 +1827,48 @@ struct Backend(Movable):
             Optional(c.style.fill_color) if c.silhouette else None,
         )
 
+    def _sprite_shadow[
+        o: Origin[mut=True]
+    ](
+        mut self,
+        s: Surface[o],
+        c: RenderCommand,
+        scale: Float64,
+        m: Matrix[3, 3],
+        blur: Int,
+    ) raises:
+        """The silhouette command `c` blurred by `blur` device pixels, from
+        a cached mask laid over the same destination rect `_sprite` uses."""
+        if c.image not in self.images:
+            return
+        var p = mat_apply(m, c.geom[0], c.geom[1])
+        var sf = pixel_scale(m, scale)
+        var dw = max(Int(c.geom[2] * sf + 0.5), 1)
+        var dh = max(Int(c.geom[3] * sf + 0.5), 1)
+        var key = _shadow_mask_key(c.image, dw, dh, blur)
+        if key not in self.shadow_masks:
+            if len(self.shadow_masks) >= _SHADOW_MASK_LIMIT:
+                self.shadow_masks.clear()
+            ref img = self.images[c.image]
+            self.shadow_masks[key] = blur_sprite_alpha(
+                img.pixels.unsafe_ptr(),
+                img.width,
+                img.height,
+                dw,
+                dh,
+                Float64(blur) / 2.0,
+            )
+        ref mask = self.shadow_masks[key]
+        blit_alpha(
+            s,
+            mask.pixels.unsafe_ptr(),
+            mask.width,
+            mask.height,
+            Int(p[0]) - dw // 2 - mask.pad,
+            Int(p[1]) - dh // 2 - mask.pad,
+            c.style.fill_color,
+        )
+
     def _text[
         o: Origin[mut=True]
     ](
@@ -1806,12 +1877,15 @@ struct Backend(Movable):
         c: RenderCommand,
         scale: Float64,
         m: Matrix[3, 3],
+        blur: Int = 0,
     ) raises:
         # Only the anchor is mapped — the layout itself happens in pixel space.
         # `canvas.text` already skips recording when `text_color` is fully
         # transparent; text has no other visibility gate (fill is unrelated).
         var p = mat_apply(m, c.geom[0], c.geom[1])
-        self.text.render(s, c.text, p[0], p[1], c.style, pixel_scale(m, scale))
+        self.text.render(
+            s, c.text, p[0], p[1], c.style, pixel_scale(m, scale), blur
+        )
 
     def _letterbox[
         o: Origin[mut=True]
