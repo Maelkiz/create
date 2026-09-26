@@ -29,8 +29,10 @@ passing file. Each file is its own process; namespace any scratch path under `/t
 
 GL tests skip without a context. `pixi run test` uses SDL's offscreen driver when no display is set
 (`DISPLAY`, `WAYLAND_DISPLAY`, `XDG_RUNTIME_DIR` all unset), which gives a software GL 3.3 context —
-enough for library-logic bugs, blind to driver-specific ones. Window tests that open a window pin
-`SDL_VIDEODRIVER=dummy` in their own `main`.
+enough for library-logic bugs, blind to driver-specific ones. If GL tests skip on a machine with a
+working driver, suspect the environment's libraries shadowing the host driver's:
+`scripts/activate.sh` preloads the system libdrm for that reason. Window tests that open a window
+pin `SDL_VIDEODRIVER=dummy` in their own `main`.
 
 `core/test_smoke.mojo` is built on every commit and run by the suite. Its uncalled
 `_windowed_entry_point` still gets type-checked, which gates the windowed path. Keep it minimal.

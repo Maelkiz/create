@@ -5,6 +5,9 @@ name = "create"
 platforms = ["linux-64"]
 version = "0.1.0"
 
+[activation]
+scripts = ["scripts/activate.sh"]
+
 [tasks]
 example = "bash scripts/example.sh"
 test = "bash scripts/test.sh"
