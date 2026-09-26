@@ -13,6 +13,7 @@ from create.render.style import Style
 from create.render._backend import Backend
 from create.render._raster import blend
 from create.render._transform import pixel_scale, outline_thickness_px
+from create.render._shadow import box_coverage
 from create.render._command import (
     CMD_CLEAR,
     CMD_LETTERBOX,
@@ -573,6 +574,90 @@ def test_circle_and_line_cast_shadows() raises -> None:
     assert_equal(m.pixel(60, 60), Color.RED)
     # Line at device row 10, cols 10..30; shadow at row 20, cols 20..40.
     assert_equal(m.pixel(35, 20), Color.RED)
+
+
+def _blurred(fill: Color, blur: Float64) -> Style:
+    """White ink blurred by `blur`, thrown 60 units right of its shape."""
+    var s = _shadowed(fill, Color.WHITE)
+    s.shadow_offset = Vector2D(60, 0)
+    s.shadow_blur = blur
+    return s^
+
+
+def _near(got: UInt8, want: Float64, tolerance: Int = 1) -> Bool:
+    return abs(Int(got) - Int(want + 0.5)) <= tolerance
+
+
+def test_blurred_rect_shadow_follows_the_box_profile() raises -> None:
+    # Shape at x in [-40, -20]; shadow at [20, 40] -> device columns 70..90,
+    # tall enough that the vertical factor is 1 on row 50. sigma = 4.
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(
+        rect_command(
+            _base(), _blurred(Color.GREEN, 8.0), -30.0, 0.0, 20.0, 90.0
+        )
+    )
+    var m = _replay(cmds)
+    for px in range(60, 100):
+        var x = Float64(px) + 0.5
+        var want = 255.0 * box_coverage(
+            (x - 70.0) / 4.0, (90.0 - x) / 4.0, 1e9, 1e9
+        )
+        assert_true(_near(m.pixel(px, 50).r, want), String(px))
+    # Half on the silhouette's edge, symmetric about it.
+    assert_true(abs(Int(m.pixel(70, 50).r) + Int(m.pixel(69, 50).r) - 255) <= 2)
+    # A hard shadow would stop at 90; this one fades to nothing by 4 sigma.
+    assert_true(m.pixel(96, 50).r > 0)
+    for px in range(90 + 16, 100):
+        assert_equal(m.pixel(px, 50), Color.BLACK)
+
+
+def test_blurred_ring_shadow_is_hollow() raises -> None:
+    var s = _blurred(Color.GREEN, 2.0)
+    s.fill_enabled = False
+    s.outline_enabled = True
+    s.outline_color = Color.GREEN
+    s.outline_thickness = 4
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(rect_command(_base(), s, -30.0, 0.0, 30.0, 30.0))
+    var m = _replay(cmds)
+    # Shadow spans columns 65..95; its ring's middle is at 67, its hole at 80.
+    assert_true(m.pixel(67, 50).r > 200)
+    assert_equal(m.pixel(80, 50), Color.BLACK)
+
+
+def test_every_shape_kind_casts_a_blurred_shadow() raises -> None:
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(
+        circle_command(_base(), _blurred(Color.GREEN, 4.0), -30.0, 30.0, 8.0)
+    )
+    cmds.append(
+        triangle_command(
+            _base(),
+            _blurred(Color.GREEN, 4.0),
+            -40.0,
+            -10.0,
+            -20.0,
+            -10.0,
+            -30.0,
+            10.0,
+        )
+    )
+    var ls = _blurred(Color.GREEN, 4.0)
+    ls.outline_enabled = True
+    ls.outline_color = Color.GREEN
+    ls.outline_thickness = 4
+    cmds.append(line_command(_base(), ls, -40.0, -35.0, -20.0, -35.0))
+    var m = _replay(cmds)
+    # Each shadow's middle is solid, and it softens away from it.
+    assert_true(m.pixel(80, 20).r > 240)  # circle, centre (80, 20)
+    assert_true(m.pixel(80, 51).r > 200)  # triangle, centroid near (80, 53)
+    assert_true(m.pixel(80, 85).r > 150)  # line, row 85
+    assert_true(m.pixel(80, 92).r < 20)
+    assert_equal(m.pixel(80, 0), Color.BLACK)
 
 
 def main() raises:

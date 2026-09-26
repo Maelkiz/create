@@ -38,6 +38,7 @@ from ._command import (
     CMD_TRIANGLE,
     RenderCommand,
 )
+from ._fillet import rect_corner_radius
 from ._transform import outline_thickness_px, pixel_scale
 
 
@@ -192,6 +193,12 @@ def gaussian_cdf(x: Float64) -> Float64:
     Abramowitz and Stegun 7.1.26 for `erf`, good to 1.5e-7 — GLSL has no
     `erf`, so the shader uses the same polynomial and both replays agree.
     """
+    # Past four sigma the result rounds to 0 or 1 in any 8-bit channel, and
+    # skipping `exp` there makes a blurred shadow's interior nearly free.
+    if x >= 4.0:
+        return 1.0
+    if x <= -4.0:
+        return 0.0
     var z = abs(x) / sqrt(2.0)
     var t = 1.0 / (1.0 + 0.3275911 * z)
     var poly = t * (
@@ -262,3 +269,229 @@ def rounded_rect_coverage(
     var oy = max(qy, 0.0)
     var sdf = sqrt(ox * ox + oy * oy) + min(max(qx, qy), 0.0) - r
     return gaussian_cdf(-sdf)
+
+
+# --- Blurred silhouettes -----------------------------------------------------
+
+comptime BLUR_REACH = 4.0
+"""How many sigma a blurred shadow reaches past its silhouette before
+`gaussian_cdf` rounds it to nothing."""
+
+comptime _SIL_RECT = 0
+"""`[cx, cy, half_w, half_h, radius]`: a rectangle, rounded or not; a
+circle is one with all three extents equal."""
+comptime _SIL_TRIANGLE = 1
+"""`[nx, ny, c] x 3`: each edge's inward unit normal and offset."""
+comptime _SIL_LINE = 2
+"""`[x0, y0, ux, uy, length, half_thickness]`: a stroke's rectangle, in its
+own frame."""
+
+
+def blurs_analytically(c: RenderCommand) -> Bool:
+    """Whether `c`'s shadow blurs through `BlurredSilhouette` rather than
+    as an image: the shapes and lines, whose edges are known exactly."""
+    return (
+        c.kind == CMD_RECT
+        or c.kind == CMD_CIRCLE
+        or c.kind == CMD_TRIANGLE
+        or c.kind == CMD_LINE
+    )
+
+
+def local_outline_thickness(
+    c: RenderCommand, m: Matrix[3, 3], scale: Float64
+) -> Float64:
+    """`c`'s outline as the rasterisers draw it — rounded to whole pixels,
+    never under one — back in local units."""
+    return Float64(outline_thickness_px(c.style, m, scale)) / pixel_scale(
+        m, scale
+    )
+
+
+def _triangle_edges(
+    xs: Array[Float64, 3], ys: Array[Float64, 3]
+) -> Array[Float64, 9]:
+    """Inward unit normal `(nx, ny)` and offset `c` per edge, so the signed
+    distance of `(x, y)` inside edge `i` is `nx * x + ny * y + c`."""
+    var out = Array[Float64, 9](fill=0.0)
+    var cross = (xs[1] - xs[0]) * (ys[2] - ys[0]) - (ys[1] - ys[0]) * (
+        xs[2] - xs[0]
+    )
+    var sign = 1.0 if cross >= 0.0 else -1.0
+    for i in range(3):
+        var j = (i + 1) % 3
+        var ex = xs[j] - xs[i]
+        var ey = ys[j] - ys[i]
+        var l = sqrt(ex * ex + ey * ey)
+        if l <= 0.0:
+            continue
+        var nx = -ey / l * sign
+        var ny = ex / l * sign
+        out[3 * i] = nx
+        out[3 * i + 1] = ny
+        out[3 * i + 2] = -(nx * xs[i] + ny * ys[i])
+    return out^
+
+
+struct BlurredSilhouette(Copyable, Movable):
+    """A shadow silhouette with its Gaussian blur, as coverage at any local
+    point.
+
+    Built from the command `shadow_command` returns, in that command's
+    local units. A ring (an outline-only shape) is the outer shape minus the
+    inner one: blurring is linear, so the blurred ring is the difference of
+    the two blurred shapes, exactly. A triangle's `corner_radius` is left
+    out — its blurred corners are the product of their two edges'.
+    """
+
+    var kind: Int
+    var inv_sigma: Float64
+    var outer: Array[Float64, 9]
+    var inner: Array[Float64, 9]
+    var has_inner: Bool
+    var x0: Float64
+    var y0: Float64
+    var x1: Float64
+    var y1: Float64
+    """The outer silhouette's local bounds, before the blur's reach."""
+
+    def __init__(out self, sh: RenderCommand, thickness: Float64):
+        """`sh` is a shadow command; `thickness` its outline in local units
+        (see `local_outline_thickness`)."""
+        self.inv_sigma = (
+            2.0 / sh.style.shadow_blur if sh.style.shadow_blur > 0.0 else 0.0
+        )
+        self.outer = Array[Float64, 9](fill=0.0)
+        self.inner = Array[Float64, 9](fill=0.0)
+        self.has_inner = False
+        var ring = not sh.style._fill_visible()
+        if sh.kind == CMD_RECT or sh.kind == CMD_CIRCLE:
+            self.kind = _SIL_RECT
+            var hw = sh.geom[2] / 2.0
+            var hh = sh.geom[3] / 2.0
+            var r = rect_corner_radius(
+                Float64(sh.style.corner_radius), sh.geom[2], sh.geom[3]
+            )
+            if sh.kind == CMD_CIRCLE:
+                hw = sh.geom[2]
+                hh = hw
+                r = hw
+            self.outer[0] = sh.geom[0]
+            self.outer[1] = sh.geom[1]
+            self.outer[2] = hw
+            self.outer[3] = hh
+            self.outer[4] = r
+            self.x0 = sh.geom[0] - hw
+            self.x1 = sh.geom[0] + hw
+            self.y0 = sh.geom[1] - hh
+            self.y1 = sh.geom[1] + hh
+            # Both outlines are inset rings.
+            if ring and hw - thickness > 0.0 and hh - thickness > 0.0:
+                self.has_inner = True
+                self.inner[0] = sh.geom[0]
+                self.inner[1] = sh.geom[1]
+                self.inner[2] = hw - thickness
+                self.inner[3] = hh - thickness
+                self.inner[4] = max(r - thickness, 0.0)
+        elif sh.kind == CMD_TRIANGLE:
+            self.kind = _SIL_TRIANGLE
+            var o = sh.copy()
+            var i = sh.copy()
+            if ring:
+                # A centred band: half the stroke out, half in.
+                _grow_triangle(o, thickness / 2.0)
+                self.has_inner = _inradius(sh) > thickness / 2.0
+                _grow_triangle(i, -thickness / 2.0)
+            var xs = Array[Float64, 3](fill=0.0)
+            var ys = Array[Float64, 3](fill=0.0)
+            for k in range(3):
+                xs[k] = o.geom[2 * k]
+                ys[k] = o.geom[2 * k + 1]
+            self.outer = _triangle_edges(xs, ys)
+            self.x0 = min(xs[0], min(xs[1], xs[2]))
+            self.x1 = max(xs[0], max(xs[1], xs[2]))
+            self.y0 = min(ys[0], min(ys[1], ys[2]))
+            self.y1 = max(ys[0], max(ys[1], ys[2]))
+            if self.has_inner:
+                for k in range(3):
+                    xs[k] = i.geom[2 * k]
+                    ys[k] = i.geom[2 * k + 1]
+                self.inner = _triangle_edges(xs, ys)
+        else:
+            self.kind = _SIL_LINE
+            var ax = sh.geom[0]
+            var ay = sh.geom[1]
+            var ex = sh.geom[2] - ax
+            var ey = sh.geom[3] - ay
+            var l = sqrt(ex * ex + ey * ey)
+            var h = thickness / 2.0
+            self.outer[0] = ax
+            self.outer[1] = ay
+            self.outer[2] = ex / l if l > 0.0 else 1.0
+            self.outer[3] = ey / l if l > 0.0 else 0.0
+            self.outer[4] = l
+            self.outer[5] = h
+            self.x0 = min(ax, sh.geom[2]) - h
+            self.x1 = max(ax, sh.geom[2]) + h
+            self.y0 = min(ay, sh.geom[3]) - h
+            self.y1 = max(ay, sh.geom[3]) + h
+
+    def reach(self) -> Float64:
+        """How far past the silhouette, in local units, any coverage lands."""
+        return BLUR_REACH / self.inv_sigma if self.inv_sigma > 0.0 else 0.0
+
+    def _one(self, g: Array[Float64, 9], x: Float64, y: Float64) -> Float64:
+        var k = self.inv_sigma
+        if self.kind == _SIL_RECT:
+            var dx = x - g[0]
+            var dy = y - g[1]
+            if g[4] <= 0.0:
+                return box_coverage(
+                    (g[2] + dx) * k,
+                    (g[2] - dx) * k,
+                    (g[3] + dy) * k,
+                    (g[3] - dy) * k,
+                )
+            return rounded_rect_coverage(
+                dx * k, dy * k, g[2] * k, g[3] * k, g[4] * k
+            )
+        if self.kind == _SIL_TRIANGLE:
+            return edge_coverage(
+                (g[0] * x + g[1] * y + g[2]) * k,
+                (g[3] * x + g[4] * y + g[5]) * k,
+                (g[6] * x + g[7] * y + g[8]) * k,
+            )
+        var dx = x - g[0]
+        var dy = y - g[1]
+        var along = dx * g[2] + dy * g[3]
+        var across = dx * g[3] - dy * g[2]
+        return box_coverage(
+            along * k,
+            (g[4] - along) * k,
+            (g[5] + across) * k,
+            (g[5] - across) * k,
+        )
+
+    def coverage(self, x: Float64, y: Float64) -> Float64:
+        """The blurred silhouette's alpha, 0 to 1, at local `(x, y)`."""
+        var c = self._one(self.outer, x, y)
+        if self.has_inner and c > 0.0:
+            c -= self._one(self.inner, x, y)
+        return max(c, 0.0)
+
+
+def _inradius(c: RenderCommand) -> Float64:
+    """Twice the area over the perimeter: how far a triangle can shrink."""
+    var ax = c.geom[0]
+    var ay = c.geom[1]
+    var bx = c.geom[2]
+    var by = c.geom[3]
+    var cx = c.geom[4]
+    var cy = c.geom[5]
+    var area2 = abs((bx - ax) * (cy - ay) - (by - ay) * (cx - ax))
+    var p = (
+        sqrt((bx - ax) ** 2 + (by - ay) ** 2)
+        + sqrt((cx - bx) ** 2 + (cy - by) ** 2)
+        + sqrt((ax - cx) ** 2 + (ay - cy) ** 2)
+    )
+    return area2 / p if p > 0.0 else 0.0

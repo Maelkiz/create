@@ -181,11 +181,14 @@ def test_sprite_shadow_is_a_silhouette() raises -> None:
 
 
 def test_gaussian_cdf_matches_erf() raises -> None:
-    var x = -4.0
-    while x <= 4.0:
+    var x = -3.875
+    while x < 4.0:
         var want = 0.5 * (1.0 + erf(x / sqrt(2.0)))
         assert_almost_equal(gaussian_cdf(x), want, atol=2e-7)
         x += 0.125
+    # Past four sigma it saturates, below what an 8-bit channel resolves.
+    assert_equal(gaussian_cdf(4.0), 1.0)
+    assert_equal(gaussian_cdf(-4.0), 0.0)
 
 
 def test_coverage_is_half_on_an_edge_and_saturates_by_three_sigma() raises -> (

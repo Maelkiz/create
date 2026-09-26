@@ -28,7 +28,13 @@ from ._gl_backend import GLRenderer
 from ._image import _Image
 from .style import Style
 from ._transform import pixel_scale, outline_thickness_px, uniform
-from ._shadow import casts_outer_shadow, shadow_command
+from ._shadow import (
+    BlurredSilhouette,
+    blurs_analytically,
+    casts_outer_shadow,
+    local_outline_thickness,
+    shadow_command,
+)
 from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
 from ._tessellate import _arc_segments
 from ._png import write_png
@@ -63,6 +69,51 @@ def device_bounds(
     var y_min = max(Int(min(min(p0[1], p1[1]), min(p2[1], p3[1]))), 0)
     var y_max = min(Int(max(max(p0[1], p1[1]), max(p2[1], p3[1]))) + 1, height)
     return (x_min, y_min, x_max, y_max)
+
+
+def _blurred_shadow[
+    o: Origin[mut=True]
+](s: Surface[o], sh: RenderCommand, scale: Float64, m: Matrix[3, 3]):
+    """Paint the shadow command `sh` blurred, pixel by pixel.
+
+    Coverage is sampled at pixel centres in the silhouette's local frame, so
+    a rotated or sheared shadow blurs along its own axes. Runs that come out
+    at full alpha go through `fill_span` together; only the soft band
+    composites pixel by pixel.
+    """
+    var shape = BlurredSilhouette(sh, local_outline_thickness(sh, m, scale))
+    var reach = shape.reach()
+    var b = device_bounds(
+        m,
+        shape.x0 - reach,
+        shape.y0 - reach,
+        shape.x1 + reach,
+        shape.y1 + reach,
+        s.width,
+        s.height,
+    )
+    var minv = inverse(m)
+    var color = sh.style.shadow_color
+    var full = Float64(color.a)
+    for py in range(b[1], b[3]):
+        var row = py * s.width * 4
+        var run = -1
+        for px in range(b[0], b[2]):
+            var l = mat_apply(minv, Float64(px) + 0.5, Float64(py) + 0.5)
+            var a = Int(full * shape.coverage(l[0], l[1]) + 0.5)
+            if a >= Int(color.a):
+                if run < 0:
+                    run = px
+                continue
+            if run >= 0:
+                fill_span(s, row + run * 4, px - run, color)
+                run = -1
+            if a > 0:
+                blend(
+                    s, row + px * 4, Color(color.r, color.g, color.b, UInt8(a))
+                )
+        if run >= 0:
+            fill_span(s, row + run * 4, b[2] - run, color)
 
 
 def _circle_row_span(
@@ -963,7 +1014,11 @@ struct Backend(Movable):
         # An outer shadow is the command's silhouette, replayed under it
         # through this same dispatch.
         if casts_outer_shadow(c):
-            self._one(s, shadow_command(c, scale), scale, pre)
+            var sh = shadow_command(c, scale)
+            if c.style.shadow_blur > 0.0 and blurs_analytically(c):
+                _blurred_shadow(t, sh, scale, pre @ sh.transform)
+            else:
+                self._one(s, sh, scale, pre)
         if c.kind == CMD_CLEAR:
             fill_all(t, c.style.fill_color)
         elif c.kind == CMD_RECT:
