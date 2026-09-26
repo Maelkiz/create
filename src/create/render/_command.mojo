@@ -78,6 +78,9 @@ struct RenderCommand(Copyable, Movable):
     of caller-owned memory ever enters the buffer."""
     var image_w: Int
     var image_h: Int
+    var silhouette: Bool
+    """`CMD_SPRITE` only: paint `style.fill_color` wherever the image is
+    opaque, scaled by its alpha, instead of the image. A sprite's shadow."""
 
     def __init__(
         out self,
@@ -119,6 +122,7 @@ struct RenderCommand(Copyable, Movable):
         self.image = 0
         self.image_w = 0
         self.image_h = 0
+        self.silhouette = False
 
 
 def clear_command(color: Color) -> RenderCommand:
