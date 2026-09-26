@@ -282,11 +282,14 @@ def test_line_replays_between_its_endpoints() raises -> None:
     st.fill_enabled = False
     st.outline_enabled = True
     st.outline_color = Color.WHITE
-    st.outline_thickness = 1
+    # Two wide, so the band covers whole rows either side of y = 0, which
+    # sits on the boundary between rows 49 and 50.
+    st.outline_thickness = 2
     var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(line_command(_base(), st, -20.0, 0.0, 20.0, 0.0))
     var m = _replay(cmds)
+    assert_equal(m.pixel(50, 49), Color.WHITE)
     assert_equal(m.pixel(50, 50), Color.WHITE)
     assert_equal(m.pixel(35, 50), Color.WHITE)
     assert_equal(m.pixel(50, 40), Color.BLACK)

@@ -95,28 +95,52 @@ def test_fill_pixels_wholly_outside_writes_nothing() raises -> None:
             )
 
 
-def test_line_pixels_covers_both_endpoints() raises -> None:
+def test_line_pixels_ends_flush_with_the_segment() raises -> None:
+    # Butt ends: covered columns are those whose centre lies in [1, 6).
     var mem = MemorySurface(8, 8)
-    line_pixels(mem.surface(), 1.0, 1.0, 6.0, 1.0, Color.WHITE, 1)
+    line_pixels(mem.surface(), 1.0, 1.5, 6.0, 1.5, Color.WHITE, 1)
     assert_equal(mem.pixel(1, 1), Color.WHITE)
-    assert_equal(mem.pixel(6, 1), Color.WHITE)
+    assert_equal(mem.pixel(5, 1), Color.WHITE)
     assert_equal(mem.pixel(0, 1).a, 0)
-    assert_equal(mem.pixel(7, 1).a, 0)
+    assert_equal(mem.pixel(6, 1).a, 0)
+    assert_equal(mem.pixel(3, 0).a, 0)
+    assert_equal(mem.pixel(3, 2).a, 0)
 
 
 def test_line_pixels_thickens_with_outline_thickness() raises -> None:
     var mem = MemorySurface(8, 8)
-    line_pixels(mem.surface(), 1.0, 4.0, 6.0, 4.0, Color.WHITE, 3)
-    # half = 3 // 2 = 1, so rows 3..5 around the line.
+    line_pixels(mem.surface(), 1.0, 4.5, 6.0, 4.5, Color.WHITE, 3)
+    # The band spans y in [3, 6], so rows 3..5.
+    assert_equal(mem.pixel(3, 2).a, 0)
     assert_equal(mem.pixel(3, 3), Color.WHITE)
     assert_equal(mem.pixel(3, 4), Color.WHITE)
     assert_equal(mem.pixel(3, 5), Color.WHITE)
     assert_equal(mem.pixel(3, 6).a, 0)
 
 
+def test_line_pixels_measures_thickness_across_the_segment() raises -> None:
+    # At 45 degrees a 4-wide band crosses a row over 4 * sqrt(2) ~ 5.66
+    # pixels, centred on the segment: row 10's centre line meets it at
+    # x = 10.5, so columns 8..12. An axis-aligned extent would give 4.
+    var mem = MemorySurface(20, 20)
+    line_pixels(mem.surface(), 2.0, 2.0, 18.0, 18.0, Color.WHITE, 4)
+    assert_equal(mem.pixel(7, 10).a, 0)
+    for x in range(8, 13):
+        assert_equal(mem.pixel(x, 10), Color.WHITE)
+    assert_equal(mem.pixel(13, 10).a, 0)
+
+
+def test_line_pixels_paints_nothing_for_a_zero_length_segment() raises -> None:
+    var mem = MemorySurface(8, 8)
+    line_pixels(mem.surface(), 3.5, 3.5, 3.5, 3.5, Color.WHITE, 3)
+    for y in range(8):
+        for x in range(8):
+            assert_equal(mem.pixel(x, y).a, 0)
+
+
 def test_line_pixels_clips_outside_the_surface() raises -> None:
     var mem = MemorySurface(4, 4)
-    line_pixels(mem.surface(), -5.0, 2.0, 9.0, 2.0, Color.WHITE, 1)
+    line_pixels(mem.surface(), -5.0, 2.5, 9.0, 2.5, Color.WHITE, 1)
     for x in range(4):
         assert_equal(mem.pixel(x, 2), Color.WHITE)
     assert_equal(mem.pixel(0, 0).a, 0)
@@ -126,15 +150,15 @@ def test_line_pixels_composites_each_covered_pixel_exactly_once() raises -> (
     None
 ):
     # A thick alpha line must match one `over` per pixel, not several stacked
-    # up from overlapping per-step stamps (which would read darker here).
+    # up from overlapping stamps (which would read darker here).
     var src = Color(255, 255, 255, 128)
     var dst = Color(0, 0, 0, 255)
     var mem = _filled(8, 8, dst)
-    line_pixels(mem.surface(), 1.0, 4.0, 6.0, 4.0, src, 3)
+    line_pixels(mem.surface(), 1.0, 4.5, 6.0, 4.5, src, 3)
     assert_equal(mem.pixel(3, 4), src.over(dst))
 
     var vmem = _filled(8, 8, dst)
-    line_pixels(vmem.surface(), 4.0, 1.0, 4.0, 6.0, src, 3)
+    line_pixels(vmem.surface(), 4.5, 1.0, 4.5, 6.0, src, 3)
     assert_equal(vmem.pixel(4, 3), src.over(dst))
 
 

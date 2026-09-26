@@ -1,5 +1,5 @@
 from std.collections import Optional
-from std.math import max, min, abs, ceil, floor
+from std.math import max, min, abs, ceil, floor, sqrt
 from std.sys import is_big_endian
 
 from .blend_mode import BlendMode
@@ -256,61 +256,57 @@ def line_pixels[
     c: Color,
     outline_thickness: Int,
 ):
-    """Bresenham line in device space, `outline_thickness` pixels thick.
+    """Stroke the device segment `(x0, y0)`-`(x1, y1)` as an
+    `outline_thickness`-wide band with butt ends.
 
-    One Bresenham step per column (dx >= dy) or per row (dy > dx), each
-    covering the line's perpendicular extent exactly once — not the box
-    the naive version stamps at every step, which re-blends most pixels
-    along the line once per neighbouring step and so darkens them further
-    each time under alpha, on top of the wasted work. A mostly-vertical
-    line's extent per row is contiguous in memory and goes through
-    `fill_span`; a mostly-horizontal line's extent per column is a strided
-    column of pixels, so it composites one pixel at a time with `blend`, but
-    each pixel is still touched exactly once.
+    The band is the same quad `_tessellate.mojo::_segment_quad` hands the
+    GPU — the segment pushed out by half the thickness along its normal —
+    and a pixel is covered when its centre is: each row's covered run is the
+    quad's span at the row's centre line, filled once through `fill_span`.
+    So a slanted band is as wide across as a level one, and each pixel is
+    composited exactly once under alpha. Ties follow a half-open rule (a
+    centre on the left or top edge is in, on the right or bottom edge out),
+    so two bands sharing an edge don't both paint it. A zero-length segment
+    paints nothing, as on the GPU.
     """
-    if c.a == 0:
+    if c.a == 0 or outline_thickness <= 0:
         return
+    var dx = x1 - x0
+    var dy = y1 - y0
+    var length = sqrt(dx * dx + dy * dy)
+    if length == 0.0:
+        return
+    var half = Float64(outline_thickness) / 2.0
+    var nx = -dy / length * half
+    var ny = dx / length * half
+    var qx: Array[Float64, 4] = [x0 + nx, x1 + nx, x1 - nx, x0 - nx]
+    var qy: Array[Float64, 4] = [y0 + ny, y1 + ny, y1 - ny, y0 - ny]
+    var y_lo = min(min(qy[0], qy[1]), min(qy[2], qy[3]))
+    var y_hi = max(max(qy[0], qy[1]), max(qy[2], qy[3]))
     var W = s.width
-    var H = s.height
-    var sw = outline_thickness
-    var half = sw // 2
-    var ix0 = Int(x0)
-    var iy0 = Int(y0)
-    var ix1 = Int(x1)
-    var iy1 = Int(y1)
-    var dx = abs(ix1 - ix0)
-    var dy = abs(iy1 - iy0)
-    var sx = 1 if ix0 < ix1 else -1
-    var sy = 1 if iy0 < iy1 else -1
-
-    if dx >= dy:
-        var y = iy0
-        var err = dx // 2
-        for step in range(dx + 1):
-            var x = ix0 + step * sx
-            if 0 <= x < W:
-                var r0 = max(y - half, 0)
-                var r1 = min(y + sw - half, H)
-                for row in range(r0, r1):
-                    blend(s, (row * W + x) * 4, c)
-            err -= dy
-            if err < 0:
-                y += sy
-                err += dx
-    else:
-        var x = ix0
-        var err = dy // 2
-        for step in range(dy + 1):
-            var y = iy0 + step * sy
-            if 0 <= y < H:
-                var c0 = max(x - half, 0)
-                var c1 = min(x + sw - half, W)
-                if c1 > c0:
-                    fill_span(s, (y * W + c0) * 4, c1 - c0, c)
-            err -= dx
-            if err < 0:
-                x += sx
-                err += dy
+    # Rows whose centre `row + 0.5` lies in `[y_lo, y_hi)`.
+    var r0 = max(Int(ceil(y_lo - 0.5)), 0)
+    var r1 = min(Int(ceil(y_hi - 0.5)), s.height)
+    for row in range(r0, r1):
+        var yc = Float64(row) + 0.5
+        var lo = Float64.MAX
+        var hi = -Float64.MAX
+        for i in range(4):
+            var ax = qx[i]
+            var ay = qy[i]
+            var bx = qx[(i + 1) % 4]
+            var by = qy[(i + 1) % 4]
+            # Half-open in y, so a vertex on the centre line counts once
+            # and a level edge not at all.
+            if (ay <= yc and yc < by) or (by <= yc and yc < ay):
+                var x = ax + (bx - ax) * (yc - ay) / (by - ay)
+                lo = min(lo, x)
+                hi = max(hi, x)
+        # Columns whose centre `col + 0.5` lies in `[lo, hi)`.
+        var c0 = max(Int(ceil(lo - 0.5)), 0)
+        var c1 = min(Int(ceil(hi - 0.5)), W)
+        if c1 > c0:
+            fill_span(s, (row * W + c0) * 4, c1 - c0, c)
 
 
 def fill_triangle[
