@@ -17,9 +17,15 @@ corner rounds by `d` more, centred on the original vertex. That is exactly
 what a larger `corner_radius` on the grown rectangle or triangle renders, so
 no new shape kind is needed. `corner_radius` is a whole number of world
 units, so the rounding is to the nearest unit; the edges themselves are exact.
+
+**Blur** is a Gaussian of standard deviation `sigma = shadow_blur / 2`, as in
+CSS, evaluated analytically per pixel rather than by blurring an image: the
+coverage functions at the bottom of this file give the blurred silhouette's
+alpha at a point from its distances to the silhouette's edges. They are
+spelled out again in the GL shader, so keep the two in step.
 """
 
-from std.math import abs, max, sqrt
+from std.math import abs, exp, max, min, sqrt
 
 from create.math.matrix import Matrix, translate
 
@@ -171,3 +177,88 @@ def shadow_command(c: RenderCommand, scale: Float64) -> RenderCommand:
         _grow_triangle(s, d)
         s.style.corner_radius = max(c.style.corner_radius + Int(round(d)), 0)
     return s^
+
+
+# --- Blur coverage -----------------------------------------------------------
+#
+# Distances are signed, positive inside the silhouette, and already divided by
+# sigma: that is what the GL path interpolates per vertex, and it keeps a zero
+# sigma (a hard shadow) out of these functions entirely.
+
+
+def gaussian_cdf(x: Float64) -> Float64:
+    """The standard normal CDF: the share of a unit Gaussian left of `x`.
+
+    Abramowitz and Stegun 7.1.26 for `erf`, good to 1.5e-7 — GLSL has no
+    `erf`, so the shader uses the same polynomial and both replays agree.
+    """
+    var z = abs(x) / sqrt(2.0)
+    var t = 1.0 / (1.0 + 0.3275911 * z)
+    var poly = t * (
+        0.254829592
+        + t
+        * (
+            -0.284496736
+            + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))
+        )
+    )
+    var erf = 1.0 - poly * exp(-z * z)
+    return 0.5 * (1.0 + erf) if x >= 0.0 else 0.5 * (1.0 - erf)
+
+
+def box_coverage(
+    left: Float64, right: Float64, bottom: Float64, top: Float64
+) -> Float64:
+    """A blurred rectangle's alpha, exactly, from a point's distances to its
+    four edges.
+
+    The Gaussian is separable, so the blurred rectangle is the product of
+    two blurred slabs, and a slab is the share of the Gaussian between its
+    two edges: `cdf(left) + cdf(right) - 1`. Being isotropic, it holds for a
+    rotated rectangle measured in its own frame.
+    """
+    var x = gaussian_cdf(left) + gaussian_cdf(right) - 1.0
+    var y = gaussian_cdf(bottom) + gaussian_cdf(top) - 1.0
+    return max(x, 0.0) * max(y, 0.0)
+
+
+def edge_coverage(
+    d0: Float64, d1: Float64, d2: Float64, d3: Float64 = 1e9
+) -> Float64:
+    """A blurred convex polygon's alpha, approximately, from a point's
+    distances to up to four edges (a triangle leaves `d3` at its default).
+
+    The product of the blurred half-planes: exact along an edge far from
+    the others, slightly heavy where the shape narrows below a few sigma —
+    there is no closed form for a blurred triangle. A rectangle has one, so
+    it goes through `box_coverage` instead.
+    """
+    return (
+        gaussian_cdf(d0)
+        * gaussian_cdf(d1)
+        * gaussian_cdf(d2)
+        * gaussian_cdf(d3)
+    )
+
+
+def rounded_rect_coverage(
+    px: Float64,
+    py: Float64,
+    half_w: Float64,
+    half_h: Float64,
+    radius: Float64,
+) -> Float64:
+    """A blurred rounded rectangle's alpha at `(px, py)` relative to its
+    centre; every length already divided by sigma.
+
+    One Gaussian step across the signed distance to the outline — exact
+    along the straight edges, a close approximation around a corner. A
+    circle is the case `half_w == half_h == radius`.
+    """
+    var r = min(radius, min(half_w, half_h))
+    var qx = abs(px) - (half_w - r)
+    var qy = abs(py) - (half_h - r)
+    var ox = max(qx, 0.0)
+    var oy = max(qy, 0.0)
+    var sdf = sqrt(ox * ox + oy * oy) + min(max(qx, qy), 0.0) - r
+    return gaussian_cdf(-sdf)

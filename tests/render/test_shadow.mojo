@@ -1,4 +1,4 @@
-from std.math import pi
+from std.math import erf, pi, sqrt
 from std.testing import (
     TestSuite,
     assert_almost_equal,
@@ -22,7 +22,11 @@ from create.render._command import (
     triangle_command,
 )
 from create.render._shadow import (
+    box_coverage,
     casts_outer_shadow,
+    edge_coverage,
+    gaussian_cdf,
+    rounded_rect_coverage,
     shadow_command,
     shadow_transform,
 )
@@ -174,6 +178,70 @@ def test_sprite_shadow_is_a_silhouette() raises -> None:
     assert_true(sh.silhouette)
     assert_equal(sh.style.fill_color, s.shadow_color)
     assert_equal(sh.image, 7)
+
+
+def test_gaussian_cdf_matches_erf() raises -> None:
+    var x = -4.0
+    while x <= 4.0:
+        var want = 0.5 * (1.0 + erf(x / sqrt(2.0)))
+        assert_almost_equal(gaussian_cdf(x), want, atol=2e-7)
+        x += 0.125
+
+
+def test_coverage_is_half_on_an_edge_and_saturates_by_three_sigma() raises -> (
+    None
+):
+    # A half-plane: the far edges out of reach.
+    assert_almost_equal(edge_coverage(0.0, 1e9, 1e9), 0.5, atol=1e-7)
+    assert_true(edge_coverage(3.0, 1e9, 1e9) > 0.998)
+    assert_true(edge_coverage(-3.0, 1e9, 1e9) < 0.002)
+    assert_almost_equal(box_coverage(0.0, 1e9, 1e9, 1e9), 0.5, atol=1e-7)
+    assert_true(box_coverage(3.0, 1e9, 1e9, 1e9) > 0.998)
+    assert_true(box_coverage(-3.0, 1e9, 1e9, 1e9) < 0.002)
+    # A long straight edge of a rounded rectangle.
+    assert_almost_equal(
+        rounded_rect_coverage(10.0, 0.0, 10.0, 100.0, 2.0), 0.5, atol=1e-7
+    )
+    assert_true(rounded_rect_coverage(7.0, 0.0, 10.0, 100.0, 2.0) > 0.998)
+    assert_true(rounded_rect_coverage(13.0, 0.0, 10.0, 100.0, 2.0) < 0.002)
+
+
+def test_box_coverage_is_the_separable_erf_form() raises -> None:
+    # Centre of a rectangle 2 sigma wide and 1 sigma tall: each axis keeps
+    # the share of the Gaussian within its half-extent.
+    var want = erf(1.0 / sqrt(2.0)) * erf(0.5 / sqrt(2.0))
+    assert_almost_equal(box_coverage(1.0, 1.0, 0.5, 0.5), want, atol=1e-6)
+    # Off-centre: x = 0.3 in a slab [-1, 1].
+    var slab = 0.5 * (erf(1.3 / sqrt(2.0)) + erf(0.7 / sqrt(2.0)))
+    assert_almost_equal(box_coverage(1.3, 0.7, 1e9, 1e9), slab, atol=1e-6)
+
+
+def test_edge_product_matches_the_box_once_the_shape_is_wide() raises -> None:
+    # Far from the opposite edges the two forms agree; narrow, the product
+    # overestimates, since cdf(a) * cdf(b) >= cdf(a) + cdf(b) - 1.
+    assert_almost_equal(
+        edge_coverage(0.5, 10.0, 0.5, 10.0),
+        box_coverage(0.5, 10.0, 0.5, 10.0),
+        atol=1e-6,
+    )
+    assert_true(
+        edge_coverage(0.5, 0.5, 0.5, 0.5) > box_coverage(0.5, 0.5, 0.5, 0.5)
+    )
+
+
+def test_rounded_rect_coverage_is_symmetric_and_rounds_corners() raises -> None:
+    var a = rounded_rect_coverage(9.0, 4.0, 10.0, 5.0, 3.0)
+    assert_almost_equal(a, rounded_rect_coverage(-9.0, -4.0, 10.0, 5.0, 3.0))
+    # The sharp corner point is outside a rounded corner by (sqrt 2 - 1) r.
+    var corner = rounded_rect_coverage(10.0, 5.0, 10.0, 5.0, 3.0)
+    assert_almost_equal(
+        corner, gaussian_cdf(-(sqrt(2.0) - 1.0) * 3.0), atol=1e-9
+    )
+    # A circle: half at its radius in any direction.
+    var d = 4.0 / sqrt(2.0)
+    assert_almost_equal(
+        rounded_rect_coverage(d, d, 4.0, 4.0, 4.0), 0.5, atol=1e-7
+    )
 
 
 def main() raises:
