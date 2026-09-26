@@ -1441,8 +1441,10 @@ struct Backend(Movable):
             # A uniform scale keeps a circle a circle, so it stays a distance
             # test — just in pixels rather than world units.
             var p = mat_apply(m, cx, cy)
-            var pcx = p[0]
-            var pcy = p[1]
+            # Pixel centres sit at +0.5, so moving the centre back by half a
+            # pixel lets the row spans test integer columns and rows.
+            var pcx = p[0] - 0.5
+            var pcy = p[1] - 0.5
             var pr = r * pixel_scale(m, scale)
             var pr2 = pr * pr
             var pr_inner = pr - Float64(outline_thickness_px(c.style, m, scale))
@@ -1502,7 +1504,9 @@ struct Backend(Movable):
             var a = step_x * step_x + step_y * step_y
             var inv_2a = 1.0 / (2.0 * a)
             for row in range(b[1], b[3]):
-                var local0 = mat_apply(minv, Float64(b[0]), Float64(row))
+                var local0 = mat_apply(
+                    minv, Float64(b[0]) + 0.5, Float64(row) + 0.5
+                )
                 var dx0 = local0[0] - cx
                 var dy0 = local0[1] - cy
                 var row_off = row * W

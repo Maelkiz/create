@@ -152,6 +152,24 @@ def test_circle_replays_round() raises -> None:
     assert_equal(m.pixel(35, 35), Color.BLACK)
 
 
+def test_circle_samples_pixel_centres() raises -> None:
+    # Centred on the corner shared by pixels 49 and 50, a radius of 10 covers
+    # columns 40 to 59: ten each side, as the GPU rasterises it. Testing the
+    # pixel corners instead reaches column 60 and misses nothing on the left.
+    # A rotation takes the non-uniform branch, which must agree.
+    for turn in range(2):
+        var m = _base() @ rotate(0.3 * Float64(turn))
+        var cmds = List[RenderCommand]()
+        cmds.append(clear_command(Color.BLACK))
+        cmds.append(circle_command(m, _solid(Color.GREEN), 0.0, 0.0, 10.0))
+        var got = _replay(cmds)
+        for row in [49, 50]:
+            assert_equal(got.pixel(39, row), Color.BLACK)
+            assert_equal(got.pixel(40, row), Color.GREEN)
+            assert_equal(got.pixel(59, row), Color.GREEN)
+            assert_equal(got.pixel(60, row), Color.BLACK)
+
+
 def _brute_circle(
     mut mem: MemorySurface,
     m: Matrix[3, 3],
@@ -163,13 +181,15 @@ def _brute_circle(
 ) raises -> None:
     """The pixel-by-pixel distance test `_circle`'s uniform branch used
     before it was rewritten to per-row analytic spans — kept here as the
-    ground truth the span rewrite must reproduce byte-for-byte."""
+    ground truth the span rewrite must reproduce byte-for-byte. Samples
+    pixel centres, as the span version does: the centre moves back half a
+    pixel instead, so the arithmetic is the same to the last bit."""
     var s = mem.surface()
     var W = s.width
     var H = s.height
     var p = apply(m, cx, cy)
-    var pcx = p[0]
-    var pcy = p[1]
+    var pcx = p[0] - 0.5
+    var pcy = p[1] - 0.5
     var pr = r * pixel_scale(m, scale)
     var pr2 = pr * pr
     var pr_inner = pr - Float64(outline_thickness_px(style, m, scale))
