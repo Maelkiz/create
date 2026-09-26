@@ -742,5 +742,154 @@ def test_a_blurred_text_shadow_is_softer_than_a_hard_one() raises -> None:
     assert_true(spill_soft > 50)
 
 
+def _inset(fill: Color, offset: Vector2D, blur: Float64 = 0.0) -> Style:
+    """`fill` with a red inset shadow thrown by `offset`."""
+    var s = _shadowed(fill, Color.RED)
+    s.shadow_inset = True
+    s.shadow_offset = offset
+    s.shadow_blur = blur
+    return s^
+
+
+def test_an_inset_shadow_bands_the_edges_the_offset_leaves() raises -> None:
+    # Rect over device [30, 70); the silhouette moves 4 right and 4 down,
+    # uncovering the left and top edges.
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(
+        rect_command(
+            _base(), _inset(Color.WHITE, Vector2D(4, -4)), 0.0, 0.0, 40.0, 40.0
+        )
+    )
+    var m = _replay(cmds)
+    assert_equal(m.pixel(30, 50), Color.RED)
+    assert_equal(m.pixel(33, 50), Color.RED)
+    assert_equal(m.pixel(34, 50), Color.WHITE)
+    assert_equal(m.pixel(50, 33), Color.RED)
+    assert_equal(m.pixel(50, 34), Color.WHITE)
+    assert_equal(m.pixel(69, 50), Color.WHITE)
+    assert_equal(m.pixel(50, 69), Color.WHITE)
+    # Nothing outside the shape.
+    assert_equal(m.pixel(29, 50), Color.BLACK)
+    assert_equal(m.pixel(50, 29), Color.BLACK)
+    assert_equal(m.pixel(72, 72), Color.BLACK)
+
+
+def test_an_inset_shadow_stays_inside_the_outline() raises -> None:
+    for blur in [0.0, 8.0]:
+        var s = _inset(Color.WHITE, Vector2D(4, -4), blur)
+        s.outline_enabled = True
+        s.outline_color = Color.BLUE
+        s.outline_thickness = 3
+        var cmds = List[RenderCommand]()
+        cmds.append(clear_command(Color.BLACK))
+        cmds.append(rect_command(_base(), s, 0.0, 0.0, 40.0, 40.0))
+        var m = _replay(cmds)
+        for y in range(_H):
+            for x in range(_W):
+                var inside = x >= 30 and x < 70 and y >= 30 and y < 70
+                var ring = inside and (x < 33 or x >= 67 or y < 33 or y >= 67)
+                if not inside:
+                    assert_equal(m.pixel(x, y), Color.BLACK)
+                elif ring:
+                    assert_equal(m.pixel(x, y), Color.BLUE)
+        # The band starts at the outline's inner edge: red over the white
+        # fill, not blue.
+        var band = m.pixel(33, 50)
+        assert_equal(band.r, 255)
+        assert_equal(band.g, band.b)
+        assert_true(band.g < 255)
+
+
+def test_a_blurred_inset_shadow_fades_inwards() raises -> None:
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(
+        rect_command(
+            _base(),
+            _inset(Color.BLACK, Vector2D(4, -4), 8.0),
+            0.0,
+            0.0,
+            60.0,
+            60.0,
+        )
+    )
+    var m = _replay(cmds)
+    # Left edge at column 20; the silhouette's edge at 24, sigma 4.
+    var last = 256
+    for x in range(20, 45):
+        var r = Int(m.pixel(x, 50).r)
+        assert_true(r <= last, String(x))
+        last = r
+    # Half on the silhouette's edge, symmetric about it.
+    assert_true(abs(Int(m.pixel(23, 50).r) + Int(m.pixel(24, 50).r) - 255) <= 2)
+    assert_equal(m.pixel(50, 50), Color.BLACK)
+    # The side the offset moves towards stays mostly under the silhouette:
+    # four pixels further from its edge than the far side's mirror pixel.
+    assert_true(Int(m.pixel(78, 50).r) * 4 < Int(m.pixel(21, 50).r))
+
+
+def test_spread_shrinks_an_inset_silhouette_all_round() raises -> None:
+    var s = _inset(Color.WHITE, Vector2D(0, 0))
+    s.shadow_spread = 5.0
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(rect_command(_base(), s, 0.0, 0.0, 40.0, 40.0))
+    var m = _replay(cmds)
+    for i in [30, 34, 65, 69]:
+        assert_equal(m.pixel(i, 50), Color.RED, String(i))
+        assert_equal(m.pixel(50, i), Color.RED, String(i))
+    assert_equal(m.pixel(35, 50), Color.WHITE)
+    assert_equal(m.pixel(64, 50), Color.WHITE)
+
+
+def test_circles_and_triangles_take_inset_shadows_inside_only() raises -> None:
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    var cs = _inset(Color.WHITE, Vector2D(6, -6))
+    # Unfilled: an inset shadow paints anyway.
+    cs.fill_enabled = False
+    cmds.append(circle_command(_base(), cs, -25.0, 25.0, 20.0))
+    var ts = _inset(Color.WHITE, Vector2D(6, -6))
+    ts.corner_radius = 4
+    cmds.append(
+        triangle_command(_base(), ts, 5.0, -45.0, 45.0, -45.0, 25.0, -5.0)
+    )
+    var m = _replay(cmds)
+    # Circle at device (25, 25): its left inner edge is shadowed, its
+    # centre not — and with no fill, the centre shows the background.
+    assert_equal(m.pixel(7, 25), Color.RED)
+    assert_equal(m.pixel(25, 25), Color.BLACK)
+    assert_equal(m.pixel(42, 25), Color.BLACK)
+    # Triangle over device (55, 95), (95, 95), (75, 55): its upper-left edge
+    # is shadowed, the middle of its bottom edge not.
+    assert_equal(m.pixel(64, 80), Color.RED)
+    assert_equal(m.pixel(75, 90), Color.WHITE)
+    # Every red pixel lies inside one of the two shapes.
+    for y in range(_H):
+        for x in range(_W):
+            if m.pixel(x, y) != Color.RED:
+                continue
+            var cx = Float64(x) + 0.5 - 25.0
+            var cy = Float64(y) + 0.5 - 25.0
+            var in_circle = cx * cx + cy * cy <= 400.0
+            var in_triangle = y >= 55 and y < 95 and x >= 55 and x < 95
+            assert_true(in_circle or in_triangle, String(x, ",", y))
+
+
+def test_lines_ignore_inset() raises -> None:
+    var s = _inset(Color.WHITE, Vector2D(4, -4))
+    s.outline_enabled = True
+    s.outline_color = Color.WHITE
+    s.outline_thickness = 6
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(line_command(_base(), s, -30.0, 0.0, 30.0, 0.0))
+    var m = _replay(cmds)
+    for y in range(_H):
+        for x in range(_W):
+            assert_true(m.pixel(x, y) != Color.RED)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

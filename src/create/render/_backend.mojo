@@ -38,9 +38,12 @@ from ._transform import pixel_scale, outline_thickness_px, uniform
 from ._shadow import (
     BlurredSilhouette,
     blurs_analytically,
+    casts_inset_shadow,
     casts_outer_shadow,
+    inset_interior,
     local_outline_thickness,
     shadow_command,
+    shadow_transform,
 )
 from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
 from ._tessellate import _arc_segments
@@ -108,6 +111,66 @@ def _blurred_shadow[
         for px in range(b[0], b[2]):
             var l = mat_apply(minv, Float64(px) + 0.5, Float64(py) + 0.5)
             var a = Int(full * shape.coverage(l[0], l[1]) + 0.5)
+            if a >= Int(color.a):
+                if run < 0:
+                    run = px
+                continue
+            if run >= 0:
+                fill_span(s, row + run * 4, px - run, color)
+                run = -1
+            if a > 0:
+                blend(
+                    s, row + px * 4, Color(color.r, color.g, color.b, UInt8(a))
+                )
+        if run >= 0:
+            fill_span(s, row + run * 4, b[2] - run, color)
+
+
+def _inset_shadow[
+    o: Origin[mut=True]
+](
+    s: Surface[o],
+    c: RenderCommand,
+    scale: Float64,
+    m: Matrix[3, 3],
+    sm: Matrix[3, 3],
+    blur: Int,
+):
+    """Paint `c`'s inset shadow over it: the shadow colour wherever the
+    silhouette — the interior moved by the offset (`sm`) and shrunk by the
+    spread — does not cover, clipped to the interior (`m`).
+
+    Tested at pixel centres like `_blurred_shadow`, since the alpha is
+    per pixel anyway wherever the shadow is soft; a `blur` of 0 cuts the
+    silhouette hard. Full-alpha runs go through `fill_span` together.
+    """
+    var interior = inset_interior(c, local_outline_thickness(c, m, scale))
+    if interior.empty:
+        return
+    var cut = interior.shrunk(c.style.shadow_spread)
+    var soft = BlurredSilhouette(cut, c.style.shadow_blur)
+    var lb = interior.bounds()
+    var b = device_bounds(m, lb[0], lb[1], lb[2], lb[3], s.width, s.height)
+    var minv = inverse(m)
+    var sminv = inverse(sm)
+    var color = c.style.shadow_color
+    var full = Float64(color.a)
+    for py in range(b[1], b[3]):
+        var row = py * s.width * 4
+        var run = -1
+        for px in range(b[0], b[2]):
+            var x = Float64(px) + 0.5
+            var y = Float64(py) + 0.5
+            var a = 0
+            var l = mat_apply(minv, x, y)
+            if interior.contains(l[0], l[1]):
+                var ls = mat_apply(sminv, x, y)
+                var cov: Float64
+                if blur > 0:
+                    cov = soft.coverage(ls[0], ls[1])
+                else:
+                    cov = 1.0 if cut.contains(ls[0], ls[1]) else 0.0
+                a = Int(full * (1.0 - cov) + 0.5)
             if a >= Int(color.a):
                 if run < 0:
                     run = px
@@ -1053,6 +1116,11 @@ struct Backend(Movable):
             self._text(t, c, scale, m)
         elif c.kind == CMD_LETTERBOX:
             self._letterbox(t, c)
+        # An inset shadow lies over the command, inside its outline.
+        if casts_inset_shadow(c):
+            var sm = pre @ shadow_transform(c, scale)
+            var blur = Int(c.style.shadow_blur * pixel_scale(sm, scale) + 0.5)
+            _inset_shadow(t, c, scale, m, sm, blur)
 
     def _rect[
         o: Origin[mut=True]
