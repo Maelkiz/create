@@ -1475,6 +1475,70 @@ def test_every_animator_overload_renders_at_its_anchor() raises -> None:
     assert_equal(m.pixel(50, 50), Color.BLACK)
 
 
+def _half_opaque() raises -> Sprite:
+    """A 2x2 sprite whose left column is opaque red, its right transparent."""
+    var sp = Sprite(2, 2)
+    var ptr = sp.pixels.unsafe_ptr()
+    for row in range(2):
+        var off = row * 2 * 4
+        ptr[unsafe_offset=off] = 255
+        ptr[unsafe_offset=off + 3] = 255
+    return sp^
+
+
+struct ShadowedSpriteEveryOverload(Program):
+    """Renders through all four `canvas.sprite` overloads with a hard shadow
+    straight down, so each overload's shadow path gets type-checked and its
+    silhouette read back."""
+
+    var image: Sprite
+    var animator: SpriteAnimator
+
+    def __init__(out self, var image: Sprite, var animator: SpriteAnimator):
+        self.image = image^
+        self.animator = animator^
+
+    @staticmethod
+    def create(mut context: Context) raises -> ShadowedSpriteEveryOverload:
+        var frames = List[Sprite]()
+        frames.append(_half_opaque())
+        return ShadowedSpriteEveryOverload(
+            _half_opaque(),
+            SpriteAnimator(ArcPointer(SpriteAnimation(frames^))),
+        )
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        with canvas.style(
+            Style(
+                shadow=Color.BLUE,
+                shadow_offset=Vector2D(0, -10),
+                shadow_blur=0.0,
+                shadow_enabled=True,
+            )
+        ):
+            canvas.sprite(self.image, (-40, 30))
+            canvas.sprite(self.animator, (-20, 30))
+            canvas.sprite(self.image, (0, 30), 4, 4)
+            canvas.sprite(self.animator, (20, 30), 4, 4)
+
+
+def test_every_sprite_overload_casts_its_alpha_as_a_shadow() raises -> None:
+    # Anchor (x, 30) lands on pixel (50 + x, 20); the shadow ten rows below.
+    var m = run_headless[ShadowedSpriteEveryOverload](100, 100)
+    for x in [10, 30]:
+        assert_equal(m.pixel(x - 1, 20), Color.RED)
+        # Only the opaque column casts a shadow.
+        assert_equal(m.pixel(x - 1, 30), Color.BLUE)
+        assert_equal(m.pixel(x, 30), Color.BLACK)
+    for x in [50, 70]:
+        assert_equal(m.pixel(x - 2, 20), Color.RED)
+        assert_equal(m.pixel(x - 2, 30), Color.BLUE)
+        assert_equal(m.pixel(x - 1, 30), Color.BLUE)
+        assert_equal(m.pixel(x, 30), Color.BLACK)
+        assert_equal(m.pixel(x + 1, 30), Color.BLACK)
+
+
 # --- canvas.save_image -------------------------------------------------------
 #
 # Every one of these runs a design of 200x100 into a 640x480 buffer, so the

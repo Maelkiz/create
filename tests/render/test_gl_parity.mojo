@@ -106,7 +106,8 @@ comptime _SHAPE_SHADOWED_CIRCLE = 11
 comptime _SHAPE_SHADOWED_TRIANGLE = 12
 comptime _SHAPE_SHADOWED_LINE = 13
 comptime _SHAPE_SHADOWED_TEXT = 14
-comptime _SHAPE_COUNT = 15
+comptime _SHAPE_SHADOWED_SPRITE = 15
+comptime _SHAPE_COUNT = 16
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -151,8 +152,10 @@ def _shape_name(shape: Int) -> String:
         return "shadowed triangle"
     elif shape == _SHAPE_SHADOWED_LINE:
         return "shadowed line"
-    else:
+    elif shape == _SHAPE_SHADOWED_TEXT:
         return "shadowed text"
+    else:
+        return "shadowed sprite"
 
 
 @fieldwise_init
@@ -277,6 +280,11 @@ struct _Parity(Program):
                 )
             ):
                 canvas.text("parity", (0, 0))
+        elif self.shape == _SHAPE_SHADOWED_SPRITE:
+            # Native size, like the plain sprite: the silhouette is the same
+            # blit through the sprite's alpha.
+            with canvas.style(_shadowed(Style())):
+                canvas.sprite(self.image, (70, 50), 2, 2)
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline

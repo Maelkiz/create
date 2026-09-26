@@ -961,9 +961,8 @@ struct Backend(Movable):
         # Likewise the blend mode: every raster loop reads it off the surface.
         var t = s._with_blend_mode(c.style.blend_mode)
         # An outer shadow is the command's silhouette, replayed under it
-        # through this same dispatch. Sprites cast theirs once the raster can
-        # paint a silhouette.
-        if casts_outer_shadow(c) and c.kind != CMD_SPRITE:
+        # through this same dispatch.
+        if casts_outer_shadow(c):
             self._one(s, shadow_command(c, scale), scale, pre)
         if c.kind == CMD_CLEAR:
             fill_all(t, c.style.fill_color)
@@ -1737,6 +1736,7 @@ struct Backend(Movable):
             Int(p[1]) - dh // 2,
             dw,
             dh,
+            Optional(c.style.fill_color) if c.silhouette else None,
         )
 
     def _text[

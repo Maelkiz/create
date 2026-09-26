@@ -165,8 +165,10 @@ void main() {
         frag_color = v_color;
     } else if (v_mode < 1.5) {
         frag_color = vec4(v_color.rgb, v_color.a * texture(u_atlas, v_uv).r);
-    } else {
+    } else if (v_mode < 2.5) {
         frag_color = v_color * texture(u_sprite, v_uv);
+    } else {
+        frag_color = vec4(v_color.rgb, v_color.a * texture(u_sprite, v_uv).a);
     }
     // Every blend mode but NORMAL is written against premultiplied colour;
     // see `GLRenderer._blend_mode`.
@@ -502,9 +504,8 @@ struct GLRenderer(Movable):
             if c.kind != CMD_CLEAR:
                 self._blend_mode(c.style.blend_mode)
             # The shadow shares the command's blend mode, so it joins the
-            # same batch. Sprites cast theirs once the shader can paint a
-            # silhouette.
-            if casts_outer_shadow(c) and c.kind != CMD_SPRITE:
+            # same batch; a sprite's samples the sprite's own texture.
+            if casts_outer_shadow(c):
                 self._one(
                     shadow_command(c, scale), images, text, width, height, scale
                 )

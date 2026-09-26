@@ -1,3 +1,4 @@
+from std.collections import Optional
 from std.math import max, min, abs, ceil, floor
 from std.sys import is_big_endian
 
@@ -408,6 +409,12 @@ def fill_triangle[
                 fill_span(s, (row * W + col_lo) * 4, col_hi - col_lo + 1, c)
 
 
+def _silhouette(tint: Color, alpha: UInt8) -> Color:
+    """`tint` with its alpha scaled by a texel's, rounded like `blend`."""
+    var a = (UInt32(tint.a) * UInt32(alpha) + 127) // 255
+    return Color(tint.r, tint.g, tint.b, UInt8(a))
+
+
 def blit_sprite[
     o: Origin[mut=True], so: Origin
 ](
@@ -419,9 +426,14 @@ def blit_sprite[
     y0: Int,
     dw: Int,
     dh: Int,
+    tint: Optional[Color] = None,
 ):
     """Blit the `sw` x `sh` RGBA buffer at `src` into the device rect at
     `(x0, y0)` sized `dw` x `dh`.
+
+    With `tint`, paint the image's silhouette instead: `tint` wherever the
+    image is opaque, its alpha scaled by each texel's. That is a sprite's
+    shadow.
 
     Takes a bare pixel view rather than an image type, for the same reason
     `Surface` is a plain value: nothing here needs to know where the pixels
@@ -446,6 +458,8 @@ def blit_sprite[
     var H = s.height
     var sp = src
     var one_to_one = dw == sw and dh == sh
+    var silhouette = Bool(tint)
+    var t = tint.value() if tint else Color.WHITE
 
     var row_lo = max(0, -y0)
     var row_hi = min(dh, H - y0)
@@ -466,7 +480,7 @@ def blit_sprite[
                 blend(
                     s,
                     dst_row_off + (x0 + col) * 4,
-                    Color(
+                    _silhouette(t, sa) if silhouette else Color(
                         sp[unsafe_offset=src_off],
                         sp[unsafe_offset=src_off + 1],
                         sp[unsafe_offset=src_off + 2],
@@ -484,7 +498,7 @@ def blit_sprite[
                     blend(
                         s,
                         dst_row_off + (x0 + col) * 4,
-                        Color(
+                        _silhouette(t, sa) if silhouette else Color(
                             sp[unsafe_offset=src_off],
                             sp[unsafe_offset=src_off + 1],
                             sp[unsafe_offset=src_off + 2],

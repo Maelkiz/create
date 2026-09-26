@@ -326,6 +326,34 @@ def test_blit_sprite_skips_transparent_source_pixels() raises -> None:
     assert_equal(mem.pixel(1, 0), Color(9, 9, 9, 255))
 
 
+def test_blit_sprite_tint_paints_the_silhouette() raises -> None:
+    var sp = Sprite(3, 1)
+    var ptr = sp.pixels.unsafe_ptr()
+    ptr[unsafe_offset=0] = 255
+    ptr[unsafe_offset=3] = 255  # opaque red
+    ptr[unsafe_offset=5] = 255
+    ptr[unsafe_offset=7] = 128  # half-transparent green
+    ptr[unsafe_offset=11] = 0  # fully transparent
+    var mem = _filled(3, 1, Color(0, 0, 0, 255))
+    blit_sprite(
+        mem.surface(),
+        sp.pixels.unsafe_ptr(),
+        sp.width,
+        sp.height,
+        0,
+        0,
+        3,
+        1,
+        Color(0, 0, 200, 255),
+    )
+    # The tint's colour, never the texel's; its alpha scaled by the texel's.
+    assert_equal(mem.pixel(0, 0), Color(0, 0, 200, 255))
+    assert_equal(mem.pixel(1, 0).r, 0)
+    assert_equal(mem.pixel(1, 0).g, 0)
+    assert_true(mem.pixel(1, 0).b >= 99 and mem.pixel(1, 0).b <= 101)
+    assert_equal(mem.pixel(2, 0), Color(0, 0, 0, 255))
+
+
 def test_blit_sprite_clips_against_every_edge() raises -> None:
     var sp = Sprite.solid(4, 4, 255, 255, 255)
     var mem = MemorySurface(4, 4)

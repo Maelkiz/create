@@ -43,6 +43,8 @@ comptime MODE_MASK: Float32 = 1.0
 """Glyph: the sampled red channel scales the vertex colour's alpha."""
 comptime MODE_TEXTURE: Float32 = 2.0
 """Sprite: the sampled RGBA multiplies the vertex colour."""
+comptime MODE_SILHOUETTE: Float32 = 3.0
+"""Sprite shadow: the vertex colour, its alpha scaled by the sampled alpha."""
 
 comptime _MIN_CIRCLE_SEGMENTS = 12
 comptime _MAX_CIRCLE_SEGMENTS = 256
@@ -758,14 +760,16 @@ def emit_sprite(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
     var y0 = Float64(Int(p[1]) - Int(dh) // 2)
     var x1 = x0 + dw
     var y1 = y0 + dh
-    # White, so `MODE_TEXTURE`'s multiply passes the sampled pixels through.
-    var tint = Color.WHITE
-    vb.push(x0, y0, 0.0, 0.0, tint, MODE_TEXTURE)
-    vb.push(x1, y0, 1.0, 0.0, tint, MODE_TEXTURE)
-    vb.push(x1, y1, 1.0, 1.0, tint, MODE_TEXTURE)
-    vb.push(x0, y0, 0.0, 0.0, tint, MODE_TEXTURE)
-    vb.push(x1, y1, 1.0, 1.0, tint, MODE_TEXTURE)
-    vb.push(x0, y1, 0.0, 1.0, tint, MODE_TEXTURE)
+    # White, so `MODE_TEXTURE`'s multiply passes the sampled pixels through;
+    # a silhouette paints its own colour through the sampled alpha instead.
+    var tint = c.style.fill_color if c.silhouette else Color.WHITE
+    var mode = MODE_SILHOUETTE if c.silhouette else MODE_TEXTURE
+    vb.push(x0, y0, 0.0, 0.0, tint, mode)
+    vb.push(x1, y0, 1.0, 0.0, tint, mode)
+    vb.push(x1, y1, 1.0, 1.0, tint, mode)
+    vb.push(x0, y0, 0.0, 0.0, tint, mode)
+    vb.push(x1, y1, 1.0, 1.0, tint, mode)
+    vb.push(x0, y1, 0.0, 1.0, tint, mode)
 
 
 def emit_glyph(
