@@ -2,6 +2,7 @@ from std.collections import Optional
 
 from .color import Color
 from .align import Align
+from .blend_mode import BlendMode
 from .autoscale import AutoScale
 from .font import Font
 from .viewport import Viewport
@@ -196,7 +197,8 @@ struct Canvas:
     cannot reach back and change what an earlier command paints.
 
     Every pixel write blends source-over, so a fill, outline, sprite, glyph or
-    `background` with `a < 255` composites with what is already there.
+    `background` with `a < 255` composites with what is already there —
+    unless `blend_mode` picks another way to combine them.
     """
 
     var width: Int
@@ -352,6 +354,7 @@ struct Canvas:
         font_weight: Optional[Int] = None,
         text_align: Optional[Align] = None,
         opacity: Optional[Float64] = None,
+        blend_mode: Optional[BlendMode] = None,
     ) -> StyleGuard[origin_of(self)]:
         """Scope style changes to a `with` block, restoring the previous style
         on exit.
@@ -390,6 +393,8 @@ struct Canvas:
             self.text_align(text_align.value())
         if opacity:
             self.opacity(opacity.value())
+        if blend_mode:
+            self.blend_mode(blend_mode.value())
         return guard^
 
     def style(mut self, style: Style) -> StyleGuard[origin_of(self)]:
@@ -714,6 +719,15 @@ struct Canvas:
         other style setting — it cannot reach back and fade what was already
         rendered."""
         self._style.opacity = value
+
+    def blend_mode(mut self, mode: BlendMode):
+        """Combine whatever is rendered next with what is already there by
+        `mode` — `BlendMode.ADD` for glows, `MULTIPLY` for shadows — instead
+        of painting over it. `BlendMode.NORMAL` (the default) paints over.
+
+        Applies to shapes, text and sprites, never to `background`.
+        """
+        self._style.blend_mode = mode
 
     def text_align(mut self, align: Align):
         """Anchor the next text at one of the nine points of its box.

@@ -1,4 +1,5 @@
 from .align import Align
+from .blend_mode import BlendMode
 from .color import Color
 from .font import FontWeight
 
@@ -35,6 +36,7 @@ struct Style(Copyable, Movable, Writable):
     var font_weight: Int
     var text_align: Align
     var opacity: Float64
+    var blend_mode: BlendMode
 
     def __init__(
         out self,
@@ -50,6 +52,7 @@ struct Style(Copyable, Movable, Writable):
         font_weight: Int = FontWeight.REGULAR,
         text_align: Align = Align.CENTER,
         opacity: Float64 = 1.0,
+        blend_mode: BlendMode = BlendMode.NORMAL,
     ):
         self.fill_color = fill
         self.fill_enabled = fill_enabled
@@ -62,6 +65,7 @@ struct Style(Copyable, Movable, Writable):
         self.font_weight = font_weight
         self.text_align = text_align
         self.opacity = opacity
+        self.blend_mode = blend_mode
 
     def write_to[W: Writer](self, mut writer: W):
         # Named by the constructor's keywords, not the fields, so the output
@@ -89,6 +93,8 @@ struct Style(Copyable, Movable, Writable):
             self.text_align,
             ", opacity=",
             self.opacity,
+            ", blend_mode=",
+            self.blend_mode,
             ")",
         )
 

@@ -957,22 +957,24 @@ struct Backend(Movable):
         # The one place the pre-matrix is composed, so no per-kind helper has
         # to remember to do it.
         var m = pre @ c.transform
+        # Likewise the blend mode: every raster loop reads it off the surface.
+        var t = s._with_blend_mode(c.style.blend_mode)
         if c.kind == CMD_CLEAR:
-            fill_all(s, c.style.fill_color)
+            fill_all(t, c.style.fill_color)
         elif c.kind == CMD_RECT:
-            self._rect(s, c, scale, m)
+            self._rect(t, c, scale, m)
         elif c.kind == CMD_CIRCLE:
-            self._circle(s, c, scale, m)
+            self._circle(t, c, scale, m)
         elif c.kind == CMD_LINE:
-            self._line(s, c, scale, m)
+            self._line(t, c, scale, m)
         elif c.kind == CMD_TRIANGLE:
-            self._triangle(s, c, scale, m)
+            self._triangle(t, c, scale, m)
         elif c.kind == CMD_SPRITE:
-            self._sprite(s, c, scale, m)
+            self._sprite(t, c, scale, m)
         elif c.kind == CMD_TEXT:
-            self._text(s, c, scale, m)
+            self._text(t, c, scale, m)
         elif c.kind == CMD_LETTERBOX:
-            self._letterbox(s, c)
+            self._letterbox(t, c)
 
     def _rect[
         o: Origin[mut=True]

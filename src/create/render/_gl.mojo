@@ -49,8 +49,14 @@ comptime GL_COLOR_BUFFER_BIT: UInt32 = 0x00004000
 
 comptime GL_BLEND: UInt32 = 0x0BE2
 comptime GL_MULTISAMPLE: UInt32 = 0x809D
+comptime GL_ZERO: UInt32 = 0
+comptime GL_ONE: UInt32 = 1
 comptime GL_SRC_ALPHA: UInt32 = 0x0302
 comptime GL_ONE_MINUS_SRC_ALPHA: UInt32 = 0x0303
+comptime GL_DST_COLOR: UInt32 = 0x0306
+comptime GL_ONE_MINUS_DST_COLOR: UInt32 = 0x0307
+comptime GL_FUNC_ADD: UInt32 = 0x8006
+comptime GL_FUNC_REVERSE_SUBTRACT: UInt32 = 0x800B
 
 comptime GL_ARRAY_BUFFER: UInt32 = 0x8892
 comptime GL_STREAM_DRAW: UInt32 = 0x88E0
@@ -122,6 +128,10 @@ comptime _ClearColor = def(Float32, Float32, Float32, Float32) thin abi(
 comptime _Clear = def(UInt32) thin abi("C") -> None
 comptime _Enable = def(UInt32) thin abi("C") -> None
 comptime _BlendFunc = def(UInt32, UInt32) thin abi("C") -> None
+comptime _BlendFuncSeparate = def(UInt32, UInt32, UInt32, UInt32) thin abi(
+    "C"
+) -> None
+comptime _BlendEquationSeparate = def(UInt32, UInt32) thin abi("C") -> None
 
 comptime _GenObjects = def(Int32, _UInts) thin abi("C") -> None
 comptime _DeleteObjects = def(Int32, _UInts) thin abi("C") -> None
@@ -245,6 +255,8 @@ struct GL(Movable):
     var enable: _Enable
     var disable: _Enable
     var blend_func: _BlendFunc
+    var blend_func_separate: _BlendFuncSeparate
+    var blend_equation_separate: _BlendEquationSeparate
 
     var gen_buffers: _GenObjects
     var bind_buffer: _BindBuffer
@@ -308,6 +320,12 @@ struct GL(Movable):
         self.enable = _bind[_Enable](lib, "glEnable")
         self.disable = _bind[_Enable](lib, "glDisable")
         self.blend_func = _bind[_BlendFunc](lib, "glBlendFunc")
+        self.blend_func_separate = _bind[_BlendFuncSeparate](
+            lib, "glBlendFuncSeparate"
+        )
+        self.blend_equation_separate = _bind[_BlendEquationSeparate](
+            lib, "glBlendEquationSeparate"
+        )
 
         self.gen_buffers = _bind[_GenObjects](lib, "glGenBuffers")
         self.bind_buffer = _bind[_BindBuffer](lib, "glBindBuffer")

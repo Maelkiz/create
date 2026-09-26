@@ -16,6 +16,7 @@ def test_default_style_matches_a_fresh_frame() raises -> None:
     assert_equal(s.font_weight, FontWeight.REGULAR)
     assert_true(s.text_align == Align.CENTER)
     assert_equal(s.opacity, 1.0)
+    assert_true(s.blend_mode == BlendMode.NORMAL)
 
 
 def test_each_keyword_lands_in_its_field() raises -> None:
@@ -31,6 +32,7 @@ def test_each_keyword_lands_in_its_field() raises -> None:
         font_weight=FontWeight.BOLD,
         text_align=Align.TOP_LEFT,
         opacity=0.5,
+        blend_mode=BlendMode.ADD,
     )
     assert_equal(s.fill_color, Color.RED)
     assert_false(s.fill_enabled)
@@ -43,6 +45,7 @@ def test_each_keyword_lands_in_its_field() raises -> None:
     assert_equal(s.font_weight, FontWeight.BOLD)
     assert_true(s.text_align == Align.TOP_LEFT)
     assert_equal(s.opacity, 0.5)
+    assert_true(s.blend_mode == BlendMode.ADD)
 
 
 def test_style_writes_constructor_keywords() raises -> None:
@@ -52,7 +55,8 @@ def test_style_writes_constructor_keywords() raises -> None:
             "Style(fill=Color(0, 0, 0, 0), fill_enabled=True, outline=Color(0,"
             " 0, 0, 255), outline_thickness=1, outline_enabled=True,"
             " corner_radius=0, text_color=Color(0, 0, 0, 255), font_size=16,"
-            " font_weight=400, text_align=Align.CENTER, opacity=1.0)"
+            " font_weight=400, text_align=Align.CENTER, opacity=1.0,"
+            " blend_mode=BlendMode.NORMAL)"
         ),
     )
 

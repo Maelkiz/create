@@ -64,12 +64,17 @@ Compute each row's covered run analytically and hand `(start, count)` to `fill_s
 test every pixel in a bounding box. `fill_span` owns the opaque-store and vectorised compositing.
 `blend` is only for genuinely per-pixel alpha (glyph coverage, sprite texels).
 
+The command's `BlendMode` rides on the `Surface` (`_with_blend_mode`, set once in `Backend._one`), so
+no raster loop threads it; `blend` and `fill_span` read it and share `_blend_lanes` for every mode but
+`NORMAL`. A new mode goes there and in `GLRenderer._blend_mode` — it must be one fixed-function GL
+blend equation, which is why there is no `DIFFERENCE`.
+
 ## GPU path (OpenGL 3.3)
 
 `_tessellate.mojo` bakes each command's transform into its vertices (9 × `Float32`: `x, y, u, v, r,
 g, b, a, mode`; `mode` picks solid/glyph/texture in the shader), so everything accumulates into one
 buffer and flushes as one `glBufferData` + `glDrawArrays`. A batch breaks only on an opaque
-`CMD_CLEAR`, a second distinct sprite texture, or frame end — glyph atlas on texture unit 0, sprites
+`CMD_CLEAR`, a second distinct sprite texture, a `BlendMode` change, or frame end — glyph atlas on texture unit 0, sprites
 on unit 1. Per frame, only the viewport is written, and only on resize.
 
 Before optimising: `examples/gl_bench.mojo` runs ~1.1 ms/frame; the vertex list stops reallocating

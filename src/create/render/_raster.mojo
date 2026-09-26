@@ -1,18 +1,71 @@
 from std.math import max, min, abs, ceil, floor
 from std.sys import is_big_endian
 
+from .blend_mode import BlendMode
 from .color import Color
 from .font import _GlyphInfo
 from .surface import Surface
 
 
-def blend[o: Origin[mut=True]](s: Surface[o], off: Int, c: Color):
-    """Composite one color into the framebuffer at `off`, source-over.
+def _blend_lanes[
+    w: Int
+](
+    src: SIMD[DType.uint32, w],
+    dst: SIMD[DType.uint32, w],
+    a: UInt32,
+    mode: BlendMode,
+) -> SIMD[DType.uint32, w]:
+    """`w // 4` RGBA pixels of `dst` with `src` composited by `mode`.
 
-    Fully opaque and fully transparent colors skip the read-back, so the
-    common case costs no more than a raw store; `Color.over` owns the mixing.
+    Lanes are widened bytes, 0 to 255. `src` carries `255` in its alpha lanes
+    rather than the colour's alpha, as in `fill_span`, and `a` is the alpha
+    itself. Every mode is the lerp from `dst` towards its blend result by
+    `a`, except `ADD` and `SUBTRACT`, which add or take away `src * a`
+    outright; the alpha lanes composite source-over in every mode. The one
+    formula for all modes but `NORMAL`, so `blend` and `fill_span` cannot
+    disagree about one.
+    """
+    var av = SIMD[DType.uint32, w](a)
+    var iav = SIMD[DType.uint32, w](255 - a)
+    var over = (src * av + dst * iav) // 255
+    var out = over
+    if mode == BlendMode.ADD:
+        out = min(dst + src * av // 255, SIMD[DType.uint32, w](255))
+    elif mode == BlendMode.SUBTRACT:
+        out = dst - min(dst, src * av // 255)
+    elif mode == BlendMode.MULTIPLY:
+        out = ((src * dst // 255) * av + dst * iav) // 255
+    elif mode == BlendMode.SCREEN:
+        out = ((src + dst - src * dst // 255) * av + dst * iav) // 255
+    var alpha_lane = SIMD[DType.bool, w](fill=False)
+    comptime for i in range(3, w, 4):
+        alpha_lane[i] = True
+    return alpha_lane.select(over, out)
+
+
+def _blend_pixel[
+    o: Origin[mut=True]
+](s: Surface[o], off: Int, c: Color, mode: BlendMode):
+    """Composite one pixel by a non-`NORMAL` mode, through `_blend_lanes`."""
+    var px = s.px
+    var src = SIMD[DType.uint8, 4](c.r, c.g, c.b, 255).cast[DType.uint32]()
+    var dst = px.unsafe_load[width=4](offset=off).cast[DType.uint32]()
+    var out = _blend_lanes[4](src, dst, UInt32(c.a), mode)
+    px.unsafe_store[width=4](offset=off, val=out.cast[DType.uint8]())
+
+
+def blend[o: Origin[mut=True]](s: Surface[o], off: Int, c: Color):
+    """Composite one color into the framebuffer at `off`, by the surface's
+    blend mode.
+
+    Under `NORMAL`, fully opaque and fully transparent colors skip the
+    read-back, so the common case costs no more than a raw store;
+    `Color.over` owns the mixing. Any other mode goes through `_blend_lanes`.
     """
     if c.a == 0:
+        return
+    if s._blend_mode != BlendMode.NORMAL:
+        _blend_pixel(s, off, c, s._blend_mode)
         return
     var px = s.px
     if c.a == 255:
@@ -90,10 +143,30 @@ def fill_span[
     four pixels falls back to the scalar loop. Every rasteriser that
     produces a horizontal run of pixels goes through this one loop; none of
     this may be re-open-coded at a call site.
+
+    A surface blend mode other than `NORMAL` takes neither branch: it has no
+    opaque shortcut, and runs the same four-pixel `SIMD` loop through
+    `_blend_lanes`.
     """
     if c.a == 0:
         return
     var px = s.px
+    var mode = s._blend_mode
+    if mode != BlendMode.NORMAL:
+        var one = SIMD[DType.uint8, 4](c.r, c.g, c.b, 255)
+        var two = one.join(one)
+        var src = two.join(two).cast[DType.uint32]()
+        var j = 0
+        while j + 4 <= count:
+            var o2 = off + j * 4
+            var dst = px.unsafe_load[width=16](offset=o2).cast[DType.uint32]()
+            var out = _blend_lanes[16](src, dst, UInt32(c.a), mode)
+            px.unsafe_store[width=16](offset=o2, val=out.cast[DType.uint8]())
+            j += 4
+        while j < count:
+            _blend_pixel(s, off + j * 4, c, mode)
+            j += 1
+        return
     if c.a == 255 and _word_aligned(s):
         var w = px.unsafe_bitcast[UInt32]()
         var v = _packed(c)

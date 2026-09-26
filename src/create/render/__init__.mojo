@@ -1,6 +1,7 @@
 from .render_backend import RenderBackend
 from .color import Color
 from .align import Align
+from .blend_mode import BlendMode
 from .autoscale import AutoScale
 from .surface import Surface, MemorySurface
 from .viewport import Viewport

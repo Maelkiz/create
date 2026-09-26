@@ -8,8 +8,8 @@ here decides geometry.
 **One batch spans as many commands as it can.** The vertex buffer accumulates
 across commands and is flushed only when something makes a shared draw call
 impossible — an opaque `CMD_CLEAR` (which resets the framebuffer, so earlier
-vertices must already have landed), a *second* sprite texture, and the end of
-the frame. Solids, glyphs and one sprite share a batch because they sample
+vertices must already have landed), a *second* sprite texture, a change of
+`BlendMode` (blend state is per draw call), and the end of the frame. Solids, glyphs and one sprite share a batch because they sample
 different things: the atlas is permanently on texture unit 0 and sprites go on
 unit 1, so a sprite between two glyphs costs no rebind and text rendered over a
 sprite — the obvious way to write a HUD — costs no break either. That is the
@@ -48,13 +48,18 @@ from ._gl import (
     GL_CLAMP_TO_EDGE,
     GL_COLOR_BUFFER_BIT,
     GL_COMPILE_STATUS,
+    GL_DST_COLOR,
     GL_FALSE,
     GL_FLOAT,
     GL_FRAGMENT_SHADER,
+    GL_FUNC_ADD,
+    GL_FUNC_REVERSE_SUBTRACT,
     GL_INFO_LOG_LENGTH,
     GL_LINEAR,
     GL_LINK_STATUS,
     GL_MULTISAMPLE,
+    GL_ONE,
+    GL_ONE_MINUS_DST_COLOR,
     GL_ONE_MINUS_SRC_ALPHA,
     GL_PACK_ALIGNMENT,
     GL_R8,
@@ -94,6 +99,7 @@ from ._tessellate import (
 )
 from ._text import PlacedGlyph, TextRenderer
 from ._transform import pixel_scale
+from .blend_mode import BlendMode
 from .color import Color
 
 comptime _VERTEX_FLOATS = 9
@@ -149,6 +155,7 @@ in float v_mode;
 
 uniform sampler2D u_atlas;
 uniform sampler2D u_sprite;
+uniform int u_premultiply;
 
 out vec4 frag_color;
 
@@ -159,6 +166,11 @@ void main() {
         frag_color = vec4(v_color.rgb, v_color.a * texture(u_atlas, v_uv).r);
     } else {
         frag_color = v_color * texture(u_sprite, v_uv);
+    }
+    // Every blend mode but NORMAL is written against premultiplied colour;
+    // see `GLRenderer._blend_mode`.
+    if (u_premultiply != 0) {
+        frag_color.rgb *= frag_color.a;
     }
 }
 """
@@ -300,6 +312,10 @@ struct GLRenderer(Movable):
     var vbo: UInt32
     var program: UInt32
     var u_viewport: Int32
+    var u_premultiply: Int32
+    var blend_mode: BlendMode
+    """The mode the GL blend state is set for. Kept across frames, like
+    `bound`, since nothing else in the library sets blend state."""
     var viewport_w: Int
     var viewport_h: Int
     """What `u_viewport` and `glViewport` were last set to. The program, the
@@ -356,6 +372,13 @@ struct GLRenderer(Movable):
             self.program, _Bytes(unsafe_from_address=Int(name.unsafe_ptr()))
         )
         _ = name
+        var premultiply = String("u_premultiply")
+        self.u_premultiply = self.gl.get_uniform_location(
+            self.program,
+            _Bytes(unsafe_from_address=Int(premultiply.unsafe_ptr())),
+        )
+        _ = premultiply
+        self.blend_mode = BlendMode.NORMAL
         self._setup_vertex_array()
         self._setup_atlas()
 
@@ -473,6 +496,10 @@ struct GLRenderer(Movable):
         self.vertices.clear()
         self.draw_calls = 0
         for ref c in cmds:
+            # An opaque clear draws nothing, so its mode (always `NORMAL`)
+            # must not force a flush; a translucent one sets it in `_clear`.
+            if c.kind != CMD_CLEAR:
+                self._blend_mode(c.style.blend_mode)
             if c.kind == CMD_CLEAR:
                 self._clear(c.style.fill_color, width, height)
             elif c.kind == CMD_RECT:
@@ -684,9 +711,54 @@ struct GLRenderer(Movable):
             )
             self.gl.clear(GL_COLOR_BUFFER_BIT)
             return
+        self._blend_mode(BlendMode.NORMAL)
         var w = Float64(width)
         var h = Float64(height)
         self.vertices.quad(0.0, 0.0, w, 0.0, w, h, 0.0, h, color)
+
+    def _blend_mode(mut self, mode: BlendMode) raises:
+        """Set the GL blend state for `mode`, flushing first if that changes
+        it — blend state applies to a whole draw call.
+
+        `NORMAL` is the straight-alpha `glBlendFunc` set at construction.
+        The other modes cannot be written against straight alpha — `MULTIPLY`
+        needs `s * a * d`, `SCREEN` needs `s * a * (1 - d)` — so the shader
+        premultiplies for them, and each becomes one fixed-function equation
+        matching `_raster._blend_lanes`:
+
+        | Mode | Colour |
+        |---|---|
+        | `ADD` | `s*a + d` |
+        | `SUBTRACT` | `d - s*a` |
+        | `MULTIPLY` | `s*a * d + d * (1 - a)` |
+        | `SCREEN` | `s*a * (1 - d) + d` |
+
+        Alpha is `a + d.a * (1 - a)` for all four, source-over as on the CPU.
+        """
+        if mode == self.blend_mode:
+            return
+        self._flush()
+        if mode == BlendMode.NORMAL:
+            self.gl.blend_equation_separate(GL_FUNC_ADD, GL_FUNC_ADD)
+            self.gl.blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            self.gl.uniform_1i(self.u_premultiply, 0)
+        else:
+            var src = GL_ONE
+            var dst = GL_ONE
+            var equation = GL_FUNC_ADD
+            if mode == BlendMode.SUBTRACT:
+                equation = GL_FUNC_REVERSE_SUBTRACT
+            elif mode == BlendMode.MULTIPLY:
+                src = GL_DST_COLOR
+                dst = GL_ONE_MINUS_SRC_ALPHA
+            elif mode == BlendMode.SCREEN:
+                src = GL_ONE_MINUS_DST_COLOR
+            self.gl.blend_equation_separate(equation, GL_FUNC_ADD)
+            self.gl.blend_func_separate(
+                src, dst, GL_ONE, GL_ONE_MINUS_SRC_ALPHA
+            )
+            self.gl.uniform_1i(self.u_premultiply, 1)
+        self.blend_mode = mode
 
     def _flush(mut self) raises:
         """Upload what has accumulated and render it as one batch.

@@ -1,5 +1,6 @@
 from std.memory import unsafe_memcpy
 
+from .blend_mode import BlendMode
 from .color import Color
 from ._png import write_png
 
@@ -25,11 +26,16 @@ struct Surface[origin: Origin[mut=True]](Copyable, ImplicitlyCopyable, Movable):
     exactly these three things, and nothing here knows where the memory came
     from — an SDL window, an owned `MemorySurface`, or anything else that can
     hand out a row-major RGBA buffer.
+
+    It also carries the `BlendMode` the raster loops composite with, so the
+    replay sets it once per command and no loop between there and `blend` or
+    `fill_span` has to thread it through.
     """
 
     var px: Pointer[UInt8, Self.origin]
     var width: Int
     var height: Int
+    var _blend_mode: BlendMode
 
     def __init__(
         out self, px: Pointer[UInt8, Self.origin], width: Int, height: Int
@@ -37,6 +43,13 @@ struct Surface[origin: Origin[mut=True]](Copyable, ImplicitlyCopyable, Movable):
         self.px = px
         self.width = width
         self.height = height
+        self._blend_mode = BlendMode.NORMAL
+
+    def _with_blend_mode(self, mode: BlendMode) -> Self:
+        """The same pixels, composited with `mode`."""
+        var out = self
+        out._blend_mode = mode
+        return out
 
     def offset(self, x: Int, y: Int) -> Int:
         """Byte offset of pixel `(x, y)` — row-major, four bytes per pixel."""

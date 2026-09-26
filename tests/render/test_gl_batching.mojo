@@ -112,6 +112,42 @@ struct ManyShapes(Program):
                 canvas.rectangle((wx, wy), _CELL - 2.0, _CELL - 2.0)
 
 
+@fieldwise_init
+struct BlendModes(Program):
+    """`test_blend_mode.mojo`'s program of the same name: one square per mode
+    on one background, then a `NORMAL` one after the guard exits."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> BlendModes:
+        return BlendModes(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color(100, 150, 200))
+        canvas.outline_enabled(False)
+        canvas.fill(Color(200, 100, 50))
+        var modes = [
+            BlendMode.ADD,
+            BlendMode.SUBTRACT,
+            BlendMode.MULTIPLY,
+            BlendMode.SCREEN,
+        ]
+        for i in range(4):
+            with canvas.style(blend_mode=modes[i]):
+                canvas.rectangle((Float64(i * 20 - 40), 0.0), 12.0, 12.0)
+        canvas.rectangle((40.0, 0.0), 12.0, 12.0)
+
+
+def _near(a: Color, b: Color) -> Bool:
+    """Within one step per channel: GL rounds where the CPU truncates."""
+    return (
+        abs(Int(a.r) - Int(b.r)) <= 1
+        and abs(Int(a.g) - Int(b.g)) <= 1
+        and abs(Int(a.b) - Int(b.b)) <= 1
+    )
+
+
 def _gpu_frame[
     P: Program
 ](
@@ -204,6 +240,23 @@ def test_gl_batching_behaviours() raises -> None:
     assert_equal(many_shapes.pixel(5, 195), Color.RED, "many shapes: (0, 0)")
     assert_equal(many_shapes.pixel(15, 195), Color.BLUE, "many shapes: (1, 0)")
     assert_equal(many_shapes.pixel(195, 5), Color.BLUE, "many shapes: (19, 19)")
+
+    # Case 5: each blend mode change breaks the batch and sets blend state
+    # matching the CPU formulas, and the last square is back to `NORMAL`.
+    var blend_modes = _gpu_frame[BlendModes](win, 100, 40)
+    var expected = [
+        Color(255, 250, 250),
+        Color(0, 50, 150),
+        Color(78, 58, 39),
+        Color(222, 192, 211),
+        Color(200, 100, 50),
+    ]
+    for i in range(5):
+        var got = blend_modes.pixel(10 + i * 20, 20)
+        assert_true(
+            _near(got, expected[i]),
+            String("blend modes: square ", i, " is ", got),
+        )
 
     _ = win^
 
