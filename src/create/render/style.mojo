@@ -2,6 +2,7 @@ from .align import Align
 from .blend_mode import BlendMode
 from .color import Color
 from .font import FontWeight
+from create.math.vector2d import Vector2D
 
 
 struct Style(Copyable, Movable, Writable):
@@ -37,6 +38,13 @@ struct Style(Copyable, Movable, Writable):
     var text_align: Align
     var opacity: Float64
     var blend_mode: BlendMode
+    var shadow_color: Color
+    var shadow_offset: Vector2D
+    var shadow_blur: Float64
+    var shadow_spread: Float64
+    var shadow_inset: Bool
+    var shadow_follows_transform: Bool
+    var shadow_enabled: Bool
 
     def __init__(
         out self,
@@ -53,6 +61,13 @@ struct Style(Copyable, Movable, Writable):
         text_align: Align = Align.CENTER,
         opacity: Float64 = 1.0,
         blend_mode: BlendMode = BlendMode.NORMAL,
+        shadow: Color = Color(0, 0, 0, 96),
+        shadow_offset: Vector2D = Vector2D(4, -4),
+        shadow_blur: Float64 = 8.0,
+        shadow_spread: Float64 = 0.0,
+        shadow_inset: Bool = False,
+        shadow_follows_transform: Bool = False,
+        shadow_enabled: Bool = False,
     ):
         self.fill_color = fill
         self.fill_enabled = fill_enabled
@@ -66,6 +81,13 @@ struct Style(Copyable, Movable, Writable):
         self.text_align = text_align
         self.opacity = opacity
         self.blend_mode = blend_mode
+        self.shadow_color = shadow
+        self.shadow_offset = shadow_offset
+        self.shadow_blur = shadow_blur
+        self.shadow_spread = shadow_spread
+        self.shadow_inset = shadow_inset
+        self.shadow_follows_transform = shadow_follows_transform
+        self.shadow_enabled = shadow_enabled
 
     def write_to[W: Writer](self, mut writer: W):
         # Named by the constructor's keywords, not the fields, so the output
@@ -95,6 +117,20 @@ struct Style(Copyable, Movable, Writable):
             self.opacity,
             ", blend_mode=",
             self.blend_mode,
+            ", shadow=",
+            self.shadow_color,
+            ", shadow_offset=",
+            self.shadow_offset,
+            ", shadow_blur=",
+            self.shadow_blur,
+            ", shadow_spread=",
+            self.shadow_spread,
+            ", shadow_inset=",
+            self.shadow_inset,
+            ", shadow_follows_transform=",
+            self.shadow_follows_transform,
+            ", shadow_enabled=",
+            self.shadow_enabled,
             ")",
         )
 
@@ -119,3 +155,12 @@ struct Style(Copyable, Movable, Writable):
             and self.outline_color.a > 0
             and self.outline_thickness > 0
         )
+
+    def _shadow_visible(self) -> Bool:
+        """Whether the shadow actually paints anything.
+
+        Like `_fill_visible`: switched on and not fully transparent. Which
+        kinds cast one (and which ignore `shadow_inset`) is the backends'
+        call, not the style's.
+        """
+        return self.shadow_enabled and self.shadow_color.a > 0

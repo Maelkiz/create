@@ -111,6 +111,9 @@ struct RenderCommand(Copyable, Movable):
             self.style.text_color = _scaled_alpha(
                 self.style.text_color, self.style.opacity
             )
+            self.style.shadow_color = _scaled_alpha(
+                self.style.shadow_color, self.style.opacity
+            )
             self.style.opacity = 1.0
         self.text = String("")
         self.image = 0

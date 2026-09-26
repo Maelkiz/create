@@ -17,6 +17,13 @@ def test_default_style_matches_a_fresh_frame() raises -> None:
     assert_true(s.text_align == Align.CENTER)
     assert_equal(s.opacity, 1.0)
     assert_true(s.blend_mode == BlendMode.NORMAL)
+    assert_equal(s.shadow_color, Color(0, 0, 0, 96))
+    assert_equal(s.shadow_offset, Vector2D(4, -4))
+    assert_equal(s.shadow_blur, 8.0)
+    assert_equal(s.shadow_spread, 0.0)
+    assert_false(s.shadow_inset)
+    assert_false(s.shadow_follows_transform)
+    assert_false(s.shadow_enabled)
 
 
 def test_each_keyword_lands_in_its_field() raises -> None:
@@ -33,6 +40,13 @@ def test_each_keyword_lands_in_its_field() raises -> None:
         text_align=Align.TOP_LEFT,
         opacity=0.5,
         blend_mode=BlendMode.ADD,
+        shadow=Color.RED,
+        shadow_offset=Vector2D(1, 2),
+        shadow_blur=3.0,
+        shadow_spread=-1.0,
+        shadow_inset=True,
+        shadow_follows_transform=True,
+        shadow_enabled=True,
     )
     assert_equal(s.fill_color, Color.RED)
     assert_false(s.fill_enabled)
@@ -46,6 +60,13 @@ def test_each_keyword_lands_in_its_field() raises -> None:
     assert_true(s.text_align == Align.TOP_LEFT)
     assert_equal(s.opacity, 0.5)
     assert_true(s.blend_mode == BlendMode.ADD)
+    assert_equal(s.shadow_color, Color.RED)
+    assert_equal(s.shadow_offset, Vector2D(1, 2))
+    assert_equal(s.shadow_blur, 3.0)
+    assert_equal(s.shadow_spread, -1.0)
+    assert_true(s.shadow_inset)
+    assert_true(s.shadow_follows_transform)
+    assert_true(s.shadow_enabled)
 
 
 def test_style_writes_constructor_keywords() raises -> None:
@@ -56,8 +77,19 @@ def test_style_writes_constructor_keywords() raises -> None:
             " 0, 0, 255), outline_thickness=1, outline_enabled=True,"
             " corner_radius=0, text_color=Color(0, 0, 0, 255), font_size=16,"
             " font_weight=400, text_align=Align.CENTER, opacity=1.0,"
-            " blend_mode=BlendMode.NORMAL)"
+            " blend_mode=BlendMode.NORMAL, shadow=Color(0, 0, 0, 96),"
+            " shadow_offset=Vector2D(4.0, -4.0), shadow_blur=8.0,"
+            " shadow_spread=0.0, shadow_inset=False,"
+            " shadow_follows_transform=False, shadow_enabled=False)"
         ),
+    )
+
+
+def test_shadow_is_visible_only_when_enabled_and_opaque_enough() raises -> None:
+    assert_false(Style()._shadow_visible())
+    assert_true(Style(shadow_enabled=True)._shadow_visible())
+    assert_false(
+        Style(shadow=Color.TRANSPARENT, shadow_enabled=True)._shadow_visible()
     )
 
 

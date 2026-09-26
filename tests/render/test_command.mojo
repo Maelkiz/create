@@ -145,5 +145,13 @@ def test_commands_collect_into_a_buffer() raises -> None:
     assert_equal(cmds[2].text, "hi")
 
 
+def test_opacity_folds_into_the_shadow_color() raises -> None:
+    var s = Style(opacity=0.5)
+    s.shadow_color = Color(0, 0, 0, 200)
+    var c = rect_command(identity[3](), s, 0.0, 0.0, 1.0, 1.0)
+    assert_equal(c.style.shadow_color.a, 100)
+    assert_equal(c.style.opacity, 1.0)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
