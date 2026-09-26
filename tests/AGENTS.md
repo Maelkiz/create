@@ -13,7 +13,8 @@ def main() raises:
 ```
 
 `pixi run test` runs files concurrently, prints a failing file's full output and one `PASS` line per
-passing file. Each file is its own process; namespace any scratch path under `/tmp` per file.
+passing file, with any `SKIP` lines it printed indented beneath. Each file is its own process;
+namespace any scratch path under `/tmp` per file.
 
 **Rendering is tested for real.** `run_headless` returns the `MemorySurface`, and
 `MemorySurface.pixel(x, y)` reads it back — assert on pixels, don't eyeball.

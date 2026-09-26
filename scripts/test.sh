@@ -18,7 +18,9 @@
 #
 # Output is buffered per file and only printed in full when that file fails:
 # interleaved PASS lines from a dozen concurrent runs are unreadable, and a
-# failure is the only time the detail is wanted.
+# failure is the only time the detail is wanted. The exception is a SKIP line
+# from a passing file (a GL test with no context): it is printed under the
+# PASS, since a skipped test passing silently looks like a tested one.
 set -u
 
 jobs=
@@ -68,7 +70,8 @@ files=$(echo "$files" | sed '/^$/d' | sort -u)
 echo "$files" | xargs -P "$jobs" -I{} sh -c '
     log="$LOGS/$(echo "{}" | tr / _).log"
     if mojo run -I src "{}" > "$log" 2>&1; then
-        echo "PASS {}"
+        # One write, so a concurrent worker cannot land between the lines.
+        printf "%s\n" "PASS {}$(grep "SKIP" "$log" | sed "s/^/\n    /")"
     else
         echo "FAIL {}"
         touch "$log.failed"
