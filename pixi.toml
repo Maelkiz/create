@@ -1,7 +1,7 @@
 [workspace]
 authors = ["Karl Theodor Ruby <karl.ruby@tuta.com>"]
 channels = ["conda-forge", "https://conda.modular.com/max"]
-name = "mojo-create"
+name = "create"
 platforms = ["linux-64"]
 version = "0.1.0"
 
