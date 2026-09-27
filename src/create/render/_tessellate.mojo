@@ -26,7 +26,7 @@ where the ring has to follow a rotated edge.
 
 from std.math import abs, ceil, cos, max, min, sin, sqrt, pi
 
-from create.math.matrix import Matrix, apply as mat_apply
+from create.math.matrix import Matrix, inverse, apply as mat_apply
 
 from ._command import RenderCommand
 from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
@@ -34,7 +34,10 @@ from ._shadow import (
     SIL_RECT,
     SIL_TRIANGLE,
     BlurredSilhouette,
+    InsetRegion,
+    inset_interior,
     local_outline_thickness,
+    shadow_transform,
 )
 from ._transform import pixel_scale, outline_thickness_px
 from .color import Color
@@ -64,6 +67,17 @@ corner radius and `s3` its ring thickness, all over sigma."""
 comptime MODE_SHADOW_EDGES: Float32 = 5.0
 """Blurred triangle shadow: `s0..s2` are the signed distances inside its
 three edges and `s3` its ring thickness, all over sigma."""
+comptime MODE_INSET_BOX: Float32 = 6.0
+"""Inset shadow of a rectangle, rounded rectangle or circle: `MODE_SHADOW_BOX`'s
+parameters with no ring, the coverage inverted."""
+comptime MODE_INSET_EDGES: Float32 = 7.0
+"""Inset shadow of a triangle: `MODE_SHADOW_EDGES`'s parameters with no ring,
+the coverage inverted."""
+
+comptime _HARD_SHADOW_SHARPNESS = 64.0
+"""The inverse sigma, per device pixel, standing in for a blur of 0 in the
+inset modes: steep enough that no pixel centre lands in the ramp unless it
+sits on the silhouette's edge to within a sixty-fourth of a pixel."""
 
 comptime _MIN_CIRCLE_SEGMENTS = 12
 comptime _MAX_CIRCLE_SEGMENTS = 256
@@ -827,6 +841,96 @@ def emit_glyph(
     vb.push(x, y, u0, v0, color, MODE_MASK)
     vb.push(x + w, y + h, u1, v1, color, MODE_MASK)
     vb.push(x, y + h, u0, v1, color, MODE_MASK)
+
+
+def _emit_region(
+    mut vb: VertexBuffer,
+    region: InsetRegion,
+    m: Matrix[3, 3],
+    sf: Float64,
+    color: Color,
+):
+    """`region` filled, mapped by `m`, with the fill emitters' own
+    decompositions — so its edge follows the command's fill exactly."""
+    ref g = region.geom
+    if region.kind == SIL_RECT:
+        var r = min(region.radius, min(g[2], g[3]))
+        var x0 = g[0] - g[2]
+        var y0 = g[1] - g[3]
+        var x1 = g[0] + g[2]
+        var y1 = g[1] + g[3]
+        if r <= 0.0:
+            _mapped_quad(vb, m, x0, y0, x1, y1, color)
+        else:
+            _rounded_rect_fill(vb, m, x0, y0, x1, y1, r, sf, color)
+        return
+    var r = region.radius
+    if r <= 0.0:
+        var p1 = mat_apply(m, g[0], g[1])
+        var p2 = mat_apply(m, g[2], g[3])
+        var p3 = mat_apply(m, g[4], g[5])
+        vb.triangle(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], color)
+        return
+    _rounded_triangle_fill(
+        vb,
+        m,
+        (g[0] + g[2] + g[4]) / 3.0,
+        (g[1] + g[3] + g[5]) / 3.0,
+        corner_fillet(g[0], g[1], g[4], g[5], g[2], g[3], r),
+        corner_fillet(g[2], g[3], g[0], g[1], g[4], g[5], r),
+        corner_fillet(g[4], g[5], g[2], g[3], g[0], g[1], r),
+        r,
+        sf,
+        color,
+    )
+
+
+def emit_inset_shadow(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
+    """`c`'s inset shadow (`c` a rectangle, circle or triangle): its interior
+    tessellated, every vertex carrying the silhouette's shape parameters.
+
+    The interior is the geometry, so the shadow is clipped to it for free.
+    The silhouette — the interior shrunk by the spread, placed by the shadow
+    transform — lives in a frame that differs from the interior's only by
+    an affine map, so its parameters are affine across every triangle and
+    interpolate exactly, as `emit_blurred_shadow`'s do. Each vertex's are
+    computed from its device position, which is where the emitters leave
+    it.
+    """
+    var m = c.transform
+    var interior = inset_interior(c, local_outline_thickness(c, m, scale))
+    if interior.empty:
+        return
+    var sm = shadow_transform(c, scale)
+    var sf = pixel_scale(m, scale)
+    var shape = BlurredSilhouette(
+        interior.shrunk(c.style.shadow_spread), c.style.shadow_blur
+    )
+    var blur = Int(c.style.shadow_blur * pixel_scale(sm, scale) + 0.5)
+    var k = shape.inv_sigma
+    if blur == 0:
+        k = _HARD_SHADOW_SHARPNESS * pixel_scale(sm, scale)
+    var first = vb.count()
+    _emit_region(vb, interior, m, sf, c.style.shadow_color)
+    var sminv = inverse(sm)
+    ref g = shape.outer
+    for i in range(first, vb.count()):
+        var at = i * _VERTEX_FLOATS
+        var l = mat_apply(sminv, Float64(vb.data[at]), Float64(vb.data[at + 1]))
+        var x = l[0]
+        var y = l[1]
+        if shape.kind == SIL_RECT:
+            vb.data[at + 2] = Float32((x - g[0]) * k)
+            vb.data[at + 3] = Float32((y - g[1]) * k)
+            vb.data[at + 8] = MODE_INSET_BOX
+            vb.data[at + 9] = Float32(g[2] * k)
+            vb.data[at + 10] = Float32(g[3] * k)
+            vb.data[at + 11] = Float32(g[4] * k)
+        else:
+            vb.data[at + 8] = MODE_INSET_EDGES
+            vb.data[at + 9] = Float32((g[0] * x + g[1] * y + g[2]) * k)
+            vb.data[at + 10] = Float32((g[3] * x + g[4] * y + g[5]) * k)
+            vb.data[at + 11] = Float32((g[6] * x + g[7] * y + g[8]) * k)
 
 
 def emit_blurred_shadow(

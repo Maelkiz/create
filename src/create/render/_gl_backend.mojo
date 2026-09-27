@@ -100,13 +100,19 @@ from ._tessellate import (
     emit_blurred_shadow,
     emit_circle,
     emit_glyph,
+    emit_inset_shadow,
     emit_letterbox,
     emit_line,
     emit_rect,
     emit_sprite,
     emit_triangle,
 )
-from ._shadow import blurs_analytically, casts_outer_shadow, shadow_command
+from ._shadow import (
+    blurs_analytically,
+    casts_inset_shadow,
+    casts_outer_shadow,
+    shadow_command,
+)
 from ._text import PlacedGlyph, TextRenderer
 from ._transform import pixel_scale
 from .blend_mode import BlendMode
@@ -213,10 +219,12 @@ void main() {
     } else if (v_mode < 3.5) {
         frag_color = vec4(v_color.rgb, v_color.a * texture(u_sprite, v_uv).a);
     } else {
-        // `s3` is the ring: subtract the silhouette shrunk by it.
+        // `s3` is the ring: subtract the silhouette shrunk by it. Modes 6
+        // and 7 are 4 and 5 inverted, for an inset shadow.
         float ring = v_shape.w;
+        bool inset = v_mode > 5.5;
         float c;
-        if (v_mode < 4.5) {
+        if (v_mode < 4.5 || (inset && v_mode < 6.5)) {
             c = box_coverage(v_uv, v_shape.xy, v_shape.z);
             if (ring > 0.0 && c > 0.0) {
                 c -= box_coverage(
@@ -228,6 +236,9 @@ void main() {
             if (ring > 0.0 && c > 0.0) {
                 c -= edge_coverage(v_shape.xyz - ring);
             }
+        }
+        if (inset) {
+            c = 1.0 - c;
         }
         frag_color = vec4(v_color.rgb, v_color.a * max(c, 0.0));
     }
@@ -593,6 +604,10 @@ struct GLRenderer(Movable):
                 elif c.kind == CMD_SPRITE:
                     self._sprite_shadow(sh, images, scale, blur)
             self._one(c, images, text, width, height, scale)
+            # Over the command, clipped to its interior; solid-mode
+            # geometry, so it batches with anything.
+            if casts_inset_shadow(c):
+                emit_inset_shadow(self.vertices, c, scale)
         self._flush()
 
     def _one(

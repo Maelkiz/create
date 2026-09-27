@@ -115,7 +115,15 @@ comptime _SHAPE_BLURRED_TRIANGLE_RING = 20
 comptime _SHAPE_BLURRED_LINE = 21
 comptime _SHAPE_BLURRED_TEXT = 22
 comptime _SHAPE_BLURRED_SPRITE = 23
-comptime _SHAPE_COUNT = 24
+comptime _SHAPE_INSET_RECT = 24
+comptime _SHAPE_BLURRED_INSET_RECT = 25
+comptime _SHAPE_INSET_ROUNDED_RECT = 26
+comptime _SHAPE_BLURRED_INSET_ROUNDED_RECT = 27
+comptime _SHAPE_INSET_CIRCLE = 28
+comptime _SHAPE_BLURRED_INSET_CIRCLE = 29
+comptime _SHAPE_INSET_TRIANGLE = 30
+comptime _SHAPE_BLURRED_INSET_TRIANGLE = 31
+comptime _SHAPE_COUNT = 32
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -137,6 +145,16 @@ def _blurred(var s: Style) -> Style:
     pixel centres, so the soft band compares like any interior colour."""
     s = _shadowed(s^)
     s.shadow_blur = 8.0
+    return s^
+
+
+def _inset(var s: Style, blur: Float64 = 0.0) -> Style:
+    """`s` with an opaque inset shadow, its band along the top-left inner
+    edges. Over a light fill the band is compared like any interior colour;
+    over no fill it is the only ink inside the outline."""
+    s = _shadowed(s^)
+    s.shadow_inset = True
+    s.shadow_blur = blur
     return s^
 
 
@@ -187,6 +205,22 @@ def _shape_name(shape: Int) -> String:
         return "blurred text"
     elif shape == _SHAPE_BLURRED_SPRITE:
         return "blurred sprite"
+    elif shape == _SHAPE_INSET_RECT:
+        return "inset rect"
+    elif shape == _SHAPE_BLURRED_INSET_RECT:
+        return "blurred inset rect"
+    elif shape == _SHAPE_INSET_ROUNDED_RECT:
+        return "inset rounded rect"
+    elif shape == _SHAPE_BLURRED_INSET_ROUNDED_RECT:
+        return "blurred inset rounded rect"
+    elif shape == _SHAPE_INSET_CIRCLE:
+        return "inset circle"
+    elif shape == _SHAPE_BLURRED_INSET_CIRCLE:
+        return "blurred inset circle"
+    elif shape == _SHAPE_INSET_TRIANGLE:
+        return "inset triangle"
+    elif shape == _SHAPE_BLURRED_INSET_TRIANGLE:
+        return "blurred inset rounded triangle"
     else:
         return "blurred line"
 
@@ -395,6 +429,88 @@ struct _Parity(Program):
             # Both backends blit the same cached mask one-to-one.
             with canvas.style(_blurred(Style())):
                 canvas.sprite(self.block, (-20, 10), 30, 30)
+        elif self.shape == _SHAPE_INSET_RECT:
+            with canvas.style(
+                _inset(
+                    Style(
+                        fill=Color(0xF0, 0xE0, 0xC0),
+                        outline=Color(0x30, 0x60, 0xC0),
+                        outline_thickness=4,
+                    )
+                )
+            ):
+                canvas.rectangle((-10, 5), 100, 70)
+        elif self.shape == _SHAPE_BLURRED_INSET_RECT:
+            with canvas.style(
+                _inset(
+                    Style(fill=Color(0xF0, 0xE0, 0xC0), outline_enabled=False),
+                    8.0,
+                )
+            ):
+                canvas.rectangle((-10, 5), 100, 70)
+        elif self.shape == _SHAPE_INSET_ROUNDED_RECT:
+            # No fill: the band is the only ink inside the outline.
+            var s = _inset(
+                Style(
+                    outline=Color(0x30, 0x60, 0xC0),
+                    outline_thickness=4,
+                    corner_radius=16,
+                )
+            )
+            s.shadow_spread = 3.0
+            with canvas.style(s):
+                canvas.rectangle((-10, 5), 100, 70)
+        elif self.shape == _SHAPE_BLURRED_INSET_ROUNDED_RECT:
+            with canvas.style(
+                _inset(
+                    Style(
+                        fill=Color(0xF0, 0xE0, 0xC0),
+                        outline=Color(0x30, 0x60, 0xC0),
+                        outline_thickness=4,
+                        corner_radius=16,
+                    ),
+                    8.0,
+                )
+            ):
+                canvas.rectangle((-10, 5), 100, 70)
+        elif self.shape == _SHAPE_INSET_CIRCLE:
+            with canvas.style(
+                _inset(
+                    Style(outline=Color(0x30, 0x60, 0xC0), outline_thickness=4)
+                )
+            ):
+                canvas.circle((-20, 0), 40)
+        elif self.shape == _SHAPE_BLURRED_INSET_CIRCLE:
+            with canvas.style(
+                _inset(
+                    Style(fill=Color(0xF0, 0xE0, 0xC0), outline_enabled=False),
+                    8.0,
+                )
+            ):
+                canvas.circle((-20, 0), 40)
+        elif self.shape == _SHAPE_INSET_TRIANGLE:
+            with canvas.style(
+                _inset(
+                    Style(
+                        fill=Color(0xF0, 0xE0, 0xC0),
+                        outline=Color(0x30, 0x60, 0xC0),
+                        outline_thickness=4,
+                    )
+                )
+            ):
+                canvas.triangle((-60, -45), (50, -45), (-5, 50))
+        elif self.shape == _SHAPE_BLURRED_INSET_TRIANGLE:
+            with canvas.style(
+                _inset(
+                    Style(
+                        fill=Color(0xF0, 0xE0, 0xC0),
+                        outline_enabled=False,
+                        corner_radius=10,
+                    ),
+                    8.0,
+                )
+            ):
+                canvas.triangle((-60, -45), (50, -45), (-5, 50))
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline
