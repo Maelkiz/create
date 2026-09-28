@@ -256,8 +256,8 @@ def test_unknown_named_key_returns_false() raises -> None:
 
 def test_initial_wheel_and_press_pos_zero() raises -> None:
     var input = Input()
-    assert_equal(input.wheel.x, 0.0)
-    assert_equal(input.wheel.y, 0.0)
+    assert_equal(input.mouse_wheel.x, 0.0)
+    assert_equal(input.mouse_wheel.y, 0.0)
     assert_equal(input.mouse_press_pos.x, 0.0)
     assert_equal(input.mouse_press_pos.y, 0.0)
 
@@ -318,12 +318,12 @@ def test_new_frame_clears_just_pressed_and_released() raises -> None:
 
 def test_new_frame_clears_wheel_and_edge_buttons() raises -> None:
     var input = Input()
-    input.wheel = Vector2D(3.0, -2.0)
+    input.mouse_wheel = Vector2D(3.0, -2.0)
     input._pressed_buttons |= 1 << 1
     input._released_buttons |= 1 << 2
     input._new_frame()
-    assert_equal(input.wheel.x, 0.0)
-    assert_equal(input.wheel.y, 0.0)
+    assert_equal(input.mouse_wheel.x, 0.0)
+    assert_equal(input.mouse_wheel.y, 0.0)
     assert_equal(input.mouse_just_pressed(1), False)
     assert_equal(input.mouse_just_released(2), False)
 
@@ -379,8 +379,8 @@ def test_mouse_is_a_position_and_the_wheel_a_displacement() raises -> None:
     var drag: Vector2D = input.mouse - input.mouse_press_pos
     assert_equal(drag, Vector2D(3.0, 4.0))
     assert_equal(input.mouse_press_pos + drag, input.mouse)
-    input.wheel = Vector2D(0.0, -1.0)
-    assert_equal(input.wheel.mag(), 1.0)
+    input.mouse_wheel = Vector2D(0.0, -1.0)
+    assert_equal(input.mouse_wheel.mag(), 1.0)
 
 
 def main() raises:

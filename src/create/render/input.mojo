@@ -28,8 +28,8 @@ struct Input(Copyable, Movable):
     origin — camera-independent, since the loop folds a frame's events before
     the `Canvas` (and any `Camera` it sets) exists. Convert with
     `Camera.to_world` where a program uses one. It and `mouse_press_pos` are
-    `Point2D` because they are locations; `wheel` stays a `Vector2D` because a
-    scroll delta is a displacement.
+    `Point2D` because they are locations; `mouse_wheel` stays a `Vector2D`
+    because a scroll delta is a displacement.
     """
 
     var mouse_x: Int
@@ -39,7 +39,7 @@ struct Input(Copyable, Movable):
     var mouse_button: Int
     # This frame's scroll delta — zeroed at the start of every frame, same
     # lifecycle as the just-pressed/just-released key bits.
-    var wheel: Vector2D
+    var mouse_wheel: Vector2D
     # World position at the most recent press this frame. Captured at the
     # MouseButtonDown event itself rather than read off `mouse`, because a
     # MouseMoved later in the same frame would otherwise overwrite it before
@@ -60,7 +60,7 @@ struct Input(Copyable, Movable):
         self.mouse = Point2D(0, 0)
         self.mouse_pressed = False
         self.mouse_button = 0
-        self.wheel = Vector2D(0, 0)
+        self.mouse_wheel = Vector2D(0, 0)
         self.mouse_press_pos = Point2D(0, 0)
         self._held_keys = _KeyBits()
         self._just_pressed = _KeyBits()
@@ -77,7 +77,7 @@ struct Input(Copyable, Movable):
         happened in."""
         self._just_pressed.clear_all()
         self._just_released.clear_all()
-        self.wheel = Vector2D(0, 0)
+        self.mouse_wheel = Vector2D(0, 0)
         self._pressed_buttons = 0
         self._released_buttons = 0
 

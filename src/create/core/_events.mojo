@@ -100,7 +100,7 @@ def apply_events(
             input._released_buttons |= 1 << e.button
         elif event.isa[MouseWheel]():
             var e = event[MouseWheel]
-            input.wheel = Vector2D(Float64(e.x), Float64(e.y))
+            input.mouse_wheel = Vector2D(Float64(e.x), Float64(e.y))
         elif event.isa[Resized]():
             pass  # The viewport is re-derived every frame regardless.
     return quit
