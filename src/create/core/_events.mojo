@@ -81,7 +81,6 @@ def apply_events(
                     Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
                 )
             )
-            input.mouse_pressed = True
             input.mouse_button = e.button
             input._set_mouse(p.x, p.y)
             input.mouse_press_position = p
@@ -94,7 +93,6 @@ def apply_events(
                     Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
                 )
             )
-            input.mouse_pressed = False
             input._set_mouse(p.x, p.y)
             input._held_buttons &= ~(1 << e.button)
             input._released_buttons |= 1 << e.button

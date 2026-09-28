@@ -14,7 +14,7 @@ def test_initial_mouse_position() raises -> None:
 
 def test_initial_mouse_not_pressed() raises -> None:
     var input = Input()
-    assert_equal(input.mouse_pressed, False)
+    assert_equal(input.is_mouse_down(), False)
 
 
 def test_no_keys_down_initially() raises -> None:

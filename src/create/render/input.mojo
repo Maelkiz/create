@@ -36,7 +36,6 @@ struct Input(Copyable, Movable):
     var mouse_x: Int
     var mouse_y: Int
     var mouse: Point2D
-    var mouse_pressed: Bool
     var mouse_button: Int
     # This frame's scroll delta — zeroed at the start of every frame, same
     # lifecycle as the just-pressed/just-released key bits.
@@ -59,7 +58,6 @@ struct Input(Copyable, Movable):
         self.mouse_x = 0
         self.mouse_y = 0
         self.mouse = Point2D(0, 0)
-        self.mouse_pressed = False
         self.mouse_button = 0
         self.mouse_wheel = Vector2D(0, 0)
         self.mouse_press_position = Point2D(0, 0)
