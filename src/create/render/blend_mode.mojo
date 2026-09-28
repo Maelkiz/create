@@ -22,7 +22,9 @@ struct BlendMode(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     Modes apply to render calls, not to `canvas.background`, which always
     paints normally. A shape's fill and its outline overlap along the edge,
     so under a mode that accumulates (`ADD`, `MULTIPLY`, ...) the overlap
-    shows twice; switch the outline off for a clean glow.
+    shows twice; switch the outline off for a clean glow. A shadow is
+    combined by its caster's mode, so under `ADD` it brightens rather than
+    darkens.
 
     ```mojo
     with canvas.style(blend_mode=BlendMode.ADD, outline_enabled=False):

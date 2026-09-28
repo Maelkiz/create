@@ -1,10 +1,10 @@
 """Per-primitive timings for the CPU raster path, headless.
 
-    pixi run example cpu_bench
+    pixi run example cpu
 
 No window: this drives `_raster.mojo` and `Backend` (CPU kind) directly over a
 `MemorySurface`, so it measures rasterisation alone — no SDL present, no event
-pump. `examples/gl_bench.mojo cpu` is the other half of the picture: the same
+pump. `pixi run example gpu cpu` is the other half of the picture: the same
 sketch through the real window loop, which is what a program actually pays.
 
 Every case reseeds `Random(1234)` per repetition, so every run — and every
@@ -30,7 +30,7 @@ committed:
     2000 triangles, opaque            ~14.8 ms   ~3.2 ms
     2000 thick alpha lines            (n/a — new case)   ~0.9 ms
     20 text lines                      ~0.3 ms   ~0.2 ms
-    gl_bench frame (record+present)   ~12.5 ms   ~3.5 ms
+    gpu frame (record+present)        ~12.5 ms   ~3.5 ms
 
 The rects/alpha case improved least: `fill_span`'s own per-call overhead and
 `Backend`'s per-shape bookkeeping dominate at that shape count and size, not
@@ -268,7 +268,7 @@ def _text_bench(
 def _frame_bench(
     m: Matrix[3, 3], mut be: Backend, mut mem: MemorySurface
 ) raises:
-    """One `gl_bench`-shaped frame: a clear plus 2000 mixed shapes."""
+    """One `gpu`-shaped frame: a clear plus 2000 mixed shapes."""
     var st = _shape_style(True)
     var t0 = perf_counter_ns()
     for _ in range(_REPS):
@@ -299,7 +299,7 @@ def _frame_bench(
         var s = mem.surface()
         be.present(s, 1.0)
     var t1 = perf_counter_ns()
-    _report("gl_bench frame (record+present)", t0, t1)
+    _report("gpu frame (record+present)", t0, t1)
 
 
 def main() raises:

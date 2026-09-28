@@ -14,6 +14,8 @@ and the layering rules.
 | `_gl.mojo` | GL entry points resolved at runtime; the only file that talks to the driver |
 | `_gl_backend.mojo` | `GLRenderer` — shader, vertex buffer, glyph atlas, sprite textures, batching |
 | `_tessellate.mojo` | `RenderCommand` to triangles for the GPU |
+| `_shadow.mojo` | Shadow geometry shared by both backends: `shadow_command` (the hard silhouette as a command, offset matrix composed in), `BlurredSilhouette` (analytic Gaussian coverage for shapes), `InsetRegion` (an inset shadow's interior and cut) |
+| `_blur.mojo` | Three-box-blur approximation of a Gaussian over an alpha mask, for text and sprite shadows; the blurred-mask cache limit and key |
 | `_transform.mojo`, `_image.mojo`, `_fillet.mojo` | Shared by both replay paths (split out to avoid an import cycle, or so both agree on the numbers) |
 | `_gl_target.mojo` | Offscreen FBO of an exact size, for the parity test and headless GPU |
 
@@ -58,6 +60,30 @@ Outlines mean different things per shape, and `corner_radius` must preserve that
 an **inset ring** inside the fill; a triangle's is **centred device-space bands**. Spelled out in
 `emit_triangle`'s docstring in [_tessellate.mojo](_tessellate.mojo).
 
+## Shadows
+
+Both replays handle a command's shadow around the command itself, in the command's blend mode:
+- **Outer** (`casts_outer_shadow`), *before* the command. Blur is quantised to whole device pixels
+  (`Int(shadow_blur * pixel_scale + 0.5)`) by both backends identically; 0 replays
+  `shadow_command(c, scale)` through the normal dispatch. Otherwise shapes and lines evaluate
+  `BlurredSilhouette` coverage analytically (CPU per pixel over the reach; GPU one quad in
+  `MODE_SHADOW_BOX`/`MODE_SHADOW_EDGES`), and text and sprites blur a mask (`_blur.mojo`): glyph
+  masks are keyed by blur in the glyph cache and packed into the atlas; sprite masks are cached per
+  `shadow_mask_key` in `Backend.shadow_masks` (CPU) and `GLRenderer.shadow_textures` (GPU), both
+  dropped whole at `SHADOW_MASK_LIMIT`.
+- **Inset** (`casts_inset_shadow`), *after* the command: the interior (`inset_interior`) is the
+  clip, the silhouette is the interior shrunk by the spread and moved by the shadow transform, and
+  alpha is `1 − coverage`. The CPU tests pixel centres in the interior's box; the GPU tessellates
+  the interior with the fill emitters and sets each vertex's silhouette parameters from its device
+  position (`MODE_INSET_BOX`/`MODE_INSET_EDGES`). A hard inset on the GPU uses a steep sigma
+  (1/64 px), not a step.
+
+The offset is one matrix: screen-fixed composes a device translation after the command transform,
+follows-transform composes `translate(offset)` before it (`shadow_transform`).
+
+Parity (`test_gl_parity.mojo`) needed no extra tolerance for blurred cases: both backends evaluate
+the same coverage formulas at pixel centres.
+
 ## CPU rasteriser
 
 Compute each row's covered run analytically and hand `(start, count)` to `fill_span` once — never
@@ -71,15 +97,30 @@ blend equation, which is why there is no `DIFFERENCE`.
 
 ## GPU path (OpenGL 3.3)
 
-`_tessellate.mojo` bakes each command's transform into its vertices (9 × `Float32`: `x, y, u, v, r,
-g, b, a, mode`; `mode` picks solid/glyph/texture in the shader), so everything accumulates into one
-buffer and flushes as one `glBufferData` + `glDrawArrays`. A batch breaks only on an opaque
-`CMD_CLEAR`, a second distinct sprite texture, a `BlendMode` change, or frame end — glyph atlas on texture unit 0, sprites
-on unit 1. Per frame, only the viewport is written, and only on resize.
+`_tessellate.mojo` bakes each command's transform into its vertices (13 × `Float32`: `x, y, u, v,
+r, g, b, a, mode, s0, s1, s2, s3`), so everything accumulates into one buffer and flushes as one
+`glBufferData` + `glDrawArrays`. `s0..s3` are per-mode shape parameters, zero where unused; they
+only ever hold quantities affine across a triangle, so interpolation evaluates them exactly.
 
-Before optimising: `examples/gl_bench.mojo` runs ~1.1 ms/frame; the vertex list stops reallocating
-after frame 1; orphan-then-`glBufferSubData` measured identical to the current single `glBufferData`.
-`examples/cpu_bench.mojo` measures CPU rasterisation headless.
+| Mode | Value | Fragment |
+|---|---|---|
+| `MODE_SOLID` | 0 | Vertex colour, no sampling |
+| `MODE_MASK` | 1 | Glyph: atlas red scales alpha |
+| `MODE_TEXTURE` | 2 | Sprite: sampled RGBA × colour |
+| `MODE_SILHOUETTE` | 3 | Sprite shadow: sampled alpha scales colour alpha |
+| `MODE_SHADOW_BOX` | 4 | Blurred rect/rounded rect/circle/line shadow; `s3` a ring |
+| `MODE_SHADOW_EDGES` | 5 | Blurred triangle shadow, three edge distances; `s3` a ring |
+| `MODE_INSET_BOX` / `MODE_INSET_EDGES` | 6 / 7 | 4 / 5 without ring, coverage inverted |
+
+A batch breaks only on an opaque `CMD_CLEAR`, a second distinct unit-1 texture, a `BlendMode`
+change, or frame end — glyph atlas on texture unit 0, sprites on unit 1. A blurred sprite shadow's
+mask is its own unit-1 texture, so a shadowed sprite costs one extra draw call, and interleaving
+several costs one per switch. Blurred text shadows live in the atlas and cost none. Per frame, only
+the viewport is written, and only on resize.
+
+Before optimising: `pixi run example gpu` measures ~6 ms/frame at 1920x1080 (vsync off); the
+vertex list stops reallocating after frame 1; orphan-then-`glBufferSubData` measured identical to
+the current single `glBufferData`. `pixi run example cpu` measures CPU rasterisation headless.
 
 **`render` reaches GL without `_window`:** `_gl.mojo` `dlopen`s SDL itself and resolves through
 `SDL_GL_GetProcAddress`. A GL context must be current before `GL()` is constructed.

@@ -156,6 +156,22 @@ off without losing the colour; `fill(color)`/`outline(...)` switch back on.
 `Style(...)` takes the setters' names as keywords, so a reusable style is a field built in `create`.
 The font is not part of a style: it lives on `PersistentCanvasState` and outlives the frame.
 
+**Shadows** are part of `Style`, **off by default**: `canvas.shadow(color, offset=, blur=, spread=,
+inset=)` switches one on (unset parts keep their values; `blur`/`spread` default to a NaN "keep"
+sentinel, so `blur=12` works), `shadow_enabled(False)` switches it off, and `canvas.style(...)`
+takes the same parts as `shadow*` keywords.
+- **One silhouette, like CSS `drop-shadow`:** fill plus outline cast together (outline only casts
+  a ring); lines cast their stroke, text its glyphs, sprites their alpha. A translucent fill shows
+  its own shadow through it. Clear, background and letterbox never cast.
+- **`blur` is the CSS radius** (σ = blur / 2); `blur` and `spread` are world units, scaled like
+  coordinates. Blur 0 is hard.
+- **`shadow_inset`** paints inside the shape instead, after it, clipped to the interior within the
+  outline. Rectangles, circles and triangles only — lines, text and sprites cast nothing while it
+  is set.
+- **The offset is screen-fixed** by default (`(4, -4)`, down-right): rotation doesn't turn it, but
+  camera zoom and autoscale scale it. `shadow_follows_transform(True)` turns it with the shape.
+- Shadows use the command's own opacity and blend mode.
+
 **Scope with the guards.** `canvas.transform(m)`, `canvas.style(...)` and `canvas.overlay()` return
 `with`-block guards that unwind on exit. Bare style mutators straight from `update` are fine (style,
 transform and camera reset every frame); a *helper* that sets style wraps it in `canvas.style()` so it
