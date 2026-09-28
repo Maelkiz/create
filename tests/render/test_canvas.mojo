@@ -833,6 +833,29 @@ def test_the_shadow_setter_switches_shadows_on_and_off() raises -> None:
 
 
 @fieldwise_init
+struct ShadowParts(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> ShadowParts:
+        return ShadowParts(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.shadow(Color.BLUE, offset=Vector2D(10, -10), blur=0)
+        canvas.shadow_enabled(False)
+        # A part without a colour switches it back on in the one it had.
+        canvas.shadow(offset=Vector2D(-10, -10))
+        _red_square(canvas, (0, 0))
+
+
+def test_a_shadow_part_alone_keeps_the_colour() raises -> None:
+    var m = run_headless[ShadowParts](100, 100)
+    assert_equal(m.pixel(35, 65), Color.BLUE)  # down-left now
+    assert_equal(m.pixel(65, 65), Color.BLACK)
+
+
+@fieldwise_init
 struct ShadowKeywords(Program):
     var _unused: Int
 

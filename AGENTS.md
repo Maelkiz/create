@@ -158,10 +158,11 @@ off without losing the colour; `fill(color)`/`outline(...)` switch back on.
 `Style(...)` takes the setters' names as keywords, so a reusable style is a field built in `create`.
 The font is not part of a style: it lives on `PersistentCanvasState` and outlives the frame.
 
-**Shadows** are part of `Style`, **off by default**: `canvas.shadow(color, offset=, blur=, spread=,
-inset=)` switches one on (unset parts keep their values; `blur`/`spread` default to a NaN "keep"
-sentinel, so `blur=12` works), `shadow_enabled(False)` switches it off, and `canvas.style(...)`
-takes the same parts as `shadow*` keywords.
+**Shadows** are part of `Style`, **off by default**: `canvas.shadow(color=, offset=, blur=, spread=,
+inset=)` switches one on (unset parts keep their values, so `shadow()` alone switches the current
+one on; `blur`/`spread` default to a NaN "keep" sentinel, so `blur=12` works),
+`shadow_enabled(False)` switches it off, and `canvas.style(...)` takes the same parts as `shadow*`
+keywords.
 - **One silhouette, like CSS `drop-shadow`:** fill plus outline cast together (outline only casts
   a ring); lines cast their stroke, text its glyphs, sprites their alpha. A translucent fill shows
   its own shadow through it. Clear, background and letterbox never cast.

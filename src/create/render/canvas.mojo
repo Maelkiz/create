@@ -421,8 +421,6 @@ struct Canvas:
             self.opacity(opacity.value())
         if blend_mode:
             self.blend_mode(blend_mode.value())
-        # Like `outline_thickness` without `outline`: any shadow part goes
-        # through `shadow`, keeping the current colour if none is named.
         if (
             shadow
             or shadow_offset
@@ -431,11 +429,7 @@ struct Canvas:
             or shadow_inset
         ):
             self.shadow(
-                shadow.value() if shadow else self._style.shadow_color,
-                shadow_offset,
-                shadow_blur,
-                shadow_spread,
-                shadow_inset,
+                shadow, shadow_offset, shadow_blur, shadow_spread, shadow_inset
             )
         if shadow_follows_transform:
             self.shadow_follows_transform(shadow_follows_transform.value())
@@ -781,16 +775,17 @@ struct Canvas:
 
     def shadow(
         mut self,
-        color: Color,
+        color: Optional[Color] = None,
         offset: Optional[Vector2D] = None,
         blur: Float64 = _KEEP,
         spread: Float64 = _KEEP,
         inset: Optional[Bool] = None,
     ):
-        """Cast a shadow in `color` behind what is rendered next, switching
-        shadows on. `offset`, `blur`, `spread` and `inset` left unset keep
-        their current values; a fresh frame starts at an offset of `(4, -4)`
-        (down and right, since y is up), a blur of 8 and no spread.
+        """Cast a shadow behind what is rendered next, switching shadows on.
+        Parts left unset keep their current values, so `shadow()` alone
+        brings back the last shadow, and `shadow(blur=12)` changes only the
+        blur; a fresh frame starts at a translucent black, an offset of
+        `(4, -4)` (down and right, since y is up), a blur of 8 and no spread.
 
         Works like CSS `drop-shadow`: the shadow is the shape's whole
         silhouette, fill and outline together, cast once — a translucent
@@ -816,7 +811,8 @@ struct Canvas:
         canvas.rectangle((0, 0), 120, 80)
         ```
         """
-        self._style.shadow_color = color
+        if color:
+            self._style.shadow_color = color.value()
         if offset:
             self._style.shadow_offset = offset.value()
         if not isnan(blur):
