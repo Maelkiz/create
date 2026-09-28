@@ -203,7 +203,7 @@ anchor layout to the edges. Font size, outline thickness and sprite size scale b
 [examples/autoscale.mojo](examples/autoscale.mojo).
 
 `Context` dials are read at frame construction, so a change mid-`update` applies next frame —
-except `frame_cap()` and `quit()`, read after `update` returns.
+except `max_framerate()` and `quit()`, read after `update` returns.
 
 ## Critical Gotchas
 

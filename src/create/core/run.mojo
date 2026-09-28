@@ -41,10 +41,10 @@ def _process_events(
 
 def _cap_frame_rate(mut win: Window, context: Context, frame_start: Int) raises:
     """Sleep off whatever is left of the target frame duration, if any."""
-    if context._fps_cap <= 0:
+    if context._max_framerate <= 0:
         return
     var worked_ms = win.ticks() - frame_start
-    var target_ms = 1000.0 / Float64(context._fps_cap)
+    var target_ms = 1000.0 / Float64(context._max_framerate)
     var remaining_ms = target_ms - Float64(worked_ms)
     if remaining_ms > 0.0:
         sleep(remaining_ms / 1000.0)

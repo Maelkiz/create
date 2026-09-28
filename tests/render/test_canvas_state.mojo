@@ -39,18 +39,18 @@ def test_framerate_is_the_inverse_of_delta() raises -> None:
     assert_almost_equal(context.framerate(), 50.0)
 
 
-def test_frame_cap_is_recorded_on_the_context() raises -> None:
+def test_max_framerate_is_recorded_on_the_context() raises -> None:
     var context = Context()
-    context.frame_cap(30)
-    assert_equal(context._fps_cap, 30)
+    context.max_framerate(30)
+    assert_equal(context._max_framerate, 30)
 
 
-def test_frame_cap_rejects_non_positive_fps() raises -> None:
+def test_max_framerate_rejects_non_positive_fps() raises -> None:
     var context = Context()
     with assert_raises(contains="fps must be positive"):
-        context.frame_cap(0)
+        context.max_framerate(0)
     with assert_raises(contains="fps must be positive"):
-        context.frame_cap(-5)
+        context.max_framerate(-5)
 
 
 def test_quit_is_recorded_on_the_options() raises -> None:

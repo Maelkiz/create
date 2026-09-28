@@ -15,7 +15,7 @@ struct Context(Copyable, Movable):
     survive the frame boundary cannot live on it. These do — the autoscale
     mode and design resolution the next frame's mapping is derived from, the
     clear the next frame opens with, the letterbox colour, and the two the run
-    loop reads after a frame has been released, `frame_cap` and `quit`.
+    loop reads after a frame has been released, `max_framerate` and `quit`.
 
     Handed to `Program.create` on its own, before any frame exists, and
     alongside the `Canvas` to `Program.update`. That is the whole reason it is a
@@ -30,9 +30,9 @@ struct Context(Copyable, Movable):
     frame. So a dial turned part-way through `update` applies to the *next*
     frame, uniformly — the clear of the frame being rendered was recorded before
     `update` was called, and one frame cannot record under two mappings. Set
-    them in `create` to have them hold from frame one. `frame_cap` and `quit`
-    are the exception, and only because the loop reads them after the frame
-    body returns.
+    them in `create` to have them hold from frame one. `max_framerate` and
+    `quit` are the exception, and only because the loop reads them after the
+    frame body returns.
     """
 
     var autoscale: AutoScale
@@ -56,7 +56,7 @@ struct Context(Copyable, Movable):
     write it: the loop carries it into the next frame."""
     var _design_w: Int
     var _design_h: Int
-    var _fps_cap: Int
+    var _max_framerate: Int
     var _quit: Bool
 
     def __init__(out self):
@@ -69,7 +69,7 @@ struct Context(Copyable, Movable):
         self.input = Input()
         self._design_w = 0
         self._design_h = 0
-        self._fps_cap = 0
+        self._max_framerate = 0
         self._quit = False
 
     def design_resolution(
@@ -100,7 +100,7 @@ struct Context(Copyable, Movable):
             return 0.0
         return 1.0 / self.time.delta
 
-    def frame_cap(mut self, fps: Int) raises:
+    def max_framerate(mut self, fps: Int) raises:
         """Limit the loop to at most `fps` frames per second.
 
         A cap tighter than the display's own pacing (vsync, or the CPU
@@ -110,8 +110,10 @@ struct Context(Copyable, Movable):
         which has no wall clock to cap against.
         """
         if fps <= 0:
-            raise Error("frame_cap fps must be positive, got " + String(fps))
-        self._fps_cap = fps
+            raise Error(
+                "max_framerate fps must be positive, got " + String(fps)
+            )
+        self._max_framerate = fps
 
     def quit(mut self):
         """Ask the run loop to stop after the current frame.
