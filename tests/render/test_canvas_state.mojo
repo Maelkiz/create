@@ -32,7 +32,7 @@ def test_release_does_not_write_the_viewport_back() raises -> None:
     # a resize the loop handled while the frame was being rendered.
     var context = Context()
     var canvas = context._new_canvas(_state(context, 800, 600))
-    canvas.view.set_size(1600, 1200)
+    canvas._view.set_size(1600, 1200)
     var state = canvas^._release()
     assert_equal(state.view.pixel_w, 800)
     assert_equal(state.view.pixel_h, 600)
@@ -64,7 +64,7 @@ def test_design_overrides_an_earlier_design() raises -> None:
     context.autoscale(AutoScale.EXTEND)
     context._set_viewport(state, 2000, 1000)
     var next = context._new_canvas(state^)
-    assert_true(next.view.autoscale == AutoScale.EXTEND)
+    assert_true(next._view.autoscale == AutoScale.EXTEND)
     assert_almost_equal(next.scale, 2.0)
     assert_equal(next.width, 1000)
     assert_equal(next.height, 500)

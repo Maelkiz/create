@@ -177,8 +177,7 @@ struct Canvas:
     This is the object a program is handed to render a frame with. `width`/`height`
     are the screen extent and `left`/`right`/`bottom`/`top` its edges — use
     those rather than width arithmetic, since the origin is centred and two of
-    them are negative. `scale` is the autoscale factor, `view` the mapping they all come
-    from. Screen space is camera-independent: these don't know a
+    them are negative. `scale` is the autoscale factor. Screen space is camera-independent: these don't know a
     `Camera` exists, since a program sets one on the canvas's transform, not on
     the geometry it reports.
 
@@ -221,7 +220,7 @@ struct Canvas:
     var width: Int
     var height: Int
     var scale: Float64
-    var view: Viewport
+    var _view: Viewport
     var _letterbox_color: Color
     """This frame's bar colour, snapshotted from `Context` at construction —
     the frame is rendered under one set of dials, whatever `update` does to them
@@ -262,14 +261,14 @@ struct Canvas:
         turning one mid-frame changes the next frame rather than this one
         halfway through.
         """
-        self.view = state.view.copy()
+        self._view = state.view.copy()
         self.width = state.view.width
         self.height = state.view.height
         self.scale = state.view.scale
         self._letterbox_color = letterbox_color
         self._state = state^
         self._style = Style()
-        self._base = self.view.base_matrix()
+        self._base = self._view.base_matrix()
         self._base_inv = inverse(self._base)
         self._camera = Camera()
         # The stack starts empty, so the base mapping is the current transform;
@@ -290,7 +289,7 @@ struct Canvas:
         Consumes the canvas, so the recording is complete before the loop
         presents it — nothing can append to a frame that is being replayed.
 
-        Nothing is written back. `self.view` is this frame's copy of a mapping
+        Nothing is written back. `self._view` is this frame's copy of a mapping
         the loop re-derives every frame, and the dials a program turns are in `Context`, which a `Canvas`
         never owned — so there is no merge to get wrong here.
         """
@@ -298,21 +297,21 @@ struct Canvas:
 
     def to_screen(self, pixel: Point2D) -> Point2D:
         """Map a window pixel position into screen space."""
-        return self.view.to_screen(pixel)
+        return self._view.to_screen(pixel)
 
     def left(self) -> Float64:
         """Screen x of the left edge — negative, since the origin is centred."""
-        return self.view.left()
+        return self._view.left()
 
     def right(self) -> Float64:
-        return self.view.right()
+        return self._view.right()
 
     def bottom(self) -> Float64:
         """Screen y of the bottom edge — negative, since y grows upward."""
-        return self.view.bottom()
+        return self._view.bottom()
 
     def top(self) -> Float64:
-        return self.view.top()
+        return self._view.top()
 
     def _render_letterbox(mut self):
         """Record the window area outside the design bounds.
@@ -327,15 +326,15 @@ struct Canvas:
         frame's clip rather than something the program drew, so no transform
         applies to it.
         """
-        if not self.view.scaled() or self.view.autoscale == AutoScale.EXTEND:
+        if not self._view.scaled() or self._view.autoscale == AutoScale.EXTEND:
             return
-        var cx0 = Float64(Int(self.view.offset_x))
-        var cy0 = Float64(Int(self.view.offset_y))
+        var cx0 = Float64(Int(self._view.offset_x))
+        var cy0 = Float64(Int(self._view.offset_y))
         var cx1 = Float64(
-            Int(self.view.offset_x + Float64(self.width) * self.scale + 0.5)
+            Int(self._view.offset_x + Float64(self.width) * self.scale + 0.5)
         )
         var cy1 = Float64(
-            Int(self.view.offset_y + Float64(self.height) * self.scale + 0.5)
+            Int(self._view.offset_y + Float64(self.height) * self.scale + 0.5)
         )
         self._state.backend.record(
             letterbox_command(self._letterbox_color, cx0, cy0, cx1, cy1)
