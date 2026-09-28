@@ -33,11 +33,11 @@ struct Input(Copyable, Movable):
     `mouse_wheel` stays a `Vector2D` because a scroll delta is a displacement.
 
     Keys and mouse buttons share one vocabulary: *down* is held right now,
-    true every frame it stays held (`key_is_down`, `mouse_is_down`);
+    true every frame it stays held (`key_down`, `mouse_down`);
     *pressed* and *released* are the edges, true only in the frame the key or
-    button went down or came up (`key_was_pressed`, `mouse_was_released`).
-    The verb carries the split: `is` asks about a state, `was` about an event
-    this frame. The key or button comes first, as the subject of the verb.
+    button went down or came up (`key_pressed`, `mouse_released`).
+    Unlike Processing, where `mousePressed` means held: here *pressed* is only
+    ever the edge.
     """
 
     # Keycode of the most recent key press, compared against `Key` (0 before
@@ -156,32 +156,32 @@ struct Input(Copyable, Movable):
             return False
         return bits.test(code)
 
-    def key_is_down(self, keycode: Int) -> Bool:
-        """Whether this key is held right now — true every frame it stays
-        down, which is what continuous movement wants."""
+    def key_down(self, keycode: Int) -> Bool:
+        """Whether this key is held right now — true every frame it stays down.
+        """
         return self._held_keys.test(keycode)
 
-    def key_is_down(self, key: String) -> Bool:
+    def key_down(self, key: String) -> Bool:
         """Whether this key is held right now. See `_check` for the names."""
         return self._check(key, self._held_keys)
 
-    def key_was_pressed(self, keycode: Int) -> Bool:
+    def key_pressed(self, keycode: Int) -> Bool:
         """Whether this key went down this frame — true once per press."""
         return self._pressed_keys.test(keycode)
 
-    def key_was_pressed(self, key: String) -> Bool:
+    def key_pressed(self, key: String) -> Bool:
         """Whether this key went down this frame. See `_check` for the names."""
         return self._check(key, self._pressed_keys)
 
-    def key_was_released(self, keycode: Int) -> Bool:
+    def key_released(self, keycode: Int) -> Bool:
         """Whether this key came up this frame — true once per release."""
         return self._released_keys.test(keycode)
 
-    def key_was_released(self, key: String) -> Bool:
+    def key_released(self, key: String) -> Bool:
         """Whether this key came up this frame. See `_check` for the names."""
         return self._check(key, self._released_keys)
 
-    def mouse_is_down(self, button: Int = MouseButton.LEFT) -> Bool:
+    def mouse_down(self, button: Int = MouseButton.LEFT) -> Bool:
         """Whether this mouse button is held right now.
 
         Defaults to `MouseButton.LEFT`, so the common case needs no argument.
@@ -190,11 +190,11 @@ struct Input(Copyable, Movable):
         """
         return (self._held_buttons & (1 << button)) != 0
 
-    def mouse_was_pressed(self, button: Int = MouseButton.LEFT) -> Bool:
+    def mouse_pressed(self, button: Int = MouseButton.LEFT) -> Bool:
         """Whether this mouse button went down this frame — true once per
         click. `mouse_press_position` is where it happened."""
         return (self._pressed_buttons & (1 << button)) != 0
 
-    def mouse_was_released(self, button: Int = MouseButton.LEFT) -> Bool:
+    def mouse_released(self, button: Int = MouseButton.LEFT) -> Bool:
         """Whether this mouse button came up this frame — true once."""
         return (self._released_buttons & (1 << button)) != 0

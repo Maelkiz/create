@@ -14,13 +14,13 @@ struct Game(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         var speed = 15
-        if context.input.key_is_down("w"):
+        if context.input.key_down("w"):
             self.y += speed
-        if context.input.key_is_down("s"):
+        if context.input.key_down("s"):
             self.y -= speed
-        if context.input.key_is_down("a"):
+        if context.input.key_down("a"):
             self.x -= speed
-        if context.input.key_is_down("d"):
+        if context.input.key_down("d"):
             self.x += speed
 
         var hw = (self.sprite.width) // 2

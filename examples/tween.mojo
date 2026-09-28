@@ -83,7 +83,7 @@ struct App(Program):
         self.clock.update(context.time.delta)
         self.slide.update(context.time.delta)
 
-        if context.input.key_was_pressed("space"):
+        if context.input.key_pressed("space"):
             self.pick = (self.pick + 1) % len(self.curves)
             self.slide.curve = self.curves[self.pick]
             self.slide.play()

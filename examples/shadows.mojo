@@ -31,7 +31,7 @@ struct App(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color(0xE4, 0xE6, 0xEB))
-        if context.input.key_was_pressed("space"):
+        if context.input.key_pressed("space"):
             self.soft = not self.soft
         self.angle += 0.6 * context.time.delta
         # One blur for the whole scene; spreads and offsets stay as set.
