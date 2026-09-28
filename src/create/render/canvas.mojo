@@ -214,7 +214,7 @@ struct Canvas:
     var height: Int
     var scale: Float64
     var view: Viewport
-    var _letterbox: Color
+    var _letterbox_color: Color
     """This frame's bar colour, snapshotted from `Context` at construction —
     the frame is rendered under one set of dials, whatever `update` does to them
     for the next."""
@@ -255,7 +255,7 @@ struct Canvas:
         self.width = state.view.width
         self.height = state.view.height
         self.scale = state.view.scale
-        self._letterbox = context.letterbox
+        self._letterbox_color = context.letterbox_color
         self._state = state^
         self._style = Style()
         self._base = self.view.base_matrix()
@@ -327,7 +327,7 @@ struct Canvas:
             Int(self.view.offset_y + Float64(self.height) * self.scale + 0.5)
         )
         self._state.backend.record(
-            letterbox_command(self._letterbox, cx0, cy0, cx1, cy1)
+            letterbox_command(self._letterbox_color, cx0, cy0, cx1, cy1)
         )
 
     # `_uniform`, `_pixel_scale`, `_device_bounds` and `_outline_thickness_px`

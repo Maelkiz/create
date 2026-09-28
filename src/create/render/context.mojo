@@ -25,9 +25,9 @@ struct Context(Copyable, Movable):
     frame to explain.
 
     **Read at frame construction.** `Canvas` takes its copy of `autoclear`,
-    `clear_color` and `letterbox` when it is built, and the loop re-derives
-    the viewport from `autoscale` and the design size at the top of each
-    frame. So a dial turned part-way through `update` applies to the *next*
+    `clear_color` and `letterbox_color` when it is built, and the loop
+    re-derives the viewport from `autoscale` and the design size at the top of
+    each frame. So a dial turned part-way through `update` applies to the *next*
     frame, uniformly — the clear of the frame being rendered was recorded before
     `update` was called, and one frame cannot record under two mappings. Set
     them in `create` to have them hold from frame one. `max_framerate` and
@@ -43,7 +43,7 @@ struct Context(Copyable, Movable):
     """What `autoclear` clears to, every frame. `canvas.background()` is the
     per-frame version: it paints at the point it is called and leaves this
     alone."""
-    var letterbox: Color
+    var letterbox_color: Color
     """The bars outside the design area under `AutoScale.FIT`."""
     var quit_on_escape: Bool
     var time: Time
@@ -63,7 +63,7 @@ struct Context(Copyable, Movable):
         self.autoscale = AutoScale.OFF
         self.autoclear = True
         self.clear_color = Color(200)
-        self.letterbox = Color(0x22)
+        self.letterbox_color = Color(0x22)
         self.quit_on_escape = True
         self.time = Time()
         self.input = Input()
