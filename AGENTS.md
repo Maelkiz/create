@@ -23,8 +23,8 @@ it makes the library better.
 | Module | Path | Responsibility |
 |---|---|---|
 | root | `src/create/__init__.mojo` | The preamble: star-imports all five subpackages below |
-| `core` | `src/create/core/` | `Program`, the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path` |
-| `render` | `src/create/render/` | `Canvas`, `Context`, `Time`, `Input`, `Camera`, `Viewport`, colour/font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
+| `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`, `Input`, `Key`, `MouseButton`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path` |
+| `render` | `src/create/render/` | `Canvas`, `Camera`, `Viewport`, colour/font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
 | `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes, `Random`, easing and `Tween`, util functions |
 | `sprite` | `src/create/sprite/` | `Sprite` (BMP/PNG/JPEG), `SpriteAnimation`, `SpriteAnimator` |
 | `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |
@@ -125,7 +125,8 @@ A program writes `from create import *`. Otherwise import by name from the ownin
 ### Layering
 
 - **`render` never imports `core`** (it would be a cycle). `render` depends only on `math`, `sprite`
-  and `_bytes`, so it works without a run loop.
+  and `_bytes`, so it works without a run loop. So `Canvas` takes `Context`'s dials as plain values;
+  `context._set_viewport(state, …)` and `context._new_canvas(state^)` in `core` pass them in.
 - **`_bytes`** is a leaf imported by `sprite` and `render`, re-exported by nothing.
 - **`_window`** imports nothing from `create`; `core` is its only consumer; nothing re-exports it.
 - **`render`→`sprite` is nominal:** only `canvas.sprite`'s overloads name `Sprite`/`SpriteAnimator`.

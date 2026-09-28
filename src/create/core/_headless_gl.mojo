@@ -17,7 +17,7 @@ from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.render_backend import RenderBackend
 from create.render.canvas import PersistentCanvasState
-from create.render.context import Context
+from create.core.context import Context
 from create.render.surface import MemorySurface
 
 from ._step import step
@@ -77,7 +77,7 @@ def _run_headless_gl[
     context.design_resolution(width, height)
     var program = P.create(context)
     # After create(), which may have pinned its own design size or mode.
-    state._set_viewport(context, pw, ph)
+    context._set_viewport(state, pw, ph)
     var now = 0
     context.time._start(now)
     for _ in range(frames):

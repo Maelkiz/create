@@ -1,5 +1,5 @@
 from create.render.canvas import Canvas, PersistentCanvasState
-from create.render.context import Context
+from create.core.context import Context
 from .program import Program
 
 
@@ -32,7 +32,7 @@ def step[
     know how to build; in the windowed case that is only valid after events
     have been pumped.
     """
-    var canvas = Canvas(state^, context)
+    var canvas = context._new_canvas(state^)
     program.update(context, canvas)
     # Recorded last, so it doubles as the clip for anything rendered out of
     # bounds — the replay honours the buffer's order.

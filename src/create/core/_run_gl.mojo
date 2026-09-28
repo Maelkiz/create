@@ -21,7 +21,7 @@ from create._window import GLWindow
 
 from create.render.render_backend import RenderBackend
 from create.render.canvas import PersistentCanvasState
-from create.render.context import Context
+from create.core.context import Context
 
 from ._events import apply_events
 from ._step import step
@@ -84,7 +84,7 @@ def _update_dimensions(
     pixels.
     """
     var drawable = win.drawable_size()
-    state._set_viewport(context, drawable[0], drawable[1])
+    context._set_viewport(state, drawable[0], drawable[1])
     var logical = win.width()
     return Float64(drawable[0]) / Float64(logical) if logical > 0 else 1.0
 

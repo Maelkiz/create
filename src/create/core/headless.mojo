@@ -1,5 +1,5 @@
 from create.render.canvas import PersistentCanvasState
-from create.render.context import Context
+from create.core.context import Context
 from create.render.render_backend import RenderBackend
 from ._step import step
 from ._headless_gl import _run_headless_gl
@@ -52,7 +52,7 @@ def run_headless[
     context.design_resolution(width, height)
     var program = P.create(context)
     # After create(), which may have pinned its own design size or mode.
-    state._set_viewport(context, pw, ph)
+    context._set_viewport(state, pw, ph)
     var now = 0
     context.time._start(now)
     for _ in range(frames):

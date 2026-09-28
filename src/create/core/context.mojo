@@ -1,5 +1,7 @@
-from .autoscale import AutoScale
-from .color import Color
+from create.render.autoscale import AutoScale
+from create.render.canvas import Canvas, PersistentCanvasState
+from create.render.color import Color
+
 from .time import Time
 from .input import Input
 
@@ -137,6 +139,23 @@ struct Context(Copyable, Movable):
                 "max_framerate fps must be positive, got " + String(fps)
             )
         self._max_framerate = fps
+
+    def _set_viewport(
+        self, mut state: PersistentCanvasState, pixel_w: Int, pixel_h: Int
+    ):
+        """Remap `state` onto a framebuffer of this size under the design
+        resolution and autoscale dials, at the top of a frame."""
+        state._set_viewport(
+            self._autoscale, self._design_w, self._design_h, pixel_w, pixel_h
+        )
+
+    def _new_canvas(self, var state: PersistentCanvasState) -> Canvas:
+        """Build this frame's `Canvas` under the dials as they stand now."""
+        return Canvas(
+            state^,
+            autoclear=self._autoclear,
+            letterbox_color=self._letterbox_color,
+        )
 
     def _advance_frame(mut self, now: Int):
         """Tick the clock and count the frame, before each `update`."""

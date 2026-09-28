@@ -25,7 +25,7 @@ from create._window.event import (
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
-from create.render.context import Context
+from create.core.context import Context
 from create.render.viewport import Viewport
 
 

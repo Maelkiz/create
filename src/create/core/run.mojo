@@ -3,7 +3,7 @@ from std.time import sleep
 from create._window.window import Window
 from create.render.render_backend import RenderBackend
 from create.render.canvas import PersistentCanvasState
-from create.render.context import Context
+from create.core.context import Context
 from ._events import apply_events
 from ._step import step
 from create.render.surface import Surface
@@ -15,7 +15,7 @@ from ._run_gl import run_gl
 def _update_dimensions(
     mut win: Window, mut state: PersistentCanvasState, context: Context
 ) raises:
-    state._set_viewport(context, win.width(), win.height())
+    context._set_viewport(state, win.width(), win.height())
 
 
 def _wait_for_dimensions(

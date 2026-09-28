@@ -226,7 +226,7 @@ def _gpu_frame[
     var context = Context()
     context.design_resolution(width, height)
     var program = P.create(context)
-    state._set_viewport(context, width, height)
+    context._set_viewport(state, width, height)
     var now = 0
     context.time._start(now)
     for _ in range(frames):
@@ -253,7 +253,7 @@ def _gpu_draw_calls[P: Program](mut win: GLWindow) raises -> Int:
     var context = Context()
     context.design_resolution(100, 100)
     var program = P.create(context)
-    state._set_viewport(context, 100, 100)
+    context._set_viewport(state, 100, 100)
     context.time._start(0)
     context.time._tick(16)
     state = step(program, context, state^)

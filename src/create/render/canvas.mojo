@@ -7,7 +7,6 @@ from .blend_mode import BlendMode
 from .autoscale import AutoScale
 from .font import Font
 from .viewport import Viewport
-from .context import Context
 from .camera import Camera
 from create.math.geometry import Rectangle, Circle, Line, Triangle
 from create.math.point2d import Point2D
@@ -74,16 +73,24 @@ struct PersistentCanvasState(Movable):
         self.backend = Backend(kind)
         self.view = Viewport()
 
-    def _set_viewport(mut self, context: Context, pixel_w: Int, pixel_h: Int):
-        """Remap onto a framebuffer of this size, under `context`.
+    def _set_viewport(
+        mut self,
+        autoscale: AutoScale,
+        design_w: Int,
+        design_h: Int,
+        pixel_w: Int,
+        pixel_h: Int,
+    ):
+        """Remap onto a framebuffer of this size.
 
         The design size and the autoscale mode are pushed in from `Context`
         rather than stored here, so there is one authority for both and a
         dial the last frame turned is picked up at exactly one place — the
-        top of the next frame.
+        top of the next frame. Plain values rather than the `Context`, which
+        lives in `core` above this package.
         """
-        self.view.autoscale = context._autoscale
-        self.view.set_design(context._design_w, context._design_h)
+        self.view.autoscale = autoscale
+        self.view.set_design(design_w, design_h)
         self.view.set_size(pixel_w, pixel_h)
 
 
@@ -244,19 +251,22 @@ struct Canvas:
     def __init__(
         out self,
         var state: PersistentCanvasState,
-        context: Context,
+        *,
+        autoclear: Bool,
+        letterbox_color: Color,
     ):
         """Adopt the carried-over state, and this frame's mapping and dials.
 
-        `context` is read here and not held: the frame is rendered under the
-        dials as they stood when it began, so a program turning one mid-frame
-        changes the next frame rather than this one halfway through.
+        The dials are `Context`'s, copied in by value when the frame begins:
+        the frame is rendered under them as they stood then, so a program
+        turning one mid-frame changes the next frame rather than this one
+        halfway through.
         """
         self.view = state.view.copy()
         self.width = state.view.width
         self.height = state.view.height
         self.scale = state.view.scale
-        self._letterbox_color = context._letterbox_color
+        self._letterbox_color = letterbox_color
         self._state = state^
         self._style = Style()
         self._base = self.view.base_matrix()
@@ -271,7 +281,7 @@ struct Canvas:
         self._transform_stack = List[Matrix[3, 3]]()
         # Recorded here rather than by the loop so both loops get it from one
         # place, and so a program's own `background()` can coalesce with it.
-        if context._autoclear:
+        if autoclear:
             self._state.backend.record_clear(clear_command(_AUTOCLEAR_COLOR))
 
     def _release(deinit self) -> PersistentCanvasState:

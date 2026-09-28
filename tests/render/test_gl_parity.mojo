@@ -712,7 +712,7 @@ def _create(
     resolution is pinned.
     """
     var program = _Parity.create(context, shape)
-    state._set_viewport(context, _PIXEL_W, _PIXEL_H)
+    context._set_viewport(state, _PIXEL_W, _PIXEL_H)
     return program^
 
 

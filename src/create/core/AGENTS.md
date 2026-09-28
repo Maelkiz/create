@@ -11,6 +11,7 @@ layering rules; the render side is in [../render/AGENTS.md](../render/AGENTS.md)
 | `headless.mojo`, `_headless_gl.mojo` | `run_headless` over an owned buffer, CPU and GPU |
 | `_step.mojo` | `step` — one frame's body |
 | `_events.mojo` | `apply_events` — the one `Event`-to-`Input` fold, into `context.input` |
+| `context.mojo`, `time.mojo`, `input.mojo`, `key.mojo`, `mouse_button.mojo` | The run state the loop owns and the program reads: `Context` and its `time` and `input` readings |
 
 ## Rules
 
@@ -20,7 +21,9 @@ how a frame starts (events and a clock, or a counter) and where the pixels go.
 
 The loop owns one `Context` for the whole run and writes the frame's readings into it:
 `context._advance_frame` (clock tick and frame count) before each `step`, `apply_events` into `context.input`. There is no separate
-`Input` or clock in a loop, and `step` takes only `(program, context, state)`.
+`Input` or clock in a loop, and `step` takes only `(program, context, state)`. Every frame's
+`Canvas` comes from `context._new_canvas(state^)` and every remap from `context._set_viewport`, so
+the dials reach `render` in one place.
 
 `Input._set_mouse(x, y)` is the only writer of `mouse`/`mouse_x`/`mouse_y`; every event arm that
 carries a position calls it and adds only what is its own.
