@@ -25,7 +25,7 @@ it makes the library better.
 | root | `src/create/__init__.mojo` | The preamble: star-imports all five subpackages below |
 | `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`, `Input`, `Key`, `MouseButton`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path` |
 | `render` | `src/create/render/` | `Canvas`, `Camera`, `Viewport`, colour/font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
-| `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes, `Random`, easing and `Tween`, util functions |
+| `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes, `Random`, `Noise`, easing and `Tween`, util functions |
 | `sprite` | `src/create/sprite/` | `Sprite` (BMP/PNG/JPEG), `SpriteAnimation`, `SpriteAnimator` |
 | `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |
 | `_bytes` | `src/create/_bytes.mojo` | Internal leaf: little-endian integer decoding |
@@ -88,7 +88,7 @@ signature on every scene, and those must vary. See [examples/scenes/src/main.moj
 **Parameter vs. field:** what the loop hands the program every frame (`Context`, `Canvas`) is a
 parameter: `Context` is the run's state and outlives the frame, `Canvas` is where this frame is
 drawn. What the program drives on its own schedule (`Sprite`, `Font`, `Sound`, `Audio`,
-`SpriteAnimator`, `Camera`, `Tween`) is a field it constructs in `create` — so adding one touches
+`SpriteAnimator`, `Camera`, `Tween`, `Noise`) is a field it constructs in `create` — so adding one touches
 neither `Program` nor the run loop. `Time` and `Input` live on `Context`: the loop ticks
 `context.time` and folds events into `context.input` before `update`. Read them, don't write them —
 the loop carries both into the next frame.
@@ -234,6 +234,7 @@ mid-`update` applies next frame — except `max_framerate()` and `quit()`, read 
 | World space | What render calls use once a `Camera` is set; identical to screen space without one. `canvas.to_world`/`to_local` convert a `Point2D` between world space and the current transform |
 | Asset vs. playhead | `SpriteAnimation`/`Sound` are shared immutable assets; `SpriteAnimator`/an `Audio` voice are one entity's position in one. `fps` belongs to the asset |
 | `Easing` / `Tween` | An `Easing` is a stateless curve over a 0-to-1 fraction (`ease(curve, t)`); a `Tween` walks that fraction over a duration. Each entity owns its own `Tween` |
+| `Random` / `Noise` | Both seeded, both in `[0, 1]`. `Random` is stateful (`mut`, `Movable`): each call is an independent sample. `Noise` is immutable (`Copyable`): `at(...)` is a pure function of its input, and nearby inputs give nearby values. `feature_size` divides space only; `at(position, time)` leaves `time` for the caller to scale. Averaged octaves cluster around 0.5 — stretch with `smoothstep` for contrast |
 | `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(position, r)`, `context.input.mouse`); a displacement is a `Vector2D` (`translate(delta)`, velocities); an extent is a scalar (`w`, `h`, `r`). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Only `Point2D` takes a bare tuple implicitly; a vector literal names its type (`p + Vector2D(1, 2)`), and `p - (1, 2)` is the displacement from `(1, 2)`, not a move |
 | Down / pressed / released | Input state for keys and mouse buttons alike. *Down* is held right now, true every frame (`key_down`, `mouse_down`); *pressed*/*released* are edges, true only in the frame it went down or came up (`key_pressed`, `mouse_released`). Unlike Processing's `mousePressed`, *pressed* never means held |
 | `overlaps` / `intersects` / `contains` | `overlaps(a, b)`: free, symmetric, regions only (`Rectangle`/`Circle`/`Triangle`). `line.intersects(x)`: `Line` only, since a line has no interior. `region.contains(x)`: asymmetric. A `Line` is never a region |
