@@ -83,7 +83,7 @@ struct ClickPainter(Program):
         return ClickPainter(False)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.clicked = context.input.was_mouse_pressed()
+        self.clicked = context.input.mouse_was_pressed()
 
         canvas.background(Color.RED if self.clicked else Color.BLUE)
 

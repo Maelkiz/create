@@ -25,9 +25,9 @@ struct Smoke(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         self.audio.update()
-        if context.input.is_key_down("right"):
+        if context.input.key_is_down("right"):
             self.x += 100.0 * context.time.delta
-        if context.input.was_key_pressed("space"):
+        if context.input.key_was_pressed("space"):
             _ = self.audio.play(
                 ArcPointer(Sound.from_pcm(List[Int16](length=1, fill=0)))
             )

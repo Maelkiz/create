@@ -19,101 +19,101 @@ def test_initial_mouse_position() raises -> None:
 
 def test_initial_mouse_not_pressed() raises -> None:
     var input = Input()
-    assert_equal(input.is_mouse_down(), False)
+    assert_equal(input.mouse_is_down(), False)
 
 
 def test_no_keys_down_initially() raises -> None:
     var input = Input()
-    assert_equal(input.is_key_down(65), False)
-    assert_equal(input.is_key_down("a"), False)
+    assert_equal(input.key_is_down(65), False)
+    assert_equal(input.key_is_down("a"), False)
 
 
-def test_is_key_down_by_keycode() raises -> None:
+def test_key_is_down_by_keycode() raises -> None:
     var input = Input()
     input._held_keys.set(65)
-    assert_true(input.is_key_down(65))
-    assert_equal(input.is_key_down(66), False)
+    assert_true(input.key_is_down(65))
+    assert_equal(input.key_is_down(66), False)
 
 
-def test_is_key_down_by_string() raises -> None:
+def test_key_is_down_by_string() raises -> None:
     var input = Input()
     input._held_keys.set(ord("a"))
-    assert_true(input.is_key_down("a"))
-    assert_equal(input.is_key_down("b"), False)
+    assert_true(input.key_is_down("a"))
+    assert_equal(input.key_is_down("b"), False)
 
 
-def test_is_key_down_case_insensitive() raises -> None:
+def test_key_is_down_case_insensitive() raises -> None:
     var input = Input()
     input._held_keys.set(ord("z"))
-    assert_true(input.is_key_down("Z"))
+    assert_true(input.key_is_down("Z"))
 
 
-def test_is_key_pressed_keycode() raises -> None:
+def test_key_is_pressed_keycode() raises -> None:
     var input = Input()
     input._pressed_keys.set(65)
-    assert_true(input.was_key_pressed(65))
-    assert_equal(input.was_key_pressed(66), False)
+    assert_true(input.key_was_pressed(65))
+    assert_equal(input.key_was_pressed(66), False)
 
 
-def test_is_key_pressed_string() raises -> None:
+def test_key_is_pressed_string() raises -> None:
     var input = Input()
     input._pressed_keys.set(ord("w"))
-    assert_true(input.was_key_pressed("w"))
+    assert_true(input.key_was_pressed("w"))
 
 
-def test_is_key_released_keycode() raises -> None:
+def test_key_is_released_keycode() raises -> None:
     var input = Input()
     input._released_keys.set(65)
-    assert_true(input.was_key_released(65))
-    assert_equal(input.was_key_released(66), False)
+    assert_true(input.key_was_released(65))
+    assert_equal(input.key_was_released(66), False)
 
 
-def test_is_key_released_string() raises -> None:
+def test_key_is_released_string() raises -> None:
     var input = Input()
     input._released_keys.set(ord("s"))
-    assert_true(input.was_key_released("s"))
+    assert_true(input.key_was_released("s"))
 
 
 def test_multiple_keys_held() raises -> None:
     var input = Input()
     input._held_keys.set(ord("a"))
     input._held_keys.set(ord("d"))
-    assert_true(input.is_key_down("a"))
-    assert_true(input.is_key_down("d"))
-    assert_equal(input.is_key_down("w"), False)
+    assert_true(input.key_is_down("a"))
+    assert_true(input.key_is_down("d"))
+    assert_equal(input.key_is_down("w"), False)
 
 
 def test_named_key_escape() raises -> None:
     var input = Input()
     input._held_keys.set(27)
-    assert_true(input.is_key_down("escape"))
+    assert_true(input.key_is_down("escape"))
 
 
 def test_named_key_space() raises -> None:
     var input = Input()
     input._held_keys.set(32)
-    assert_true(input.is_key_down("space"))
+    assert_true(input.key_is_down("space"))
 
 
 def test_named_key_enter() raises -> None:
     var input = Input()
     input._held_keys.set(13)
-    assert_true(input.is_key_down("enter"))
+    assert_true(input.key_is_down("enter"))
 
 
 def test_named_key_arrow_up() raises -> None:
     var input = Input()
     input._held_keys.set(1073741906)
-    assert_true(input.is_key_down("up"))
+    assert_true(input.key_is_down("up"))
 
 
 def test_named_key_ctrl_both_sides() raises -> None:
     var input = Input()
     input._held_keys.set(1073742048)  # left ctrl
-    assert_true(input.is_key_down("ctrl"))
+    assert_true(input.key_is_down("ctrl"))
     input._held_keys.clear_all()
     input._held_keys.set(1073742052)  # right ctrl
-    assert_true(input.is_key_down("ctrl"))
+    assert_true(input.key_is_down("ctrl"))
 
 
 def test_mouse_button_initial() raises -> None:
@@ -149,139 +149,139 @@ def test_key_ignores_auto_repeat_of_a_held_key() raises -> None:
 def test_named_key_shift_both_sides() raises -> None:
     var input = Input()
     input._held_keys.set(1073742049)  # left shift
-    assert_true(input.is_key_down("shift"))
+    assert_true(input.key_is_down("shift"))
     input._held_keys.clear_all()
     input._held_keys.set(1073742053)  # right shift
-    assert_true(input.is_key_down("shift"))
+    assert_true(input.key_is_down("shift"))
 
 
 def test_named_key_left_shift_specific() raises -> None:
     var input = Input()
     input._held_keys.set(1073742049)
-    assert_true(input.is_key_down("left_shift"))
-    assert_equal(input.is_key_down("right_shift"), False)
+    assert_true(input.key_is_down("left_shift"))
+    assert_equal(input.key_is_down("right_shift"), False)
 
 
 def test_named_key_alt_both_sides() raises -> None:
     var input = Input()
     input._held_keys.set(1073742050)  # left alt
-    assert_true(input.is_key_down("alt"))
+    assert_true(input.key_is_down("alt"))
     input._held_keys.clear_all()
     input._held_keys.set(1073742054)  # right alt
-    assert_true(input.is_key_down("alt"))
+    assert_true(input.key_is_down("alt"))
 
 
 def test_named_key_super_both_sides() raises -> None:
     var input = Input()
     input._held_keys.set(1073742051)  # left super
-    assert_true(input.is_key_down("super"))
+    assert_true(input.key_is_down("super"))
     input._held_keys.clear_all()
     input._held_keys.set(1073742055)  # right super
-    assert_true(input.is_key_down("super"))
+    assert_true(input.key_is_down("super"))
 
 
 def test_named_key_arrow_down() raises -> None:
     var input = Input()
     input._held_keys.set(1073741905)
-    assert_true(input.is_key_down("down"))
+    assert_true(input.key_is_down("down"))
 
 
 def test_named_key_arrow_left() raises -> None:
     var input = Input()
     input._held_keys.set(1073741904)
-    assert_true(input.is_key_down("left"))
+    assert_true(input.key_is_down("left"))
 
 
 def test_named_key_arrow_right() raises -> None:
     var input = Input()
     input._held_keys.set(1073741903)
-    assert_true(input.is_key_down("right"))
+    assert_true(input.key_is_down("right"))
 
 
 def test_named_key_home() raises -> None:
     var input = Input()
     input._held_keys.set(1073741898)
-    assert_true(input.is_key_down("home"))
+    assert_true(input.key_is_down("home"))
 
 
 def test_named_key_end() raises -> None:
     var input = Input()
     input._held_keys.set(1073741901)
-    assert_true(input.is_key_down("end"))
+    assert_true(input.key_is_down("end"))
 
 
 def test_named_key_page_up() raises -> None:
     var input = Input()
     input._held_keys.set(1073741899)
-    assert_true(input.is_key_down("page_up"))
+    assert_true(input.key_is_down("page_up"))
 
 
 def test_named_key_page_down() raises -> None:
     var input = Input()
     input._held_keys.set(1073741902)
-    assert_true(input.is_key_down("page_down"))
+    assert_true(input.key_is_down("page_down"))
 
 
 def test_named_key_insert() raises -> None:
     var input = Input()
     input._held_keys.set(1073741897)
-    assert_true(input.is_key_down("insert"))
+    assert_true(input.key_is_down("insert"))
 
 
 def test_named_key_backspace() raises -> None:
     var input = Input()
     input._held_keys.set(8)
-    assert_true(input.is_key_down("backspace"))
+    assert_true(input.key_is_down("backspace"))
 
 
 def test_named_key_tab() raises -> None:
     var input = Input()
     input._held_keys.set(9)
-    assert_true(input.is_key_down("tab"))
+    assert_true(input.key_is_down("tab"))
 
 
 def test_named_key_delete() raises -> None:
     var input = Input()
     input._held_keys.set(127)
-    assert_true(input.is_key_down("delete"))
+    assert_true(input.key_is_down("delete"))
 
 
 def test_named_key_caps_lock() raises -> None:
     var input = Input()
     input._held_keys.set(1073741881)
-    assert_true(input.is_key_down("caps_lock"))
+    assert_true(input.key_is_down("caps_lock"))
 
 
 def test_named_key_f1() raises -> None:
     var input = Input()
     input._held_keys.set(1073741882)
-    assert_true(input.is_key_down("f1"))
+    assert_true(input.key_is_down("f1"))
 
 
 def test_named_key_f12() raises -> None:
     var input = Input()
     input._held_keys.set(1073741893)
-    assert_true(input.is_key_down("f12"))
+    assert_true(input.key_is_down("f12"))
 
 
-def test_is_key_pressed_named_key() raises -> None:
+def test_key_is_pressed_named_key() raises -> None:
     var input = Input()
     input._pressed_keys.set(27)
-    assert_true(input.was_key_pressed("escape"))
-    assert_equal(input.was_key_pressed("space"), False)
+    assert_true(input.key_was_pressed("escape"))
+    assert_equal(input.key_was_pressed("space"), False)
 
 
-def test_is_key_released_named_key() raises -> None:
+def test_key_is_released_named_key() raises -> None:
     var input = Input()
     input._released_keys.set(32)
-    assert_true(input.was_key_released("space"))
-    assert_equal(input.was_key_released("escape"), False)
+    assert_true(input.key_was_released("space"))
+    assert_equal(input.key_was_released("escape"), False)
 
 
 def test_unknown_named_key_returns_false() raises -> None:
     var input = Input()
     input._held_keys.set(65)
-    assert_equal(input.is_key_down("nonexistent_key"), False)
+    assert_equal(input.key_is_down("nonexistent_key"), False)
 
 
 def test_initial_wheel_and_press_pos_zero() raises -> None:
@@ -294,47 +294,47 @@ def test_initial_wheel_and_press_pos_zero() raises -> None:
 
 def test_no_mouse_buttons_down_initially() raises -> None:
     var input = Input()
-    assert_equal(input.is_mouse_down(), False)
-    assert_equal(input.is_mouse_down(2), False)
-    assert_equal(input.was_mouse_pressed(), False)
-    assert_equal(input.was_mouse_released(), False)
+    assert_equal(input.mouse_is_down(), False)
+    assert_equal(input.mouse_is_down(2), False)
+    assert_equal(input.mouse_was_pressed(), False)
+    assert_equal(input.mouse_was_released(), False)
 
 
-def test_is_mouse_down_default_button() raises -> None:
+def test_mouse_is_down_default_button() raises -> None:
     var input = Input()
     input._held_buttons |= 1 << 1
-    assert_true(input.is_mouse_down())
-    assert_equal(input.is_mouse_down(2), False)
+    assert_true(input.mouse_is_down())
+    assert_equal(input.mouse_is_down(2), False)
 
 
-def test_is_mouse_down_specific_button() raises -> None:
+def test_mouse_is_down_specific_button() raises -> None:
     var input = Input()
     input._held_buttons |= 1 << 3
-    assert_true(input.is_mouse_down(3))
-    assert_equal(input.is_mouse_down(1), False)
+    assert_true(input.mouse_is_down(3))
+    assert_equal(input.mouse_is_down(1), False)
 
 
 def test_multiple_mouse_buttons_held_independently() raises -> None:
     var input = Input()
     input._held_buttons |= 1 << 1
     input._held_buttons |= 1 << 2
-    assert_true(input.is_mouse_down(1))
-    assert_true(input.is_mouse_down(2))
-    assert_equal(input.is_mouse_down(3), False)
+    assert_true(input.mouse_is_down(1))
+    assert_true(input.mouse_is_down(2))
+    assert_equal(input.mouse_is_down(3), False)
 
 
-def test_is_mouse_pressed_button() raises -> None:
+def test_mouse_is_pressed_button() raises -> None:
     var input = Input()
     input._pressed_buttons |= 1 << 2
-    assert_true(input.was_mouse_pressed(2))
-    assert_equal(input.was_mouse_pressed(1), False)
+    assert_true(input.mouse_was_pressed(2))
+    assert_equal(input.mouse_was_pressed(1), False)
 
 
-def test_is_mouse_released_button() raises -> None:
+def test_mouse_is_released_button() raises -> None:
     var input = Input()
     input._released_buttons |= 1 << 1
-    assert_true(input.was_mouse_released())
-    assert_equal(input.was_mouse_released(2), False)
+    assert_true(input.mouse_was_released())
+    assert_equal(input.mouse_was_released(2), False)
 
 
 def test_new_frame_clears_pressed_and_released() raises -> None:
@@ -342,8 +342,8 @@ def test_new_frame_clears_pressed_and_released() raises -> None:
     input._pressed_keys.set(65)
     input._released_keys.set(66)
     input._new_frame()
-    assert_equal(input.was_key_pressed(65), False)
-    assert_equal(input.was_key_released(66), False)
+    assert_equal(input.key_was_pressed(65), False)
+    assert_equal(input.key_was_released(66), False)
 
 
 def test_new_frame_clears_wheel_and_edge_buttons() raises -> None:
@@ -354,8 +354,8 @@ def test_new_frame_clears_wheel_and_edge_buttons() raises -> None:
     input._new_frame()
     assert_equal(input.mouse_wheel.x, 0.0)
     assert_equal(input.mouse_wheel.y, 0.0)
-    assert_equal(input.was_mouse_pressed(1), False)
-    assert_equal(input.was_mouse_released(2), False)
+    assert_equal(input.mouse_was_pressed(1), False)
+    assert_equal(input.mouse_was_released(2), False)
 
 
 def test_new_frame_leaves_held_state_alone() raises -> None:
@@ -365,8 +365,8 @@ def test_new_frame_leaves_held_state_alone() raises -> None:
     input._held_keys.set(65)
     input._held_buttons |= 1 << 1
     input._new_frame()
-    assert_true(input.is_key_down(65))
-    assert_true(input.is_mouse_down(1))
+    assert_true(input.key_is_down(65))
+    assert_true(input.mouse_is_down(1))
 
 
 def test_set_mouse_writes_all_three_fields() raises -> None:

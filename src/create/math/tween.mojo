@@ -18,7 +18,7 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         self.fade.update(context.time.delta)
-        if context.input.was_key_pressed(Key.SPACE):
+        if context.input.key_was_pressed(Key.SPACE):
             self.fade.play()
         canvas.fill(Color(255, 255, 255, Int(255 * self.fade.value)))
     ```

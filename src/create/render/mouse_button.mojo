@@ -1,5 +1,5 @@
 struct MouseButton:
-    """Names for `is_mouse_down`/`was_mouse_pressed`/`was_mouse_released`.
+    """Names for `mouse_is_down`/`mouse_was_pressed`/`mouse_was_released`.
 
     Matches SDL's own button numbering, not named after it: `BACK`/`FORWARD`
     are the side thumb buttons (SDL's X1/X2) — named for what a mouse driver

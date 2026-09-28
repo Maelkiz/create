@@ -57,7 +57,7 @@ def apply_events(
             var keycode = event[KeyDown].keycode
             if keycode == 27 and context._quit_on_escape:
                 quit = True
-            if not input.is_key_down(keycode):
+            if not input.key_is_down(keycode):
                 input.key = keycode
                 input._held_keys.set(keycode)
                 input._pressed_keys.set(keycode)

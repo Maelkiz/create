@@ -35,11 +35,11 @@ struct App(Program):
         # Filed the moment the key is read, and written at `present` — the
         # file holds the whole frame however early in `update` it was asked
         # for, so nothing has to be rendered before asking.
-        if context.input.was_key_pressed("s"):
+        if context.input.key_was_pressed("s"):
             canvas.save_screenshot(source_path("../out/screenshot.png"))
             self.saved = "screenshot.png — the window, bars included"
-        elif context.input.was_key_pressed("i"):
-            if context.input.is_key_down("shift"):
+        elif context.input.key_was_pressed("i"):
+            if context.input.key_is_down("shift"):
                 canvas.save_image(
                     source_path("../out/image@2x.png"), 2.0, transparent=True
                 )
