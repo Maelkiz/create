@@ -1,4 +1,9 @@
-from std.testing import TestSuite, assert_true, assert_equal
+from std.testing import (
+    TestSuite,
+    assert_true,
+    assert_equal,
+    assert_almost_equal,
+)
 from create.math.noise import Noise
 from create.math.point2d import Point2D
 
@@ -121,6 +126,74 @@ def test_bare_tuple_is_a_position() raises -> None:
     var noise = Noise(9)
     assert_equal(noise.at((1.5, 2.5)), noise.at(Point2D(1.5, 2.5)))
     assert_equal(noise.at((1.5, 2.5), 0.3), noise.at(Point2D(1.5, 2.5), 0.3))
+
+
+def test_one_octave_is_plain_perlin() raises -> None:
+    # Values captured from the single-octave field before octaves existed
+    var noise = Noise(42, octaves=1)
+    comptime tolerance = 1e-12
+    assert_almost_equal(noise.at(0.3), 0.134768, atol=tolerance)
+    assert_almost_equal(noise.at(-2.71), 0.14695609345199995, atol=tolerance)
+    assert_almost_equal(
+        noise.at(Point2D(0.3, 1.7)), 0.5545939654400001, atol=tolerance
+    )
+    assert_almost_equal(
+        noise.at(Point2D(-4.2, 2.9)), 0.37801057407999966, atol=tolerance
+    )
+    assert_almost_equal(
+        noise.at(Point2D(0.3, 1.7), 0.45), 0.4057022428792396, atol=tolerance
+    )
+    assert_almost_equal(
+        noise.at(Point2D(-4.2, 2.9), 3.3), 0.4194933258613251, atol=tolerance
+    )
+
+
+def test_octaves_keep_the_range() raises -> None:
+    var falloffs: List[Float64] = [0.5, 0.9]
+    for octaves in [1, 4, 8]:
+        for falloff in falloffs:
+            var noise = Noise(13, octaves=octaves, falloff=falloff)
+            var outside = 0
+            for i in range(100):
+                for j in range(100):
+                    var p = Point2D(Float64(i) * 0.137, Float64(j) * 0.151)
+                    var t = Float64(i - j) * 0.093
+                    for v in [noise.at(p.x), noise.at(p), noise.at(p, t)]:
+                        if not (v >= 0.0 and v <= 1.0):
+                            outside += 1
+            assert_equal(
+                outside,
+                0,
+                "octaves=" + String(octaves) + ", falloff=" + String(falloff),
+            )
+
+
+def _roughness(noise: Noise) -> Float64:
+    # Mean change between neighbouring samples: grows with fine detail
+    var total = 0.0
+    for i in range(2000):
+        var x = Float64(i) * 0.01
+        total += abs(
+            noise.at(Point2D(x + 0.01, 0.3)) - noise.at(Point2D(x, 0.3))
+        )
+    return total / 2000.0
+
+
+def test_more_octaves_add_detail() raises -> None:
+    var smooth = _roughness(Noise(21, octaves=1))
+    var rough = _roughness(Noise(21, octaves=6))
+    assert_true(
+        rough > smooth,
+        "octaves=6: " + String(rough) + ", octaves=1: " + String(smooth),
+    )
+
+
+def test_defaults_are_four_octaves_at_one_half() raises -> None:
+    var default = Noise(8)
+    var explicit = Noise(8, octaves=4, falloff=0.5)
+    for i in range(50):
+        var p = Point2D(Float64(i) * 0.31, Float64(i) * -0.17)
+        assert_equal(default.at(p), explicit.at(p))
 
 
 def main() raises:

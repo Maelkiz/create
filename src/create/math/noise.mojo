@@ -26,23 +26,53 @@ struct Noise(Copyable, Movable):
     not `time`, so an animation's rate is set at the call,
     `noise.at(position, time=t * 0.3)`, independently of the spatial scale.
 
+    `octaves` layers the field over itself at doubling frequencies, each
+    layer's weight `falloff` times the last: one octave is plain, blobby
+    Perlin; the default four at 0.5 add the finer detail of a coastline or a
+    cloud edge. The layers are averaged by weight, so the range stays
+    `[0, 1]`.
+
     Improved Perlin noise (2002). Its value at a whole-number lattice point,
     after dividing by `feature_size`, is exactly 0.5.
     """
 
     var _seed: UInt64
+    var _octaves: Int
+    var _falloff: Float64
     var _feature_size: Float64
     var _permutation: List[UInt8]
 
-    def __init__(out self, *, feature_size: Float64 = 1.0):
+    def __init__(
+        out self,
+        *,
+        octaves: Int = 4,
+        falloff: Float64 = 0.5,
+        feature_size: Float64 = 1.0,
+    ):
         # The clock value is kept as the seed, so the field can be rebuilt.
-        self = Self(UInt64(perf_counter_ns()), feature_size=feature_size)
+        self = Self(
+            UInt64(perf_counter_ns()),
+            octaves=octaves,
+            falloff=falloff,
+            feature_size=feature_size,
+        )
 
-    def __init__(out self, seed: UInt64, *, feature_size: Float64 = 1.0):
+    def __init__(
+        out self,
+        seed: UInt64,
+        *,
+        octaves: Int = 4,
+        falloff: Float64 = 0.5,
+        feature_size: Float64 = 1.0,
+    ):
+        debug_assert(octaves >= 1, "Noise: octaves must be at least 1")
+        debug_assert(falloff > 0, "Noise: falloff must be greater than 0")
         debug_assert(
             feature_size > 0, "Noise: feature_size must be greater than 0"
         )
         self._seed = seed
+        self._octaves = octaves
+        self._falloff = falloff
         self._feature_size = feature_size
         self._permutation = List[UInt8](capacity=256)
         for i in range(256):
@@ -58,32 +88,49 @@ struct Noise(Copyable, Movable):
     def at(self, x: Float64) -> Float64:
         """The field along a line: a value that wanders smoothly as `x` (a
         time, say) moves."""
-        return Self._unit(self._raw1(x / self._feature_size))
+        return self._layered[1](x / self._feature_size, 0.0, 0.0)
 
     def at(self, position: Point2D) -> Float64:
         """The field over the plane: terrain, texture, a flow-field angle."""
-        return Self._unit(
-            self._raw2(
-                position.x / self._feature_size,
-                position.y / self._feature_size,
-            )
+        return self._layered[2](
+            position.x / self._feature_size,
+            position.y / self._feature_size,
+            0.0,
         )
 
     def at(self, position: Point2D, time: Float64) -> Float64:
         """The plane field, animated: it evolves smoothly as `time` moves.
         `time` is not divided by `feature_size`; scale it at the call."""
-        return Self._unit(
-            self._raw3(
-                position.x / self._feature_size,
-                position.y / self._feature_size,
-                time,
-            )
+        return self._layered[3](
+            position.x / self._feature_size,
+            position.y / self._feature_size,
+            time,
         )
 
-    @staticmethod
-    def _unit(raw: Float64) -> Float64:
-        # Every kernel reaches at most ±1; the clamp guards rounding.
-        return clamp(0.5 + 0.5 * raw, 0.0, 1.0)
+    def _layered[
+        dimensions: Int
+    ](self, x: Float64, y: Float64, z: Float64) -> Float64:
+        # Sum the octaves, then divide by the total weight: every kernel
+        # reaches at most ±1, so the average does too, and the clamp only
+        # guards rounding. Time doubles with space, so finer layers also
+        # change faster.
+        var total = 0.0
+        var weight = 1.0
+        var weight_sum = 0.0
+        var frequency = 1.0
+        for _ in range(self._octaves):
+            comptime if dimensions == 1:
+                total += weight * self._raw1(x * frequency)
+            elif dimensions == 2:
+                total += weight * self._raw2(x * frequency, y * frequency)
+            else:
+                total += weight * self._raw3(
+                    x * frequency, y * frequency, z * frequency
+                )
+            weight_sum += weight
+            weight *= self._falloff
+            frequency *= 2.0
+        return clamp(0.5 + 0.5 * total / weight_sum, 0.0, 1.0)
 
     @staticmethod
     def _fade(t: Float64) -> Float64:
