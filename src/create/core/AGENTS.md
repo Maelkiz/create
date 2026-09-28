@@ -19,7 +19,7 @@ Every loop runs its frame through `step`, and both windowed loops fold events th
 how a frame starts (events and a clock, or a counter) and where the pixels go.
 
 The loop owns one `Context` for the whole run and writes the frame's readings into it:
-`context.time._tick` before each `step`, `apply_events` into `context.input`. There is no separate
+`context._advance_frame` (clock tick and frame count) before each `step`, `apply_events` into `context.input`. There is no separate
 `Input` or clock in a loop, and `step` takes only `(program, context, state)`.
 
 `Input._set_mouse(x, y)` is the only writer of `mouse`/`mouse_x`/`mouse_y`; every event arm that

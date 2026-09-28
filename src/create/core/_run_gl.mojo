@@ -127,7 +127,7 @@ def _run_loop[
         if apply_events(win.events(), state.view, context, px_per_point):
             win.close()
         var frame_start = win.ticks()
-        context.time._tick(frame_start)
+        context._advance_frame(frame_start)
         # Re-read after events: a resize this frame changed the drawable, and
         # the bars have to reach the edge of the *new* one. The viewport is
         # re-derived from it too — the mapping taken before the events is one

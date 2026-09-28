@@ -73,7 +73,7 @@ def _run_loop[
         # frame, and a permanent ghost in a program that never clears.
         _update_dimensions(win, state, context)
         var frame_start = win.ticks()
-        context.time._tick(frame_start)
+        context._advance_frame(frame_start)
         # The Surface is taken here, after events, because Window._resize
         # reallocates the pixel buffer: one taken before them could point at
         # freed memory. Its extent comes from the window rather than the

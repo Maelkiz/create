@@ -47,7 +47,7 @@ struct Context(Copyable, Movable):
     var quit_on_escape: Bool
     var time: Time
     """The frame clock. The run loop ticks it before each `update`; read
-    `delta` and `frame_count` here, and don't write it — the loop derives the
+    `delta` and `elapsed` here, and don't write it — the loop derives the
     next delta from it."""
     var input: Input
     """Keyboard and mouse state. The run loop folds each frame's events into
@@ -55,6 +55,7 @@ struct Context(Copyable, Movable):
     write it: the loop carries it into the next frame."""
     var _design_w: Int
     var _design_h: Int
+    var _frame_count: Int
     var _max_framerate: Int
     var _quit: Bool
 
@@ -67,6 +68,7 @@ struct Context(Copyable, Movable):
         self.input = Input()
         self._design_w = 0
         self._design_h = 0
+        self._frame_count = 0
         self._max_framerate = 0
         self._quit = False
 
@@ -87,6 +89,10 @@ struct Context(Copyable, Movable):
         self._design_w = width
         self._design_h = height
         self.autoscale = mode
+
+    def frame_count(self) -> Int:
+        """Frames rendered so far. 1 during the first `update`."""
+        return self._frame_count
 
     def framerate(self) -> Float64:
         """Current frames per second, derived from the last frame's delta.
@@ -112,6 +118,11 @@ struct Context(Copyable, Movable):
                 "max_framerate fps must be positive, got " + String(fps)
             )
         self._max_framerate = fps
+
+    def _advance_frame(mut self, now: Int):
+        """Tick the clock and count the frame, before each `update`."""
+        self.time._tick(now)
+        self._frame_count += 1
 
     def quit(mut self):
         """Ask the run loop to stop after the current frame.

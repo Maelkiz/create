@@ -629,7 +629,7 @@ struct StyleAcrossFrames(Program):
         return StyleAcrossFrames(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.frame = context.time.frame_count
+        self.frame = context.frame_count()
 
         canvas.background(Color.BLACK)
         if self.frame == 1:
@@ -1448,7 +1448,7 @@ struct QuitOnFrameTwo(Program):
         return QuitOnFrameTwo()
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.frame = context.time.frame_count
+        self.frame = context.frame_count()
         if self.frame == 2:
             context.quit()
 

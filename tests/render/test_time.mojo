@@ -10,7 +10,6 @@ def _started(now: Int) raises -> Time:
 
 def test_fresh_time_is_zeroed() raises -> None:
     var t = Time()
-    assert_equal(t.frame_count, 0)
     assert_equal(t.delta, 0.0)
     assert_equal(t.delta_millis, 0)
     assert_equal(t.elapsed, 0.0)
@@ -23,12 +22,6 @@ def test_first_tick_measures_from_the_seed_not_the_epoch() raises -> None:
     t._tick(900_016)
     assert_equal(t.delta_millis, 16)
     assert_almost_equal(t.delta, 0.016)
-
-
-def test_first_tick_counts_as_frame_one() raises -> None:
-    var t = _started(900_000)
-    t._tick(900_016)
-    assert_equal(t.frame_count, 1)
 
 
 def test_delta_is_millis_in_seconds() raises -> None:
@@ -52,7 +45,6 @@ def test_elapsed_accumulates_across_frames() raises -> None:
     t._tick(1_048)
     t._tick(1_064)
     assert_almost_equal(t.elapsed, 0.064)
-    assert_equal(t.frame_count, 3)
 
 
 def test_elapsed_tracks_total_span_since_the_seed() raises -> None:
@@ -72,7 +64,6 @@ def test_zero_length_frame_is_harmless() raises -> None:
     t._tick(2_000)
     assert_equal(t.delta_millis, 0)
     assert_equal(t.delta, 0.0)
-    assert_equal(t.frame_count, 1)
     assert_equal(t.elapsed, 0.0)
 
 
@@ -83,7 +74,6 @@ def test_restart_rebases_without_disturbing_totals() raises -> None:
     t._tick(10_016)
     assert_equal(t.delta_millis, 16)
     assert_almost_equal(t.elapsed, 0.032)
-    assert_equal(t.frame_count, 2)
 
 
 def test_time_writes_its_public_fields() raises -> None:
@@ -92,10 +82,7 @@ def test_time_writes_its_public_fields() raises -> None:
     t._tick(1250)
     assert_equal(
         String(t),
-        (
-            "Time(frame_count=1, delta=0.25, delta_millis=250, elapsed=0.25,"
-            " elapsed_millis=250)"
-        ),
+        "Time(delta=0.25, delta_millis=250, elapsed=0.25, elapsed_millis=250)",
     )
 
 

@@ -7,9 +7,6 @@ struct Time(Copyable, Movable, Writable):
     report the whole uptime as its delta and spike anything integrating it.
     """
 
-    var frame_count: Int
-    """Frames rendered so far. 1 during the first `update`."""
-
     var delta: Float64
     """Seconds since the previous frame — multiply motion by this."""
 
@@ -25,7 +22,6 @@ struct Time(Copyable, Movable, Writable):
     var _last: Int
 
     def __init__(out self):
-        self.frame_count = 0
         self.delta = 0.0
         self.delta_millis = 0
         self.elapsed = 0.0
@@ -34,9 +30,7 @@ struct Time(Copyable, Movable, Writable):
 
     def write_to[W: Writer](self, mut writer: W):
         writer.write(
-            "Time(frame_count=",
-            self.frame_count,
-            ", delta=",
+            "Time(delta=",
             self.delta,
             ", delta_millis=",
             self.delta_millis,
@@ -57,5 +51,4 @@ struct Time(Copyable, Movable, Writable):
         self.delta = Float64(self.delta_millis) / 1000.0
         self.elapsed_millis += self.delta_millis
         self.elapsed = Float64(self.elapsed_millis) / 1000.0
-        self.frame_count += 1
         self._last = now

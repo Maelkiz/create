@@ -28,6 +28,20 @@ def _state(
     return state^
 
 
+def test_frame_count_is_zero_before_the_first_frame() raises -> None:
+    assert_equal(Context().frame_count(), 0)
+
+
+def test_advancing_a_frame_counts_it_and_ticks_the_clock() raises -> None:
+    var context = Context()
+    context.time._start(1_000)
+    context._advance_frame(1_016)
+    assert_equal(context.frame_count(), 1)
+    assert_equal(context.time.delta_millis, 16)
+    context._advance_frame(1_048)
+    assert_equal(context.frame_count(), 2)
+
+
 def test_framerate_is_zero_before_the_first_tick() raises -> None:
     assert_equal(Context().framerate(), 0.0)
 

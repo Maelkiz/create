@@ -231,7 +231,7 @@ def _gpu_frame[
     context.time._start(now)
     for _ in range(frames):
         now += 16
-        context.time._tick(now)
+        context._advance_frame(now)
         state = step(program, context, state^)
         state.backend.present_gpu(width, height, state.view.scale)
 

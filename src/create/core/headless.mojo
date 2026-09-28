@@ -60,7 +60,7 @@ def run_headless[
         if context._quit:
             break
         now += _FRAME_MILLIS
-        context.time._tick(now)
+        context._advance_frame(now)
         state = step(program, context, state^)
         state.backend.present(mem.surface(), state.view.scale)
     return mem^
