@@ -27,7 +27,7 @@ struct Player:
         if context.input.is_key_down("d"):
             self.x += self.SPEED * dt
 
-        if context.input.just_pressed("w") and self.jumps_left > 0:
+        if context.input.key_just_pressed("w") and self.jumps_left > 0:
             self.vel_y = self.JUMP_FORCE
             self.jumps_left -= 1
 

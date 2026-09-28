@@ -158,19 +158,19 @@ struct Input(Copyable, Movable):
         """Whether this key is held right now. See `_check` for the names."""
         return self._check(key, self._held_keys)
 
-    def just_pressed(self, keycode: Int) -> Bool:
+    def key_just_pressed(self, keycode: Int) -> Bool:
         """Whether this key went down this frame — true once per press."""
         return self._just_pressed.test(keycode)
 
-    def just_pressed(self, key: String) -> Bool:
+    def key_just_pressed(self, key: String) -> Bool:
         """Whether this key went down this frame. See `_check` for the names."""
         return self._check(key, self._just_pressed)
 
-    def just_released(self, keycode: Int) -> Bool:
+    def key_just_released(self, keycode: Int) -> Bool:
         """Whether this key came up this frame — true once per release."""
         return self._just_released.test(keycode)
 
-    def just_released(self, key: String) -> Bool:
+    def key_just_released(self, key: String) -> Bool:
         """Whether this key came up this frame. See `_check` for the names."""
         return self._check(key, self._just_released)
 

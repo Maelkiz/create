@@ -51,27 +51,27 @@ def test_is_key_down_case_insensitive() raises -> None:
 def test_just_pressed_keycode() raises -> None:
     var input = Input()
     input._just_pressed.set(65)
-    assert_true(input.just_pressed(65))
-    assert_equal(input.just_pressed(66), False)
+    assert_true(input.key_just_pressed(65))
+    assert_equal(input.key_just_pressed(66), False)
 
 
 def test_just_pressed_string() raises -> None:
     var input = Input()
     input._just_pressed.set(ord("w"))
-    assert_true(input.just_pressed("w"))
+    assert_true(input.key_just_pressed("w"))
 
 
 def test_just_released_keycode() raises -> None:
     var input = Input()
     input._just_released.set(65)
-    assert_true(input.just_released(65))
-    assert_equal(input.just_released(66), False)
+    assert_true(input.key_just_released(65))
+    assert_equal(input.key_just_released(66), False)
 
 
 def test_just_released_string() raises -> None:
     var input = Input()
     input._just_released.set(ord("s"))
-    assert_true(input.just_released("s"))
+    assert_true(input.key_just_released("s"))
 
 
 def test_multiple_keys_held() raises -> None:
@@ -267,15 +267,15 @@ def test_named_key_f12() raises -> None:
 def test_just_pressed_named_key() raises -> None:
     var input = Input()
     input._just_pressed.set(27)
-    assert_true(input.just_pressed("escape"))
-    assert_equal(input.just_pressed("space"), False)
+    assert_true(input.key_just_pressed("escape"))
+    assert_equal(input.key_just_pressed("space"), False)
 
 
 def test_just_released_named_key() raises -> None:
     var input = Input()
     input._just_released.set(32)
-    assert_true(input.just_released("space"))
-    assert_equal(input.just_released("escape"), False)
+    assert_true(input.key_just_released("space"))
+    assert_equal(input.key_just_released("escape"), False)
 
 
 def test_unknown_named_key_returns_false() raises -> None:
@@ -342,8 +342,8 @@ def test_new_frame_clears_just_pressed_and_released() raises -> None:
     input._just_pressed.set(65)
     input._just_released.set(66)
     input._new_frame()
-    assert_equal(input.just_pressed(65), False)
-    assert_equal(input.just_released(66), False)
+    assert_equal(input.key_just_pressed(65), False)
+    assert_equal(input.key_just_released(66), False)
 
 
 def test_new_frame_clears_wheel_and_edge_buttons() raises -> None:
