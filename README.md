@@ -4,7 +4,7 @@
 
 <h1 align="center">Create</h1>
 
-> **Note:** API will be unstable until the first public release.
+> Note: APIs are experimental and subject to change.
 
 ---
 
