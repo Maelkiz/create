@@ -508,14 +508,17 @@ struct Canvas:
         """
         return OverlayGuard[origin_of(self)](self)
 
-    def fill(mut self, color: Color):
-        """Paint the inside of shapes in `color`, switching the fill on if
-        `fill_enabled(False)` had turned it off.
+    def fill(mut self, color: Optional[Color] = None):
+        """Paint the inside of shapes, switching the fill on. `color` left
+        unset keeps the current one, so `fill()` alone brings back the last
+        fill. The fill is *off* by default, in white, so `fill()` on a fresh
+        frame paints shapes white.
 
         Holds until changed or until the frame ends — every frame starts from
         the `Style` defaults, so nothing set here leaks into the next one.
         """
-        self._style.fill_color = color
+        if color:
+            self._style.fill_color = color.value()
         self._style.fill_enabled = True
 
     def outline(
@@ -540,7 +543,7 @@ struct Canvas:
 
     def fill_enabled(mut self, enabled: Bool):
         """Switch the fill off or back on. The fill color is kept while off,
-        so `fill_enabled(True)` brings back the same color; `fill(color)`
+        so `fill_enabled(True)` brings back the same color; `fill(...)`
         switches it on too."""
         self._style.fill_enabled = enabled
 

@@ -1088,6 +1088,28 @@ def test_fill_enabled_switches_fill_and_keeps_its_color() raises -> None:
 
 
 @fieldwise_init
+struct DefaultFill(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> DefaultFill:
+        return DefaultFill(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline_enabled(False)
+        canvas.rectangle((-20, 0), 16, 16)  # off by default
+        canvas.fill()
+        canvas.rectangle((20, 0), 16, 16)  # on, in the default white
+
+
+def test_fill_alone_switches_on_the_default_white() raises -> None:
+    var m = run_headless[DefaultFill](100, 100)
+    assert_equal(m.pixel(30, 50), Color.BLACK)
+    assert_equal(m.pixel(70, 50), Color.WHITE)
+
+
+@fieldwise_init
 struct OutlineSwitching(Program):
     var _unused: Int
 

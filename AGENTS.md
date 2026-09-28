@@ -135,7 +135,7 @@ A program writes `from create import *`. Otherwise import by name from the ownin
 
 ### Style and clear
 
-`Style()` defaults are not blank: **outline `BLACK`, on, 1 unit**; transparent fill; `BLACK`
+`Style()` defaults are not blank: **outline `BLACK`, on, 1 unit**; fill `WHITE`, off; `BLACK`
 text. Every frame opens with a clear to gray 200 so those defaults are visible;
 `canvas.background()` is the only way to choose the colour.
 - An opaque `canvas.background()` replaces that clear rather than painting a second time; a
@@ -145,7 +145,8 @@ text. Every frame opens with a clear to gray 200 so those defaults are visible;
 
 `fill`, `outline` and `text_color` set three independent colours; `fill_enabled(False)` does not
 hide text. Text is hidden by a zero-alpha `text_color`. `fill_enabled`/`outline_enabled` switch
-off without losing the colour; `fill(color)`/`outline(...)` switch back on.
+off without losing the colour; `fill(...)`/`outline(...)`/`shadow(...)` switch back on, and with
+no arguments keep every part, so `fill()` alone paints the default white.
 
 **Three ways to style**, all additive:
 

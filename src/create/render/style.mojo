@@ -94,8 +94,8 @@ struct Style(Copyable, Movable, Writable):
         shadow_follows_transform: Bool = False,
         shadow_enabled: Optional[Bool] = None,
     ):
-        self.fill_color = fill.or_else(Color.TRANSPARENT)
-        self.fill_enabled = fill_enabled.or_else(True)
+        self.fill_color = fill.or_else(Color.WHITE)
+        self.fill_enabled = fill_enabled.or_else(Bool(fill))
         self.outline_color = outline.or_else(Color.BLACK)
         self.outline_thickness = outline_thickness.or_else(1)
         self.outline_enabled = outline_enabled.or_else(True)

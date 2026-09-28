@@ -5,8 +5,8 @@ from create import *
 
 def test_default_style_matches_a_fresh_frame() raises -> None:
     var s = Style()
-    assert_equal(s.fill_color, Color.TRANSPARENT)
-    assert_true(s.fill_enabled)
+    assert_equal(s.fill_color, Color.WHITE)
+    assert_false(s.fill_enabled)
     assert_equal(s.outline_color, Color.BLACK)
     assert_equal(s.outline_thickness, 1)
     assert_true(s.outline_enabled)
@@ -69,7 +69,8 @@ def test_each_keyword_lands_in_its_field() raises -> None:
     assert_true(s.shadow_enabled)
 
 
-def test_naming_a_shadow_part_switches_the_shadow_on() raises -> None:
+def test_naming_a_part_switches_its_property_on() raises -> None:
+    assert_true(Style(fill=Color.RED).fill_enabled)
     assert_true(Style(shadow=Color.RED).shadow_enabled)
     assert_true(Style(shadow_offset=Vector2D(1, 2)).shadow_enabled)
     assert_true(Style(shadow_blur=12).shadow_enabled)
@@ -85,18 +86,19 @@ def test_an_explicit_enabled_beside_a_part_wins() raises -> None:
     assert_false(
         Style(outline=Color.RED, outline_enabled=False).outline_enabled
     )
+    assert_false(Style(fill=Color.RED, fill_enabled=False).fill_enabled)
 
 
 def test_style_writes_constructor_keywords() raises -> None:
     assert_equal(
         String(Style()),
         (
-            "Style(fill=Color(0, 0, 0, 0), fill_enabled=True, outline=Color(0,"
-            " 0, 0, 255), outline_thickness=1, outline_enabled=True,"
-            " corner_radius=0, text_color=Color(0, 0, 0, 255), font_size=16,"
-            " font_weight=400, text_align=Align.CENTER, opacity=1.0,"
-            " blend_mode=BlendMode.NORMAL, shadow=Color(0, 0, 0, 96),"
-            " shadow_offset=Vector2D(4.0, -4.0), shadow_blur=8.0,"
+            "Style(fill=Color(255, 255, 255, 255), fill_enabled=False,"
+            " outline=Color(0, 0, 0, 255), outline_thickness=1,"
+            " outline_enabled=True, corner_radius=0, text_color=Color(0, 0, 0,"
+            " 255), font_size=16, font_weight=400, text_align=Align.CENTER,"
+            " opacity=1.0, blend_mode=BlendMode.NORMAL, shadow=Color(0, 0, 0,"
+            " 96), shadow_offset=Vector2D(4.0, -4.0), shadow_blur=8.0,"
             " shadow_spread=0.0, shadow_inset=False,"
             " shadow_follows_transform=False, shadow_enabled=False)"
         ),
