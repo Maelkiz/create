@@ -6,7 +6,7 @@ from .random import Random
 from .util import lerp
 
 
-struct Noise(Copyable, Movable):
+struct Noise(Copyable, Movable, Writable):
     """Smooth pseudo-random values: `.at(x)`, `.at(position)` and
     `.at(position, time)`, each in `[0.0, 1.0]`.
 
@@ -105,6 +105,20 @@ struct Noise(Copyable, Movable):
             position.x / self._feature_size,
             position.y / self._feature_size,
             time,
+        )
+
+    def write_to[W: Writer](self, mut writer: W):
+        # The seed too, so a clock-seeded field can be rebuilt from its print.
+        writer.write(
+            "Noise(seed=",
+            self._seed,
+            ", octaves=",
+            self._octaves,
+            ", falloff=",
+            self._falloff,
+            ", feature_size=",
+            self._feature_size,
+            ")",
         )
 
     def _layered[

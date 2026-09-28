@@ -196,5 +196,24 @@ def test_defaults_are_four_octaves_at_one_half() raises -> None:
         assert_equal(default.at(p), explicit.at(p))
 
 
+def test_prints_as_its_constructor_call() raises -> None:
+    assert_equal(
+        String(Noise(42, feature_size=120)),
+        "Noise(seed=42, octaves=4, falloff=0.5, feature_size=120.0)",
+    )
+
+
+def test_printed_seed_rebuilds_a_clock_seeded_field() raises -> None:
+    var noise = Noise()
+    var printed = String(noise)
+    comptime label = "seed="
+    var start = printed.find(label) + label.byte_length()
+    var end = printed.find(",", start)
+    var rebuilt = Noise(UInt64(Int(printed[byte=start:end])))
+    for i in range(50):
+        var p = Point2D(Float64(i) * 0.23, Float64(i) * 0.41)
+        assert_equal(rebuilt.at(p), noise.at(p))
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
