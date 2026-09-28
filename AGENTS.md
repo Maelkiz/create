@@ -106,8 +106,8 @@ Shared assets (`SpriteAnimation`, `Sound`) are held as `ArcPointer` fields. Read
 A public value type implements `Writable` and prints as it would be written in source:
 `Point2D(1.0, 2.0)` positionally for the small math types and `Color`; `Easing.OUT_BOUNCE` for an
 `Int`-wrapping enum (an unnamed value falls back to `Easing(99)`); keyword form otherwise, labelled
-by the constructor's keywords where it has them (`Circle(pos=Point2D(0.0, 0.0), r=5.0)`) and by public
-field names where it doesn't (`Time`, `Tween`). Private fields are left out. Resource handles
+by the constructor's keywords where it has them (`Circle(position=Point2D(0.0, 0.0), r=5.0)`) and by
+public field names where it doesn't (`Time`, `Tween`). Private fields are left out. Resource handles
 (`Font`, `Sprite`, `Sound`, `Audio`) are not printable.
 
 ### Imports and public surface
@@ -182,7 +182,7 @@ can't leak into the caller's next render.
 **Not Processing's coordinates.** Origin at the screen centre, **y up**; `x ∈ [-w/2, w/2]`,
 `y ∈ [-h/2, h/2]`. So `rotate` is counter-clockwise, gravity is negative `y`, and `canvas.left()`/
 `bottom()` are negative — use the edge methods, not `width`/`height` arithmetic. Glyphs and sprites
-are not flipped. **All shapes are centre-positioned**, including `Rectangle.pos`.
+are not flipped. **All shapes are centre-positioned**, including `Rectangle.position`.
 
 **Camera:** `canvas.camera(cam)` maps world space onto screen space for every later render call and
 nested transform, reset every frame. `canvas.overlay()` suspends it for HUD content.
@@ -190,7 +190,7 @@ nested transform, reset every frame. `canvas.overlay()` suspends it for HUD cont
 
 ```mojo
 canvas.camera(self.cam)
-canvas.sprite(self.player.sprite, self.player.pos)     # world space
+canvas.sprite(self.player.sprite, self.player.position)     # world space
 with canvas.overlay():
     canvas.text("Score: " + String(self.score), (0, canvas.top() - 20))  # screen space
 ```
@@ -233,7 +233,7 @@ mid-`update` applies next frame — except `max_framerate()` and `quit()`, read 
 | World space | What render calls use once a `Camera` is set; identical to screen space without one. `canvas.to_world`/`to_local` convert a `Point2D` between world space and the current transform |
 | Asset vs. playhead | `SpriteAnimation`/`Sound` are shared immutable assets; `SpriteAnimator`/an `Audio` voice are one entity's position in one. `fps` belongs to the asset |
 | `Easing` / `Tween` | An `Easing` is a stateless curve over a 0-to-1 fraction (`ease(curve, t)`); a `Tween` walks that fraction over a duration. Each entity owns its own `Tween` |
-| `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(pos, r)`, `context.input.mouse`); a displacement is a `Vector2D` (`translate(delta)`, velocities); an extent is a scalar (`w`, `h`, `r`). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Only `Point2D` takes a bare tuple implicitly; a vector literal names its type (`p + Vector2D(1, 2)`), and `p - (1, 2)` is the displacement from `(1, 2)`, not a move |
+| `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(position, r)`, `context.input.mouse`); a displacement is a `Vector2D` (`translate(delta)`, velocities); an extent is a scalar (`w`, `h`, `r`). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Only `Point2D` takes a bare tuple implicitly; a vector literal names its type (`p + Vector2D(1, 2)`), and `p - (1, 2)` is the displacement from `(1, 2)`, not a move |
 | `overlaps` / `intersects` / `contains` | `overlaps(a, b)`: free, symmetric, regions only (`Rectangle`/`Circle`/`Triangle`). `line.intersects(x)`: `Line` only, since a line has no interior. `region.contains(x)`: asymmetric. A `Line` is never a region |
 
 ## Do
@@ -243,7 +243,7 @@ mid-`update` applies next frame — except `max_framerate()` and `quit()`, read 
 - Make `canvas.background(...)` the first render call in `update`. With `context.autoclear` off,
   call it on the first frame only.
 - Use `Point2D` for new locations, `Vector2D` for displacements and scalars for extents;
-  `canvas.rectangle(pos: Point2D, w: Float64, h: Float64)` is the shape to copy.
+  `canvas.rectangle(position: Point2D, w: Float64, h: Float64)` is the shape to copy.
 
 ## Don't
 

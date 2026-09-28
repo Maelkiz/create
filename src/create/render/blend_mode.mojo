@@ -29,7 +29,7 @@ struct BlendMode(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     ```mojo
     with canvas.style(blend_mode=BlendMode.ADD, outline_enabled=False):
         for p in self.sparks:
-            canvas.circle(p.pos, 6)
+            canvas.circle(p.position, 6)
     ```
     """
 

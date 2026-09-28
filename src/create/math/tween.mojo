@@ -34,7 +34,7 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
     ```mojo
     self.slide = Tween(0.3, Easing.OUT_CUBIC)      # in create
     ...
-    self.pos = self.from_pos.lerp(self.to_pos, self.slide.value)
+    self.position = self.from_position.lerp(self.to_position, self.slide.value)
     ```
 
     Constructed stopped at `start` -- nothing moves until `play`, `loop` or

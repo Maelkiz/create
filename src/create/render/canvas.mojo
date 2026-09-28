@@ -384,7 +384,7 @@ struct Canvas:
 
         ```mojo
         with canvas.style(fill=Color.RED, outline_enabled=False):
-            canvas.circle(pos, 10)
+            canvas.circle(position, 10)
         ```
         """
         var guard = StyleGuard[origin_of(self)](self)
@@ -492,7 +492,7 @@ struct Canvas:
 
         ```mojo
         canvas.camera(self.cam)
-        canvas.sprite(self.player.pos, ...)  # world-space coordinates
+        canvas.sprite(self.player.position, ...)  # world-space coordinates
         with canvas.overlay():
             canvas.text("Score: " + str(self.score), (0, canvas.top() - 20))
         ```
@@ -634,24 +634,28 @@ struct Canvas:
         """
         self._state.backend.request_screenshot(path)
 
-    def rectangle(mut self, pos: Point2D, w: Float64, h: Float64):
+    def rectangle(mut self, position: Point2D, w: Float64, h: Float64):
         self._state.backend.record(
-            rect_command(self._transform, self._style, pos.x, pos.y, w, h)
+            rect_command(
+                self._transform, self._style, position.x, position.y, w, h
+            )
         )
 
-    def rectangle(mut self, pos: Point2D, w: Int, h: Int):
-        self.rectangle(pos, Float64(w), Float64(h))
+    def rectangle(mut self, position: Point2D, w: Int, h: Int):
+        self.rectangle(position, Float64(w), Float64(h))
 
     def rectangle(mut self, r: Rectangle):
-        self.rectangle(r.pos, r.w, r.h)
+        self.rectangle(r.position, r.w, r.h)
 
-    def circle(mut self, pos: Point2D, r: Float64):
+    def circle(mut self, position: Point2D, r: Float64):
         self._state.backend.record(
-            circle_command(self._transform, self._style, pos.x, pos.y, r)
+            circle_command(
+                self._transform, self._style, position.x, position.y, r
+            )
         )
 
-    def circle(mut self, pos: Point2D, r: Int):
-        self.circle(pos, Float64(r))
+    def circle(mut self, position: Point2D, r: Int):
+        self.circle(position, Float64(r))
 
     def circle(mut self, c: Circle):
         self.circle(c.center(), c.r)
@@ -681,7 +685,7 @@ struct Canvas:
     def triangle(mut self, t: Triangle):
         self.triangle(t.a, t.b, t.c)
 
-    def sprite(mut self, s: Sprite, pos: Point2D):
+    def sprite(mut self, s: Sprite, position: Point2D):
         """Render `s` at its own pixel size.
 
         The same command as the sized overload: at a pixel scale of 1 the two
@@ -689,9 +693,9 @@ struct Canvas:
         they used to differ by now lives inside `blit_sprite`, where the replay
         can take it without the record site having to know.
         """
-        self.sprite(s, pos, s.width, s.height)
+        self.sprite(s, position, s.width, s.height)
 
-    def sprite(mut self, s: Sprite, pos: Point2D, w: Int, h: Int):
+    def sprite(mut self, s: Sprite, position: Point2D, w: Int, h: Int):
         # Rotation and shear are not resampled — only position and scale apply.
         #
         # The image is interned *now*, not at replay: the command then carries
@@ -704,8 +708,8 @@ struct Canvas:
             sprite_command(
                 self._transform,
                 self._style,
-                pos.x,
-                pos.y,
+                position.x,
+                position.y,
                 Float64(w),
                 Float64(h),
                 image,
@@ -714,18 +718,18 @@ struct Canvas:
             )
         )
 
-    def sprite(mut self, a: SpriteAnimator, pos: Point2D):
-        """Render the animator's current frame, centred at `pos`.
+    def sprite(mut self, a: SpriteAnimator, position: Point2D):
+        """Render the animator's current frame, centred at `position`.
 
         The frame is indexed here rather than handed back by an accessor on
         `SpriteAnimator`: a `List` element's origin is not spellable from user
         code, so a reference to it cannot cross a function boundary. That is
         also why the sized overload below indexes it inline too.
         """
-        self.sprite(a.animation[].frames[a.frame_index], pos)
+        self.sprite(a.animation[].frames[a.frame_index], position)
 
-    def sprite(mut self, a: SpriteAnimator, pos: Point2D, w: Int, h: Int):
-        self.sprite(a.animation[].frames[a.frame_index], pos, w, h)
+    def sprite(mut self, a: SpriteAnimator, position: Point2D, w: Int, h: Int):
+        self.sprite(a.animation[].frames[a.frame_index], position, w, h)
 
     def corner_radius(mut self, radius: Int):
         """Round the corners of rectangles and triangles, in world units,
@@ -848,12 +852,14 @@ struct Canvas:
         settings a font outlives the frame that set it."""
         self._state.backend.text.set_font(f^)
 
-    def text(mut self, s: String, pos: Point2D):
+    def text(mut self, s: String, position: Point2D):
         if self._style.text_color.a == 0:
             return
         # Deferred whole. Nothing about the layout is decided here: the
         # advances, the alignment and the baseline all come out of the font,
         # which the backend owns, so they are resolved at replay.
         self._state.backend.record(
-            text_command(self._transform, self._style, pos.x, pos.y, s.copy())
+            text_command(
+                self._transform, self._style, position.x, position.y, s.copy()
+            )
         )

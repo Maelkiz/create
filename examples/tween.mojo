@@ -102,11 +102,11 @@ struct App(Program):
         # The hero: a point moved by lerping between two positions with the
         # tween's eased value. OUT_BACK and OUT_ELASTIC leave 0..1 mid-run, so
         # the box visibly overshoots both ends of its track.
-        var pos = Point2D(-420.0, 300.0).lerp(
+        var position = Point2D(-420.0, 300.0).lerp(
             Point2D(420.0, 300.0), self.slide.value
         )
         canvas.fill(Color(235, 120, 70))
-        canvas.rectangle(pos, 44, 44)
+        canvas.rectangle(position, 44, 44)
 
         # One dot per curve, all reading the same progress.
         canvas.fill(Color(90, 170, 255))

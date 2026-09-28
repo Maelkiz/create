@@ -5,9 +5,9 @@ struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A location in world space: `dist`, `lerp`, the affine operators, and
     `xy`/`xyz` to hand the components to another type.
 
-    Every position in the library is one of these — `canvas.circle(pos, r)`,
-    `Rectangle.center()`, `input.mouse` — and no signature takes a location
-    as a loose x/y pair instead. The tuple constructors are `@implicit`, so
+    Every position in the library is one of these —
+    `canvas.circle(position, r)`, `Rectangle.center()`, `input.mouse` — and no
+    signature takes a location as a loose x/y pair instead. The tuple constructors are `@implicit`, so
     `canvas.circle((0, 0), 20)` works without naming the type and a program
     only spells `Point2D` when it is storing one. It is the only type here
     that converts from a bare tuple, which is what keeps that unambiguous.
@@ -17,7 +17,7 @@ struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     displacement between them (`Vector2D`), and adding a displacement to a
     position gives another position. `mag`, `normalize`, `dot`, scalar `*`,
     unary `-` and `Point2D + Point2D` are absent on purpose — none of them
-    means anything for a location, and `pos.normalize()` compiling was the
+    means anything for a location, and `position.normalize()` compiling was the
     mistake this split exists to catch. A program that genuinely wants a
     position's components as a direction says so: `Vector2D(p.xy())`.
 

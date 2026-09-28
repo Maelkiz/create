@@ -108,11 +108,11 @@ struct Rectangle(Writable):
     they are not grouped: read them as `w`/`h` and pair them however the
     caller needs.
 
-    `pos` is the centre, not a corner -- consistent with every shape in
+    `position` is the centre, not a corner -- consistent with every shape in
     this module and with `canvas.rectangle`. `w`/`h` are full width and
     height, so `left()`/`right()`/`bottom()`/`top()` are `+-w/2`/`+-h/2`
     from the centre. Coordinates follow world space: y grows upward, so
-    `top()` is `pos.y + h/2` and `bottom()` is `pos.y - h/2`.
+    `top()` is `position.y + h/2` and `bottom()` is `position.y - h/2`.
 
     `contains` and `closest_point` treat the boundary as inside -- a point
     exactly on an edge is contained, and `closest_point` returns it
@@ -121,25 +121,31 @@ struct Rectangle(Writable):
     a false containment or overlap. `w`/`h` are assumed non-negative.
     """
 
-    var pos: Point2D
+    var position: Point2D
     var w: Float64
     var h: Float64
 
-    def __init__(out self, pos: Point2D, w: Float64, h: Float64):
-        self.pos = pos
+    def __init__(out self, position: Point2D, w: Float64, h: Float64):
+        self.position = position
         self.w = w
         self.h = h
 
-    def __init__(out self, pos: Point2D, w: Int, h: Int):
-        self = Rectangle(pos, Float64(w), Float64(h))
+    def __init__(out self, position: Point2D, w: Int, h: Int):
+        self = Rectangle(position, Float64(w), Float64(h))
 
     def write_to[W: Writer](self, mut writer: W):
         writer.write(
-            "Rectangle(pos=", self.pos, ", w=", self.w, ", h=", self.h, ")"
+            "Rectangle(position=",
+            self.position,
+            ", w=",
+            self.w,
+            ", h=",
+            self.h,
+            ")",
         )
 
     def center(self) -> Point2D:
-        return self.pos
+        return self.position
 
     def area(self) -> Float64:
         return self.w * self.h
@@ -151,16 +157,16 @@ struct Rectangle(Writable):
         )
 
     def left(self) -> Float64:
-        return self.pos.x - self.w / 2.0
+        return self.position.x - self.w / 2.0
 
     def right(self) -> Float64:
-        return self.pos.x + self.w / 2.0
+        return self.position.x + self.w / 2.0
 
     def bottom(self) -> Float64:
-        return self.pos.y - self.h / 2.0
+        return self.position.y - self.h / 2.0
 
     def top(self) -> Float64:
-        return self.pos.y + self.h / 2.0
+        return self.position.y + self.h / 2.0
 
     def contains(self, p: Point2D) -> Bool:
         return (
@@ -178,10 +184,10 @@ struct Rectangle(Writable):
 
     def contains(self, c: Circle) -> Bool:
         return (
-            self.left() <= c.pos.x - c.r
-            and c.pos.x + c.r <= self.right()
-            and self.bottom() <= c.pos.y - c.r
-            and c.pos.y + c.r <= self.top()
+            self.left() <= c.position.x - c.r
+            and c.position.x + c.r <= self.right()
+            and self.bottom() <= c.position.y - c.r
+            and c.position.y + c.r <= self.top()
         )
 
     def contains(self, t: Triangle) -> Bool:
@@ -193,11 +199,11 @@ struct Rectangle(Writable):
     def contains(self, l: Line) -> Bool:
         return self.contains(l.start) and self.contains(l.end)
 
-    def move_to(mut self, pos: Point2D):
-        self.pos = pos
+    def move_to(mut self, position: Point2D):
+        self.position = position
 
     def translate(mut self, delta: Vector2D):
-        self.pos = self.pos + delta
+        self.position = self.position + delta
 
     def _points(self) -> Array[Point2D, 4]:
         return [
@@ -212,7 +218,7 @@ struct Circle(Writable):
     """A circle: `center`, `area`, `diameter`, `closest_point`, `contains`,
     `move_to`, `translate`.
 
-    `pos` is the centre and `r` the radius -- there is no orientation, so
+    `position` is the centre and `r` the radius -- there is no orientation, so
     unlike `Rectangle`/`Triangle` there is nothing y-up affects beyond the
     centre's own coordinates.
 
@@ -224,21 +230,21 @@ struct Circle(Writable):
     remain exact rather than always-false. `r` is assumed non-negative.
     """
 
-    var pos: Point2D
+    var position: Point2D
     var r: Float64
 
-    def __init__(out self, pos: Point2D, r: Float64):
-        self.pos = pos
+    def __init__(out self, position: Point2D, r: Float64):
+        self.position = position
         self.r = r
 
-    def __init__(out self, pos: Point2D, r: Int):
-        self = Circle(pos, Float64(r))
+    def __init__(out self, position: Point2D, r: Int):
+        self = Circle(position, Float64(r))
 
     def write_to[W: Writer](self, mut writer: W):
-        writer.write("Circle(pos=", self.pos, ", r=", self.r, ")")
+        writer.write("Circle(position=", self.position, ", r=", self.r, ")")
 
     def center(self) -> Point2D:
-        return self.pos
+        return self.position
 
     def area(self) -> Float64:
         return pi * self.r * self.r
@@ -247,17 +253,17 @@ struct Circle(Writable):
         return self.r * 2.0
 
     def closest_point(self, p: Point2D) -> Point2D:
-        var d = p - self.pos
+        var d = p - self.position
         var dist_sq = d.dot(d)
         if dist_sq == 0.0 or dist_sq <= self.r * self.r:
             return p
-        return self.pos + d * (self.r / sqrt(dist_sq))
+        return self.position + d * (self.r / sqrt(dist_sq))
 
     def contains(self, p: Point2D) -> Bool:
-        return _dist_sq(p, self.pos) <= self.r * self.r
+        return _dist_sq(p, self.position) <= self.r * self.r
 
     def contains(self, other: Circle) -> Bool:
-        var dist = sqrt(_dist_sq(other.pos, self.pos))
+        var dist = sqrt(_dist_sq(other.position, self.position))
         return dist + other.r <= self.r
 
     def contains(self, r: Rectangle) -> Bool:
@@ -275,11 +281,11 @@ struct Circle(Writable):
     def contains(self, l: Line) -> Bool:
         return self.contains(l.start) and self.contains(l.end)
 
-    def move_to(mut self, pos: Point2D):
-        self.pos = pos
+    def move_to(mut self, position: Point2D):
+        self.position = position
 
     def translate(mut self, delta: Vector2D):
-        self.pos = self.pos + delta
+        self.position = self.position + delta
 
 
 struct Line(Writable):
@@ -354,7 +360,7 @@ struct Line(Writable):
         return _point_on_segment(p, self.start, self.end)
 
     def intersects(self, c: Circle) -> Bool:
-        return c.contains(self.closest_point(c.pos))
+        return c.contains(self.closest_point(c.position))
 
     def intersects(self, r: Rectangle) -> Bool:
         if r.contains(self.start) or r.contains(self.end):
@@ -382,8 +388,8 @@ struct Line(Writable):
     def midpoint(self) -> Point2D:
         return self.start.lerp(self.end, 0.5)
 
-    def move_to(mut self, pos: Point2D):
-        self.translate(pos - self.midpoint())
+    def move_to(mut self, position: Point2D):
+        self.translate(position - self.midpoint())
 
     def translate(mut self, delta: Vector2D):
         self.start = self.start + delta
@@ -482,22 +488,29 @@ struct Triangle(Writable):
         return True
 
     def contains(self, c: Circle) -> Bool:
-        if not self.contains(c.pos):
+        if not self.contains(c.position):
             return False
         var r_sq = c.r * c.r
         return (
-            _dist_sq(_closest_on_segment(c.pos, self.a, self.b), c.pos) >= r_sq
-            and _dist_sq(_closest_on_segment(c.pos, self.b, self.c), c.pos)
+            _dist_sq(
+                _closest_on_segment(c.position, self.a, self.b), c.position
+            )
             >= r_sq
-            and _dist_sq(_closest_on_segment(c.pos, self.c, self.a), c.pos)
+            and _dist_sq(
+                _closest_on_segment(c.position, self.b, self.c), c.position
+            )
+            >= r_sq
+            and _dist_sq(
+                _closest_on_segment(c.position, self.c, self.a), c.position
+            )
             >= r_sq
         )
 
     def contains(self, l: Line) -> Bool:
         return self.contains(l.start) and self.contains(l.end)
 
-    def move_to(mut self, pos: Point2D):
-        self.translate(pos - self.center())
+    def move_to(mut self, position: Point2D):
+        self.translate(position - self.center())
 
     def translate(mut self, delta: Vector2D):
         self.a = self.a + delta
@@ -538,11 +551,11 @@ def overlaps(a: Rectangle, b: Rectangle) -> Bool:
 
 def overlaps(a: Circle, b: Circle) -> Bool:
     var rsum = a.r + b.r
-    return _dist_sq(a.pos, b.pos) <= rsum * rsum
+    return _dist_sq(a.position, b.position) <= rsum * rsum
 
 
 def overlaps(a: Circle, b: Rectangle) -> Bool:
-    return a.contains(b.closest_point(a.pos))
+    return a.contains(b.closest_point(a.position))
 
 
 def overlaps(a: Rectangle, b: Circle) -> Bool:
@@ -550,7 +563,7 @@ def overlaps(a: Rectangle, b: Circle) -> Bool:
 
 
 def overlaps(a: Circle, b: Triangle) -> Bool:
-    return a.contains(b.closest_point(a.pos))
+    return a.contains(b.closest_point(a.position))
 
 
 def overlaps(a: Triangle, b: Circle) -> Bool:

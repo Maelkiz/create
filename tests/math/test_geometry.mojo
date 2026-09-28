@@ -67,8 +67,8 @@ def test_rect_closest_point_vector2d() raises -> None:
 
 def test_rect_int_constructor() raises -> None:
     var r = Rectangle(Point2D(1.0, 2.0), 10, 6)
-    assert_equal(r.pos.x, 1.0)
-    assert_equal(r.pos.y, 2.0)
+    assert_equal(r.position.x, 1.0)
+    assert_equal(r.position.y, 2.0)
     assert_equal(r.w, 10.0)
     assert_equal(r.h, 6.0)
 
@@ -76,15 +76,15 @@ def test_rect_int_constructor() raises -> None:
 def test_rect_move_to() raises -> None:
     var r = Rectangle((0.0, 0.0), 10.0, 10.0)
     r.move_to((5.0, 5.0))
-    assert_equal(r.pos.x, 5.0)
-    assert_equal(r.pos.y, 5.0)
+    assert_equal(r.position.x, 5.0)
+    assert_equal(r.position.y, 5.0)
 
 
 def test_rect_translate() raises -> None:
     var r = Rectangle((0.0, 0.0), 10.0, 10.0)
     r.translate(Vector2D(2.0, 3.0))
-    assert_equal(r.pos.x, 2.0)
-    assert_equal(r.pos.y, 3.0)
+    assert_equal(r.position.x, 2.0)
+    assert_equal(r.position.y, 3.0)
 
 
 # Circle
@@ -135,15 +135,15 @@ def test_circle_closest_point_vector2d() raises -> None:
 def test_circle_move_to() raises -> None:
     var c = Circle((0.0, 0.0), 5.0)
     c.move_to((3.0, 4.0))
-    assert_equal(c.pos.x, 3.0)
-    assert_equal(c.pos.y, 4.0)
+    assert_equal(c.position.x, 3.0)
+    assert_equal(c.position.y, 4.0)
 
 
 def test_circle_translate() raises -> None:
     var c = Circle((0.0, 0.0), 5.0)
     c.translate(Vector2D(2.0, 3.0))
-    assert_equal(c.pos.x, 2.0)
-    assert_equal(c.pos.y, 3.0)
+    assert_equal(c.position.x, 2.0)
+    assert_equal(c.position.y, 3.0)
 
 
 # Line
@@ -538,7 +538,7 @@ def test_overlaps_circle_triangle_symmetric_edge_case() raises -> None:
     var circ = Circle((6.0, -3.0), 2.0)
     var tri = Triangle((7.0, -4.0), (9.0, 2.0), (11.0, -4.0))
     assert_equal(circ.contains(tri.center()), False)
-    assert_equal(tri.contains(circ.pos), False)
+    assert_equal(tri.contains(circ.position), False)
     assert_equal(overlaps(circ, tri), overlaps(tri, circ))
 
 
@@ -895,11 +895,11 @@ def test_shapes_still_take_bare_tuples() raises -> None:
 def test_shapes_write_keyword_form() raises -> None:
     assert_equal(
         String(Rectangle(Point2D(1.0, 2.0), 3.0, 4.0)),
-        "Rectangle(pos=Point2D(1.0, 2.0), w=3.0, h=4.0)",
+        "Rectangle(position=Point2D(1.0, 2.0), w=3.0, h=4.0)",
     )
     assert_equal(
         String(Circle(Point2D(1.0, 2.0), 3.0)),
-        "Circle(pos=Point2D(1.0, 2.0), r=3.0)",
+        "Circle(position=Point2D(1.0, 2.0), r=3.0)",
     )
     assert_equal(
         String(Line(Point2D(0.0, 0.0), Point2D(1.0, 1.0))),

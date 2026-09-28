@@ -797,11 +797,11 @@ def test_style_object_outside_a_with_block_holds() raises -> None:
     assert_equal(m.pixel(50, 50), Color.BLUE)
 
 
-def _red_square(mut canvas: Canvas, pos: Point2D):
+def _red_square(mut canvas: Canvas, position: Point2D):
     """20x20, red, no outline — the caster in the shadow tests."""
     canvas.fill(Color.RED)
     canvas.outline_enabled(False)
-    canvas.rectangle(pos, 20, 20)
+    canvas.rectangle(position, 20, 20)
 
 
 @fieldwise_init
