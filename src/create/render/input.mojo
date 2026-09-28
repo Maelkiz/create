@@ -33,9 +33,15 @@ struct Input(Copyable, Movable):
     `mouse_wheel` stays a `Vector2D` because a scroll delta is a displacement.
     """
 
+    # Keycode of the most recent key press, compared against `Key` (0 before
+    # any). Kept until the next press, like `mouse_button`; auto-repeat of a
+    # held key does not count as a press.
+    var key: Int
     var mouse_x: Int
     var mouse_y: Int
     var mouse: Point2D
+    # The most recent button pressed, compared against `MouseButton` (0
+    # before any). Kept until the next press.
     var mouse_button: Int
     # This frame's scroll delta — zeroed at the start of every frame, same
     # lifecycle as the just-pressed/just-released key bits.
@@ -55,6 +61,7 @@ struct Input(Copyable, Movable):
     var _released_buttons: Int
 
     def __init__(out self):
+        self.key = 0
         self.mouse_x = 0
         self.mouse_y = 0
         self.mouse = Point2D(0, 0)

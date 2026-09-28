@@ -1,5 +1,10 @@
 from std.testing import TestSuite, assert_equal, assert_true
 from create.render.input import Input
+from create.render.key import Key
+from create.render.context import Context
+from create.render.viewport import Viewport
+from create.core._events import apply_events
+from create._window.event import Event, KeyDown, KeyUp
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
@@ -114,6 +119,31 @@ def test_named_key_ctrl_both_sides() raises -> None:
 def test_mouse_button_initial() raises -> None:
     var input = Input()
     assert_equal(input.mouse_button, 0)
+
+
+def test_key_initial() raises -> None:
+    var input = Input()
+    assert_equal(input.key, 0)
+
+
+def test_key_is_the_most_recent_press_and_outlives_release() raises -> None:
+    var context = Context()
+    var events = List[Event]()
+    events.append(KeyDown(Key.A))
+    events.append(KeyDown(Key.B))
+    events.append(KeyUp(Key.B))
+    _ = apply_events(events, Viewport(), context)
+    assert_equal(context.input.key, Key.B)
+
+
+def test_key_ignores_auto_repeat_of_a_held_key() raises -> None:
+    var context = Context()
+    var events = List[Event]()
+    events.append(KeyDown(Key.A))
+    events.append(KeyDown(Key.B))
+    events.append(KeyDown(Key.A))
+    _ = apply_events(events, Viewport(), context)
+    assert_equal(context.input.key, Key.B)
 
 
 def test_named_key_shift_both_sides() raises -> None:
