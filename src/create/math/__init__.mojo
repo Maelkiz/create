@@ -26,6 +26,7 @@ from .matrix import (
     perspective,
 )
 from .random import Random
+from .noise import Noise
 from std.math import (
     clamp,
     sqrt,
