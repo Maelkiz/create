@@ -22,8 +22,8 @@ struct AutoScale(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     `run` starts programs in `FIT`, because `OFF` punishes the obvious way to
     write a program: coordinates laid out against the size the author had,
-    silently rearranged on any other display. `create` can set `context.autoscale`
-    to either other mode.
+    silently rearranged on any other display. `create` can pass either other
+    mode to `context.autoscale`.
 
     `FIT` pins `canvas.width`/`height` to the design size, so a rectangle at a
     fixed x is always inside the world by the same margin. `EXTEND` and `OFF`

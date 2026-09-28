@@ -29,7 +29,7 @@ struct App(Program):
     def create(mut context: Context) raises -> App:
         # FIT with a 4:3 design in a 16:9 window, so the letterbox bars are
         # on screen from the first frame.
-        context.autoscale = AutoScale.FIT
+        context.autoscale(AutoScale.FIT)
         context.design_resolution(800, 600)
         # Twice, below, from one interned image and so one GL upload.
         var logo = Sprite.load(source_path("../assets/logo/png/logo.png"))

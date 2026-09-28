@@ -20,7 +20,6 @@ from std.time import sleep
 from create._window import GLWindow
 
 from create.render.render_backend import RenderBackend
-from create.render.autoscale import AutoScale
 from create.render.canvas import PersistentCanvasState
 from create.render.context import Context
 
@@ -177,7 +176,7 @@ def run_gl[
     # `_wait_for_dimensions` rather than inside the loop.
     var state = PersistentCanvasState(RenderBackend.GPU)
     var context = Context()
-    context.design_resolution(width, height, AutoScale.FIT)
+    context.design_resolution(width, height)
     var program = P.create(context)
     # The mapping is derived once create() has had its say about the design
     # size and the mode.

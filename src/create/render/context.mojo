@@ -9,7 +9,8 @@ struct Context(Copyable, Movable):
 
     Two directions share it. The loop writes `time` and `input` before each
     `update`, for the program to read; the program sets the dials, for the
-    loop to read.
+    loop to read. Every dial is a method, like the `Canvas` style setters:
+    `context.autoclear(False)`, `context.max_framerate(30)`.
 
     A `Canvas` is built and dropped inside one frame, so a setting that has to
     survive the frame boundary cannot live on it. These do — the autoscale
@@ -36,15 +37,6 @@ struct Context(Copyable, Movable):
     frame body returns.
     """
 
-    var autoscale: AutoScale
-    """How the design resolution maps onto the window — see `AutoScale`."""
-    var autoclear: Bool
-    """Whether each frame opens with a clear to gray 200, so the default
-    style is visible on a program that never calls `canvas.background()`. Off
-    lets ink accumulate across frames."""
-    var letterbox_color: Color
-    """The bars outside the design area under `AutoScale.FIT`."""
-    var quit_on_escape: Bool
     var time: Time
     """The frame clock. The run loop ticks it before each `update`; read
     `delta` and `elapsed` here, and don't write it — the loop derives the
@@ -53,6 +45,10 @@ struct Context(Copyable, Movable):
     """Keyboard and mouse state. The run loop folds each frame's events into
     it before `update`, so it is settled for the whole frame. Read it, don't
     write it: the loop carries it into the next frame."""
+    var _autoscale: AutoScale
+    var _autoclear: Bool
+    var _letterbox_color: Color
+    var _quit_on_escape: Bool
     var _design_w: Int
     var _design_h: Int
     var _frame_count: Int
@@ -60,21 +56,19 @@ struct Context(Copyable, Movable):
     var _quit: Bool
 
     def __init__(out self):
-        self.autoscale = AutoScale.OFF
-        self.autoclear = True
-        self.letterbox_color = Color(0x22)
-        self.quit_on_escape = True
         self.time = Time()
         self.input = Input()
+        self._autoscale = AutoScale.FIT
+        self._autoclear = True
+        self._letterbox_color = Color(0x22)
+        self._quit_on_escape = True
         self._design_w = 0
         self._design_h = 0
         self._frame_count = 0
         self._max_framerate = 0
         self._quit = False
 
-    def design_resolution(
-        mut self, width: Int, height: Int, mode: AutoScale = AutoScale.FIT
-    ):
+    def design_resolution(mut self, width: Int, height: Int):
         """Author this program in a fixed world size, scaled to any window.
 
         Overrides the size passed to `run`, so a program can pin its own
@@ -88,7 +82,32 @@ struct Context(Copyable, Movable):
         """
         self._design_w = width
         self._design_h = height
-        self.autoscale = mode
+
+    def autoscale(self) -> AutoScale:
+        """How the design resolution maps onto the window. `FIT` unless set."""
+        return self._autoscale
+
+    def autoscale(mut self, mode: AutoScale):
+        """Choose how the design resolution maps onto the window — see
+        `AutoScale`."""
+        self._autoscale = mode
+
+    def autoclear(mut self, enabled: Bool):
+        """Switch the clear each frame opens with off or back on.
+
+        On by default, clearing to gray 200 so the default style is visible
+        on a program that never calls `canvas.background()`. Off lets ink
+        accumulate across frames.
+        """
+        self._autoclear = enabled
+
+    def letterbox_color(mut self, color: Color):
+        """Colour the bars outside the design area under `AutoScale.FIT`."""
+        self._letterbox_color = color
+
+    def quit_on_escape(mut self, enabled: Bool):
+        """Whether Escape stops the run loop. On by default."""
+        self._quit_on_escape = enabled
 
     def frame_count(self) -> Int:
         """Frames rendered so far. 1 during the first `update`."""

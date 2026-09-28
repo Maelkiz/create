@@ -45,7 +45,7 @@ struct Bench(Program):
 
     @staticmethod
     def create(mut context: Context) raises -> Bench:
-        context.autoscale = AutoScale.OFF
+        context.autoscale(AutoScale.OFF)
         return Bench(
             0.0,
             Sprite.load(source_path("../assets/logo/png/logo-cutout.png")),

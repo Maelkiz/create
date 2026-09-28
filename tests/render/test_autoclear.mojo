@@ -31,7 +31,7 @@ struct NoAutoclear(Program):
 
     @staticmethod
     def create(mut context: Context) raises -> NoAutoclear:
-        context.autoclear = False
+        context.autoclear(False)
         return NoAutoclear(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -44,7 +44,7 @@ struct InkOnFirstFrameOnly(Program):
 
     @staticmethod
     def create(mut context: Context) raises -> InkOnFirstFrameOnly:
-        context.autoclear = False
+        context.autoclear(False)
         return InkOnFirstFrameOnly(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -112,7 +112,7 @@ def test_a_translucent_background_keeps_both() raises -> None:
 
 def test_autoclear_records_nothing_when_off() raises -> None:
     var context = Context()
-    context.autoclear = False
+    context.autoclear(False)
     var state = PersistentCanvasState()
     state._set_viewport(context, 200, 100)
     var canvas = Canvas(state^, context)

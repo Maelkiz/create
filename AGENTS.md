@@ -138,8 +138,8 @@ text. Every frame opens with a clear to gray 200 so those defaults are visible;
 `canvas.background()` is the only way to choose the colour.
 - An opaque `canvas.background()` replaces that clear rather than painting a second time; a
   translucent one blends over it.
-- `context.autoclear` is read at frame construction, so set it in `create`. Off lets ink accumulate
-  (CPU backend only — GPU swaps buffers).
+- `context.autoclear(enabled)` is read at frame construction, so call it in `create`. Off lets ink
+  accumulate (CPU backend only — GPU swaps buffers).
 
 `fill`, `outline` and `text_color` set three independent colours; `fill_enabled(False)` does not
 hide text. Text is hidden by a zero-alpha `text_color`. `fill_enabled`/`outline_enabled` switch
@@ -197,13 +197,14 @@ with canvas.overlay():
 
 **Design resolution** is the `width`/`height` passed to `run` (or `context.design_resolution()` from
 `create`): the space the program is authored in, not a window size. Fullscreen/maximized scale the
-design onto the display. `context.autoscale` is `FIT` (default), `EXTEND` or `OFF`; `OFF` makes
+design onto the display. `context.autoscale(mode)` takes `FIT` (default), `EXTEND` or `OFF`; `OFF` makes
 coordinates the window's own pixels. Under `EXTEND` the reported size grows with the window, so
 anchor layout to the edges. Font size, outline thickness and sprite size scale by `canvas.scale`. See
 [examples/autoscale.mojo](examples/autoscale.mojo).
 
-`Context` dials are read at frame construction, so a change mid-`update` applies next frame —
-except `max_framerate()` and `quit()`, read after `update` returns.
+`Context` dials are methods (`context.autoclear(False)`, like the canvas style setters); its only
+fields are the readings `time` and `input`. Dials are read at frame construction, so a change
+mid-`update` applies next frame — except `max_framerate()` and `quit()`, read after `update` returns.
 
 ## Critical Gotchas
 

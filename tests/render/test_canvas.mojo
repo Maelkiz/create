@@ -216,7 +216,7 @@ struct ExtendNoBars(Program):
 
     @staticmethod
     def create(mut context: Context) raises -> ExtendNoBars:
-        context.autoscale = AutoScale.EXTEND
+        context.autoscale(AutoScale.EXTEND)
         return ExtendNoBars(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

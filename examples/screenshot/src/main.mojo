@@ -25,7 +25,7 @@ struct App(Program):
 
     @staticmethod
     def create(mut context: Context) raises -> App:
-        context.autoscale = AutoScale.FIT
+        context.autoscale(AutoScale.FIT)
         context.design_resolution(_DESIGN_W, _DESIGN_H)
         return App(0.0, "")
 

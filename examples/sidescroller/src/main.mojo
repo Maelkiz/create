@@ -14,7 +14,7 @@ struct Game(Program):
 
     @staticmethod
     def create(mut context: Context) raises -> Game:
-        context.autoscale = AutoScale.FIT
+        context.autoscale(AutoScale.FIT)
         var w: Float64 = 60
         var h: Float64 = 80
         return Game(Player(0.0, 0.0, w, h, 0.0, False, 2), Camera())

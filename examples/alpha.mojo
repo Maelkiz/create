@@ -9,7 +9,7 @@ struct App(Program):
     def create(mut context: Context) raises -> App:
         # The trails below are rendered by fading the *previous* frame, so the
         # per-frame clear has to be off — it would wipe what they fade.
-        context.autoclear = False
+        context.autoclear(False)
         return App(0.0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

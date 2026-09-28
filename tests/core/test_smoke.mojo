@@ -20,7 +20,7 @@ struct Smoke(Program):
 
     @staticmethod
     def create(mut context: Context) raises -> Smoke:
-        context.quit_on_escape = True
+        context.quit_on_escape(True)
         return Smoke(0.0, Audio())
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

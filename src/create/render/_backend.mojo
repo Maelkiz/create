@@ -891,7 +891,7 @@ struct Backend(Movable):
         immediately before it — with no render in between to survive — paints
         nothing. Dropping it here rather than at replay keeps both backends
         and both captures agreeing, and costs the common case nothing: a
-        program that sets `context.autoclear` and also opens `update` with
+        program that keeps `context.autoclear` on and also opens `update` with
         `background()` records one clear, not two.
         """
         if (

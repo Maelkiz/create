@@ -1,4 +1,3 @@
-from create.render.autoscale import AutoScale
 from create.render.canvas import PersistentCanvasState
 from create.render.context import Context
 from create.render.render_backend import RenderBackend
@@ -50,7 +49,7 @@ def run_headless[
     var mem = MemorySurface(pw, ph)
     var state = PersistentCanvasState()
     var context = Context()
-    context.design_resolution(width, height, AutoScale.FIT)
+    context.design_resolution(width, height)
     var program = P.create(context)
     # After create(), which may have pinned its own design size or mode.
     state._set_viewport(context, pw, ph)

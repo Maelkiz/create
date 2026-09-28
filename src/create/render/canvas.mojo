@@ -82,7 +82,7 @@ struct PersistentCanvasState(Movable):
         dial the last frame turned is picked up at exactly one place — the
         top of the next frame.
         """
-        self.view.autoscale = context.autoscale
+        self.view.autoscale = context._autoscale
         self.view.set_design(context._design_w, context._design_h)
         self.view.set_size(pixel_w, pixel_h)
 
@@ -256,7 +256,7 @@ struct Canvas:
         self.width = state.view.width
         self.height = state.view.height
         self.scale = state.view.scale
-        self._letterbox_color = context.letterbox_color
+        self._letterbox_color = context._letterbox_color
         self._state = state^
         self._style = Style()
         self._base = self.view.base_matrix()
@@ -271,7 +271,7 @@ struct Canvas:
         self._transform_stack = List[Matrix[3, 3]]()
         # Recorded here rather than by the loop so both loops get it from one
         # place, and so a program's own `background()` can coalesce with it.
-        if context.autoclear:
+        if context._autoclear:
             self._state.backend.record_clear(clear_command(_AUTOCLEAR_COLOR))
 
     def _release(deinit self) -> PersistentCanvasState:
@@ -558,7 +558,7 @@ struct Canvas:
         A translucent color blends instead of clearing, which is how motion
         trails are rendered: `canvas.background(Color(0x11, 0x11, 0x11, 24))`
         fades the previous frame a little further each time. Trails need
-        `context.autoclear = False` set in `create`, or the frame's own clear wipes
+        `context.autoclear(False)` set in `create`, or the frame's own clear wipes
         what they were fading.
 
         An opaque color replaces `context.autoclear`'s clear rather than

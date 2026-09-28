@@ -7,7 +7,6 @@ from create.render.context import Context
 from ._events import apply_events
 from ._step import step
 from create.render.surface import Surface
-from create.render.autoscale import AutoScale
 from .program import Program
 from .window_mode import WindowMode
 from ._run_gl import run_gl
@@ -110,7 +109,7 @@ def run[
     its work area and the design is scaled onto it. `mode=FULLSCREEN` with a
     size therefore means *author at that size, present fullscreen*.
 
-    The scaling is `AutoScale.FIT` unless `create` sets `context.autoscale`, so
+    The scaling is `AutoScale.FIT` unless `create` calls `context.autoscale`, so
     a program keeps its layout on any display:
 
     | call                                          | FIT / EXTEND             | OFF            |
@@ -124,7 +123,7 @@ def run[
     the window's own pixels, which is how a program authors against the
     display rather than against a fixed space.
 
-    `context.design_resolution(w, h, mode)` pins the same space from inside `create`, which
+    `context.design_resolution(w, h)` pins the same space from inside `create`, which
     is where a program with an opinion of its own states it. The size here is
     the shorthand for the common case where the window and the design agree.
 
@@ -166,9 +165,9 @@ def run[
     # Scaling that design to the window is the default because the alternative
     # punishes the obvious way to write a program: laid-out coordinates that
     # break on a display the author never had. `create` can opt back out with
-    # `context.autoscale = AutoScale.OFF`.
+    # `context.autoscale(AutoScale.OFF)`.
     var context = Context()
-    context.design_resolution(width, height, AutoScale.FIT)
+    context.design_resolution(width, height)
     var program = P.create(context)
     # create() may have changed the mode or pinned its own design size, so the
     # mapping is derived from `context` only once it has returned.

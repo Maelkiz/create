@@ -25,17 +25,17 @@ struct App(Program):
         #           the scene stays put while the space around it grows
         # The origin is the middle of the design area and y grows upward, so
         # the labels below centre sit at negative y.
-        context.autoscale = AutoScale.FIT
+        context.autoscale(AutoScale.FIT)
         return App(100.0, 1.0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         if context.input.just_pressed("space"):
-            if context.autoscale == AutoScale.FIT:
-                context.autoscale = AutoScale.EXTEND
-            elif context.autoscale == AutoScale.EXTEND:
-                context.autoscale = AutoScale.OFF
+            if context.autoscale() == AutoScale.FIT:
+                context.autoscale(AutoScale.EXTEND)
+            elif context.autoscale() == AutoScale.EXTEND:
+                context.autoscale(AutoScale.OFF)
             else:
-                context.autoscale = AutoScale.FIT
+                context.autoscale(AutoScale.FIT)
         self.x += self.dir * 200.0 * context.time.delta
         # Set the sign rather than flip it: under EXTEND/OFF a shrinking
         # window can move canvas.right()/left() past the ball between frames,
@@ -58,7 +58,7 @@ struct App(Program):
         canvas.font_size(28)
         canvas.text_align(Align.TOP)
         canvas.text(
-            "Autoscale Mode: " + _mode_name(context.autoscale), (0, -140)
+            "Autoscale Mode: " + _mode_name(context.autoscale()), (0, -140)
         )
         canvas.font_size(20)
         canvas.text("(space to cycle)", (0, -180))
