@@ -27,7 +27,7 @@ struct Smoke(Program):
         self.audio.update()
         if context.input.is_key_down("right"):
             self.x += 100.0 * context.time.delta
-        if context.input.key_just_pressed("space"):
+        if context.input.was_key_pressed("space"):
             _ = self.audio.play(
                 ArcPointer(Sound.from_pcm(List[Int16](length=1, fill=0)))
             )

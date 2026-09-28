@@ -31,6 +31,13 @@ struct Input(Copyable, Movable):
     `Camera.to_world` where a program uses one. It and
     `mouse_press_position` are `Point2D` because they are locations;
     `mouse_wheel` stays a `Vector2D` because a scroll delta is a displacement.
+
+    Keys and mouse buttons share one vocabulary: *down* is held right now,
+    true every frame it stays held (`is_key_down`, `is_mouse_down`);
+    *pressed* and *released* are the edges, true only in the frame the key or
+    button went down or came up (`was_key_pressed`, `was_mouse_released`).
+    The prefix carries the split: `is_` asks about a state, `was_` about an
+    event this frame.
     """
 
     # Keycode of the most recent key press, compared against `Key` (0 before
@@ -44,7 +51,7 @@ struct Input(Copyable, Movable):
     # before any). Kept until the next press.
     var mouse_button: Int
     # This frame's scroll delta — zeroed at the start of every frame, same
-    # lifecycle as the just-pressed/just-released key bits.
+    # lifecycle as the pressed/released key bits.
     var mouse_wheel: Vector2D
     # World position at the most recent press this frame. Captured at the
     # MouseButtonDown event itself rather than read off `mouse`, because a
@@ -52,8 +59,8 @@ struct Input(Copyable, Movable):
     # a program ever sees where the click actually started.
     var mouse_press_position: Point2D
     var _held_keys: _KeyBits
-    var _just_pressed: _KeyBits
-    var _just_released: _KeyBits
+    var _pressed_keys: _KeyBits
+    var _released_keys: _KeyBits
     # Mouse buttons are a handful of small ints (1..5), not the ~500-wide
     # keycode space `_KeyBits` is sized for — a plain bitmask is enough.
     var _held_buttons: Int
@@ -69,20 +76,20 @@ struct Input(Copyable, Movable):
         self.mouse_wheel = Vector2D(0, 0)
         self.mouse_press_position = Point2D(0, 0)
         self._held_keys = _KeyBits()
-        self._just_pressed = _KeyBits()
-        self._just_released = _KeyBits()
+        self._pressed_keys = _KeyBits()
+        self._released_keys = _KeyBits()
         self._held_buttons = 0
         self._pressed_buttons = 0
         self._released_buttons = 0
 
     def _new_frame(mut self):
-        """Clears the per-frame edge state: just-pressed/released keys and
+        """Clears the per-frame edge state: pressed/released keys and
         buttons, and the scroll delta. Called once per frame before events are
         processed, so a press held across frames stays in `_held_keys`/
-        `_held_buttons` but drops out of the "just" bits after the frame it
+        `_held_buttons` but drops out of the pressed bits after the frame it
         happened in."""
-        self._just_pressed.clear_all()
-        self._just_released.clear_all()
+        self._pressed_keys.clear_all()
+        self._released_keys.clear_all()
         self.mouse_wheel = Vector2D(0, 0)
         self._pressed_buttons = 0
         self._released_buttons = 0
@@ -158,21 +165,21 @@ struct Input(Copyable, Movable):
         """Whether this key is held right now. See `_check` for the names."""
         return self._check(key, self._held_keys)
 
-    def key_just_pressed(self, keycode: Int) -> Bool:
+    def was_key_pressed(self, keycode: Int) -> Bool:
         """Whether this key went down this frame — true once per press."""
-        return self._just_pressed.test(keycode)
+        return self._pressed_keys.test(keycode)
 
-    def key_just_pressed(self, key: String) -> Bool:
+    def was_key_pressed(self, key: String) -> Bool:
         """Whether this key went down this frame. See `_check` for the names."""
-        return self._check(key, self._just_pressed)
+        return self._check(key, self._pressed_keys)
 
-    def key_just_released(self, keycode: Int) -> Bool:
+    def was_key_released(self, keycode: Int) -> Bool:
         """Whether this key came up this frame — true once per release."""
-        return self._just_released.test(keycode)
+        return self._released_keys.test(keycode)
 
-    def key_just_released(self, key: String) -> Bool:
+    def was_key_released(self, key: String) -> Bool:
         """Whether this key came up this frame. See `_check` for the names."""
-        return self._check(key, self._just_released)
+        return self._check(key, self._released_keys)
 
     def is_mouse_down(self, button: Int = MouseButton.LEFT) -> Bool:
         """Whether this mouse button is held right now.
@@ -183,11 +190,11 @@ struct Input(Copyable, Movable):
         """
         return (self._held_buttons & (1 << button)) != 0
 
-    def mouse_just_pressed(self, button: Int = MouseButton.LEFT) -> Bool:
+    def was_mouse_pressed(self, button: Int = MouseButton.LEFT) -> Bool:
         """Whether this mouse button went down this frame — true once per
         click. `mouse_press_position` is where it happened."""
         return (self._pressed_buttons & (1 << button)) != 0
 
-    def mouse_just_released(self, button: Int = MouseButton.LEFT) -> Bool:
+    def was_mouse_released(self, button: Int = MouseButton.LEFT) -> Bool:
         """Whether this mouse button came up this frame — true once."""
         return (self._released_buttons & (1 << button)) != 0

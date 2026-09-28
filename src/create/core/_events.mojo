@@ -60,11 +60,11 @@ def apply_events(
             if not input.is_key_down(keycode):
                 input.key = keycode
                 input._held_keys.set(keycode)
-                input._just_pressed.set(keycode)
+                input._pressed_keys.set(keycode)
         elif event.isa[KeyUp]():
             var keycode = event[KeyUp].keycode
             input._held_keys.clear(keycode)
-            input._just_released.set(keycode)
+            input._released_keys.set(keycode)
         elif event.isa[MouseMoved]():
             var e = event[MouseMoved]
             # Pointer positions reach the program in screen space — the same

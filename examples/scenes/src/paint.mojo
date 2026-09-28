@@ -22,7 +22,7 @@ struct Paint:
         self._entering = True
 
     def update(mut self, context: Context, mut canvas: Canvas) raises:
-        self.back_pressed = context.input.mouse_just_pressed(MouseButton.RIGHT)
+        self.back_pressed = context.input.was_mouse_pressed(MouseButton.RIGHT)
         self.painting = context.input.is_mouse_down(MouseButton.LEFT)
         self.pen = context.input.mouse
 
