@@ -258,8 +258,8 @@ def test_initial_wheel_and_press_pos_zero() raises -> None:
     var input = Input()
     assert_equal(input.mouse_wheel.x, 0.0)
     assert_equal(input.mouse_wheel.y, 0.0)
-    assert_equal(input.mouse_press_pos.x, 0.0)
-    assert_equal(input.mouse_press_pos.y, 0.0)
+    assert_equal(input.mouse_press_position.x, 0.0)
+    assert_equal(input.mouse_press_position.y, 0.0)
 
 
 def test_no_mouse_buttons_down_initially() raises -> None:
@@ -374,11 +374,11 @@ def test_mouse_is_a_position_and_the_wheel_a_displacement() raises -> None:
     # between two locations, which is a Vector2D, while the wheel already is
     # one.
     var input = Input()
-    input.mouse_press_pos = Point2D(10.0, 20.0)
+    input.mouse_press_position = Point2D(10.0, 20.0)
     input._set_mouse(13.0, 24.0)
-    var drag: Vector2D = input.mouse - input.mouse_press_pos
+    var drag: Vector2D = input.mouse - input.mouse_press_position
     assert_equal(drag, Vector2D(3.0, 4.0))
-    assert_equal(input.mouse_press_pos + drag, input.mouse)
+    assert_equal(input.mouse_press_position + drag, input.mouse)
     input.mouse_wheel = Vector2D(0.0, -1.0)
     assert_equal(input.mouse_wheel.mag(), 1.0)
 

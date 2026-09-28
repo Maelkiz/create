@@ -84,7 +84,7 @@ def apply_events(
             input.mouse_pressed = True
             input.mouse_button = e.button
             input._set_mouse(p.x, p.y)
-            input.mouse_press_pos = p
+            input.mouse_press_position = p
             input._held_buttons |= 1 << e.button
             input._pressed_buttons |= 1 << e.button
         elif event.isa[MouseButtonUp]():

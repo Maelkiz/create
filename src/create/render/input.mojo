@@ -27,9 +27,9 @@ struct Input(Copyable, Movable):
     `mouse` is in screen coordinates, so it is negative left of and below the
     origin — camera-independent, since the loop folds a frame's events before
     the `Canvas` (and any `Camera` it sets) exists. Convert with
-    `Camera.to_world` where a program uses one. It and `mouse_press_pos` are
-    `Point2D` because they are locations; `mouse_wheel` stays a `Vector2D`
-    because a scroll delta is a displacement.
+    `Camera.to_world` where a program uses one. It and
+    `mouse_press_position` are `Point2D` because they are locations;
+    `mouse_wheel` stays a `Vector2D` because a scroll delta is a displacement.
     """
 
     var mouse_x: Int
@@ -44,7 +44,7 @@ struct Input(Copyable, Movable):
     # MouseButtonDown event itself rather than read off `mouse`, because a
     # MouseMoved later in the same frame would otherwise overwrite it before
     # a program ever sees where the click actually started.
-    var mouse_press_pos: Point2D
+    var mouse_press_position: Point2D
     var _held_keys: _KeyBits
     var _just_pressed: _KeyBits
     var _just_released: _KeyBits
@@ -61,7 +61,7 @@ struct Input(Copyable, Movable):
         self.mouse_pressed = False
         self.mouse_button = 0
         self.mouse_wheel = Vector2D(0, 0)
-        self.mouse_press_pos = Point2D(0, 0)
+        self.mouse_press_position = Point2D(0, 0)
         self._held_keys = _KeyBits()
         self._just_pressed = _KeyBits()
         self._just_released = _KeyBits()
@@ -179,7 +179,7 @@ struct Input(Copyable, Movable):
 
     def mouse_just_pressed(self, button: Int = MouseButton.LEFT) -> Bool:
         """Whether this mouse button went down this frame — true once per
-        click. `mouse_press_pos` is where it happened."""
+        click. `mouse_press_position` is where it happened."""
         return (self._pressed_buttons & (1 << button)) != 0
 
     def mouse_just_released(self, button: Int = MouseButton.LEFT) -> Bool:
