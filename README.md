@@ -47,3 +47,11 @@ pixi run example sketch          # examples/sketch.mojo
 pixi run example sidescroller    # examples/sidescroller/src/main.mojo
 pixi run example                 # lists every example
 ```
+
+Benchmarks live under `benchmarks/` and run the same way with the `benchmark` task:
+
+```bash
+pixi run benchmark frame         # a heavy frame through the window loop, GPU
+pixi run benchmark frame cpu     # the same frame on the CPU backend
+pixi run benchmark raster        # CPU rasterisation per primitive, headless
+```

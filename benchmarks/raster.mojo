@@ -1,10 +1,10 @@
 """Per-primitive timings for the CPU raster path, headless.
 
-    pixi run example cpu
+    pixi run benchmark raster
 
 No window: this drives `_raster.mojo` and `Backend` (CPU kind) directly over a
 `MemorySurface`, so it measures rasterisation alone — no SDL present, no event
-pump. `pixi run example gpu cpu` is the other half of the picture: the same
+pump. `pixi run benchmark frame cpu` is the other half of the picture: the same
 sketch through the real window loop, which is what a program actually pays.
 
 Every case reseeds `Random(1234)` per repetition, so every run — and every

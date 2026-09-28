@@ -1,7 +1,7 @@
 """The same heavy frame on both backends, timed.
 
-    pixi run example gpu        # GPU, vsync off
-    pixi run example gpu cpu    # CPU replay, for comparison
+    pixi run benchmark frame        # GPU, vsync off
+    pixi run benchmark frame cpu    # CPU replay, for comparison
 
 The sketch is deliberately more than a display is worth: a few thousand
 animated shapes, two sprites and a block of text, all of it re-recorded every

@@ -119,9 +119,9 @@ mask is its own unit-1 texture, so a shadowed sprite costs one extra draw call, 
 several costs one per switch. Blurred text shadows live in the atlas and cost none. Per frame, only
 the viewport is written, and only on resize.
 
-Before optimising: `pixi run example gpu` measures ~6 ms/frame at 1920x1080 (vsync off); the
+Before optimising: `pixi run benchmark frame` measures ~6 ms/frame at 1920x1080 (vsync off); the
 vertex list stops reallocating after frame 1; orphan-then-`glBufferSubData` measured identical to
-the current single `glBufferData`. `pixi run example cpu` measures CPU rasterisation headless.
+the current single `glBufferData`. `pixi run benchmark raster` measures CPU rasterisation headless.
 
 **`render` reaches GL without `_window`:** `_gl.mojo` `dlopen`s SDL itself and resolves through
 `SDL_GL_GetProcAddress`. A GL context must be current before `GL()` is constructed.

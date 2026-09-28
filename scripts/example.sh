@@ -3,7 +3,7 @@
 #
 #   pixi run example sketch          -> examples/sketch.mojo
 #   pixi run example sidescroller    -> examples/sidescroller/src/main.mojo
-#   pixi run example gl_bench cpu    -> extra arguments are passed through
+#   pixi run example shadows gpu     -> extra arguments are passed through
 #
 # A path that exists as given is run as-is, so the long form still works.
 set -e

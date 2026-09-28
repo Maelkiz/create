@@ -41,15 +41,15 @@ echo "Type-checking library..."
 pixi run mojo precompile src/create -o "$out/create.mojoc" \
     || { echo "Library type-check failed — push aborted."; exit 1; }
 
-echo "Building examples..."
-examples=$(grep -rlE '^(def|fn) main' examples --include='*.mojo' | sort)
+echo "Building examples and benchmarks..."
+examples=$(grep -rlE '^(def|fn) main' examples benchmarks --include='*.mojo' | sort)
 if [ -z "$examples" ]; then
-    echo "No example entrypoints found — push aborted."
+    echo "No example or benchmark entrypoints found — push aborted."
     exit 1
 fi
 echo "$examples" | xargs -P 4 -I{} sh -c \
     'pixi run mojo build -I src "{}" -o "'"$out"'/$(echo {} | tr / _).bin"' \
-    || { echo "Example build failed — push aborted."; exit 1; }
+    || { echo "Example or benchmark build failed — push aborted."; exit 1; }
 
 echo "Running tests..."
 pixi run test \

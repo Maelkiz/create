@@ -39,6 +39,7 @@ Package internals are documented in scoped files: [src/create/render/AGENTS.md](
 ```bash
 mojo run -I src examples/sketch.mojo      # -I src is required, see Gotcha 1
 pixi run example sketch                   # by name; no argument lists them
+pixi run benchmark frame                  # benchmarks/, same form; frame cpu for the CPU backend
 pixi run test                             # whole suite, concurrent
 pixi run test render                      # subpackage, file name sans test_, or path; several allowed
 pixi run test -j 4 canvas tween           # pin worker count (default nproc, max 8)
@@ -52,7 +53,7 @@ There is no CI. Two git hooks, active after `pixi run setup`, are the only autom
 | Hook | Runs |
 |---|---|
 | `pre-commit` | Formatting check on staged `.mojo` files, then builds `tests/core/test_smoke.mojo`. Constant cost |
-| `pre-push` | `mojo precompile`, every example, the test suite |
+| `pre-push` | `mojo precompile`, every example and benchmark, the test suite |
 
 Both skip entirely when every staged or pushed path is inert (`*.md`, `LICENSE`, agent/editor
 config) — the allowlist is in `.githooks/_inert.sh`.
