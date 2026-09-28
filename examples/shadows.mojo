@@ -23,7 +23,6 @@ struct App(Program):
 
     @staticmethod
     def create(mut context: Context) raises -> App:
-        context.clear_color = Color(0xE4, 0xE6, 0xEB)
         return App(
             Sprite.load(source_path("../assets/logo/png/logo-cutout.png")),
             0.9,
@@ -31,6 +30,7 @@ struct App(Program):
         )
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color(0xE4, 0xE6, 0xEB))
         if context.input.just_pressed("space"):
             self.soft = not self.soft
         self.angle += 0.6 * context.time.delta

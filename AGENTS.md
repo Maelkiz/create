@@ -134,8 +134,8 @@ A program writes `from create import *`. Otherwise import by name from the ownin
 ### Style and clear
 
 `Style()` defaults are not blank: **outline `BLACK`, on, 1 unit**; transparent fill; `BLACK`
-text. Every frame opens with a clear to `context.clear_color` (gray 200) so those defaults are
-visible.
+text. Every frame opens with a clear to gray 200 so those defaults are visible;
+`canvas.background()` is the only way to choose the colour.
 - An opaque `canvas.background()` replaces that clear rather than painting a second time; a
   translucent one blends over it.
 - `context.autoclear` is read at frame construction, so set it in `create`. Off lets ink accumulate
@@ -239,8 +239,8 @@ except `max_framerate()` and `quit()`, read after `update` returns.
 
 - Use `@fieldwise_init` on program structs.
 - Run only the tests a change can reach (`pixi run test render`); pre-push runs the whole suite.
-- Make `canvas.background(...)` the first render call in `update`, or set `context.clear_color` in
-  `create` if the colour never changes.
+- Make `canvas.background(...)` the first render call in `update`. With `context.autoclear` off,
+  call it on the first frame only.
 - Use `Point2D` for new locations, `Vector2D` for displacements and scalars for extents;
   `canvas.rectangle(pos: Point2D, w: Float64, h: Float64)` is the shape to copy.
 

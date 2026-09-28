@@ -36,6 +36,7 @@ from .style import Style
 
 
 comptime _KEEP = nan[DType.float64]()
+comptime _AUTOCLEAR_COLOR = Color(200)
 """Default of a `Float64` shadow part meaning "keep the current value". Not
 `Optional[Float64]`, which a bare `blur=12` cannot reach — an integer
 literal converts to `Float64` or to an `Optional`, not through both — and not
@@ -271,7 +272,7 @@ struct Canvas:
         # Recorded here rather than by the loop so both loops get it from one
         # place, and so a program's own `background()` can coalesce with it.
         if context.autoclear:
-            self._state.backend.record_clear(clear_command(context.clear_color))
+            self._state.backend.record_clear(clear_command(_AUTOCLEAR_COLOR))
 
     def _release(deinit self) -> PersistentCanvasState:
         """Hand back the state the next frame's `Canvas` should start from.
@@ -560,10 +561,8 @@ struct Canvas:
         `context.autoclear = False` set in `create`, or the frame's own clear wipes
         what they were fading.
 
-        An opaque color replaces `context.autoclear`'s clear rather than stacking on
-        it, so opening `update` with this costs one clear, not two. It does
-        not change `context.clear_color`: this paints now, at the point it is
-        called, while `context.clear_color` is what every frame starts from.
+        An opaque color replaces `context.autoclear`'s clear rather than
+        stacking on it, so opening `update` with this costs one clear, not two.
         """
         self._state.backend.record_clear(clear_command(color))
 

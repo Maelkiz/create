@@ -13,9 +13,10 @@ struct Context(Copyable, Movable):
 
     A `Canvas` is built and dropped inside one frame, so a setting that has to
     survive the frame boundary cannot live on it. These do — the autoscale
-    mode and design resolution the next frame's mapping is derived from, the
-    clear the next frame opens with, the letterbox colour, and the two the run
-    loop reads after a frame has been released, `max_framerate` and `quit`.
+    mode and design resolution the next frame's mapping is derived from,
+    whether the next frame opens with a clear, the letterbox colour, and the
+    two the run loop reads after a frame has been released, `max_framerate`
+    and `quit`.
 
     Handed to `Program.create` on its own, before any frame exists, and
     alongside the `Canvas` to `Program.update`. That is the whole reason it is a
@@ -24,8 +25,8 @@ struct Context(Copyable, Movable):
     record a command that will never be presented, and there is no discarded
     frame to explain.
 
-    **Read at frame construction.** `Canvas` takes its copy of `autoclear`,
-    `clear_color` and `letterbox_color` when it is built, and the loop
+    **Read at frame construction.** `Canvas` takes its copy of `autoclear`
+    and `letterbox_color` when it is built, and the loop
     re-derives the viewport from `autoscale` and the design size at the top of
     each frame. So a dial turned part-way through `update` applies to the *next*
     frame, uniformly — the clear of the frame being rendered was recorded before
@@ -38,11 +39,9 @@ struct Context(Copyable, Movable):
     var autoscale: AutoScale
     """How the design resolution maps onto the window — see `AutoScale`."""
     var autoclear: Bool
-    """Whether each frame opens with a clear to `clear_color`."""
-    var clear_color: Color
-    """What `autoclear` clears to, every frame. `canvas.background()` is the
-    per-frame version: it paints at the point it is called and leaves this
-    alone."""
+    """Whether each frame opens with a clear to gray 200, so the default
+    style is visible on a program that never calls `canvas.background()`. Off
+    lets ink accumulate across frames."""
     var letterbox_color: Color
     """The bars outside the design area under `AutoScale.FIT`."""
     var quit_on_escape: Bool
@@ -62,7 +61,6 @@ struct Context(Copyable, Movable):
     def __init__(out self):
         self.autoscale = AutoScale.OFF
         self.autoclear = True
-        self.clear_color = Color(200)
         self.letterbox_color = Color(0x22)
         self.quit_on_escape = True
         self.time = Time()
