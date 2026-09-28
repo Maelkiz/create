@@ -31,15 +31,10 @@ from ._command import (
     text_command,
     triangle_command,
 )
-from .style import Style
+from .style import Style, _KEEP
 
 
-comptime _KEEP = nan[DType.float64]()
 comptime _AUTOCLEAR_COLOR = Color(200)
-"""Default of a `Float64` shadow part meaning "keep the current value". Not
-`Optional[Float64]`, which a bare `blur=12` cannot reach — an integer
-literal converts to `Float64` or to an `Optional`, not through both — and not
-a negative number, since a negative spread is meaningful."""
 
 
 struct PersistentCanvasState(Movable):

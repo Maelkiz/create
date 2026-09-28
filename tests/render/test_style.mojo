@@ -69,6 +69,24 @@ def test_each_keyword_lands_in_its_field() raises -> None:
     assert_true(s.shadow_enabled)
 
 
+def test_naming_a_shadow_part_switches_the_shadow_on() raises -> None:
+    assert_true(Style(shadow=Color.RED).shadow_enabled)
+    assert_true(Style(shadow_offset=Vector2D(1, 2)).shadow_enabled)
+    assert_true(Style(shadow_blur=12).shadow_enabled)
+    assert_true(Style(shadow_spread=0).shadow_enabled)
+    assert_true(Style(shadow_inset=False).shadow_enabled)
+    assert_false(Style(shadow_follows_transform=True).shadow_enabled)
+
+
+def test_an_explicit_enabled_beside_a_part_wins() raises -> None:
+    var s = Style(shadow=Color.RED, shadow_enabled=False)
+    assert_false(s.shadow_enabled)
+    assert_equal(s.shadow_color, Color.RED)
+    assert_false(
+        Style(outline=Color.RED, outline_enabled=False).outline_enabled
+    )
+
+
 def test_style_writes_constructor_keywords() raises -> None:
     assert_equal(
         String(Style()),

@@ -1,8 +1,18 @@
+from std.collections import Optional
+from std.utils.numerics import isnan, nan
+
 from .align import Align
 from .blend_mode import BlendMode
 from .color import Color
 from .font import FontWeight
 from create.math.vector2d import Vector2D
+
+
+comptime _KEEP = nan[DType.float64]()
+"""Default of a `Float64` shadow part meaning "not given". Not
+`Optional[Float64]`, which a bare `blur=12` cannot reach — an integer
+literal converts to `Float64` or to an `Optional`, not through both — and not
+a negative number, since a negative spread is meaningful."""
 
 
 struct Style(Copyable, Movable, Writable):
@@ -29,14 +39,16 @@ struct Style(Copyable, Movable, Writable):
         corner_radius=12,
         shadow=Color(0, 0, 0, 80),
         shadow_blur=16,
-        shadow_enabled=True,
     )
     ```
 
-    The constructor's keywords are named after the canvas setters, and each
-    defaults to what a fresh frame starts with. The font is not part of a
-    style: it is a loaded resource, set with `canvas.font` and kept across
-    frames.
+    The constructor's keywords are named after the canvas setters and act
+    like them: naming any part of the fill, outline or shadow switches it
+    on, unless `fill_enabled`, `outline_enabled` or `shadow_enabled` says
+    otherwise, so `Style(shadow=Color.RED, shadow_enabled=False)` keeps a
+    shadow ready but off. Every part left unset is what a fresh frame
+    starts with. The font is not part of a style: it is a loaded resource,
+    set with `canvas.font` and kept across frames.
     """
 
     var fill_color: Color
@@ -62,11 +74,11 @@ struct Style(Copyable, Movable, Writable):
     def __init__(
         out self,
         *,
-        fill: Color = Color.TRANSPARENT,
-        fill_enabled: Bool = True,
-        outline: Color = Color.BLACK,
-        outline_thickness: Int = 1,
-        outline_enabled: Bool = True,
+        fill: Optional[Color] = None,
+        fill_enabled: Optional[Bool] = None,
+        outline: Optional[Color] = None,
+        outline_thickness: Optional[Int] = None,
+        outline_enabled: Optional[Bool] = None,
         corner_radius: Int = 0,
         text_color: Color = Color.BLACK,
         font_size: Int = 16,
@@ -74,19 +86,19 @@ struct Style(Copyable, Movable, Writable):
         text_align: Align = Align.CENTER,
         opacity: Float64 = 1.0,
         blend_mode: BlendMode = BlendMode.NORMAL,
-        shadow: Color = Color(0, 0, 0, 96),
-        shadow_offset: Vector2D = Vector2D(4, -4),
-        shadow_blur: Float64 = 8.0,
-        shadow_spread: Float64 = 0.0,
-        shadow_inset: Bool = False,
+        shadow: Optional[Color] = None,
+        shadow_offset: Optional[Vector2D] = None,
+        shadow_blur: Float64 = _KEEP,
+        shadow_spread: Float64 = _KEEP,
+        shadow_inset: Optional[Bool] = None,
         shadow_follows_transform: Bool = False,
-        shadow_enabled: Bool = False,
+        shadow_enabled: Optional[Bool] = None,
     ):
-        self.fill_color = fill
-        self.fill_enabled = fill_enabled
-        self.outline_color = outline
-        self.outline_thickness = outline_thickness
-        self.outline_enabled = outline_enabled
+        self.fill_color = fill.or_else(Color.TRANSPARENT)
+        self.fill_enabled = fill_enabled.or_else(True)
+        self.outline_color = outline.or_else(Color.BLACK)
+        self.outline_thickness = outline_thickness.or_else(1)
+        self.outline_enabled = outline_enabled.or_else(True)
         self.corner_radius = corner_radius
         self.text_color = text_color
         self.font_size = font_size
@@ -94,13 +106,19 @@ struct Style(Copyable, Movable, Writable):
         self.text_align = text_align
         self.opacity = opacity
         self.blend_mode = blend_mode
-        self.shadow_color = shadow
-        self.shadow_offset = shadow_offset
-        self.shadow_blur = shadow_blur
-        self.shadow_spread = shadow_spread
-        self.shadow_inset = shadow_inset
+        self.shadow_color = shadow.or_else(Color(0, 0, 0, 96))
+        self.shadow_offset = shadow_offset.or_else(Vector2D(4, -4))
+        self.shadow_blur = 8.0 if isnan(shadow_blur) else shadow_blur
+        self.shadow_spread = 0.0 if isnan(shadow_spread) else shadow_spread
+        self.shadow_inset = shadow_inset.or_else(False)
         self.shadow_follows_transform = shadow_follows_transform
-        self.shadow_enabled = shadow_enabled
+        self.shadow_enabled = shadow_enabled.or_else(
+            Bool(shadow)
+            or Bool(shadow_offset)
+            or not isnan(shadow_blur)
+            or not isnan(shadow_spread)
+            or Bool(shadow_inset)
+        )
 
     def write_to[W: Writer](self, mut writer: W):
         # Named by the constructor's keywords, not the fields, so the output

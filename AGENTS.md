@@ -155,7 +155,9 @@ off without losing the colour; `fill(color)`/`outline(...)` switch back on.
 | `with canvas.style(fill=Color.RED):` | Only the named fields, for the block (each goes through its setter) |
 | `with canvas.style(heading):` | A whole `Style` value, for the block — unset fields are `Style()` defaults, not the previous style |
 
-`Style(...)` takes the setters' names as keywords, so a reusable style is a field built in `create`.
+`Style(...)` takes the setters' names as keywords and, like them, naming any part of the fill,
+outline or shadow switches it on unless its `*_enabled` keyword says otherwise. A reusable style is
+a field built in `create`.
 The font is not part of a style: it lives on `PersistentCanvasState` and outlives the frame.
 
 **Shadows** are part of `Style`, **off by default**: `canvas.shadow(color=, offset=, blur=, spread=,
