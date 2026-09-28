@@ -20,6 +20,19 @@ struct Style(Copyable, Movable, Writable):
         canvas.text("Score", (0, canvas.top() - 20))
     ```
 
+    A shadow is part of the style too, so a card's look can carry its own:
+
+    ```mojo
+    var card = Style(
+        fill=Color.WHITE,
+        outline_enabled=False,
+        corner_radius=12,
+        shadow=Color(0, 0, 0, 80),
+        shadow_blur=16,
+        shadow_enabled=True,
+    )
+    ```
+
     The constructor's keywords are named after the canvas setters, and each
     defaults to what a fresh frame starts with. The font is not part of a
     style: it is a loaded resource, set with `canvas.font` and kept across

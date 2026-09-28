@@ -1,4 +1,5 @@
 from std.collections import Optional
+from std.utils.numerics import isnan, nan
 
 from .color import Color
 from .align import Align
@@ -10,6 +11,7 @@ from .context import Context
 from .camera import Camera
 from create.math.geometry import Rectangle, Circle, Line, Triangle
 from create.math.point2d import Point2D
+from create.math.vector2d import Vector2D
 from create.math.matrix import (
     Matrix,
     identity,
@@ -31,6 +33,13 @@ from ._command import (
     triangle_command,
 )
 from .style import Style
+
+
+comptime _KEEP = nan[DType.float64]()
+"""Default of a `Float64` shadow part meaning "keep the current value". Not
+`Optional[Float64]`, which a bare `blur=12` cannot reach — an integer
+literal converts to `Float64` or to an `Optional`, not through both — and not
+a negative number, since a negative spread is meaningful."""
 
 
 struct PersistentCanvasState(Movable):
@@ -355,6 +364,13 @@ struct Canvas:
         text_align: Optional[Align] = None,
         opacity: Optional[Float64] = None,
         blend_mode: Optional[BlendMode] = None,
+        shadow: Optional[Color] = None,
+        shadow_offset: Optional[Vector2D] = None,
+        shadow_blur: Float64 = _KEEP,
+        shadow_spread: Float64 = _KEEP,
+        shadow_inset: Optional[Bool] = None,
+        shadow_follows_transform: Optional[Bool] = None,
+        shadow_enabled: Optional[Bool] = None,
     ) -> StyleGuard[origin_of(self)]:
         """Scope style changes to a `with` block, restoring the previous style
         on exit.
@@ -395,6 +411,28 @@ struct Canvas:
             self.opacity(opacity.value())
         if blend_mode:
             self.blend_mode(blend_mode.value())
+        # Like `outline_thickness` without `outline`: any shadow part goes
+        # through `shadow`, keeping the current colour if none is named.
+        if (
+            shadow
+            or shadow_offset
+            or not isnan(shadow_blur)
+            or not isnan(shadow_spread)
+            or shadow_inset
+        ):
+            self.shadow(
+                shadow.value() if shadow else self._style.shadow_color,
+                shadow_offset,
+                shadow_blur,
+                shadow_spread,
+                shadow_inset,
+            )
+        if shadow_follows_transform:
+            self.shadow_follows_transform(shadow_follows_transform.value())
+        # After the shadow parts, which switch it on: an explicit
+        # `shadow_enabled=False` beside them wins.
+        if shadow_enabled:
+            self.shadow_enabled(shadow_enabled.value())
         return guard^
 
     def style(mut self, style: Style) -> StyleGuard[origin_of(self)]:
@@ -728,6 +766,72 @@ struct Canvas:
         Applies to shapes, text and sprites, never to `background`.
         """
         self._style.blend_mode = mode
+
+    def shadow(
+        mut self,
+        color: Color,
+        offset: Optional[Vector2D] = None,
+        blur: Float64 = _KEEP,
+        spread: Float64 = _KEEP,
+        inset: Optional[Bool] = None,
+    ):
+        """Cast a shadow in `color` behind what is rendered next, switching
+        shadows on. `offset`, `blur`, `spread` and `inset` left unset keep
+        their current values; a fresh frame starts at an offset of `(4, -4)`
+        (down and right, since y is up), a blur of 8 and no spread.
+
+        Works like CSS `drop-shadow`: the shadow is the shape's whole
+        silhouette, fill and outline together, cast once — a translucent
+        fill shows its own shadow through it. Lines cast their stroke, text
+        its glyphs and sprites their alpha. `blur` is the CSS blur radius,
+        twice the Gaussian's standard deviation; `spread` grows the
+        silhouette before blurring. Both are world units, scaled like a
+        coordinate.
+
+        `inset=True` paints the shadow inside the shape instead, over its
+        fill and within its outline, as if the shape were a hole cut in a
+        surface: the band shows on the side the offset points away from.
+        Only rectangles, circles and triangles take an inset shadow; lines,
+        text and sprites cast none while it is set.
+
+        The offset is fixed to the screen, so a rotated shape's shadow still
+        falls the same way; see `shadow_follows_transform`. The shadow
+        combines with what is beneath it by the style's `blend_mode`, like
+        the shape itself.
+
+        ```mojo
+        canvas.shadow(Color(0, 0, 0, 96), offset=Vector2D(6, -6), blur=12)
+        canvas.rectangle((0, 0), 120, 80)
+        ```
+        """
+        self._style.shadow_color = color
+        if offset:
+            self._style.shadow_offset = offset.value()
+        if not isnan(blur):
+            self._style.shadow_blur = blur
+        if not isnan(spread):
+            self._style.shadow_spread = spread
+        if inset:
+            self._style.shadow_inset = inset.value()
+        self._style.shadow_enabled = True
+
+    def shadow_enabled(mut self, enabled: Bool):
+        """Switch shadows off or back on. Colour, offset, blur, spread and
+        inset are kept while off, so `shadow_enabled(True)` brings back the
+        same shadow; `shadow(color)` switches it on too. Off by default."""
+        self._style.shadow_enabled = enabled
+
+    def shadow_follows_transform(mut self, follows: Bool):
+        """Whether the shadow's offset turns with the transform.
+
+        `False` (the default) keeps it fixed to the screen, as a light
+        overhead would: a rotating shape's shadow always falls the same way.
+        Camera zoom and autoscale still scale it, so it stays in proportion.
+        `True` applies the offset in the shape's own frame, before the
+        transform, so it rotates and shears with the shape, as a CSS
+        shadow does under a CSS transform.
+        """
+        self._style.shadow_follows_transform = follows
 
     def text_align(mut self, align: Align):
         """Anchor the next text at one of the nine points of its box.

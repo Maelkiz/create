@@ -797,6 +797,132 @@ def test_style_object_outside_a_with_block_holds() raises -> None:
     assert_equal(m.pixel(50, 50), Color.BLUE)
 
 
+def _red_square(mut canvas: Canvas, pos: Point2D):
+    """20x20, red, no outline — the caster in the shadow tests."""
+    canvas.fill(Color.RED)
+    canvas.outline_enabled(False)
+    canvas.rectangle(pos, 20, 20)
+
+
+@fieldwise_init
+struct ShadowSetters(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> ShadowSetters:
+        return ShadowSetters(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.shadow(Color.BLUE, offset=Vector2D(10, -10), blur=0)
+        _red_square(canvas, (-60, 0))
+        canvas.shadow_enabled(False)
+        _red_square(canvas, (0, 0))
+        # Back on, with the colour and offset it had.
+        canvas.shadow_enabled(True)
+        _red_square(canvas, (60, 0))
+
+
+def test_the_shadow_setter_switches_shadows_on_and_off() raises -> None:
+    var m = run_headless[ShadowSetters](200, 100)
+    assert_equal(m.pixel(40, 50), Color.RED)
+    assert_equal(m.pixel(55, 65), Color.BLUE)  # down-right, y up
+    assert_equal(m.pixel(25, 35), Color.BLACK)
+    assert_equal(m.pixel(115, 65), Color.BLACK)  # off
+    assert_equal(m.pixel(175, 65), Color.BLUE)  # on again
+
+
+@fieldwise_init
+struct ShadowKeywords(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> ShadowKeywords:
+        return ShadowKeywords(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.shadow(Color.GREEN, offset=Vector2D(10, -10), blur=0)
+        canvas.shadow_enabled(False)
+        with canvas.style(shadow=Color.BLUE, shadow_blur=12):
+            _red_square(canvas, (-75, 0))
+        # Restored on exit: green, and off again.
+        _red_square(canvas, (-25, 0))
+        # A part without a colour switches the shadow on in the current
+        # colour, but an explicit `shadow_enabled=False` beside it wins.
+        with canvas.style(shadow_spread=0):
+            _red_square(canvas, (25, 0))
+        with canvas.style(shadow_spread=0, shadow_enabled=False):
+            _red_square(canvas, (75, 0))
+
+
+def test_shadow_keywords_go_through_the_setter_and_restore() raises -> None:
+    var m = run_headless[ShadowKeywords](200, 100)
+    # Blurred: shadow-tinted past the square, fading, never red.
+    var near = m.pixel(37, 62)
+    var far = m.pixel(47, 72)
+    assert_equal(near.r, 0)
+    assert_true(near.b > far.b)
+    assert_true(far.b > 0)
+    assert_equal(m.pixel(90, 65), Color.BLACK)  # restored: off
+    assert_equal(m.pixel(140, 65), Color.GREEN)  # on, colour kept
+    assert_equal(m.pixel(190, 65), Color.BLACK)  # enabled=False wins
+
+
+@fieldwise_init
+struct ShadowFollowsTransform(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> ShadowFollowsTransform:
+        return ShadowFollowsTransform(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.shadow(Color.BLUE, offset=Vector2D(10, -10), blur=0)
+        with canvas.transform(translate(-40, 0) @ rotate(pi / 2.0)):
+            _red_square(canvas, (0, 0))
+        canvas.shadow_follows_transform(True)
+        with canvas.transform(translate(40, 0) @ rotate(pi / 2.0)):
+            _red_square(canvas, (0, 0))
+
+
+def test_a_shadow_can_follow_the_transform() raises -> None:
+    var m = run_headless[ShadowFollowsTransform](200, 100)
+    # Screen-fixed: down-right despite the quarter turn.
+    assert_equal(m.pixel(65, 65), Color.BLUE)
+    assert_equal(m.pixel(65, 35), Color.BLACK)
+    # Turned with the shape: (10, -10) rotated a quarter turn is up-right.
+    assert_equal(m.pixel(145, 35), Color.BLUE)
+    assert_equal(m.pixel(145, 65), Color.BLACK)
+
+
+@fieldwise_init
+struct InsetKeyword(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> InsetKeyword:
+        return InsetKeyword(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        with canvas.style(
+            shadow=Color.BLUE,
+            shadow_offset=Vector2D(6, -6),
+            shadow_blur=0,
+            shadow_inset=True,
+        ):
+            _red_square(canvas, (0, 0))
+
+
+def test_the_inset_keyword_paints_inside() raises -> None:
+    var m = run_headless[InsetKeyword](100, 100)
+    assert_equal(m.pixel(42, 42), Color.BLUE)  # the band, top-left
+    assert_equal(m.pixel(56, 56), Color.RED)
+    assert_equal(m.pixel(65, 65), Color.BLACK)  # nothing outside
+
+
 @fieldwise_init
 struct StrokedRect(Program):
     var _unused: Int
