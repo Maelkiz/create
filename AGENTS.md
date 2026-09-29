@@ -25,7 +25,7 @@ it makes the library better.
 | root | `src/create/__init__.mojo` | The preamble: star-imports all five subpackages below |
 | `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`, `Input`, `Key`, `MouseButton`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path`, `DateTime` |
 | `render` | `src/create/render/` | `Canvas`, `Camera`, colour/font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
-| `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes, `Random`, `Noise`, easing and `Tween`, util functions |
+| `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes, `CubicBezier`, `Random`, `Noise`, easing and `Tween`, util functions |
 | `sprite` | `src/create/sprite/` | `Sprite` (BMP/PNG/JPEG), `SpriteAnimation`, `SpriteAnimator` |
 | `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |
 | `_bytes` | `src/create/_bytes.mojo` | Internal leaf: little-endian integer decoding |
@@ -244,6 +244,7 @@ mid-`update` applies next frame — except `max_frame_rate()` and `quit()`, read
 | `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(position, r)`, `context.input.mouse`); a displacement is a `Vector2D` (`translate(delta)`, velocities); an extent is a scalar (`w`, `h`, `r`). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Only `Point2D` takes a bare tuple implicitly; a vector literal names its type (`p + Vector2D(1, 2)`), and `p - (1, 2)` is the displacement from `(1, 2)`, not a move |
 | Down / pressed / released | Input state for keys and mouse buttons alike. *Down* is held right now, true every frame (`key_down`, `mouse_down`); *pressed*/*released* are edges, true only in the frame it went down or came up (`key_pressed`, `mouse_released`). Unlike Processing's `mousePressed`, *pressed* never means held |
 | `overlaps` / `intersects` / `contains` | `overlaps(a, b)`: free, symmetric, regions only (`Rectangle`/`Circle`/`Triangle`). `line.intersects(x)`: `Line` only, since a line has no interior. `region.contains(x)`: asymmetric. A `Line` is never a region |
+| `CubicBezier` | `start`, `control1`, `control2`, `end`; passes through the endpoints only. A curve, not a region: `canvas.bezier` strokes it in the outline style and draws nothing with the outline off. `at(t)` is uneven in speed; `at_distance(d)` moves along it at constant speed |
 
 ## Do
 

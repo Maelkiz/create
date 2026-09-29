@@ -691,7 +691,11 @@ struct Canvas:
         A curve, like a line, has no interior: `fill` never applies, and with
         the outline off nothing is drawn. The curve is flattened at replay,
         in device pixels, so it stays smooth under any camera zoom; its ends
-        are butt, like a line's.
+        are butt, like a line's. Joints are mitred, so a translucent stroke
+        composites once, except at a sharp cusp, where it may overlap slightly.
+
+        A blurred shadow is blurred afresh every frame (it cannot be cached
+        like a sprite's), and on the GPU costs one extra draw call.
         """
         self.bezier(CubicBezier(start, control1, control2, end))
 

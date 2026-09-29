@@ -15,6 +15,7 @@ and the layering rules.
 | `_gl_backend.mojo` | `GLRenderer` — shader, vertex buffer, glyph atlas, sprite textures, batching |
 | `_tessellate.mojo` | `RenderCommand` to triangles for the GPU |
 | `_shadow.mojo` | Shadow geometry shared by both backends: `shadow_command` (the hard silhouette as a command, offset matrix composed in), `BlurredSilhouette` (analytic Gaussian coverage for shapes), `InsetRegion` (an inset shadow's interior and cut) |
+| `_curve.mojo` | Bézier stroke geometry for both replays: flattening in device pixels, the mitred quad strip, the blurred shadow mask |
 | `_blur.mojo` | Three-box-blur approximation of a Gaussian over an alpha mask, for text and sprite shadows; the blurred-mask cache limit and key |
 | `_transform.mojo`, `_image.mojo`, `_fillet.mojo` | Shared by both replay paths (split out to avoid an import cycle, or so both agree on the numbers) |
 | `_gl_target.mojo` | Offscreen FBO of an exact size, for the parity test and headless GPU |
@@ -27,6 +28,9 @@ transform at record time, style resolved now) to the `Backend`. Nothing rasteris
 into the backend at record time (the command carries an id); text is recorded as an owned `String`
 and laid out at replay. Add a shape by extending `_command.mojo`'s kinds and `_backend.mojo`'s replay
 (plus `_tessellate.mojo`), never by calling `_raster.mojo` from `Canvas`.
+
+`RenderCommand.geom` has 8 slots, sized for `CMD_BEZIER`'s four points; the geometry table in
+`_command.mojo` gives each kind's layout.
 
 `Canvas` holds no `Surface` and takes its geometry from the `Viewport` alone — don't add a `Surface`
 field or parameter, and don't import `_window` from `canvas.mojo`. What survives the frame boundary:
@@ -42,6 +46,16 @@ a field rather than a trait because Mojo has no dynamic dispatch.
 The autoclear is a recorded `CMD_CLEAR`, so every path handles it: the GPU turns it into `glClear`,
 an opaque `canvas.background()` replaces it via `Backend.record_clear`, and a transparent
 `save_image` masks it out.
+
+## Curves
+
+A `CMD_BEZIER` records only its four control points. Each replay maps them through the command's
+transform (a Bézier is affine-invariant) and flattens in device pixels
+(`FLATTEN_TOLERANCE_PX`), so the curve stays smooth under any zoom. `stroke_quads` turns the
+polyline into a strip of quads sharing mitred edges — no gap, no overlap, so a translucent stroke
+composites once — which the CPU fills with `fill_quad` and the GPU pushes as vertices. Ends are
+butt. Known limitation: at a cusp the miter is clamped (`MITER_LIMIT`) and the quads either side
+overlap slightly.
 
 ## Captures
 
@@ -72,6 +86,10 @@ Both replays handle a command's shadow around the command itself, in the command
   masks are keyed by blur in the glyph cache and packed into the atlas; sprite masks are cached per
   `shadow_mask_key` in `Backend.shadow_masks` (CPU) and `GLRenderer.shadow_textures` (GPU), both
   dropped whole at `SHADOW_MASK_LIMIT`.
+  A Bézier's stroke is rasterised into a mask and blurred too (`bezier_shadow_mask`), but
+  **uncached**: it has no stable id to key by, so each blurred Bézier shadow costs one blur per
+  frame, and on the GPU one texture upload plus one draw call; the textures are deleted after the
+  frame's final flush.
 - **Inset** (`casts_inset_shadow`), *after* the command: the interior (`inset_interior`) is the
   clip, the silhouette is the interior shrunk by the spread and moved by the shadow transform, and
   alpha is `1 − coverage`. The CPU tests pixel centres in the interior's box; the GPU tessellates
@@ -116,8 +134,8 @@ only ever hold quantities affine across a triangle, so interpolation evaluates t
 A batch breaks only on an opaque `CMD_CLEAR`, a second distinct unit-1 texture, a `BlendMode`
 change, or frame end — glyph atlas on texture unit 0, sprites on unit 1. A blurred sprite shadow's
 mask is its own unit-1 texture, so a shadowed sprite costs one extra draw call, and interleaving
-several costs one per switch. Blurred text shadows live in the atlas and cost none. Per frame, only
-the viewport is written, and only on resize.
+several costs one per switch; a blurred Bézier shadow likewise costs one. Blurred text shadows
+live in the atlas and cost none. Per frame, only the viewport is written, and only on resize.
 
 Before optimising: `pixi run benchmark frame` measures ~6 ms/frame at 1920x1080 (vsync off); the
 vertex list stops reallocating after frame 1; orphan-then-`glBufferSubData` measured identical to

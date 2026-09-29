@@ -25,8 +25,8 @@ namespace any scratch path under `/tmp` per file.
   structurally (bounding box, centroid, ink coverage within tolerance, interior colour), not pixel by
   pixel — rasterisers may legitimately differ at edges, and exactness would forbid GPU antialiasing.
 - `run_headless(..., backend=RenderBackend.GPU)` for what parity can't see across several commands
-  in one frame: batch breaks and buffer growth (`render/test_gl_batching.mojo`), and the GPU capture
-  paths (`render/test_gl_capture.mojo`).
+  in one frame: batch breaks, buffer growth and per-frame texture cleanup
+  (`render/test_gl_batching.mojo`), and the GPU capture paths (`render/test_gl_capture.mojo`).
 
 GL tests skip without a context. `pixi run test` uses SDL's offscreen driver when no display is set
 (`DISPLAY`, `WAYLAND_DISPLAY`, `XDG_RUNTIME_DIR` all unset), which gives a software GL 3.3 context —
