@@ -234,8 +234,8 @@ def test_fit_paints_letterbox_bars() raises -> None:
     # A 100x50 design in a 100x100 buffer scales by 1 and leaves 25 rows of bar
     # top and bottom, painted after render so they also clip the design area.
     var m = run_headless[FitBars](100, 50, 1, 100, 100)
-    assert_equal(m.pixel(50, 5), Color(0x22))
-    assert_equal(m.pixel(50, 95), Color(0x22))
+    assert_equal(m.pixel(50, 5), Color.BLACK)
+    assert_equal(m.pixel(50, 95), Color.BLACK)
     assert_equal(m.pixel(50, 50), Color.BLUE)
 
 
@@ -2332,7 +2332,7 @@ def test_save_image_writes_the_design_resolution() raises -> None:
     var m = run_headless[SaveImage](200, 100, 1, 640, 480)
     # The framebuffer it was captured from is neither that size nor bar-free.
     assert_equal(m.width, 640)
-    assert_equal(m.pixel(320, 5), Color(0x22))
+    assert_equal(m.pixel(320, 5), Color.BLACK)
     var img = _saved(_IMG_1X)
     assert_equal(img.width, 200)
     assert_equal(img.height, 100)
@@ -2423,8 +2423,8 @@ def test_save_screenshot_keeps_the_letterbox_bars() raises -> None:
     # corner that is the program's background there is bar here.
     _ = run_headless[SaveScreenshot](200, 100, 1, 640, 480)
     var shot = _saved(_SHOT)
-    assert_equal(_px(shot, 320, 5), Color(0x22))
-    assert_equal(_px(shot, 320, 474), Color(0x22))
+    assert_equal(_px(shot, 320, 5), Color.BLACK)
+    assert_equal(_px(shot, 320, 474), Color.BLACK)
     # The design area sits in the middle, scaled by 3.2 rather than 1:1.
     assert_equal(_px(shot, 320, 240), Color.RED)
 

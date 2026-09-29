@@ -86,9 +86,9 @@ def test_the_gpu_backend_paints_letterbox_bars() raises -> None:
     # bars either side. Sampled away from the 20x20 rect at the centre, so
     # this reads the background fill, not the shape — the default letterbox
     # colour is distinct from both.
-    assert_equal(m.pixel(5, 32), Color(0x22), "left bar")
+    assert_equal(m.pixel(5, 32), Color.BLACK, "left bar")
     assert_equal(m.pixel(40, 32), Color(10, 20, 30), "content")
-    assert_equal(m.pixel(122, 32), Color(0x22), "right bar")
+    assert_equal(m.pixel(122, 32), Color.BLACK, "right bar")
 
 
 @fieldwise_init

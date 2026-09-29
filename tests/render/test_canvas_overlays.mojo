@@ -34,8 +34,8 @@ def test_letterbox_clips_a_shape_rendered_past_the_design_edge() raises -> None:
     # letterbox colour proves _render_letterbox clips rather than merely fills
     # an otherwise-empty margin.
     var m = run_headless[OverflowingRect](100, 50, 1, 100, 100)
-    assert_equal(m.pixel(50, 5), Color(0x22))
-    assert_equal(m.pixel(50, 95), Color(0x22))
+    assert_equal(m.pixel(50, 5), Color.BLACK)
+    assert_equal(m.pixel(50, 95), Color.BLACK)
     assert_equal(m.pixel(50, 50), Color.GREEN)
 
 

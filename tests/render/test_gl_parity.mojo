@@ -65,7 +65,7 @@ comptime _CONTENT_Y0 = (_PIXEL_H - _DESIGN_H) // 2
 comptime _CONTENT_Y1 = _CONTENT_Y0 + _DESIGN_H
 """The FIT-mapped content rect, at the scale-1 mapping documented on
 `_PIXEL_W`. Masking outside it excludes the letterbox bars, which are a
-constant `0x22` rather than `_BACKGROUND` and would otherwise swamp every
+constant black rather than `_BACKGROUND` and would otherwise swamp every
 shape's bounding box and centroid with two fixed strips neither backend
 moves."""
 

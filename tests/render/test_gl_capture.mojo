@@ -72,7 +72,7 @@ def test_gpu_screenshot_has_the_framebuffer_resolution_and_is_opaque() raises ->
     # The design area, scaled 3.2x and centred, with the bars either side —
     # same layout `test_canvas.mojo`'s CPU screenshot test checks.
     assert_equal(_px(shot, 320, 240), Color.RED)
-    assert_equal(_px(shot, 320, 5), Color(0x22))
+    assert_equal(_px(shot, 320, 5), Color.BLACK)
     # _force_opaque runs on this path only: every alpha byte must read 255,
     # including under the red square, where the live frame is already
     # opaque, and under the bars, which the CPU screenshot leaves alone.

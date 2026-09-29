@@ -62,7 +62,7 @@ struct Context(Copyable, Movable):
         self.input = Input()
         self._autoscale = AutoScale.FIT
         self._autoclear = True
-        self._letterbox_color = Color(0x22)
+        self._letterbox_color = Color.BLACK
         self._quit_on_escape = True
         self._design_w = 0
         self._design_h = 0
@@ -104,7 +104,10 @@ struct Context(Copyable, Movable):
         self._autoclear = enabled
 
     def letterbox_color(mut self, color: Color):
-        """Colour the bars outside the design area under `AutoScale.FIT`."""
+        """Colour the bars outside the design area under `AutoScale.FIT`.
+
+        Black by default.
+        """
         self._letterbox_color = color
 
     def quit_on_escape(mut self, enabled: Bool):
