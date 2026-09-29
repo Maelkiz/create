@@ -32,7 +32,7 @@ polygon. A shadow ring's thickness is the outline's plus twice the spread,
 so its seams' band grows by the spread as well.
 """
 
-from std.math import cos, max, min, sin, sqrt, tau
+from std.math import cos, max, min, nan, sin, sqrt, tau
 
 from create.math.geometry import Line, Polygon
 from create.math.matrix import Matrix, apply as mat_apply
@@ -61,7 +61,6 @@ struct PolygonQuads(Movable):
         self.outline = List[Point2D]()
 
 
-@fieldwise_init
 struct _Edge(Copyable, ImplicitlyCopyable, Movable):
     """One non-level edge of the polygon or a band piece, stored from its
     lower end up. `sign` is +1 if the piece runs up along it, -1 if down;
@@ -73,6 +72,26 @@ struct _Edge(Copyable, ImplicitlyCopyable, Movable):
     var y1: Float64
     var sign: Int
     var layer: Int
+    var slope: Float64
+    """How far x moves per unit of y, worked out once: the sweep asks every
+    edge its x many times over."""
+
+    def __init__(
+        out self,
+        x0: Float64,
+        y0: Float64,
+        x1: Float64,
+        y1: Float64,
+        sign: Int,
+        layer: Int,
+    ):
+        self.x0 = x0
+        self.y0 = y0
+        self.x1 = x1
+        self.y1 = y1
+        self.sign = sign
+        self.layer = layer
+        self.slope = (x1 - x0) / (y1 - y0)
 
     def x_at(self, y: Float64) -> Float64:
         """The edge's x at `y`, from its lower end, so every slab that asks
@@ -81,9 +100,7 @@ struct _Edge(Copyable, ImplicitlyCopyable, Movable):
             return self.x0
         if y >= self.y1:
             return self.x1
-        return self.x0 + (self.x1 - self.x0) * (y - self.y0) / (
-            self.y1 - self.y0
-        )
+        return self.x0 + self.slope * (y - self.y0)
 
 
 def polygon_quads(
@@ -139,37 +156,68 @@ def polygon_quads(
                 ends.append(p)
         _add_band(edges, seams, ends, t / 2.0, sf, layers.seams)
 
-    var ys = _slab_boundaries(edges)
-    var starts = List[Float64](capacity=len(edges))
-    for e in edges:
-        starts.append(e.y0)
-    _sort_by(edges, starts)
-    # The edges spanning the slab, carried from one to the next in their
-    # order across it, which changes little, so sorting them stays cheap.
+    def starts_lower(a: _Edge, b: _Edge) -> Bool:
+        return a.y0 < b.y0
+
+    sort(edges, starts_lower)
+    # A sweep upwards, one slab at a time. The edges spanning the slab are
+    # carried from one to the next in their order across it, which changes
+    # little, so sorting them stays cheap.
     var active = List[_Edge]()
     var middles = List[Float64]()
     var next = 0
-    for k in range(len(ys) - 1):
-        var y_lo = ys[k]
-        var y_hi = ys[k + 1]
-        if y_hi <= y_lo:
-            continue
+    var y_lo = edges[0].y0 if len(edges) > 0 else 0.0
+    while True:
         var kept = 0
         for i in range(len(active)):
-            if active[i].y1 >= y_hi:
+            if active[i].y1 > y_lo:
                 active[kept] = active[i]
                 kept += 1
         while len(active) > kept:
             _ = active.pop()
         while next < len(edges) and edges[next].y0 <= y_lo:
-            if edges[next].y1 >= y_hi:
+            if edges[next].y1 > y_lo:
                 active.append(edges[next])
             next += 1
-        var y_mid = 0.5 * (y_lo + y_hi)
-        middles.clear()
+        if len(active) == 0:
+            if next == len(edges):
+                break
+            y_lo = edges[next].y0
+            continue
+
+        # The slab runs up to the next edge's start or end, or the lowest
+        # crossing within it. Edges crossing inside the slab leave some
+        # neighbours in its middle's order crossing there too, so only
+        # neighbours are searched, the slab cut down to the lowest crossing
+        # until none do.
+        var y_hi = active[0].y1
         for e in active:
-            middles.append(e.x_at(y_mid))
-        _sort_by(active, middles)
+            y_hi = min(y_hi, e.y1)
+        if next < len(edges):
+            y_hi = min(y_hi, edges[next].y0)
+        while True:
+            var y_mid = 0.5 * (y_lo + y_hi)
+            middles.clear()
+            for e in active:
+                middles.append(e.x_at(y_mid))
+            _sort_by(active, middles)
+            # Neighbours cross in the slab only if their order flips
+            # between its middle and one of its ends.
+            var lowest = y_hi
+            var below = active[0].x_at(y_lo)
+            var above = active[0].x_at(y_hi)
+            for i in range(len(active) - 1):
+                var next_below = active[i + 1].x_at(y_lo)
+                var next_above = active[i + 1].x_at(y_hi)
+                if below > next_below or above > next_above:
+                    var y = _crossing(active[i], active[i + 1])
+                    if y > y_lo and y < lowest:
+                        lowest = y
+                below = next_below
+                above = next_above
+            if lowest == y_hi:
+                break
+            y_hi = lowest
 
         # Walk in from the left, where every count is zero. The stretch
         # after edge `i` runs to edge `i + 1`; runs of one class merge.
@@ -187,6 +235,7 @@ def polygon_quads(
                 )
             run_class = cls
             run_start = i
+        y_lo = y_hi
 
     if t > 0.0 and len(out.fill) == 0 and c.style._fill_visible():
         out.fill = out.outline^
@@ -345,32 +394,19 @@ def _add_band(
         _add_loop(edges, rectangle, layer)
 
 
-def _slab_boundaries(edges: List[_Edge]) -> List[Float64]:
-    """Every y where an edge ends or two edges cross, in order: between two
-    neighbours, no edges cross."""
-    var ys = List[Float64]()
-    for e in edges:
-        ys.append(e.y0)
-        ys.append(e.y1)
-    for i in range(len(edges)):
-        var p = edges[i]
-        for j in range(i + 1, len(edges)):
-            var q = edges[j]
-            var y_lo = max(p.y0, q.y0)
-            var y_hi = min(p.y1, q.y1)
-            if y_hi <= y_lo:
-                continue
-            # Where their x difference changes sign across the shared span.
-            var lo = p.x_at(y_lo) - q.x_at(y_lo)
-            var hi = p.x_at(y_hi) - q.x_at(y_hi)
-            if (lo < 0.0 and hi > 0.0) or (lo > 0.0 and hi < 0.0):
-                ys.append(y_lo + (y_hi - y_lo) * lo / (lo - hi))
-    sort(ys)
-    var unique = List[Float64](capacity=len(ys))
-    for y in ys:
-        if len(unique) == 0 or y > unique[len(unique) - 1]:
-            unique.append(y)
-    return unique^
+def _crossing(p: _Edge, q: _Edge) -> Float64:
+    """The y where `p` and `q` cross, or NaN if they don't: where their x
+    difference changes sign across the span they share, the same whichever
+    way round they are passed."""
+    var y_lo = max(p.y0, q.y0)
+    var y_hi = min(p.y1, q.y1)
+    if y_hi <= y_lo:
+        return nan[DType.float64]()
+    var lo = p.x_at(y_lo) - q.x_at(y_lo)
+    var hi = p.x_at(y_hi) - q.x_at(y_hi)
+    if (lo < 0.0 and hi > 0.0) or (lo > 0.0 and hi < 0.0):
+        return y_lo + (y_hi - y_lo) * lo / (lo - hi)
+    return nan[DType.float64]()
 
 
 def _sort_by(mut edges: List[_Edge], mut keys: List[Float64]):

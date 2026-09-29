@@ -92,7 +92,9 @@ A `CMD_POLYGON` (vertices in `points`, a grow in `geom[0]`) is tiled at replay b
 into the same kind of shared convex device quads as a sector, in local space and mapped per corner.
 The cut is into **horizontal slabs**: every y where an edge ends or two edges cross, so within a
 slab no edges cross, the edges sort by x, and a walk from the left keeps a winding count per
-*layer*. Each stretch between neighbouring edges is classified fill, outline or nothing
+*layer*. The slabs come from a sweep upwards: each runs to the next edge's start or end, cut down
+to the lowest crossing between neighbours in its middle's order until none cross — any crossing
+inside a slab flips some neighbouring pair, so only neighbours are searched. Each stretch between neighbouring edges is classified fill, outline or nothing
 (`_classify`), runs of one class merge, and each run is one trapezoid, every x taken from the
 edge's lower end so neighbouring quads share corners exactly.
 
@@ -108,8 +110,9 @@ inside an inner-band disc is left out.
 
 `geom[0]` is 0 for a render call and the spread for a shadow; an outline-only shadow's thickness
 `t + 2·spread` grows the seam band by the spread too, so the ring is the outline grown. Cost is
-quadratic in the edges, bands included (the crossing search) — ~155 µs per outlined 5-tip star,
-~240 µs per outlined pentagram; a sweep line is the known follow-up if that matters.
+slabs × the edges spanning them, bands included: every slab runs the polygon's whole width, so
+a crossing in one corner cuts quads everywhere — ~115 µs per outlined 5-tip star, ~195 µs per
+outlined pentagram, ~2.4 ms per outlined 40-tip star.
 
 ## Captures
 
