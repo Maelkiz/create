@@ -61,7 +61,7 @@ Ends are butt; a polyline whose last point is its first is a ring instead, its c
 mitred like any other. Known limitation: at a cusp the miter is clamped (`MITER_LIMIT`) and the
 quads either side overlap slightly.
 
-`canvas.catmull_rom` converts its `CatmullRomSpline` to Béziers **at record time, in local space**,
+`canvas.spline` converts its `Spline` (Catmull-Rom) to Béziers **at record time, in local space**,
 and records one chain. The conversion is exact, and doing it before the transform matters: the
 centripetal knot spacing depends on distances, which a non-uniform scale would change, so a spline
 converted after it would change shape rather than just stretch. Separate commands per curve would

@@ -5,18 +5,19 @@ from .point2d import Point2D
 from .vector2d import Vector2D
 
 
-struct CatmullRomSpline(Copyable, Equatable, Movable, Writable):
+struct Spline(Copyable, Equatable, Movable, Writable):
     """A smooth curve through every one of `points`, in order: `at`,
     `tangent`, `length`, `at_distance`, `bounds`, `flatten`, `beziers`,
     `translate`.
 
-    Each stretch between two neighbouring points is a cubic whose direction
-    at each point is set by that point's neighbours, so the curve turns
-    smoothly through every point without the off-curve controls a
-    `Bezier` needs. The first and last points have one neighbour each;
-    the curve leaves and arrives there heading along the missing neighbour's
-    mirror image. With `closed`, the curve runs on from the last point back
-    to the first and the ends have neighbours like any other point.
+    It is a Catmull-Rom spline: each stretch between two neighbouring points
+    is a cubic whose direction at each point is set by that point's
+    neighbours, so the curve turns smoothly through every point without the
+    off-curve controls a `Bezier` needs. The first and last points have one
+    neighbour each; the curve leaves and arrives there heading along the
+    missing neighbour's mirror image. With `closed`, the curve runs on from
+    the last point back to the first and the ends have neighbours like any
+    other point.
 
     `alpha` sets how the spacing of the points shapes the curve: 0 is
     *uniform*, which can loop or cusp where points bunch up; 0.5,
@@ -48,7 +49,7 @@ struct CatmullRomSpline(Copyable, Equatable, Movable, Writable):
         self.alpha = alpha
         self.closed = closed
 
-    def __eq__(self, other: CatmullRomSpline) -> Bool:
+    def __eq__(self, other: Spline) -> Bool:
         if (
             self.alpha != other.alpha
             or self.closed != other.closed
@@ -60,11 +61,11 @@ struct CatmullRomSpline(Copyable, Equatable, Movable, Writable):
                 return False
         return True
 
-    def __ne__(self, other: CatmullRomSpline) -> Bool:
+    def __ne__(self, other: Spline) -> Bool:
         return not (self == other)
 
     def write_to[W: Writer](self, mut writer: W):
-        writer.write("CatmullRomSpline(points=[")
+        writer.write("Spline(points=[")
         for i in range(len(self.points)):
             if i > 0:
                 writer.write(", ")

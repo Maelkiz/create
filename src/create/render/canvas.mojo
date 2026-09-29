@@ -9,7 +9,7 @@ from .font import Font
 from ._viewport import Viewport
 from .camera import Camera
 from create.math.bezier import Bezier
-from create.math.catmull_rom import CatmullRomSpline
+from create.math.spline import Spline
 from create.math.geometry import Rectangle, Circle, Line, Triangle
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
@@ -710,14 +710,14 @@ struct Canvas:
             bezier_command(self._transform, self._style, b)
         )
 
-    def catmull_rom(
+    def spline(
         mut self,
         var points: List[Point2D],
         alpha: Float64 = 0.5,
         closed: Bool = False,
     ):
         """Stroke a smooth curve through every one of `points`, in order, in
-        the outline colour and thickness: a `CatmullRomSpline`.
+        the outline colour and thickness: a `Spline`, which is Catmull-Rom.
 
         `alpha` sets how the spacing of the points shapes the curve: 0 can
         loop or cusp where points bunch up, 0.5 (centripetal) never does,
@@ -730,9 +730,9 @@ struct Canvas:
         blurred shadow costs what a `bezier`'s does. Fewer than two distinct
         points draw nothing.
         """
-        self.catmull_rom(CatmullRomSpline(points^, alpha, closed))
+        self.spline(Spline(points^, alpha, closed))
 
-    def catmull_rom(mut self, spline: CatmullRomSpline):
+    def spline(mut self, spline: Spline):
         if not self._style.outline_enabled:
             return
         # Converted here, in local space: the knot spacing is measured where

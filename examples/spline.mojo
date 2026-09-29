@@ -73,9 +73,7 @@ struct App(Program):
         if context.input.key_pressed("3"):
             self.alpha = 1.0
 
-        var spline = CatmullRomSpline(
-            self.points.copy(), self.alpha, self.closed
-        )
+        var spline = Spline(self.points.copy(), self.alpha, self.closed)
 
         # `at` would move the dot faster along long stretches than short
         # ones; `at_distance` moves it the same distance every second.
@@ -96,7 +94,7 @@ struct App(Program):
             shadow_offset=Vector2D(6, -10),
             shadow_blur=18,
         ):
-            canvas.catmull_rom(spline)
+            canvas.spline(spline)
 
         canvas.outline_enabled(False)
         if len(self.points) > 0:
@@ -122,7 +120,7 @@ struct App(Program):
         canvas.text_align(Align.TOP)
         canvas.text(
             String(
-                "Catmull-Rom, ",
+                "Spline, ",
                 kind,
                 " (alpha ",
                 self.alpha,
@@ -142,4 +140,4 @@ struct App(Program):
 
 
 def main() raises:
-    run[App]("Catmull-Rom spline", width=1280, height=800)
+    run[App]("Spline", width=1280, height=800)

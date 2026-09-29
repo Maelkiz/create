@@ -1,6 +1,6 @@
 from .geometry import overlaps, Rectangle, Circle, Line, Triangle
 from .bezier import Bezier
-from .catmull_rom import CatmullRomSpline
+from .spline import Spline
 from .util import (
     lerp,
     map,
