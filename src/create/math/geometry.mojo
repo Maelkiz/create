@@ -114,6 +114,93 @@ def _in_sweep(v: Vector2D, start_angle: Float64, sweep_angle: Float64) -> Bool:
     return not (_cross(u1, v) > slack and _cross(v, u0) > slack)
 
 
+# A curve that crosses a region's boundary only at known points is wholly
+# inside or wholly outside between them, so a region holds it exactly when
+# it holds the middle of every piece. These cut segments and arcs at such
+# points. A cut where the curve only comes near the boundary costs a piece
+# but never the answer, so each cuts at a whole line or circle rather than
+# only where the boundary really is.
+def _cut_at_line(l: Line, other: Line, mut cuts: List[Float64]):
+    """Append the fractions along `l` where it meets the line through
+    `other`: one where they cross, or where `other`'s ends fall when the
+    two run along the same line."""
+    var d = l.end - l.start
+    var e = other.end - other.start
+    var across = _cross(d, e)
+    if across != 0.0:
+        cuts.append(_cross(other.start - l.start, e) / across)
+    elif _cross(other.start - l.start, d) == 0.0 and d.mag_sq() > 0.0:
+        cuts.append((other.start - l.start).dot(d) / d.mag_sq())
+        cuts.append((other.end - l.start).dot(d) / d.mag_sq())
+
+
+def _cut_at_circle(
+    l: Line, position: Point2D, r: Float64, mut cuts: List[Float64]
+):
+    """Append the fractions along `l` where its line crosses the circle."""
+    var d = l.end - l.start
+    var f = l.start - position
+    var len_sq = d.mag_sq()
+    var b = f.dot(d)
+    var discriminant = b * b - len_sq * (f.mag_sq() - r * r)
+    if len_sq > 0.0 and discriminant >= 0.0:
+        var root = sqrt(discriminant)
+        cuts.append((-b - root) / len_sq)
+        cuts.append((-b + root) / len_sq)
+
+
+def _segment_middles(l: Line, var cuts: List[Float64]) -> List[Point2D]:
+    """The middle of every piece `cuts` leaves of `l`, a cut being a
+    fraction along it; those off the segment are pulled back onto it."""
+    cuts.append(0.0)
+    cuts.append(1.0)
+    sort(cuts)
+    var middles = List[Point2D]()
+    for i in range(len(cuts) - 1):
+        var t0 = max(0.0, min(cuts[i], 1.0))
+        var t1 = max(0.0, min(cuts[i + 1], 1.0))
+        if t1 > t0:
+            middles.append(l.start + (l.end - l.start) * ((t0 + t1) / 2.0))
+    return middles^
+
+
+def _circle_crossings(
+    l: Line, position: Point2D, r: Float64, mut crossings: List[Point2D]
+):
+    """Append where the line through `l` crosses the circle."""
+    var d = l.end - l.start
+    var length = d.mag()
+    if length == 0.0:
+        return
+    var u = d * (1.0 / length)
+    var foot = l.start + u * (position - l.start).dot(u)
+    var h_sq = _dist_sq(position, foot)
+    if h_sq <= r * r:
+        var half = sqrt(r * r - h_sq)
+        crossings.append(foot + u * half)
+        crossings.append(foot - u * half)
+
+
+def _arc_middles(a: Arc, crossings: List[Point2D]) -> List[Point2D]:
+    """The middle of every piece of `a` the points `crossings` on its
+    circle leave, cut as angles past the start of its counter-clockwise
+    sweep; points off the arc cut nothing."""
+    var s = _normalized_sweep(a.start_angle, a.sweep_angle)
+    var cuts: List[Float64] = [0.0, s[1]]
+    for p in crossings:
+        var v = p - a.position
+        var angle = atan2(v.y, v.x) - s[0]
+        angle -= tau * floor(angle / tau)
+        if angle < s[1]:
+            cuts.append(angle)
+    sort(cuts)
+    var middles = List[Point2D]()
+    for i in range(len(cuts) - 1):
+        var middle = s[0] + (cuts[i] + cuts[i + 1]) / 2.0
+        middles.append(a.position + _unit(middle) * a.r)
+    return middles^
+
+
 def _project_range[
     N: Int
 ](nx: Float64, ny: Float64, pts: Array[Point2D, N]) -> Tuple[Float64, Float64]:
@@ -292,6 +379,12 @@ struct Rectangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def contains(self, s: Sector) -> Bool:
         return self.contains(s.bounds())
 
+    def contains(self, p: Polygon) -> Bool:
+        for v in p.vertices:
+            if not self.contains(v):
+                return False
+        return True
+
     def move_to(mut self, position: Point2D):
         self.position = position
 
@@ -390,6 +483,12 @@ struct Circle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         var far = s.arc()._furthest_along(s.position - self.position)
         var reach = self.r * (1.0 + _RADIUS_EPSILON)
         return _dist_sq(far, self.position) <= reach * reach
+
+    def contains(self, p: Polygon) -> Bool:
+        for v in p.vertices:
+            if not self.contains(v):
+                return False
+        return True
 
     def move_to(mut self, position: Point2D):
         self.position = position
@@ -961,8 +1060,9 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return self.arc()._spans(p)
 
     # A sector has no holes, so it holds a shape exactly when it holds the
-    # shape's outline: a `Rectangle` or `Triangle` edge by edge, a `Circle`
-    # as a whole-turn `Arc`, another `Sector` as its two radii and its arc.
+    # shape's outline: a `Rectangle`, `Triangle` or `Polygon` edge by edge,
+    # a `Circle` as a whole-turn `Arc`, another `Sector` as its two radii
+    # and its arc.
     def contains(self, r: Rectangle) -> Bool:
         return self._contains_polygon(r._points())
 
@@ -988,25 +1088,12 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def contains(self, l: Line) -> Bool:
         if not (self.contains(l.start) and self.contains(l.end)):
             return False
-        var d = l.end - l.start
-        var f = l.start - self.position
-        var cuts: List[Float64] = [0.0, 1.0]
-        for u in self._edge_directions():
-            var across = _cross(d, u)
-            if across != 0.0:
-                cuts.append(-_cross(f, u) / across)
-        var len_sq = d.mag_sq()
-        var b = f.dot(d)
-        var discriminant = b * b - len_sq * (f.mag_sq() - self.r * self.r)
-        if len_sq > 0.0 and discriminant >= 0.0:
-            var root = sqrt(discriminant)
-            cuts.append((-b - root) / len_sq)
-            cuts.append((-b + root) / len_sq)
-        sort(cuts)
-        for i in range(len(cuts) - 1):
-            var t0 = max(0.0, min(cuts[i], 1.0))
-            var t1 = max(0.0, min(cuts[i + 1], 1.0))
-            if not self.contains(l.start + d * ((t0 + t1) / 2.0)):
+        var cuts = List[Float64]()
+        for radius in self._radii():
+            _cut_at_line(l, radius, cuts)
+        _cut_at_circle(l, self.position, self.r, cuts)
+        for middle in _segment_middles(l, cuts^):
+            if not self.contains(middle):
                 return False
         return True
 
@@ -1014,13 +1101,8 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         if not (self.contains(a.at(0.0)) and self.contains(a.at(1.0))):
             return False
         var crossings = List[Point2D]()
-        for u in self._edge_directions():
-            var foot = self.position + u * (a.position - self.position).dot(u)
-            var h_sq = _dist_sq(a.position, foot)
-            if h_sq <= a.r * a.r:
-                var half = sqrt(a.r * a.r - h_sq)
-                crossings.append(foot + u * half)
-                crossings.append(foot - u * half)
+        for radius in self._radii():
+            _circle_crossings(radius, a.position, a.r, crossings)
         var between = self.position - a.position
         var d = between.mag()
         if d > 0.0 and d <= a.r + self.r and d >= abs(a.r - self.r):
@@ -1031,19 +1113,14 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             var side = Vector2D(-u.y, u.x) * h
             crossings.append(mid + side)
             crossings.append(mid - side)
-        # Cut as angles past the start of the arc's counter-clockwise sweep.
-        var s = _normalized_sweep(a.start_angle, a.sweep_angle)
-        var cuts: List[Float64] = [0.0, s[1]]
-        for p in crossings:
-            var v = p - a.position
-            var angle = atan2(v.y, v.x) - s[0]
-            angle -= tau * floor(angle / tau)
-            if angle < s[1]:
-                cuts.append(angle)
-        sort(cuts)
-        for i in range(len(cuts) - 1):
-            var middle = s[0] + (cuts[i] + cuts[i + 1]) / 2.0
-            if not self.contains(a.position + _unit(middle) * a.r):
+        for middle in _arc_middles(a, crossings):
+            if not self.contains(middle):
+                return False
+        return True
+
+    def contains(self, p: Polygon) -> Bool:
+        for i in range(len(p.vertices)):
+            if not self.contains(p._edge(i)):
                 return False
         return True
 
@@ -1052,13 +1129,6 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             if not self.contains(Line(pts[i], pts[(i + 1) % N])):
                 return False
         return True
-
-    def _edge_directions(self) -> Array[Vector2D, 2]:
-        """Unit directions of the two radii, from the tip outward."""
-        return [
-            _unit(self.start_angle),
-            _unit(self.start_angle + self.arc()._sweep()),
-        ]
 
     def _radii(self) -> Array[Line, 2]:
         """The two straight edges, from the tip out to where the arc starts
@@ -1223,6 +1293,12 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
                 return False
         return True
 
+    def contains(self, p: Polygon) -> Bool:
+        for v in p.vertices:
+            if not self.contains(v):
+                return False
+        return True
+
     def move_to(mut self, position: Point2D):
         self.translate(position - self.center())
 
@@ -1383,6 +1459,75 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
                 return True
         return self._winding(p) != 0
 
+    # A polygon may be concave, so a shape with its outline inside can
+    # still bridge a notch; and it may wind round a hole, which a shape
+    # can enclose with its whole outline inside. So it holds a shape when
+    # it holds the shape's outline -- cut where it crosses the lines of the
+    # edges, the middle of every piece inside, as for `Sector` -- and no
+    # edge piece strictly inside the shape has the outside along it.
+    def contains(self, l: Line) -> Bool:
+        if not (self.contains(l.start) and self.contains(l.end)):
+            return False
+        var cuts = List[Float64]()
+        for i in range(len(self.vertices)):
+            _cut_at_line(l, self._edge(i), cuts)
+        for middle in _segment_middles(l, cuts^):
+            if not self.contains(middle):
+                return False
+        return True
+
+    def contains(self, r: Rectangle) -> Bool:
+        var outline = _closed_outline(r._points())
+        for edge in outline:
+            if not self.contains(edge):
+                return False
+        for p in self._rim(outline, []):
+            if _holds_strictly(r, p):
+                return False
+        return True
+
+    def contains(self, t: Triangle) -> Bool:
+        var outline = _closed_outline(t._points())
+        for edge in outline:
+            if not self.contains(edge):
+                return False
+        for p in self._rim(outline, []):
+            if _holds_strictly(t, p):
+                return False
+        return True
+
+    def contains(self, c: Circle) -> Bool:
+        var outline = Arc(c.position, c.r, 0.0, tau)
+        if not self._contains_arc(outline):
+            return False
+        for p in self._rim([], [outline]):
+            if _dist_sq(p, c.position) < c.r * c.r:
+                return False
+        return True
+
+    def contains(self, s: Sector) -> Bool:
+        var radii = s._radii()
+        var outline: List[Line] = [radii[0], radii[1]]
+        for radius in outline:
+            if not self.contains(radius):
+                return False
+        if not self._contains_arc(s.arc()):
+            return False
+        for p in self._rim(outline, [s.arc()]):
+            if _holds_strictly(s, p):
+                return False
+        return True
+
+    def contains(self, other: Polygon) -> Bool:
+        var outline = other._edges()
+        for edge in outline:
+            if not self.contains(edge):
+                return False
+        for p in self._rim(outline, []):
+            if other._holds_strictly(p):
+                return False
+        return True
+
     def move_to(mut self, position: Point2D):
         self.translate(position - self.center())
 
@@ -1419,12 +1564,132 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
         var w = 0
         for i in range(len(self.vertices)):
             var e = self._edge(i)
-            if e.start.y <= p.y:
-                if e.end.y > p.y and _orientation(e.start, e.end, p) > 0:
-                    w += 1
-            elif e.end.y <= p.y and _orientation(e.start, e.end, p) < 0:
-                w -= 1
+            w += _winds(e.start, e.end, p)
         return w
+
+    def _wound_beside(self, i: Int, p: Point2D) -> Bool:
+        """Whether the polygon is wound on both sides of edge `i` at `p`,
+        a point on it but on no edge crossing it. The windings just either
+        side are exact: rays from there cross the same edges as the ray
+        from `p`, save that the one from the left also crosses every edge
+        running along edge `i` through `p`. A horizontal edge has no left,
+        so its sides are read across in y, the axes swapped."""
+        var e = self._edge(i)
+        var swap = e.start.y == e.end.y
+        var q = _swapped(p) if swap else p
+        var right = 0
+        var along = 0
+        for j in range(len(self.vertices)):
+            var f = self._edge(j)
+            var a = _swapped(f.start) if swap else f.start
+            var b = _swapped(f.end) if swap else f.end
+            if a.y == b.y:
+                continue
+            if j == i or (
+                _orientation(e.start, e.end, f.start) == 0
+                and _orientation(e.start, e.end, f.end) == 0
+                and min(a.y, b.y) <= q.y <= max(a.y, b.y)
+            ):
+                along += 1 if b.y > a.y else -1
+            else:
+                right += _winds(a, b, q)
+        return right != 0 and right + along != 0
+
+    def _rim(self, lines: List[Line], arcs: List[Arc]) -> List[Point2D]:
+        """The middles of the edge pieces with the outside on one side,
+        each edge cut where another edge, one of `lines` or a circle of
+        `arcs` crosses it -- so each piece lies wholly inside or wholly
+        outside a shape with that boundary, and on one side of it or the
+        other runs the outside all along."""
+        var rim = List[Point2D]()
+        for i in range(len(self.vertices)):
+            var e = self._edge(i)
+            var cuts = List[Float64]()
+            for j in range(len(self.vertices)):
+                if j != i:
+                    _cut_at_line(e, self._edge(j), cuts)
+            for l in lines:
+                _cut_at_line(e, l, cuts)
+            for a in arcs:
+                _cut_at_circle(e, a.position, a.r, cuts)
+            for middle in _segment_middles(e, cuts^):
+                if not self._wound_beside(i, middle):
+                    rim.append(middle)
+        return rim^
+
+    def _holds_strictly(self, p: Point2D) -> Bool:
+        """Whether everything close round `p` is inside: `p` inside and
+        off the boundary, which an edge through it is only when the
+        outside lies along one side of it."""
+        for i in range(len(self.vertices)):
+            var e = self._edge(i)
+            if e.start != e.end and _point_on_segment(p, e.start, e.end):
+                return self._wound_beside(i, p)
+        return self._winding(p) != 0
+
+    def _edges(self) -> List[Line]:
+        var edges = List[Line](capacity=len(self.vertices))
+        for i in range(len(self.vertices)):
+            edges.append(self._edge(i))
+        return edges^
+
+    def _contains_arc(self, a: Arc) -> Bool:
+        if not (self.contains(a.at(0.0)) and self.contains(a.at(1.0))):
+            return False
+        var crossings = List[Point2D]()
+        for i in range(len(self.vertices)):
+            _circle_crossings(self._edge(i), a.position, a.r, crossings)
+        for middle in _arc_middles(a, crossings):
+            if not self.contains(middle):
+                return False
+        return True
+
+
+def _winds(a: Point2D, b: Point2D, p: Point2D) -> Int:
+    """What the edge from `a` to `b` adds to the winding round `p`: +1 up
+    across the horizontal through `p` to its right, -1 down, half-open in
+    y so a vertex on that line is counted once."""
+    if a.y <= p.y:
+        if b.y > p.y and _orientation(a, b, p) > 0:
+            return 1
+    elif b.y <= p.y and _orientation(a, b, p) < 0:
+        return -1
+    return 0
+
+
+def _swapped(p: Point2D) -> Point2D:
+    return Point2D(p.y, p.x)
+
+
+def _closed_outline[N: Int](pts: Array[Point2D, N]) -> List[Line]:
+    var outline = List[Line](capacity=N)
+    for i in range(N):
+        outline.append(Line(pts[i], pts[(i + 1) % N]))
+    return outline^
+
+
+# Whether everything close round `p` is inside the shape: inside, and off
+# the boundary. A sector's boundary gets its usual slack, taken inward.
+def _holds_strictly(r: Rectangle, p: Point2D) -> Bool:
+    return r.left() < p.x < r.right() and r.bottom() < p.y < r.top()
+
+
+def _holds_strictly(t: Triangle, p: Point2D) -> Bool:
+    var d1 = _orientation(t.a, t.b, p)
+    var d2 = _orientation(t.b, t.c, p)
+    var d3 = _orientation(t.c, t.a, p)
+    return d1 != 0 and d1 == d2 and d2 == d3
+
+
+def _holds_strictly(s: Sector, p: Point2D) -> Bool:
+    var reach = s.r * (1.0 - _RADIUS_EPSILON)
+    if _dist_sq(p, s.position) >= reach * reach:
+        return False
+    var sweep = _normalized_sweep(s.start_angle, s.sweep_angle)
+    if sweep[1] >= tau:
+        return True
+    # Off the closed sweep that is left out, slack and all.
+    return not _in_sweep(p - s.position, sweep[0] + sweep[1], tau - sweep[1])
 
 
 # `overlaps(a, b)` is the whole overlap-testing surface for regions: one

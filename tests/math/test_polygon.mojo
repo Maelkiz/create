@@ -320,5 +320,138 @@ def test_arc_intersects() raises -> None:
     assert_true(not Arc((30, 30), 2, 0.0, tau).intersects(l))
 
 
+def _ring() -> Polygon:
+    """A 10 by 10 square wound round a 4 by 4 hole in its middle: the
+    hole is wound once each way, so it is outside."""
+    return Polygon(
+        (0, 0),
+        (10, 0),
+        (10, 10),
+        (0, 10),
+        (0, 0),
+        (3, 3),
+        (3, 7),
+        (7, 7),
+        (7, 3),
+        (3, 3),
+    )
+
+
+def test_contains_line() raises -> None:
+    var l = _l_shape()
+    assert_true(l.contains(Line((1, 1), (9, 1))))
+    # Along an edge, and ending on the reflex corner.
+    assert_true(l.contains(Line((0, 0), (0, 10))))
+    assert_true(l.contains(Line((1, 9), (5, 5))))
+    # Both ends inside, across the notch.
+    assert_true(not l.contains(Line((1, 9), (9, 1.5))))
+    assert_true(not l.contains(Line((1, 1), (11, 1))))
+
+
+def test_contains_rectangle() raises -> None:
+    var l = _l_shape()
+    assert_true(l.contains(Rectangle((2.5, 5), 5, 10)))
+    assert_true(l.contains(Rectangle((5, 2.5), 10, 5)))
+    # Its corners in both arms, its middle in the notch.
+    assert_true(not l.contains(Rectangle((5, 5), 9, 9)))
+    assert_true(not l.contains(Rectangle((5, 2.5), 11, 5)))
+
+
+def test_contains_triangle() raises -> None:
+    var l = _l_shape()
+    # Every vertex inside; the long edge touches the reflex corner.
+    assert_true(l.contains(Triangle((1, 1), (9, 1), (1, 9))))
+    # Every vertex inside; the long edge crosses the notch.
+    assert_true(not l.contains(Triangle((1, 1), (9.5, 1), (1, 9.5))))
+
+
+def test_contains_circle() raises -> None:
+    var l = _l_shape()
+    assert_true(l.contains(Circle((2.5, 2.5), 2.5)))
+    assert_true(not l.contains(Circle((2.5, 2.5), 2.6)))
+    # Round the reflex corner: its middle is inside, its rim is not.
+    assert_true(not l.contains(Circle((4, 4), 1.5)))
+
+
+def test_contains_sector() raises -> None:
+    var l = _l_shape()
+    assert_true(l.contains(Sector((0, 0), 5, 0.0, pi / 2.0)))
+    # Reaching round the reflex corner.
+    assert_true(not l.contains(Sector((0, 0), 9, 0.0, pi / 2.0)))
+    # Only the arc strays out.
+    assert_true(not l.contains(Sector((4, 4), 2, 0.0, pi / 2.0)))
+
+
+def test_contains_polygon() raises -> None:
+    var l = _l_shape()
+    assert_true(l.contains(l))
+    assert_true(l.contains(Polygon.regular((2.5, 2.5), 2, 6)))
+    # Vertices in both arms, bridging the notch.
+    assert_true(not l.contains(Polygon((1, 1), (9, 1), (9, 4), (4, 9), (1, 9))))
+    # A concave polygon fitting the L's own corner.
+    assert_true(l.contains(Polygon((0, 0), (10, 0), (10, 5), (5, 5), (0, 5))))
+    assert_true(Polygon.regular((5, 5), 20, 5).contains(l))
+    # (10, 0) lies past the pentagon's edge.
+    assert_true(not Polygon.regular((0, 0), 10, 5).contains(l))
+
+
+def test_contains_nonzero_through_a_pentagram() raises -> None:
+    var star = _pentagram()
+    # Across the doubly wound middle, beyond the inner pentagon's edges.
+    assert_true(star.contains(Circle((0, 0), 3.5)))
+    assert_true(star.contains(Polygon.regular((0, 0), 3.5, 7)))
+    # Out past the inner vertices, between the tips.
+    assert_true(not star.contains(Circle((0, 0), 4.5)))
+
+
+def test_contains_no_shape_round_a_hole() raises -> None:
+    var ring = _ring()
+    # Its outline in the ring, the hole in its middle.
+    assert_true(not ring.contains(Rectangle((5, 5), 9, 9)))
+    assert_true(not ring.contains(Circle((5, 5), 4.5)))
+    assert_true(not ring.contains(Triangle((1, 1), (9, 1), (5, 9.5))))
+    assert_true(not ring.contains(Sector((1, 1), 8, 0.0, pi / 2.0)))
+    assert_true(not ring.contains(Polygon.regular((5, 5), 4.5, 8)))
+    # A strip down one side, across the edges that reach in to the hole.
+    assert_true(ring.contains(Rectangle((1.5, 5), 2, 9)))
+    assert_true(ring.contains(Circle((1.5, 1.5), 1.2)))
+    assert_true(ring.contains(Polygon.regular((1.5, 1.5), 1.2, 6)))
+
+
+def test_contains_across_a_horizontal_edge_wound_both_sides() raises -> None:
+    # The ring again, reaching in to its hole along y = 5: that edge is
+    # inside on both sides, read across in y.
+    var ring = Polygon(
+        (0, 5),
+        (0, 0),
+        (10, 0),
+        (10, 10),
+        (0, 10),
+        (0, 5),
+        (3, 5),
+        (3, 7),
+        (7, 7),
+        (7, 3),
+        (3, 3),
+        (3, 5),
+    )
+    assert_true(ring.contains(Rectangle((1.5, 5), 2, 9)))
+    assert_true(ring.contains(Circle((1.5, 5), 1.2)))
+    assert_true(not ring.contains(Rectangle((5, 5), 9, 9)))
+
+
+def test_regions_contain_a_polygon() raises -> None:
+    var l = _l_shape()
+    assert_true(Rectangle((5, 5), 10, 10).contains(l))
+    assert_true(not Rectangle((5, 5), 10, 9).contains(l))
+    assert_true(Circle((5, 5), 7.1).contains(l))
+    assert_true(not Circle((5, 5), 7).contains(l))
+    assert_true(Triangle((0, 0), (20, 0), (0, 20)).contains(l))
+    assert_true(not Triangle((0, 0), (14, 0), (0, 14)).contains(l))
+    assert_true(Sector((0, 0), 12, 0.0, pi / 2.0).contains(l))
+    assert_true(not Sector((0, 0), 11, 0.0, pi / 2.0).contains(l))
+    assert_true(Sector((10, 10), 20, pi, pi / 2.0).contains(l))
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
