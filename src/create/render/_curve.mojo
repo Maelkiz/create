@@ -2,8 +2,7 @@
 
 A curve is flattened and stroked in *device* space at replay, not at record
 time, so it stays smooth however far a camera zooms in. Both backends fill
-the same quads — the CPU as triangles through `fill_triangle`, the GPU as
-vertices — which is what keeps them in parity.
+the same quads — the CPU through `fill_quad`, the GPU as vertices — which is what keeps them in parity.
 """
 
 from std.math import sqrt

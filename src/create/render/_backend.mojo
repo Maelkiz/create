@@ -13,8 +13,10 @@ from ._command import (
     CMD_SPRITE,
     CMD_TEXT,
     CMD_LETTERBOX,
+    CMD_BEZIER,
     RenderCommand,
 )
+from ._curve import bezier_device_points, stroke_quads
 from ._blur import (
     SHADOW_MASK_LIMIT,
     BlurredMask,
@@ -27,6 +29,7 @@ from ._raster import (
     blit_sprite,
     fill_all,
     fill_pixels,
+    fill_quad,
     fill_span,
     fill_triangle,
     line_pixels,
@@ -1108,6 +1111,8 @@ struct Backend(Movable):
             self._circle(t, c, scale, m)
         elif c.kind == CMD_LINE:
             self._line(t, c, scale, m)
+        elif c.kind == CMD_BEZIER:
+            self._bezier(t, c, scale, m)
         elif c.kind == CMD_TRIANGLE:
             self._triangle(t, c, scale, m)
         elif c.kind == CMD_SPRITE:
@@ -1649,6 +1654,39 @@ struct Backend(Movable):
             c.style.outline_color,
             outline_thickness_px(c.style, m, scale),
         )
+
+    def _bezier[
+        o: Origin[mut=True]
+    ](
+        mut self,
+        s: Surface[o],
+        c: RenderCommand,
+        scale: Float64,
+        m: Matrix[3, 3],
+    ):
+        """Stroke the curve as `stroke_quads`' mitred strip, one `fill_quad`
+        each: neighbours share an edge and the fill is half-open, so every
+        pixel is composited once."""
+        if not c.style._outline_visible():
+            return
+        var corners = stroke_quads(
+            bezier_device_points(c, m),
+            Float64(outline_thickness_px(c.style, m, scale)),
+        )
+        for q in range(0, len(corners), 4):
+            var qx: Array[Float64, 4] = [
+                corners[q].x,
+                corners[q + 1].x,
+                corners[q + 2].x,
+                corners[q + 3].x,
+            ]
+            var qy: Array[Float64, 4] = [
+                corners[q].y,
+                corners[q + 1].y,
+                corners[q + 2].y,
+                corners[q + 3].y,
+            ]
+            fill_quad(s, qx, qy, c.style.outline_color)
 
     def _triangle[
         o: Origin[mut=True]

@@ -281,6 +281,23 @@ def line_pixels[
     var ny = dx / length * half
     var qx: Array[Float64, 4] = [x0 + nx, x1 + nx, x1 - nx, x0 - nx]
     var qy: Array[Float64, 4] = [y0 + ny, y1 + ny, y1 - ny, y0 - ny]
+    fill_quad(s, qx, qy, c)
+
+
+def fill_quad[
+    o: Origin[mut=True]
+](s: Surface[o], qx: Array[Float64, 4], qy: Array[Float64, 4], c: Color):
+    """Fill the convex device quad with corners `(qx[i], qy[i])`, in order
+    around its edge, by pixel centre.
+
+    Each row's covered run is the quad's span at the row's centre line,
+    filled once through `fill_span`. Ties follow a half-open rule (a centre
+    on the left or top edge is in, on the right or bottom edge out), so two
+    quads sharing an edge never both paint a pixel on it — which is what
+    lets a strip of them composite once under alpha. Each edge is
+    interpolated from its lower end whichever way the quad walks it, so two
+    quads sharing it compute bit-identical crossings.
+    """
     var y_lo = min(min(qy[0], qy[1]), min(qy[2], qy[3]))
     var y_hi = max(max(qy[0], qy[1]), max(qy[2], qy[3]))
     var W = s.width
@@ -296,9 +313,12 @@ def line_pixels[
             var ay = qy[i]
             var bx = qx[(i + 1) % 4]
             var by = qy[(i + 1) % 4]
+            if by < ay:
+                swap(ax, bx)
+                swap(ay, by)
             # Half-open in y, so a vertex on the centre line counts once
             # and a level edge not at all.
-            if (ay <= yc and yc < by) or (by <= yc and yc < ay):
+            if ay <= yc and yc < by:
                 var x = ax + (bx - ax) * (yc - ay) / (by - ay)
                 lo = min(lo, x)
                 hi = max(hi, x)

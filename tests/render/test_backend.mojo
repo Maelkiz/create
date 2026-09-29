@@ -26,7 +26,9 @@ from create.render._command import (
     sprite_command,
     text_command,
     letterbox_command,
+    bezier_command,
 )
+from create.math.matrix import apply as mat_apply
 
 
 comptime _W = 100
@@ -303,6 +305,76 @@ def test_line_with_outline_disabled_renders_nothing() raises -> None:
     cmds.append(line_command(_base(), st, -20.0, 0.0, 20.0, 0.0))
     var m = _replay(cmds)
     assert_equal(m.pixel(50, 50), Color.BLACK)
+
+
+def _s_curve() -> CubicBezier:
+    return CubicBezier(
+        (-40.0, -30.0), (-40.0, 60.0), (40.0, -60.0), (40.0, 30.0)
+    )
+
+
+def _stroke(color: Color, thickness: Int) -> Style:
+    var st = Style()
+    st.outline_enabled = True
+    st.outline_color = color
+    st.outline_thickness = thickness
+    return st^
+
+
+def test_bezier_replays_along_the_curve_without_gaps() raises -> None:
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(bezier_command(_base(), _stroke(Color.WHITE, 4), _s_curve()))
+    var m = _replay(cmds)
+    # Four wide, so the pixel holding any point on the curve is covered,
+    # joints between flattened segments included. The ends are left out:
+    # each lands on a pixel boundary, where the butt end cuts square.
+    var curve = _s_curve()
+    for i in range(1, 200):
+        var q = curve.at(Float64(i) / 200.0)
+        var p = mat_apply(_base(), q.x, q.y)
+        assert_equal(m.pixel(Int(p[0]), Int(p[1])), Color.WHITE)
+    # Beside the curve, and past its ends, stays clear.
+    assert_equal(m.pixel(5, 5), Color.BLACK)
+    assert_equal(m.pixel(50, 10), Color.BLACK)
+    assert_equal(m.pixel(95, 95), Color.BLACK)
+
+
+def test_bezier_with_outline_disabled_renders_nothing() raises -> None:
+    var st = _stroke(Color.WHITE, 4)
+    st.outline_enabled = False
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(bezier_command(_base(), st, _s_curve()))
+    var m = _replay(cmds)
+    for y in range(_H):
+        for x in range(_W):
+            assert_equal(m.pixel(x, y), Color.BLACK)
+
+
+def test_translucent_bezier_composites_each_pixel_once() raises -> None:
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(
+        bezier_command(
+            _base(), _stroke(Color(255, 255, 255, 128), 6), _s_curve()
+        )
+    )
+    var m = _replay(cmds)
+    # The colour one composite gives, read where only one quad reaches.
+    var mid = _s_curve().at(0.5)
+    var p = mat_apply(_base(), mid.x, mid.y)
+    var once = m.pixel(Int(p[0]), Int(p[1]))
+    assert_true(once != Color.BLACK and once != Color.WHITE)
+    var painted = 0
+    for y in range(_H):
+        for x in range(_W):
+            var px = m.pixel(x, y)
+            if px != Color.BLACK:
+                # A pixel two quads both covered would be lighter.
+                assert_equal(px, once)
+                painted += 1
+    assert_true(painted > 0)
 
 
 def test_triangle_replays_inside_only() raises -> None:
