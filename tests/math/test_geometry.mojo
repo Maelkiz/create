@@ -2,6 +2,7 @@ from std.testing import (
     TestSuite,
     assert_equal,
     assert_true,
+    assert_false,
     assert_almost_equal,
 )
 from std.math import pi
@@ -914,6 +915,44 @@ def test_shapes_write_keyword_form() raises -> None:
             " 1.0))"
         ),
     )
+
+
+# --- value semantics ----------------------------------------------------------
+
+
+def test_shapes_compare_by_fields() raises -> None:
+    var r = Rectangle(Point2D(1.0, 2.0), 3.0, 4.0)
+    assert_true(r == Rectangle(Point2D(1.0, 2.0), 3.0, 4.0))
+    assert_true(r != Rectangle(Point2D(1.0, 2.0), 3.0, 5.0))
+    var c = Circle(Point2D(1.0, 2.0), 3.0)
+    assert_true(c == Circle(Point2D(1.0, 2.0), 3.0))
+    assert_true(c != Circle(Point2D(0.0, 2.0), 3.0))
+    var l = Line(Point2D(0.0, 0.0), Point2D(1.0, 1.0))
+    assert_true(l == Line(Point2D(0.0, 0.0), Point2D(1.0, 1.0)))
+    assert_true(l != Line(Point2D(1.0, 1.0), Point2D(0.0, 0.0)))
+    var t = Triangle(Point2D(0.0, 0.0), Point2D(1.0, 0.0), Point2D(0.0, 1.0))
+    assert_true(
+        t == Triangle(Point2D(0.0, 0.0), Point2D(1.0, 0.0), Point2D(0.0, 1.0))
+    )
+    assert_true(
+        t != Triangle(Point2D(0.0, 1.0), Point2D(1.0, 0.0), Point2D(0.0, 0.0))
+    )
+
+
+@fieldwise_init
+struct _Entity(Copyable):
+    var hitbox: Rectangle
+
+
+def test_shapes_copy_implicitly() raises -> None:
+    """A shape held as a field leaves its owner copyable, and a copy is
+    independent of the original."""
+    var original = _Entity(Rectangle(Point2D(0.0, 0.0), 2.0, 2.0))
+    var copy = original.copy()
+    copy.hitbox.translate(Vector2D(1.0, 0.0))
+    var r = original.hitbox
+    assert_false(copy.hitbox == r)
+    assert_equal(r.position.x, 0.0)
 
 
 def main() raises:

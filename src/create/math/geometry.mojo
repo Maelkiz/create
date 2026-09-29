@@ -98,7 +98,7 @@ def _polygons_overlap[
     return True
 
 
-struct Rectangle(Writable):
+struct Rectangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """An axis-aligned rectangle: `center`, `area`, `left`/`right`/`bottom`/
     `top`, `closest_point`, `contains`, `move_to`, `translate`.
 
@@ -132,6 +132,16 @@ struct Rectangle(Writable):
 
     def __init__(out self, position: Point2D, w: Int, h: Int):
         self = Rectangle(position, Float64(w), Float64(h))
+
+    def __eq__(self, other: Rectangle) -> Bool:
+        return (
+            self.position == other.position
+            and self.w == other.w
+            and self.h == other.h
+        )
+
+    def __ne__(self, other: Rectangle) -> Bool:
+        return not (self == other)
 
     def write_to[W: Writer](self, mut writer: W):
         writer.write(
@@ -214,7 +224,7 @@ struct Rectangle(Writable):
         ]
 
 
-struct Circle(Writable):
+struct Circle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A circle: `center`, `area`, `diameter`, `closest_point`, `contains`,
     `move_to`, `translate`.
 
@@ -239,6 +249,12 @@ struct Circle(Writable):
 
     def __init__(out self, position: Point2D, r: Int):
         self = Circle(position, Float64(r))
+
+    def __eq__(self, other: Circle) -> Bool:
+        return self.position == other.position and self.r == other.r
+
+    def __ne__(self, other: Circle) -> Bool:
+        return not (self == other)
 
     def write_to[W: Writer](self, mut writer: W):
         writer.write("Circle(position=", self.position, ", r=", self.r, ")")
@@ -288,7 +304,7 @@ struct Circle(Writable):
         self.position = self.position + delta
 
 
-struct Line(Writable):
+struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A line segment from `start` to `end`: `length`, `length_sq`,
     `midpoint`, `closest_point`, `intersects`, `move_to`, `translate`.
 
@@ -312,6 +328,12 @@ struct Line(Writable):
     def __init__(out self, start: Point2D, end: Point2D):
         self.start = start
         self.end = end
+
+    def __eq__(self, other: Line) -> Bool:
+        return self.start == other.start and self.end == other.end
+
+    def __ne__(self, other: Line) -> Bool:
+        return not (self == other)
 
     def write_to[W: Writer](self, mut writer: W):
         writer.write("Line(start=", self.start, ", end=", self.end, ")")
@@ -396,7 +418,7 @@ struct Line(Writable):
         self.end = self.end + delta
 
 
-struct Triangle(Writable):
+struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A triangle defined by its three vertices `a`, `b`, `c`: `center`,
     `area`, `closest_point`, `contains`, `move_to`, `translate`.
 
@@ -423,6 +445,12 @@ struct Triangle(Writable):
         self.a = a
         self.b = b
         self.c = c
+
+    def __eq__(self, other: Triangle) -> Bool:
+        return self.a == other.a and self.b == other.b and self.c == other.c
+
+    def __ne__(self, other: Triangle) -> Bool:
+        return not (self == other)
 
     def write_to[W: Writer](self, mut writer: W):
         writer.write("Triangle(a=", self.a, ", b=", self.b, ", c=", self.c, ")")
