@@ -49,7 +49,6 @@ from create.render.render_backend import RenderBackend
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.canvas import PersistentCanvasState
-from create.render._command import bezier_command
 from create._window import GLWindow
 
 comptime _DESIGN_W = 200
@@ -239,15 +238,8 @@ def _shape_name(shape: Int) -> String:
 
 
 def _bezier(mut canvas: Canvas):
-    """An S-curve with a sharp bend, recorded straight into the backend:
-    `canvas` has no Bézier call of its own yet."""
-    canvas._state.backend.record(
-        bezier_command(
-            canvas._transform,
-            canvas._style,
-            CubicBezier((-90, -50), (-60, 90), (60, -90), (90, 50)),
-        )
-    )
+    """An S-curve with a sharp bend."""
+    canvas.bezier(CubicBezier((-90, -50), (-60, 90), (60, -90), (90, 50)))
 
 
 @fieldwise_init

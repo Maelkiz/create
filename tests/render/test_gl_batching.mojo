@@ -15,7 +15,6 @@ from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.autoscale import AutoScale
 from create.render.canvas import PersistentCanvasState
-from create.render._command import bezier_command
 from create.render.render_backend import RenderBackend
 from create.sprite.sprite import Sprite
 from std.testing import TestSuite, assert_equal, assert_true
@@ -128,14 +127,7 @@ struct RectsAround[bezier: Bool](Program):
         canvas.fill(Color.RED)
         canvas.rectangle((-30.0, 0.0), 20.0, 20.0)
         comptime if Self.bezier:
-            # Recorded directly: `canvas` has no Bézier call of its own yet.
-            canvas._state.backend.record(
-                bezier_command(
-                    canvas._transform,
-                    canvas._style,
-                    CubicBezier((-30, -30), (-10, 30), (10, -30), (30, 30)),
-                )
-            )
+            canvas.bezier((-30, -30), (-10, 30), (10, -30), (30, 30))
         canvas.rectangle((30.0, 0.0), 20.0, 20.0)
 
 
@@ -253,14 +245,7 @@ struct BlurredBezier[shadows: Bool](Program):
         st.shadow_enabled = Self.shadows
         st.shadow_blur = 8.0
         with canvas.style(st):
-            # Recorded directly: `canvas` has no Bézier call of its own yet.
-            canvas._state.backend.record(
-                bezier_command(
-                    canvas._transform,
-                    canvas._style,
-                    CubicBezier((-30, -30), (-10, 30), (10, -30), (30, 30)),
-                )
-            )
+            canvas.bezier((-30, -30), (-10, 30), (10, -30), (30, 30))
         canvas.rectangle((30.0, 0.0), 20.0, 20.0)
 
 

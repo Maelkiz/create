@@ -1018,6 +1018,114 @@ def test_triangle_outline_renders_the_edges() raises -> None:
 
 
 @fieldwise_init
+struct BezierBothWays(Program):
+    """One curve through each `bezier` overload: an arch above, a bowl
+    below."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> BezierBothWays:
+        return BezierBothWays(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.WHITE, thickness=4)
+        canvas.bezier((-40.0, 20.0), (-20.0, 40.0), (20.0, 40.0), (40.0, 20.0))
+        canvas.bezier(
+            CubicBezier(
+                (-40.0, -20.0), (-20.0, -40.0), (20.0, -40.0), (40.0, -20.0)
+            )
+        )
+
+
+def test_bezier_strokes_through_both_overloads() raises -> None:
+    var m = run_headless[BezierBothWays](100, 100)
+    # Each curve's midpoint is 35 from the centre: rows 15 and 85.
+    assert_equal(m.pixel(50, 15), Color.WHITE)
+    assert_equal(m.pixel(50, 85), Color.WHITE)
+    # Not a region: nothing fills between the ends.
+    assert_equal(m.pixel(50, 50), Color.BLACK)
+    assert_equal(m.pixel(50, 30), Color.BLACK)
+
+
+def _zoomed_curve() -> CubicBezier:
+    return CubicBezier((-5.0, -4.0), (-5.0, 8.0), (5.0, -8.0), (5.0, 4.0))
+
+
+@fieldwise_init
+struct ZoomedBezier(Program):
+    """A small curve magnified 8 times by the camera."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> ZoomedBezier:
+        return ZoomedBezier(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.camera(Camera(zoom=8.0))
+        canvas.outline(Color.WHITE, thickness=1)
+        canvas.bezier(_zoomed_curve())
+
+
+def test_bezier_stays_smooth_under_camera_zoom() raises -> None:
+    var m = run_headless[ZoomedBezier](100, 100)
+    # The stroke is 8 px wide, so a pixel centre within 4 px of the true
+    # curve is inked. Flattened at world size, the chords would stray from
+    # it at this zoom; flattened in device pixels they stay within a
+    # quarter pixel, so the band follows the curve to well under a pixel.
+    var b = _zoomed_curve()
+    var samples = List[Point2D]()
+    for i in range(501):
+        var p = b.at(Float64(i) / 500.0)
+        samples.append(Point2D(50.0 + 8.0 * p.x, 50.0 - 8.0 * p.y))
+    var checked = 0
+    for y in range(100):
+        for x in range(100):
+            var centre = Point2D(Float64(x) + 0.5, Float64(y) + 0.5)
+            var nearest = 0
+            var distance = Float64.MAX
+            for i in range(len(samples)):
+                var d = (centre - samples[i]).mag()
+                if d < distance:
+                    distance = d
+                    nearest = i
+            # Past the butt ends the band stops short of `distance`.
+            if nearest < 5 or nearest > 495:
+                continue
+            if distance <= 3.6:
+                assert_equal(m.pixel(x, y), Color.WHITE, String(x, ", ", y))
+                checked += 1
+            elif distance >= 4.4:
+                assert_equal(m.pixel(x, y), Color.BLACK, String(x, ", ", y))
+    assert_true(checked > 500)
+
+
+@fieldwise_init
+struct UnoutlinedBezier(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> UnoutlinedBezier:
+        return UnoutlinedBezier(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline_enabled(False)
+        var before = len(canvas._state.backend.commands)
+        canvas.bezier((-40.0, 0.0), (-20.0, 40.0), (20.0, 40.0), (40.0, 0.0))
+        if len(canvas._state.backend.commands) != before:
+            raise Error("an outline-less bezier was recorded")
+
+
+def test_an_unoutlined_bezier_records_nothing() raises -> None:
+    var m = run_headless[UnoutlinedBezier](100, 100)
+    assert_equal(m.pixel(50, 20), Color.BLACK)
+
+
+@fieldwise_init
 struct NoFillRect(Program):
     var _unused: Int
 

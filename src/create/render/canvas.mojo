@@ -8,6 +8,7 @@ from .autoscale import AutoScale
 from .font import Font
 from ._viewport import Viewport
 from .camera import Camera
+from create.math.bezier import CubicBezier
 from create.math.geometry import Rectangle, Circle, Line, Triangle
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
@@ -22,6 +23,7 @@ from create.sprite.animator import SpriteAnimator
 from ._backend import Backend, _ImageRequest
 from .render_backend import RenderBackend
 from ._command import (
+    bezier_command,
     circle_command,
     clear_command,
     letterbox_command,
@@ -675,6 +677,31 @@ struct Canvas:
 
     def line(mut self, l: Line):
         self.line(l.start, l.end)
+
+    def bezier(
+        mut self,
+        start: Point2D,
+        control1: Point2D,
+        control2: Point2D,
+        end: Point2D,
+    ):
+        """Stroke the cubic Bézier from `start` to `end`, shaped by the two
+        controls, in the outline colour and thickness.
+
+        A curve, like a line, has no interior: `fill` never applies, and with
+        the outline off nothing is drawn. The curve is flattened at replay,
+        in device pixels, so it stays smooth under any camera zoom; its ends
+        are butt, like a line's.
+        """
+        self.bezier(CubicBezier(start, control1, control2, end))
+
+    def bezier(mut self, b: CubicBezier):
+        # Recorded only when it would render, as `line` is.
+        if not self._style.outline_enabled:
+            return
+        self._state.backend.record(
+            bezier_command(self._transform, self._style, b)
+        )
 
     def triangle(mut self, a: Point2D, b: Point2D, c: Point2D):
         self._state.backend.record(
