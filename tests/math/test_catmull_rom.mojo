@@ -177,6 +177,117 @@ def test_closed_drops_a_last_point_repeating_the_first() raises -> None:
     assert_equal(len(CatmullRomSpline(looped^, closed=True).beziers()), len(p))
 
 
+def test_at_passes_through_every_point() raises -> None:
+    var p = _zigzag()
+    var open = CatmullRomSpline(p.copy())
+    var n = len(p)
+    for k in range(n):
+        _assert_point_near(open.at(Float64(k) / Float64(n - 1)), p[k])
+    var closed = CatmullRomSpline(p.copy(), closed=True)
+    for k in range(n):
+        _assert_point_near(closed.at(Float64(k) / Float64(n)), p[k])
+    _assert_point_near(closed.at(1.0), p[0])
+
+
+def test_at_clamps() raises -> None:
+    var s = CatmullRomSpline(_zigzag())
+    assert_equal(s.at(-1.0), s.at(0.0))
+    assert_equal(s.at(2.0), s.at(1.0))
+
+
+def test_tangent_scales_with_the_share_of_t() raises -> None:
+    var s = CatmullRomSpline(_zigzag())
+    var curves = s.beziers()
+    var t = 0.3
+    var scaled = t * Float64(len(curves))
+    var i = Int(scaled)
+    var expected = curves[i].tangent(scaled - Float64(i)) * Float64(len(curves))
+    var got = s.tangent(t)
+    assert_almost_equal(got.x, expected.x, atol=1e-9)
+    assert_almost_equal(got.y, expected.y, atol=1e-9)
+
+
+def test_length_sums_the_stretches() raises -> None:
+    var s = CatmullRomSpline(_zigzag(), closed=True)
+    var total = 0.0
+    for c in s.beziers():
+        total += c.length()
+    assert_almost_equal(s.length(), total, atol=1e-9)
+
+
+def test_evenly_spaced_collinear_points_measure_the_polyline() raises -> None:
+    var s = CatmullRomSpline(
+        [(0.0, 0.0), (10.0, 0.0), (20.0, 0.0), (30.0, 0.0)]
+    )
+    assert_almost_equal(s.length(), 30.0, atol=1e-9)
+
+
+def test_at_distance_moves_at_constant_speed() raises -> None:
+    # Gentle turns, so a short chord is nearly all of its arc.
+    var s = CatmullRomSpline(
+        [(0.0, 0.0), (100.0, 40.0), (200.0, -30.0), (300.0, 20.0)]
+    )
+    var total = s.length()
+    var steps = 40
+    var step = total / Float64(steps)
+    var previous = s.at_distance(0.0)
+    for k in range(1, steps + 1):
+        var p = s.at_distance(Float64(k) * step)
+        # A chord is at most the arc it cuts, and nearly all of it when
+        # the arc is short.
+        var chord = p.dist(previous)
+        assert_true(chord <= step + 1e-6)
+        assert_true(chord >= step * 0.98)
+        previous = p
+
+
+def test_at_distance_clamps() raises -> None:
+    var p = _zigzag()
+    var s = CatmullRomSpline(p.copy())
+    assert_equal(s.at_distance(-5.0), p[0])
+    assert_equal(s.at_distance(0.0), p[0])
+    _assert_point_near(s.at_distance(s.length()), p[len(p) - 1], 1e-6)
+    assert_equal(s.at_distance(s.length() + 5.0), p[len(p) - 1])
+
+
+def test_bounds_contain_every_point_on_the_curve() raises -> None:
+    for closed in [False, True]:
+        var s = CatmullRomSpline(_zigzag(), closed=closed)
+        var b = s.bounds()
+        var lo = Point2D(b.position.x - b.w / 2.0, b.position.y - b.h / 2.0)
+        var hi = Point2D(b.position.x + b.w / 2.0, b.position.y + b.h / 2.0)
+        for k in range(201):
+            var p = s.at(Float64(k) / 200.0)
+            assert_true(p.x >= lo.x - 1e-9 and p.x <= hi.x + 1e-9)
+            assert_true(p.y >= lo.y - 1e-9 and p.y <= hi.y + 1e-9)
+        for p in s.points:
+            assert_true(p.x >= lo.x - 1e-9 and p.x <= hi.x + 1e-9)
+            assert_true(p.y >= lo.y - 1e-9 and p.y <= hi.y + 1e-9)
+
+
+def test_flatten_runs_end_to_end_without_repeats() raises -> None:
+    var p = _zigzag()
+    var flat = CatmullRomSpline(p.copy()).flatten(0.25)
+    assert_equal(flat[0], p[0])
+    assert_equal(flat[len(flat) - 1], p[len(p) - 1])
+    for i in range(1, len(flat)):
+        assert_true(flat[i] != flat[i - 1])
+    var closed = CatmullRomSpline(p.copy(), closed=True).flatten(0.25)
+    assert_equal(closed[len(closed) - 1], p[0])
+
+
+def test_no_curve_sits_at_its_one_point() raises -> None:
+    var one = CatmullRomSpline([(3.0, 4.0)])
+    assert_equal(one.at(0.5), Point2D(3.0, 4.0))
+    assert_equal(one.at_distance(1.0), Point2D(3.0, 4.0))
+    assert_equal(one.length(), 0.0)
+    assert_equal(len(one.flatten(0.25)), 0)
+    assert_equal(one.bounds().position, Point2D(3.0, 4.0))
+    var none = CatmullRomSpline(List[Point2D]())
+    assert_equal(none.at(0.5), Point2D(0.0, 0.0))
+    assert_equal(none.tangent(0.5), Vector2D(0.0, 0.0))
+
+
 def test_translate_moves_every_point() raises -> None:
     var s = CatmullRomSpline([(0.0, 0.0), (1.0, 2.0)], alpha=0.0, closed=True)
     s.translate(Vector2D(3.0, -1.0))
