@@ -1,6 +1,20 @@
-from std.math import min, max, sqrt, pi
+from std.math import acos, ceil, cos, min, max, sin, sqrt, tan, pi, tau
+from .bezier import Bezier
 from .point2d import Point2D
 from .vector2d import Vector2D
+
+comptime _ANGLE_EPSILON = 1e-12
+"""How far, in radians, a direction may fall outside a sweep and still count
+as on its edge. The edges come from `cos`/`sin` of the angles, which round, so
+without it a point exactly on an edge (`Arc.at(1)`, say) could test outside."""
+
+comptime _MAX_ARC_BEZIER_ANGLE = pi / 4.0
+"""The widest piece `Arc.beziers` approximates with one cubic. At 45° the
+cubic strays from the circle by about 4e-6 of the radius: under a quarter
+pixel for any radius short of 60,000 pixels."""
+
+comptime _MAX_ARC_FLATTEN_SEGMENTS = 1024
+"""Upper bound on `Arc.flatten`'s segment count, as for `Bezier.flatten`."""
 
 
 def _closest_on_segment(p: Point2D, a: Point2D, b: Point2D) -> Point2D:
@@ -32,6 +46,53 @@ def _point_on_segment(p: Point2D, a: Point2D, b: Point2D) -> Bool:
 def _dist_sq(p: Point2D, q: Point2D) -> Float64:
     var d = p - q
     return d.dot(d)
+
+
+def _cross(a: Vector2D, b: Vector2D) -> Float64:
+    return a.x * b.y - a.y * b.x
+
+
+def _unit(angle: Float64) -> Vector2D:
+    return Vector2D(cos(angle), sin(angle))
+
+
+def _normalized_sweep(
+    start_angle: Float64, sweep_angle: Float64
+) -> Tuple[Float64, Float64]:
+    """The same sweep as a start angle and a counter-clockwise extent in
+    `[0, tau]`: a clockwise sweep is walked from its other end, and anything
+    past a full turn is a full turn."""
+    if sweep_angle < 0.0:
+        return (start_angle + sweep_angle, min(-sweep_angle, tau))
+    return (start_angle, min(sweep_angle, tau))
+
+
+def _in_sweep(v: Vector2D, start_angle: Float64, sweep_angle: Float64) -> Bool:
+    """Whether direction `v` lies within the sweep, edges included, for a
+    normalized sweep (`_normalized_sweep`). A zero `v` has no direction and
+    counts as inside.
+
+    Decided by cross products against the edge directions rather than by
+    comparing `atan2` angles, so there is no wrap-around at ±pi to handle.
+    Up to a half turn the sweep is convex: `v` must be on the inner side of
+    both edges and not pointing away from them. Past a half turn it is
+    whatever the open, convex wedge it leaves out is not.
+    """
+    if sweep_angle >= tau:
+        return True
+    var mag = v.mag()
+    if mag == 0.0:
+        return True
+    var slack = _ANGLE_EPSILON * mag
+    var u0 = _unit(start_angle)
+    var u1 = _unit(start_angle + sweep_angle)
+    if sweep_angle <= pi:
+        return (
+            _cross(u0, v) >= -slack
+            and _cross(v, u1) >= -slack
+            and v.dot(_unit(start_angle + sweep_angle / 2.0)) >= -slack
+        )
+    return not (_cross(u1, v) > slack and _cross(v, u0) > slack)
 
 
 def _project_range[
@@ -416,6 +477,210 @@ struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def translate(mut self, delta: Vector2D):
         self.start = self.start + delta
         self.end = self.end + delta
+
+
+struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
+    """A circular arc: part of the circle around `position` with radius `r`,
+    from `start_angle` round by `sweep_angle`. `end_angle`, `at`, `tangent`,
+    `length`, `at_distance`, `bounds`, `flatten`, `beziers`,
+    `closest_point`, `move_to`, `translate`.
+
+    Angles are radians, counted counter-clockwise from the +x axis: y is up,
+    so this is the direction `rotate` turns. The sweep is signed -- positive
+    runs counter-clockwise, negative clockwise -- so every arc has one
+    spelling and reversing one is negating its sweep. A sweep of a full turn
+    (`tau`) or more is the whole circle. The fields keep what was given; the
+    methods read the sweep clamped to a turn.
+
+    Like `Line` and `Bezier`, an arc is a curve with no interior: there is
+    no `area`, `contains` or `overlaps` for it. `position` is the circle's
+    centre, which the arc passes through only when `r` is zero, and
+    `move_to` moves that centre. A zero `r` or sweep collapses the arc to a
+    point.
+    """
+
+    var position: Point2D
+    var r: Float64
+    var start_angle: Float64
+    var sweep_angle: Float64
+
+    def __init__(
+        out self,
+        position: Point2D,
+        r: Float64,
+        start_angle: Float64,
+        sweep_angle: Float64,
+    ):
+        self.position = position
+        self.r = r
+        self.start_angle = start_angle
+        self.sweep_angle = sweep_angle
+
+    def __init__(
+        out self,
+        position: Point2D,
+        r: Int,
+        start_angle: Float64,
+        sweep_angle: Float64,
+    ):
+        self = Arc(position, Float64(r), start_angle, sweep_angle)
+
+    def __eq__(self, other: Arc) -> Bool:
+        return (
+            self.position == other.position
+            and self.r == other.r
+            and self.start_angle == other.start_angle
+            and self.sweep_angle == other.sweep_angle
+        )
+
+    def __ne__(self, other: Arc) -> Bool:
+        return not (self == other)
+
+    def write_to[W: Writer](self, mut writer: W):
+        writer.write(
+            "Arc(position=",
+            self.position,
+            ", r=",
+            self.r,
+            ", start_angle=",
+            self.start_angle,
+            ", sweep_angle=",
+            self.sweep_angle,
+            ")",
+        )
+
+    def end_angle(self) -> Float64:
+        """`start_angle + sweep_angle`: where the arc ends, as an angle."""
+        return self.start_angle + self.sweep_angle
+
+    def _sweep(self) -> Float64:
+        """The signed sweep, clamped to a full turn either way."""
+        return max(-tau, min(self.sweep_angle, tau))
+
+    def _point_at_angle(self, angle: Float64) -> Point2D:
+        return self.position + _unit(angle) * self.r
+
+    def at(self, t: Float64) -> Point2D:
+        """The point at parameter `t`: 0 at the start, 1 at the end, and
+        proportional to distance along the arc in between. Not clamped:
+        outside 0..1 it carries on round the circle."""
+        return self._point_at_angle(self.start_angle + self._sweep() * t)
+
+    def tangent(self, t: Float64) -> Vector2D:
+        """The derivative at `t`: the direction of travel, with a magnitude
+        that is the arc's length (the speed per unit of `t`, the same
+        everywhere). Zero for a collapsed arc."""
+        var sweep = self._sweep()
+        var angle = self.start_angle + sweep * t
+        return Vector2D(-sin(angle), cos(angle)) * (self.r * sweep)
+
+    def length(self) -> Float64:
+        """The distance along the arc from start to end. Exact."""
+        return self.r * abs(self._sweep())
+
+    def at_distance(self, distance: Float64) -> Point2D:
+        """The point `distance` along the arc from its start, clamped to the
+        arc's ends. An arc has constant speed, so this is `at` with `t`
+        scaled: exact, and as cheap as `at`."""
+        var total = self.length()
+        if distance <= 0.0 or total == 0.0:
+            return self.at(0.0)
+        if distance >= total:
+            return self.at(1.0)
+        return self.at(distance / total)
+
+    def bounds(self) -> Rectangle:
+        """The tightest axis-aligned rectangle around the arc: its two ends,
+        widened to each of the circle's four extremes the arc passes."""
+        var s = _normalized_sweep(self.start_angle, self.sweep_angle)
+        var a = self.at(0.0)
+        var b = self.at(1.0)
+        var lo = Point2D(min(a.x, b.x), min(a.y, b.y))
+        var hi = Point2D(max(a.x, b.x), max(a.y, b.y))
+        if _in_sweep(Vector2D(1.0, 0.0), s[0], s[1]):
+            hi.x = self.position.x + self.r
+        if _in_sweep(Vector2D(0.0, 1.0), s[0], s[1]):
+            hi.y = self.position.y + self.r
+        if _in_sweep(Vector2D(-1.0, 0.0), s[0], s[1]):
+            lo.x = self.position.x - self.r
+        if _in_sweep(Vector2D(0.0, -1.0), s[0], s[1]):
+            lo.y = self.position.y - self.r
+        return Rectangle(lo.lerp(hi, 0.5), hi.x - lo.x, hi.y - lo.y)
+
+    def flatten(self, tolerance: Float64) -> List[Point2D]:
+        """Points along the arc, from start to end inclusive, such that the
+        straight segments between them stray from the arc by at most
+        `tolerance`.
+
+        The points are evenly spaced, as few as the tolerance allows, and
+        capped at 1024 segments. A collapsed arc still gives two points.
+        """
+        var sweep = abs(self._sweep())
+        var n = 1
+        if tolerance > 0.0 and tolerance < self.r and sweep > 0.0:
+            # A chord spanning angle `a` strays r * (1 - cos(a / 2)) from
+            # the circle at its middle.
+            var widest = 2.0 * acos(1.0 - tolerance / self.r)
+            n = Int(ceil(sweep / widest))
+            n = max(1, min(n, _MAX_ARC_FLATTEN_SEGMENTS))
+        var points = List[Point2D](capacity=n + 1)
+        for i in range(n + 1):
+            points.append(self.at(Float64(i) / Float64(n)))
+        return points^
+
+    def beziers(self) -> List[Bezier]:
+        """The arc as cubic Béziers, each ending where the next starts, in
+        pieces of at most 45°. An approximation -- no cubic is exactly a
+        circle -- but within about 4e-6 of the radius. A full circle ends
+        exactly where it starts. A collapsed arc gives no curves.
+        """
+        var curves = List[Bezier]()
+        var sweep = self._sweep()
+        if self.r == 0.0 or sweep == 0.0:
+            return curves^
+        var n = Int(ceil(abs(sweep) / _MAX_ARC_BEZIER_ANGLE))
+        var step = sweep / Float64(n)
+        # Each control sits on the tangent at its end, this far out along
+        # it: the length that makes the cubic's midpoint land on the circle.
+        var reach = self.r * 4.0 / 3.0 * tan(step / 4.0)
+        var first = self.at(0.0)
+        var start = first
+        for i in range(n):
+            var a0 = self.start_angle + step * Float64(i)
+            var a1 = a0 + step
+            var end = self._point_at_angle(a1)
+            if i == n - 1 and abs(sweep) == tau:
+                end = first
+            curves.append(
+                Bezier(
+                    start,
+                    start + Vector2D(-sin(a0), cos(a0)) * reach,
+                    end - Vector2D(-sin(a1), cos(a1)) * reach,
+                    end,
+                )
+            )
+            start = end
+        return curves^
+
+    def closest_point(self, p: Point2D) -> Point2D:
+        """The point on the arc nearest `p`: straight out from the centre
+        when `p` lies within the sweep, otherwise the nearer end. From the
+        centre itself every point is as near, and the start is returned."""
+        var v = p - self.position
+        if v.mag_sq() == 0.0:
+            return self.at(0.0)
+        var s = _normalized_sweep(self.start_angle, self.sweep_angle)
+        if _in_sweep(v, s[0], s[1]):
+            return self.position + v * (self.r / v.mag())
+        var a = self.at(0.0)
+        var b = self.at(1.0)
+        return a if _dist_sq(p, a) <= _dist_sq(p, b) else b
+
+    def move_to(mut self, position: Point2D):
+        self.position = position
+
+    def translate(mut self, delta: Vector2D):
+        self.position = self.position + delta
 
 
 struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
