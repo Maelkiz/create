@@ -20,6 +20,9 @@ program drew."""
 comptime CMD_BEZIER = 8
 """A stroke along a chain of cubic Béziers, its control points in `points`
 rather than `geom`. Outline only — a curve has no interior."""
+comptime CMD_SECTOR = 9
+"""A pie slice: the tip `(cx, cy)`, radius `r`, and a signed sweep from
+`start` in radians, counter-clockwise positive."""
 
 comptime _GEOM_SLOTS = 6
 """Widest fixed geometry any kind needs: a triangle's three corners."""
@@ -64,6 +67,7 @@ struct RenderCommand(Copyable, Movable):
     | `CMD_TEXT` | `x` | `y` | — | — | — | — |
     | `CMD_LETTERBOX` | `cx0` | `cy0` | `cx1` | `cy1` | — | — |
     | `CMD_BEZIER` | — | — | — | — | — | — |
+    | `CMD_SECTOR` | `cx` | `cy` | `r` | `start` | `sweep` | — |
 
     Build one with the free functions below rather than by hand, so no rendering
     call site has to remember that table.
@@ -166,6 +170,18 @@ def circle_command(
     r: Float64,
 ) -> RenderCommand:
     return RenderCommand(CMD_CIRCLE, transform, style, cx, cy, r)
+
+
+def sector_command(
+    transform: Matrix[3, 3],
+    style: Style,
+    cx: Float64,
+    cy: Float64,
+    r: Float64,
+    start: Float64,
+    sweep: Float64,
+) -> RenderCommand:
+    return RenderCommand(CMD_SECTOR, transform, style, cx, cy, r, start, sweep)
 
 
 def line_command(
