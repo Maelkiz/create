@@ -1095,7 +1095,8 @@ struct Backend(Movable):
             var sm = pre @ sh.transform
             # The blur in whole device pixels; see `_ensure_glyph`.
             var blur = Int(c.style.shadow_blur * pixel_scale(sm, scale) + 0.5)
-            if blur == 0:
+            # A Bézier has no blurred path yet: its shadow stays hard.
+            if blur == 0 or c.kind == CMD_BEZIER:
                 self._one(s, sh, scale, pre)
             elif blurs_analytically(c):
                 _blurred_shadow(t, sh, scale, sm)

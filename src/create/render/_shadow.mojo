@@ -30,6 +30,7 @@ from std.math import abs, exp, max, min, sqrt
 from create.math.matrix import Matrix, translate
 
 from ._command import (
+    CMD_BEZIER,
     CMD_CIRCLE,
     CMD_LINE,
     CMD_RECT,
@@ -53,7 +54,7 @@ def casts_outer_shadow(c: RenderCommand) -> Bool:
         return False
     if c.kind == CMD_RECT or c.kind == CMD_CIRCLE or c.kind == CMD_TRIANGLE:
         return c.style._fill_visible() or c.style._outline_visible()
-    if c.kind == CMD_LINE:
+    if c.kind == CMD_LINE or c.kind == CMD_BEZIER:
         return c.style._outline_visible()
     if c.kind == CMD_TEXT:
         return c.style.text_color.a > 0
@@ -63,8 +64,8 @@ def casts_outer_shadow(c: RenderCommand) -> Bool:
 def casts_inset_shadow(c: RenderCommand) -> Bool:
     """Whether `c` paints an inset shadow over itself.
 
-    Only the shapes with an interior take one; a line, text or a sprite
-    ignores `shadow_inset` and casts nothing. Painted whether or not the
+    Only the shapes with an interior take one; a line, a curve, text or a
+    sprite ignores `shadow_inset` and casts nothing. Painted whether or not the
     fill is visible, as in CSS: the shadow is inside the shape, not on it.
     """
     if not c.style._shadow_visible() or not c.style.shadow_inset:
@@ -150,7 +151,11 @@ def shadow_command(c: RenderCommand, scale: Float64) -> RenderCommand:
         s.silhouette = True
         return s^
 
-    var ring = not c.style._fill_visible() or c.kind == CMD_LINE
+    var ring = (
+        not c.style._fill_visible()
+        or c.kind == CMD_LINE
+        or c.kind == CMD_BEZIER
+    )
     if ring:
         # The stroke alone, dilated by `spread` on both sides.
         s.style.fill_enabled = False

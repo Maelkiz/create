@@ -9,10 +9,12 @@ from std.testing import (
 
 from create.math.matrix import Matrix, apply, identity, rotate, scale, translate
 from create.math.vector2d import Vector2D
+from create.math.bezier import CubicBezier
 from create.render.color import Color
 from create.render.style import Style
 from create.render._command import (
     RenderCommand,
+    bezier_command,
     circle_command,
     clear_command,
     line_command,
@@ -114,6 +116,29 @@ def test_outline_only_shape_casts_its_ring() raises -> None:
     assert_equal(sh.style.outline_color, s.shadow_color)
     assert_equal(sh.style.outline_thickness, 3)
     assert_equal(sh.geom[2], 10.0)
+
+
+def test_bezier_casts_its_stroke_even_when_filled() raises -> None:
+    # A curve has no interior: a fill in its style changes nothing, and its
+    # silhouette is the stroke, widened by the spread on both sides.
+    var s = _shadowed()
+    s.outline_enabled = True
+    s.outline_thickness = 3
+    s.shadow_spread = 1.0
+    var curve = CubicBezier(
+        (0.0, 0.0), (10.0, 20.0), (20.0, -20.0), (30.0, 0.0)
+    )
+    var c = bezier_command(identity[3](), s, curve)
+    assert_true(casts_outer_shadow(c))
+    var sh = shadow_command(c, 1.0)
+    assert_false(sh.style.fill_enabled)
+    assert_true(sh.style.outline_enabled)
+    assert_equal(sh.style.outline_color, s.shadow_color)
+    assert_equal(sh.style.outline_thickness, 5)
+    for i in range(8):
+        assert_equal(sh.geom[i], c.geom[i])
+    s.outline_enabled = False
+    assert_false(casts_outer_shadow(bezier_command(identity[3](), s, curve)))
 
 
 def test_spread_grows_each_kind() raises -> None:

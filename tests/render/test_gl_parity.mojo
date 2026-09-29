@@ -126,7 +126,8 @@ comptime _SHAPE_INSET_TRIANGLE = 30
 comptime _SHAPE_BLURRED_INSET_TRIANGLE = 31
 comptime _SHAPE_BEZIER = 32
 comptime _SHAPE_TRANSLUCENT_BEZIER = 33
-comptime _SHAPE_COUNT = 34
+comptime _SHAPE_SHADOWED_BEZIER = 34
+comptime _SHAPE_COUNT = 35
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -228,6 +229,8 @@ def _shape_name(shape: Int) -> String:
         return "bezier"
     elif shape == _SHAPE_TRANSLUCENT_BEZIER:
         return "translucent bezier"
+    elif shape == _SHAPE_SHADOWED_BEZIER:
+        return "shadowed bezier"
     else:
         return "blurred line"
 
@@ -539,6 +542,13 @@ struct _Parity(Program):
             # seam in the interior colour.
             with canvas.style():
                 canvas.outline(Color(0x20, 0x40, 0xFF, 0x80), thickness=8)
+                _bezier(canvas)
+        elif self.shape == _SHAPE_SHADOWED_BEZIER:
+            with canvas.style(
+                _shadowed(
+                    Style(outline=Color(0x80, 0xFF, 0x80), outline_thickness=5)
+                )
+            ):
                 _bezier(canvas)
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both

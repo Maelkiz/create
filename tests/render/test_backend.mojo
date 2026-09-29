@@ -671,6 +671,35 @@ def test_circle_and_line_cast_shadows() raises -> None:
     assert_equal(m.pixel(35, 20), Color.RED)
 
 
+def test_bezier_casts_its_stroke_at_the_offset() raises -> None:
+    var plain = _stroke(Color.WHITE, 4)
+    var shadowed = _shadowed(Color.WHITE, Color.RED)
+    shadowed.fill_enabled = False
+    shadowed.outline_enabled = True
+    shadowed.outline_color = Color.WHITE
+    shadowed.outline_thickness = 4
+    var alone = List[RenderCommand]()
+    alone.append(clear_command(Color.BLACK))
+    alone.append(bezier_command(_base(), plain, _s_curve()))
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(bezier_command(_base(), shadowed, _s_curve()))
+    var stroke = _replay(alone)
+    var m = _replay(cmds)
+    # The shadow is the stroke moved 10 right and 10 down, under the stroke.
+    var shadow_pixels = 0
+    for y in range(_H - 10):
+        for x in range(_W - 10):
+            var moved = m.pixel(x + 10, y + 10)
+            if stroke.pixel(x, y) == Color.WHITE:
+                assert_true(moved == Color.RED or moved == Color.WHITE)
+                if moved == Color.RED:
+                    shadow_pixels += 1
+            elif stroke.pixel(x + 10, y + 10) != Color.WHITE:
+                assert_equal(moved, Color.BLACK)
+    assert_true(shadow_pixels > 0)
+
+
 def _blurred(fill: Color, blur: Float64) -> Style:
     """White ink blurred by `blur`, thrown 60 units right of its shape."""
     var s = _shadowed(fill, Color.WHITE)
@@ -957,6 +986,20 @@ def test_lines_ignore_inset() raises -> None:
     var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     cmds.append(line_command(_base(), s, -30.0, 0.0, 30.0, 0.0))
+    var m = _replay(cmds)
+    for y in range(_H):
+        for x in range(_W):
+            assert_true(m.pixel(x, y) != Color.RED)
+
+
+def test_beziers_ignore_inset() raises -> None:
+    var s = _inset(Color.WHITE, Vector2D(4, -4))
+    s.outline_enabled = True
+    s.outline_color = Color.WHITE
+    s.outline_thickness = 6
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(bezier_command(_base(), s, _s_curve()))
     var m = _replay(cmds)
     for y in range(_H):
         for x in range(_W):
