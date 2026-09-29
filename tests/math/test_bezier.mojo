@@ -4,7 +4,7 @@ from std.testing import (
     assert_true,
     assert_almost_equal,
 )
-from std.math import abs
+from std.math import abs, pi
 from create.math.bezier import CubicBezier
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
@@ -162,6 +162,64 @@ def test_flatten_degenerate_curve() raises -> None:
     assert_equal(len(points), 2)
     assert_equal(points[0], Point2D(5.0, 5.0))
     assert_equal(points[1], Point2D(5.0, 5.0))
+
+
+def test_length_of_straight_curve() raises -> None:
+    # Unevenly spaced controls: t is not proportional to distance, but the
+    # length is still the endpoint distance.
+    var b = CubicBezier((0.0, 0.0), (0.5, 0.0), (1.0, 0.0), (10.0, 0.0))
+    assert_almost_equal(b.length(), 10.0, atol=1e-9)
+
+
+def test_length_of_quarter_circle() raises -> None:
+    # The standard four-arc circle approximation, radius 100.
+    var k = 0.5522847498 * 100.0
+    var b = CubicBezier((100.0, 0.0), (100.0, k), (k, 100.0), (0.0, 100.0))
+    var quarter = pi * 100.0 / 2.0
+    assert_true(abs(b.length() - quarter) / quarter < 1e-3)
+
+
+def test_length_matches_dense_polyline() raises -> None:
+    var b = _s_curve()
+    var points = b.flatten(1e-6)
+    var total = 0.0
+    for i in range(len(points) - 1):
+        total += points[i].dist(points[i + 1])
+    assert_almost_equal(b.length(), total, atol=1e-3)
+
+
+def test_at_distance_ends() raises -> None:
+    var b = _s_curve()
+    assert_equal(b.at_distance(0.0), b.start)
+    _assert_point_near(b.at_distance(b.length()), b.end, 1e-6)
+
+
+def test_at_distance_clamps() raises -> None:
+    var b = _s_curve()
+    assert_equal(b.at_distance(-5.0), b.start)
+    assert_equal(b.at_distance(b.length() + 5.0), b.end)
+
+
+def test_at_distance_steps_evenly() raises -> None:
+    # Controls bunched at the start make `at` uneven in t; `at_distance`
+    # must not be.
+    var b = CubicBezier((0.0, 0.0), (1.0, 0.0), (2.0, 0.0), (300.0, 200.0))
+    var n = 50
+    var step = b.length() / Float64(n)
+    var previous = b.at_distance(0.0)
+    for i in range(1, n + 1):
+        var p = b.at_distance(Float64(i) * step)
+        # A chord is at most the arc it spans, and only just shorter here.
+        var chord = p.dist(previous)
+        assert_true(chord <= step + 1e-6)
+        assert_true(chord >= step * 0.99)
+        previous = p
+
+
+def test_at_distance_on_degenerate_curve() raises -> None:
+    var b = CubicBezier((5.0, 5.0), (5.0, 5.0), (5.0, 5.0), (5.0, 5.0))
+    assert_equal(b.length(), 0.0)
+    assert_equal(b.at_distance(1.0), Point2D(5.0, 5.0))
 
 
 def test_translate_moves_every_point() raises -> None:

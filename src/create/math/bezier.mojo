@@ -1,4 +1,4 @@
-from std.math import ceil, min, max, sqrt
+from std.math import abs, ceil, min, max, sqrt
 from .geometry import Rectangle
 from .point2d import Point2D
 from .vector2d import Vector2D
@@ -6,6 +6,30 @@ from .vector2d import Vector2D
 comptime _MAX_FLATTEN_SEGMENTS = 1024
 """Upper bound on `flatten`'s segment count, so a huge curve at a tiny
 tolerance costs bounded work."""
+
+comptime _LENGTH_STEPS = 16
+"""Equal steps in `t` that `_length_to` integrates separately, so the
+quadrature follows a curve whose speed changes sharply."""
+
+comptime _GAUSS_NODES: Array[Float64, 4] = [
+    0.1834346424956498,
+    0.5255324099163290,
+    0.7966664774136267,
+    0.9602898564975363,
+]
+"""The positive half of the 8-point Gauss–Legendre nodes on [-1, 1]; the
+rule is symmetric, so each is used at plus and minus."""
+
+comptime _GAUSS_WEIGHTS: Array[Float64, 4] = [
+    0.3626837833783620,
+    0.3137066458778873,
+    0.2223810344533745,
+    0.1012285362903763,
+]
+
+comptime _MAX_DISTANCE_ITERATIONS = 50
+"""Bound on `at_distance`'s search. Newton converges in a handful; the
+bound only matters for bisection on a curve with a stationary stretch."""
 
 
 def _axis_extremes(
@@ -187,6 +211,69 @@ struct CubicBezier(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             points.append(self.at(Float64(i) / Float64(n)))
         points.append(self.end)
         return points^
+
+    def length(self) -> Float64:
+        """The distance along the curve from `start` to `end`.
+
+        Gauss–Legendre quadrature (8 points on each of 16 equal steps in
+        `t`) of the curve's speed — accurate to far below a pixel for any
+        curve that fits on a screen, but an approximation, not exact.
+        """
+        return self._length_to(1.0)
+
+    def at_distance(self, distance: Float64) -> Point2D:
+        """The point `distance` along the curve from `start`, clamped to
+        the curve's ends.
+
+        Unlike `at`, equal steps in `distance` are equal steps along the
+        curve, so this is what moves something along it at a steady speed.
+        Each call inverts `length` numerically; sample once per frame per
+        entity, not in a tight loop.
+        """
+        var total = self.length()
+        if distance <= 0.0 or total == 0.0:
+            return self.start
+        if distance >= total:
+            return self.end
+        # Newton's method on `_length_to(t) - distance`, kept inside a
+        # bracket that bisection falls back to where the speed is too low
+        # for a Newton step to be trusted.
+        var lo = 0.0
+        var hi = 1.0
+        var t = distance / total
+        for _ in range(_MAX_DISTANCE_ITERATIONS):
+            var error = self._length_to(t) - distance
+            if abs(error) <= total * 1e-12:
+                break
+            if error > 0.0:
+                hi = t
+            else:
+                lo = t
+            var next = (lo + hi) / 2.0
+            var speed = self.tangent(t).mag()
+            if speed > 0.0:
+                var newton = t - error / speed
+                if newton > lo and newton < hi:
+                    next = newton
+            t = next
+        return self.at(t)
+
+    def _length_to(self, t: Float64) -> Float64:
+        """Arc length from `start` to the point at `t`, for `t` in 0..1."""
+        var step = t / Float64(_LENGTH_STEPS)
+        var half = step / 2.0
+        var nodes = materialize[_GAUSS_NODES]()
+        var weights = materialize[_GAUSS_WEIGHTS]()
+        var total = 0.0
+        for i in range(_LENGTH_STEPS):
+            var centre = (Float64(i) + 0.5) * step
+            for k in range(4):
+                var node = nodes[k] * half
+                total += weights[k] * (
+                    self.tangent(centre - node).mag()
+                    + self.tangent(centre + node).mag()
+                )
+        return total * half
 
     def translate(mut self, delta: Vector2D):
         self.start = self.start + delta
