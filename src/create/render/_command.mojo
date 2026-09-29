@@ -23,6 +23,10 @@ rather than `geom`. Outline only — a curve has no interior."""
 comptime CMD_SECTOR = 9
 """A pie slice: the tip `(cx, cy)`, radius `r`, and a signed sweep from
 `start` in radians, counter-clockwise positive."""
+comptime CMD_POLYGON = 10
+"""A polygon filled by the nonzero rule, its vertices in `points` rather than
+`geom`. `geom[0]` offsets it by that many local units, outwards if positive:
+zero for a render call, a shadow's spread otherwise."""
 
 comptime _GEOM_SLOTS = 6
 """Widest fixed geometry any kind needs: a triangle's three corners."""
@@ -68,6 +72,7 @@ struct RenderCommand(Copyable, Movable):
     | `CMD_LETTERBOX` | `cx0` | `cy0` | `cx1` | `cy1` | — | — |
     | `CMD_BEZIER` | — | — | — | — | — | — |
     | `CMD_SECTOR` | `cx` | `cy` | `r` | `start` | `sweep` | — |
+    | `CMD_POLYGON` | `grow` | — | — | — | — | — |
 
     Build one with the free functions below rather than by hand, so no rendering
     call site has to remember that table.
@@ -83,10 +88,11 @@ struct RenderCommand(Copyable, Movable):
     """`CMD_TEXT` only, and owned — layout happens at replay, in the backend
     that holds the fonts, so the string has to outlive the rendering call."""
     var points: List[Point2D]
-    """`CMD_BEZIER` only: a chain of n Béziers as 3n + 1 control points,
+    """`CMD_BEZIER`: a chain of n Béziers as 3n + 1 control points,
     `start, control1, control2` of each followed by the last one's `end`;
-    each Bézier starts where the one before it ends. Empty for every other
-    kind, which costs no allocation."""
+    each Bézier starts where the one before it ends. `CMD_POLYGON`: the
+    vertices, in order. Empty for every other kind, which costs no
+    allocation."""
     var image: Int
     """`CMD_SPRITE` only: a backend image id, interned at record time. The
     pixels are copied or uploaded when the sprite is first seen, so no borrow
@@ -225,6 +231,15 @@ def bezier_chain_command(
     laid out as `RenderCommand.points` describes: 3n + 1 of them."""
     var c = RenderCommand(CMD_BEZIER, transform, style)
     c.points = points^
+    return c^
+
+
+def polygon_command(
+    transform: Matrix[3, 3], style: Style, var vertices: List[Point2D]
+) -> RenderCommand:
+    """A polygon through `vertices`, in order, closed back to the first."""
+    var c = RenderCommand(CMD_POLYGON, transform, style)
+    c.points = vertices^
     return c^
 
 
