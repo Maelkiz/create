@@ -35,18 +35,26 @@ cusp, where the unclamped miter would shoot off towards infinity."""
 
 
 def bezier_device_points(c: RenderCommand, m: Matrix[3, 3]) -> List[Point2D]:
-    """`c`'s curve (`c` a `CMD_BEZIER`) mapped by `m` and flattened to
-    device-space points.
+    """`c`'s chain of curves (`c` a `CMD_BEZIER`) mapped by `m` and flattened
+    to one polyline of device-space points, the point where one curve meets
+    the next appearing once.
 
     The control points are mapped rather than the flattened points: a
-    Bézier's shape survives an affine map, so the curve is flattened at the
+    Bézier's shape survives an affine map, so each curve is flattened at the
     size it will actually be drawn.
     """
-    var p0 = mat_apply(m, c.geom[0], c.geom[1])
-    var p1 = mat_apply(m, c.geom[2], c.geom[3])
-    var p2 = mat_apply(m, c.geom[4], c.geom[5])
-    var p3 = mat_apply(m, c.geom[6], c.geom[7])
-    return CubicBezier(p0, p1, p2, p3).flatten(FLATTEN_TOLERANCE_PX)
+    var mapped = List[Point2D](capacity=len(c.points))
+    for p in c.points:
+        mapped.append(mat_apply(m, p.x, p.y))
+    var points = List[Point2D]()
+    for i in range(0, len(mapped) - 3, 3):
+        var part = CubicBezier(
+            mapped[i], mapped[i + 1], mapped[i + 2], mapped[i + 3]
+        ).flatten(FLATTEN_TOLERANCE_PX)
+        var first = 0 if len(points) == 0 else 1
+        for j in range(first, len(part)):
+            points.append(part[j])
+    return points^
 
 
 def stroke_quads(points: List[Point2D], width: Float64) -> List[Point2D]:

@@ -12,7 +12,7 @@ from create.render.color import Color
 from create.render.style import Style
 from create.render.surface import MemorySurface
 from create.render._blur import blur_reach
-from create.render._command import bezier_command
+from create.render._command import bezier_chain_command, bezier_command
 from create.render._curve import (
     MITER_LIMIT,
     bezier_device_points,
@@ -45,6 +45,46 @@ def test_device_points_refine_with_zoom() raises -> None:
     var near = bezier_device_points(c, c.transform)
     var far = bezier_device_points(c, scale(8.0, 8.0))
     assert_true(len(far) > len(near))
+
+
+def _two_curve_chain() -> List[Point2D]:
+    # An S-curve and a second curve leaving its end smoothly.
+    return [
+        (0.0, 0.0),
+        (100.0, 100.0),
+        (0.0, 100.0),
+        (100.0, 0.0),
+        (200.0, -100.0),
+        (250.0, 50.0),
+        (300.0, 0.0),
+    ]
+
+
+def test_chain_flattens_to_one_polyline() raises -> None:
+    var chain = _two_curve_chain()
+    var c = bezier_chain_command(identity[3](), Style(), chain.copy())
+    var points = bezier_device_points(c, c.transform)
+    var first = CubicBezier(chain[0], chain[1], chain[2], chain[3]).flatten(
+        0.25
+    )
+    var second = CubicBezier(chain[3], chain[4], chain[5], chain[6]).flatten(
+        0.25
+    )
+    # The joint appears once.
+    assert_equal(len(points), len(first) + len(second) - 1)
+    _assert_point_near(points[0], chain[0])
+    _assert_point_near(points[len(first) - 1], chain[3])
+    _assert_point_near(points[len(points) - 1], chain[6])
+    for i in range(1, len(points)):
+        assert_true(points[i] != points[i - 1])
+
+
+def test_chain_stroke_shares_edges_across_the_joint() raises -> None:
+    var c = bezier_chain_command(identity[3](), Style(), _two_curve_chain())
+    var corners = stroke_quads(bezier_device_points(c, c.transform), 6.0)
+    for q in range(len(corners) // 4 - 1):
+        assert_equal(corners[4 * q + 1], corners[4 * (q + 1)])
+        assert_equal(corners[4 * q + 2], corners[4 * (q + 1) + 3])
 
 
 def test_straight_polyline_gives_a_straight_band() raises -> None:

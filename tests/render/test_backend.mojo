@@ -27,8 +27,10 @@ from create.render._command import (
     text_command,
     letterbox_command,
     bezier_command,
+    bezier_chain_command,
 )
 from create.math.matrix import apply as mat_apply
+from create.math.point2d import Point2D
 
 
 comptime _W = 100
@@ -372,6 +374,39 @@ def test_translucent_bezier_composites_each_pixel_once() raises -> None:
             var px = m.pixel(x, y)
             if px != Color.BLACK:
                 # A pixel two quads both covered would be lighter.
+                assert_equal(px, once)
+                painted += 1
+    assert_true(painted > 0)
+
+
+def test_translucent_bezier_chain_composites_once_at_the_joint() raises -> None:
+    # Two curves meeting smoothly at the origin: one stroke, so the joint
+    # composites once like everywhere else.
+    var chain: List[Point2D] = [
+        (-45.0, -20.0),
+        (-30.0, 40.0),
+        (-10.0, 40.0),
+        (0.0, 0.0),
+        (10.0, -40.0),
+        (30.0, -40.0),
+        (45.0, 20.0),
+    ]
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(
+        bezier_chain_command(
+            _base(), _stroke(Color(255, 255, 255, 128), 6), chain^
+        )
+    )
+    var m = _replay(cmds)
+    var p = mat_apply(_base(), 0.0, 0.0)
+    var once = m.pixel(Int(p[0]), Int(p[1]))
+    assert_true(once != Color.BLACK and once != Color.WHITE)
+    var painted = 0
+    for y in range(_H):
+        for x in range(_W):
+            var px = m.pixel(x, y)
+            if px != Color.BLACK:
                 assert_equal(px, once)
                 painted += 1
     assert_true(painted > 0)

@@ -135,8 +135,9 @@ def test_bezier_casts_its_stroke_even_when_filled() raises -> None:
     assert_true(sh.style.outline_enabled)
     assert_equal(sh.style.outline_color, s.shadow_color)
     assert_equal(sh.style.outline_thickness, 5)
-    for i in range(8):
-        assert_equal(sh.geom[i], c.geom[i])
+    assert_equal(len(sh.points), len(c.points))
+    for i in range(len(c.points)):
+        assert_equal(sh.points[i], c.points[i])
     s.outline_enabled = False
     assert_false(casts_outer_shadow(bezier_command(identity[3](), s, curve)))
 

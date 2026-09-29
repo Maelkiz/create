@@ -2,6 +2,7 @@ from .color import Color
 from .style import Style
 from create.math.bezier import CubicBezier
 from create.math.matrix import Matrix, identity
+from create.math.point2d import Point2D
 
 comptime CMD_CLEAR = 0
 """Paint the whole framebuffer. `style.fill_color` is the colour."""
@@ -17,10 +18,11 @@ comptime CMD_LETTERBOX = 7
 already in pixels, because it is the frame's clip rather than something a
 program drew."""
 comptime CMD_BEZIER = 8
-"""A cubic Bézier stroke. Outline only — a curve has no interior."""
+"""A stroke along a chain of cubic Béziers, its control points in `points`
+rather than `geom`. Outline only — a curve has no interior."""
 
-comptime _GEOM_SLOTS = 8
-"""Widest geometry any kind needs: a Bézier's four control points."""
+comptime _GEOM_SLOTS = 6
+"""Widest fixed geometry any kind needs: a triangle's three corners."""
 
 
 def _scaled_alpha(color: Color, opacity: Float64) -> Color:
@@ -51,17 +53,17 @@ struct RenderCommand(Copyable, Movable):
 
     `geom` slots by kind:
 
-    | kind | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
-    |---|---|---|---|---|---|---|---|---|
-    | `CMD_CLEAR` | — | — | — | — | — | — | — | — |
-    | `CMD_RECT` | `x` | `y` | `w` | `h` | — | — | — | — |
-    | `CMD_CIRCLE` | `cx` | `cy` | `r` | — | — | — | — | — |
-    | `CMD_LINE` | `x0` | `y0` | `x1` | `y1` | — | — | — | — |
-    | `CMD_TRIANGLE` | `x1` | `y1` | `x2` | `y2` | `x3` | `y3` | — | — |
-    | `CMD_SPRITE` | `cx` | `cy` | `w` | `h` | — | — | — | — |
-    | `CMD_TEXT` | `x` | `y` | — | — | — | — | — | — |
-    | `CMD_LETTERBOX` | `cx0` | `cy0` | `cx1` | `cy1` | — | — | — | — |
-    | `CMD_BEZIER` | `x0` | `y0` | `cx1` | `cy1` | `cx2` | `cy2` | `x1` | `y1` |
+    | kind | 0 | 1 | 2 | 3 | 4 | 5 |
+    |---|---|---|---|---|---|---|
+    | `CMD_CLEAR` | — | — | — | — | — | — |
+    | `CMD_RECT` | `x` | `y` | `w` | `h` | — | — |
+    | `CMD_CIRCLE` | `cx` | `cy` | `r` | — | — | — |
+    | `CMD_LINE` | `x0` | `y0` | `x1` | `y1` | — | — |
+    | `CMD_TRIANGLE` | `x1` | `y1` | `x2` | `y2` | `x3` | `y3` |
+    | `CMD_SPRITE` | `cx` | `cy` | `w` | `h` | — | — |
+    | `CMD_TEXT` | `x` | `y` | — | — | — | — |
+    | `CMD_LETTERBOX` | `cx0` | `cy0` | `cx1` | `cy1` | — | — |
+    | `CMD_BEZIER` | — | — | — | — | — | — |
 
     Build one with the free functions below rather than by hand, so no rendering
     call site has to remember that table.
@@ -76,6 +78,11 @@ struct RenderCommand(Copyable, Movable):
     var text: String
     """`CMD_TEXT` only, and owned — layout happens at replay, in the backend
     that holds the fonts, so the string has to outlive the rendering call."""
+    var points: List[Point2D]
+    """`CMD_BEZIER` only: a chain of n Béziers as 3n + 1 control points,
+    `start, control1, control2` of each followed by the last one's `end`;
+    each Bézier starts where the one before it ends. Empty for every other
+    kind, which costs no allocation."""
     var image: Int
     """`CMD_SPRITE` only: a backend image id, interned at record time. The
     pixels are copied or uploaded when the sprite is first seen, so no borrow
@@ -97,8 +104,6 @@ struct RenderCommand(Copyable, Movable):
         g3: Float64 = 0.0,
         g4: Float64 = 0.0,
         g5: Float64 = 0.0,
-        g6: Float64 = 0.0,
-        g7: Float64 = 0.0,
     ):
         self.kind = kind
         self.geom = Array[Float64, _GEOM_SLOTS](fill=0.0)
@@ -108,8 +113,6 @@ struct RenderCommand(Copyable, Movable):
         self.geom[3] = g3
         self.geom[4] = g4
         self.geom[5] = g5
-        self.geom[6] = g6
-        self.geom[7] = g7
         self.transform = transform
         self.style = style
         if self.style.opacity != 1.0:
@@ -127,6 +130,7 @@ struct RenderCommand(Copyable, Movable):
             )
             self.style.opacity = 1.0
         self.text = String("")
+        self.points = List[Point2D]()
         self.image = 0
         self.image_w = 0
         self.image_h = 0
@@ -191,19 +195,21 @@ def triangle_command(
 def bezier_command(
     transform: Matrix[3, 3], style: Style, curve: CubicBezier
 ) -> RenderCommand:
-    return RenderCommand(
-        CMD_BEZIER,
+    return bezier_chain_command(
         transform,
         style,
-        curve.start.x,
-        curve.start.y,
-        curve.control1.x,
-        curve.control1.y,
-        curve.control2.x,
-        curve.control2.y,
-        curve.end.x,
-        curve.end.y,
+        [curve.start, curve.control1, curve.control2, curve.end],
     )
+
+
+def bezier_chain_command(
+    transform: Matrix[3, 3], style: Style, var points: List[Point2D]
+) -> RenderCommand:
+    """A stroke along the joined Béziers whose control points are `points`,
+    laid out as `RenderCommand.points` describes: 3n + 1 of them."""
+    var c = RenderCommand(CMD_BEZIER, transform, style)
+    c.points = points^
+    return c^
 
 
 def sprite_command(

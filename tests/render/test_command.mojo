@@ -22,8 +22,10 @@ from create.render._command import (
     text_command,
     letterbox_command,
     bezier_command,
+    bezier_chain_command,
 )
 from create.math.bezier import CubicBezier
+from create.math.point2d import Point2D
 from create.math.matrix import identity, translate, rotate
 
 
@@ -69,12 +71,39 @@ def test_triangle_packs_all_three_vertices() raises -> None:
         assert_equal(c.geom[i], Float64(i + 1))
 
 
-def test_bezier_packs_all_four_points() raises -> None:
+def test_bezier_is_a_chain_of_one() raises -> None:
     var curve = CubicBezier((1.0, 2.0), (3.0, 4.0), (5.0, 6.0), (7.0, 8.0))
     var c = bezier_command(identity[3](), Style(), curve)
     assert_equal(c.kind, CMD_BEZIER)
-    for i in range(8):
-        assert_equal(c.geom[i], Float64(i + 1))
+    assert_equal(len(c.points), 4)
+    assert_equal(c.points[0], curve.start)
+    assert_equal(c.points[1], curve.control1)
+    assert_equal(c.points[2], curve.control2)
+    assert_equal(c.points[3], curve.end)
+
+
+def test_bezier_chain_keeps_its_points() raises -> None:
+    var points: List[Point2D] = [
+        (0.0, 0.0),
+        (1.0, 1.0),
+        (2.0, 1.0),
+        (3.0, 0.0),
+        (4.0, -1.0),
+        (5.0, -1.0),
+        (6.0, 0.0),
+    ]
+    var c = bezier_chain_command(identity[3](), Style(), points.copy())
+    assert_equal(c.kind, CMD_BEZIER)
+    assert_equal(len(c.points), 7)
+    for i in range(7):
+        assert_equal(c.points[i], points[i])
+
+
+def test_other_kinds_carry_no_points() raises -> None:
+    assert_equal(
+        len(line_command(identity[3](), Style(), 0.0, 0.0, 1.0, 1.0).points),
+        0,
+    )
 
 
 def test_sprite_carries_an_image_id_not_a_pointer() raises -> None:
