@@ -4,7 +4,7 @@ from std.testing import (
     assert_true,
     assert_almost_equal,
 )
-from std.math import pi, tau
+from std.math import cos, pi, sin, tau
 from create.math.geometry import (
     Arc,
     Circle,
@@ -292,6 +292,164 @@ def test_arc_intersects() raises -> None:
     assert_true(not Arc((0, 0), 5, pi, 0.5).intersects(s))
     # Crossing only a radius.
     assert_true(Arc((5, 0), 2, 0.0, -pi).intersects(s))
+
+
+def test_contains_a_line() raises -> None:
+    var s = Sector((0, 0), 10, 0.0, pi / 2.0)
+    assert_true(s.contains(Line((1, 1), (5, 6))))
+    # Along a radius.
+    assert_true(s.contains(Line((0, 0), (0, 10))))
+    assert_true(not s.contains(Line((1, 1), (-1, 5))))
+    assert_true(not s.contains(Line((1, 1), (9, 9))))
+
+
+def test_a_line_across_the_missing_wedge_is_not_contained() raises -> None:
+    # Both ends inside the three-quarter sector, the middle in the missing
+    # lower right quadrant.
+    var s = Sector((0, 0), 10, 0.0, 1.5 * pi)
+    assert_true(s.contains(Point2D(5.0, 1.0)))
+    assert_true(s.contains(Point2D(-1.0, -5.0)))
+    assert_true(not s.contains(Line((5, 1), (-1, -5))))
+    # Round the other side of the tip, it is.
+    assert_true(s.contains(Line((5, 1), (-1, 1))))
+    # Through the tip, from one radius to the other.
+    assert_true(not s.contains(Line((5, 0), (0, -5))))
+    assert_true(s.contains(Line((5, 0), (-5, 0))))
+
+
+def test_contains_a_rectangle_and_a_triangle() raises -> None:
+    var s = Sector((0, 0), 10, 0.0, 1.5 * pi)
+    assert_true(s.contains(Rectangle((-3, 3), 2, 2)))
+    # Straddling the missing wedge's corner at the tip.
+    assert_true(not s.contains(Rectangle((0, 0), 2, 2)))
+    assert_true(not s.contains(Rectangle((-3, 3), 20, 2)))
+    assert_true(s.contains(Triangle((-1, 1), (-5, 1), (-1, -5))))
+    assert_true(not s.contains(Triangle((5, 1), (-1, 1), (-1, -5))))
+    assert_true(not s.contains(Triangle((5, 1), (6, 1), (-1, -5))))
+
+
+def test_contains_a_circle() raises -> None:
+    var s = Sector((0, 0), 10, 0.0, pi / 2.0)
+    assert_true(s.contains(Circle((4, 4), 2)))
+    # Tangent to a radius and to the arc from the inside.
+    assert_true(s.contains(Circle((2, 4), 2)))
+    var t = 10.0 / (1.0 + 2.0**0.5)
+    assert_true(s.contains(Circle((t, t), t)))
+    # Bulging out through a radius, its centre inside.
+    assert_true(not s.contains(Circle((1, 4), 2)))
+    assert_true(not s.contains(Circle((5, 5), 4)))
+    assert_true(s.contains(Circle((3, 3), 0)))
+
+
+def test_contains_a_sector() raises -> None:
+    var s = Sector((0, 0), 10, 0.0, pi / 2.0)
+    assert_true(s.contains(s))
+    assert_true(s.contains(Sector((0, 0), 5, 0.2, 0.5)))
+    assert_true(s.contains(Sector((2, 2), 3, 0.0, pi / 2.0)))
+    # Too wide for the slice at the same tip.
+    assert_true(not s.contains(Sector((0, 0), 5, 0.2, 2.0)))
+    # Its arc bulges through the radius though both its ends are inside.
+    assert_true(not s.contains(Sector((2, 5), 3, pi / 2.0, pi)))
+    # A three-quarter sector holds nothing reaching into its missing wedge.
+    var pac = Sector((0, 0), 10, 0.0, 1.5 * pi)
+    assert_true(pac.contains(Sector((0, 0), 5, 0.1, 1.4 * pi)))
+    assert_true(not pac.contains(Sector((0, 0), 5, 0.0, tau)))
+
+
+def test_regions_contain_a_sector() raises -> None:
+    var s = Sector((0, 0), 10, 0.0, pi / 2.0)
+    assert_true(Rectangle((5, 5), 10, 10).contains(s))
+    assert_true(not Rectangle((5, 5), 9.9, 10.0).contains(s))
+    assert_true(Circle((0, 0), 10).contains(s))
+    assert_true(Circle((5, 5), 7.1).contains(s))
+    assert_true(not Circle((5, 5), 7.0).contains(s))
+    assert_true(Triangle((0, 0), (20, 0), (0, 20)).contains(s))
+    # Holds the tip and both arc ends, but not the arc's middle.
+    assert_true(not Triangle((0, 0), (10, 0), (0, 10)).contains(s))
+    # A three-quarter sector reaches down the -y axis.
+    var pac = Sector((0, 0), 10, 0.0, 1.5 * pi)
+    assert_true(not Circle((0, 0), 20).contains(Sector((25, 0), 1, 0.0, 1.0)))
+    assert_true(not Rectangle((0, 5), 30, 10).contains(pac))
+    assert_true(not Triangle((-20, 0), (20, 0), (0, 20)).contains(pac))
+
+
+def test_degenerate_sectors_contain_and_are_contained() raises -> None:
+    var tip = Sector((4, 5), 0, 0.0, pi)
+    assert_true(tip.contains(Line((4, 5), (4, 5))))
+    assert_true(not tip.contains(Line((4, 5), (4, 6))))
+    assert_true(tip.contains(Circle((4, 5), 0)))
+    assert_true(Circle((4, 5), 1).contains(tip))
+    assert_true(Triangle((0, 0), (10, 0), (0, 10)).contains(tip))
+    var ray = Sector((0, 0), 10, pi / 2.0, 0.0)
+    assert_true(ray.contains(Line((0, 2), (0, 8))))
+    assert_true(not ray.contains(Line((0, 2), (1, 8))))
+    assert_true(Rectangle((0, 5), 1, 10).contains(ray))
+    assert_true(Triangle((-1, 0), (1, 0), (0, 11)).contains(ray))
+
+
+# A brute-force check of `contains` against points sampled along the
+# outline. Sampling can miss a sliver of the outline leaving the sector --
+# a segment grazing the tip through the missing wedge, say -- so where the
+# coarse pass disagrees the check is redone a hundred times finer.
+
+
+def _sampled_contains(s: Sector, l: Line, n: Int) -> Bool:
+    for i in range(n + 1):
+        if not s.contains(l.start.lerp(l.end, Float64(i) / Float64(n))):
+            return False
+    return True
+
+
+def _sampled_contains(s: Sector, c: Circle, n: Int) -> Bool:
+    for i in range(n):
+        var angle = tau * Float64(i) / Float64(n)
+        var p = Point2D(
+            c.position.x + c.r * cos(angle), c.position.y + c.r * sin(angle)
+        )
+        if not s.contains(p):
+            return False
+    return True
+
+
+def _grid_sectors() -> List[Sector]:
+    return [
+        Sector((0, 0), 10, 0.3, pi / 2.0),
+        Sector((0, 0), 10, 1.0, pi),
+        Sector((0, 0), 10, 0.3, 1.5 * pi),
+        Sector((0, 0), 10, 2.0, -1.8 * pi),
+        Sector((0, 0), 10, 0.0, tau),
+    ]
+
+
+def test_contains_agrees_with_sampling_for_lines() raises -> None:
+    for s in _grid_sectors():
+        for x0 in range(-10, 11, 4):
+            for y0 in range(-10, 11, 4):
+                for x1 in range(-10, 11, 4):
+                    for y1 in range(-10, 11, 4):
+                        var l = Line(
+                            Point2D(Float64(x0) + 0.5, Float64(y0) + 0.25),
+                            Point2D(Float64(x1) + 0.5, Float64(y1) + 0.25),
+                        )
+                        var sampled = _sampled_contains(s, l, 100)
+                        if sampled != s.contains(l):
+                            sampled = _sampled_contains(s, l, 10000)
+                        assert_equal(s.contains(l), sampled, String(l))
+
+
+def test_contains_agrees_with_sampling_for_circles() raises -> None:
+    for s in _grid_sectors():
+        for x in range(-9, 10, 3):
+            for y in range(-9, 10, 3):
+                for r in range(1, 5):
+                    var c = Circle(
+                        Point2D(Float64(x) + 0.25, Float64(y) + 0.5),
+                        Float64(r) * 0.9,
+                    )
+                    var sampled = _sampled_contains(s, c, 180)
+                    if sampled != s.contains(c):
+                        sampled = _sampled_contains(s, c, 18000)
+                    assert_equal(s.contains(c), sampled, String(c))
 
 
 def main() raises:

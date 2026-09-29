@@ -1,4 +1,17 @@
-from std.math import acos, ceil, cos, min, max, sin, sqrt, tan, pi, tau
+from std.math import (
+    acos,
+    atan2,
+    ceil,
+    cos,
+    floor,
+    min,
+    max,
+    sin,
+    sqrt,
+    tan,
+    pi,
+    tau,
+)
 from .bezier import Bezier
 from .point2d import Point2D
 from .vector2d import Vector2D
@@ -276,6 +289,9 @@ struct Rectangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def contains(self, l: Line) -> Bool:
         return self.contains(l.start) and self.contains(l.end)
 
+    def contains(self, s: Sector) -> Bool:
+        return self.contains(s.bounds())
+
     def move_to(mut self, position: Point2D):
         self.position = position
 
@@ -363,6 +379,17 @@ struct Circle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     def contains(self, l: Line) -> Bool:
         return self.contains(l.start) and self.contains(l.end)
+
+    def contains(self, s: Sector) -> Bool:
+        # A sector is its tip fanned out to its arc, and a disc is convex,
+        # so it holds the sector when it holds the tip and the arc's point
+        # furthest from its centre. That point comes through `cos` and
+        # `sin`, so it gets an arc's slack, as in `Sector.contains`.
+        if not self.contains(s.position):
+            return False
+        var far = s.arc()._furthest_along(s.position - self.position)
+        var reach = self.r * (1.0 + _RADIUS_EPSILON)
+        return _dist_sq(far, self.position) <= reach * reach
 
     def move_to(mut self, position: Point2D):
         self.position = position
@@ -693,6 +720,16 @@ struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         var b = self.at(1.0)
         return a if _dist_sq(p, a) <= _dist_sq(p, b) else b
 
+    def _furthest_along(self, direction: Vector2D) -> Point2D:
+        """The point on the arc furthest in `direction`: straight out that
+        way from the centre when the sweep reaches it, otherwise the end
+        further that way. A zero `direction` gives the start."""
+        if direction.mag_sq() > 0.0 and self._spans(self.position + direction):
+            return self.position + direction * (self.r / direction.mag())
+        var a = self.at(0.0)
+        var b = self.at(1.0)
+        return a if (a - b).dot(direction) >= 0.0 else b
+
     def _spans(self, p: Point2D) -> Bool:
         """Whether the direction from the centre to `p` lies within the
         sweep, however far `p` is from the circle."""
@@ -911,6 +948,106 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             return False
         return self.arc()._spans(p)
 
+    # A sector has no holes, so it holds a shape exactly when it holds the
+    # shape's outline: a `Rectangle` or `Triangle` edge by edge, a `Circle`
+    # as a whole-turn `Arc`, another `Sector` as its two radii and its arc.
+    def contains(self, r: Rectangle) -> Bool:
+        return self._contains_polygon(r._points())
+
+    def contains(self, t: Triangle) -> Bool:
+        return self._contains_polygon(t._points())
+
+    def contains(self, c: Circle) -> Bool:
+        return self._contains_arc(Arc(c.position, c.r, 0.0, tau))
+
+    def contains(self, other: Sector) -> Bool:
+        for radius in other._radii():
+            if not self.contains(radius):
+                return False
+        return self._contains_arc(other.arc())
+
+    # A segment or arc with both ends inside can still leave the sector:
+    # across the missing wedge of one wider than a half turn, or bulging
+    # out through a radius or the arc. Where it crosses the boundary -- the
+    # line of either radius, or the circle -- cuts it into pieces that are
+    # each wholly inside or wholly outside, so the sector holds it exactly
+    # when it holds the middle of every piece. A piece that only touches
+    # the boundary is inside, within the slack of `contains(Point2D)`.
+    def contains(self, l: Line) -> Bool:
+        if not (self.contains(l.start) and self.contains(l.end)):
+            return False
+        var d = l.end - l.start
+        var f = l.start - self.position
+        var cuts: List[Float64] = [0.0, 1.0]
+        for u in self._edge_directions():
+            var across = _cross(d, u)
+            if across != 0.0:
+                cuts.append(-_cross(f, u) / across)
+        var len_sq = d.mag_sq()
+        var b = f.dot(d)
+        var discriminant = b * b - len_sq * (f.mag_sq() - self.r * self.r)
+        if len_sq > 0.0 and discriminant >= 0.0:
+            var root = sqrt(discriminant)
+            cuts.append((-b - root) / len_sq)
+            cuts.append((-b + root) / len_sq)
+        sort(cuts)
+        for i in range(len(cuts) - 1):
+            var t0 = max(0.0, min(cuts[i], 1.0))
+            var t1 = max(0.0, min(cuts[i + 1], 1.0))
+            if not self.contains(l.start + d * ((t0 + t1) / 2.0)):
+                return False
+        return True
+
+    def _contains_arc(self, a: Arc) -> Bool:
+        if not (self.contains(a.at(0.0)) and self.contains(a.at(1.0))):
+            return False
+        var crossings = List[Point2D]()
+        for u in self._edge_directions():
+            var foot = self.position + u * (a.position - self.position).dot(u)
+            var h_sq = _dist_sq(a.position, foot)
+            if h_sq <= a.r * a.r:
+                var half = sqrt(a.r * a.r - h_sq)
+                crossings.append(foot + u * half)
+                crossings.append(foot - u * half)
+        var between = self.position - a.position
+        var d = between.mag()
+        if d > 0.0 and d <= a.r + self.r and d >= abs(a.r - self.r):
+            var along = (d * d + a.r * a.r - self.r * self.r) / (2.0 * d)
+            var h = sqrt(max(0.0, a.r * a.r - along * along))
+            var u = between * (1.0 / d)
+            var mid = a.position + u * along
+            var side = Vector2D(-u.y, u.x) * h
+            crossings.append(mid + side)
+            crossings.append(mid - side)
+        # Cut as angles past the start of the arc's counter-clockwise sweep.
+        var s = _normalized_sweep(a.start_angle, a.sweep_angle)
+        var cuts: List[Float64] = [0.0, s[1]]
+        for p in crossings:
+            var v = p - a.position
+            var angle = atan2(v.y, v.x) - s[0]
+            angle -= tau * floor(angle / tau)
+            if angle < s[1]:
+                cuts.append(angle)
+        sort(cuts)
+        for i in range(len(cuts) - 1):
+            var middle = s[0] + (cuts[i] + cuts[i + 1]) / 2.0
+            if not self.contains(a.position + _unit(middle) * a.r):
+                return False
+        return True
+
+    def _contains_polygon[N: Int](self, pts: Array[Point2D, N]) -> Bool:
+        for i in range(N):
+            if not self.contains(Line(pts[i], pts[(i + 1) % N])):
+                return False
+        return True
+
+    def _edge_directions(self) -> Array[Vector2D, 2]:
+        """Unit directions of the two radii, from the tip outward."""
+        return [
+            _unit(self.start_angle),
+            _unit(self.start_angle + self.arc()._sweep()),
+        ]
+
     def _radii(self) -> Array[Line, 2]:
         """The two straight edges, from the tip out to where the arc starts
         and ends."""
@@ -1054,6 +1191,25 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     def contains(self, l: Line) -> Bool:
         return self.contains(l.start) and self.contains(l.end)
+
+    def contains(self, s: Sector) -> Bool:
+        # A sector is its tip fanned out to its arc, and a triangle is
+        # convex, so it holds the sector when it holds the tip and, for
+        # each edge, the arc's point furthest across it. Both ways across
+        # are tried, so a degenerate triangle needs no winding.
+        if not self.contains(s.position):
+            return False
+        var a = s.arc()
+        var pts = self._points()
+        for i in range(3):
+            var e = pts[(i + 1) % 3] - pts[i]
+            var normal = Vector2D(-e.y, e.x)
+            if not (
+                self.contains(a._furthest_along(normal))
+                and self.contains(a._furthest_along(-normal))
+            ):
+                return False
+        return True
 
     def move_to(mut self, position: Point2D):
         self.translate(position - self.center())
