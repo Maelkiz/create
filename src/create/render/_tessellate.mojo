@@ -27,9 +27,11 @@ where the ring has to follow a rotated edge.
 from std.math import abs, ceil, cos, max, min, sin, sqrt, pi
 
 from create.math.matrix import Matrix, inverse, apply as mat_apply
+from create.math.point2d import Point2D
 
 from ._command import RenderCommand
 from ._curve import bezier_device_points, stroke_quads
+from ._sector import sector_quads
 from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
 from ._shadow import (
     SIL_RECT,
@@ -546,6 +548,21 @@ def emit_bezier(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
         bezier_device_points(c, m),
         Float64(outline_thickness_px(c.style, m, scale)),
     )
+    _emit_quads(vb, corners, c.style.outline_color)
+
+
+def emit_sector(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
+    """`sector_quads`' tiling, the same quads the CPU fills: fill, then
+    outline."""
+    var quads = sector_quads(c, c.transform, scale)
+    if c.style._fill_visible():
+        _emit_quads(vb, quads.fill, c.style.fill_color)
+    if c.style._outline_visible():
+        _emit_quads(vb, quads.outline, c.style.outline_color)
+
+
+def _emit_quads(mut vb: VertexBuffer, corners: List[Point2D], color: Color):
+    """Each quad of `corners`, four corners apiece, as two triangles."""
     for q in range(0, len(corners), 4):
         vb.quad(
             corners[q].x,
@@ -556,7 +573,7 @@ def emit_bezier(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
             corners[q + 2].y,
             corners[q + 3].x,
             corners[q + 3].y,
-            c.style.outline_color,
+            color,
         )
 
 

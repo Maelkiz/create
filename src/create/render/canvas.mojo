@@ -10,7 +10,14 @@ from ._viewport import Viewport
 from .camera import Camera
 from create.math.bezier import Bezier
 from create.math.spline import Spline
-from create.math.geometry import Rectangle, Circle, Line, Triangle, Arc
+from create.math.geometry import (
+    Arc,
+    Circle,
+    Line,
+    Rectangle,
+    Sector,
+    Triangle,
+)
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 from create.math.matrix import (
@@ -31,6 +38,7 @@ from ._command import (
     letterbox_command,
     line_command,
     rect_command,
+    sector_command,
     sprite_command,
     text_command,
     triangle_command,
@@ -664,6 +672,48 @@ struct Canvas:
 
     def circle(mut self, c: Circle):
         self.circle(c.center(), c.r)
+
+    def sector(
+        mut self,
+        position: Point2D,
+        r: Float64,
+        start_angle: Float64,
+        sweep_angle: Float64,
+    ):
+        """Draw the pie slice of the circle around `position` with radius
+        `r`, from `start_angle` round by `sweep_angle`: a `Sector`, its tip at
+        `position`.
+
+        Angles are radians, counter-clockwise from the +x axis (y is up); a
+        negative sweep runs clockwise, and a full turn or more is the whole
+        disc. The outline is inset, as a circle's is: the fill stops where it
+        starts, and a translucent sector composites once. `corner_radius` does
+        not round a sector, and it casts no shadow. A zero radius or sweep
+        draws nothing.
+        """
+        self._state.backend.record(
+            sector_command(
+                self._transform,
+                self._style,
+                position.x,
+                position.y,
+                r,
+                start_angle,
+                sweep_angle,
+            )
+        )
+
+    def sector(
+        mut self,
+        position: Point2D,
+        r: Int,
+        start_angle: Float64,
+        sweep_angle: Float64,
+    ):
+        self.sector(position, Float64(r), start_angle, sweep_angle)
+
+    def sector(mut self, s: Sector):
+        self.sector(s.position, s.r, s.start_angle, s.sweep_angle)
 
     def line(mut self, start: Point2D, end: Point2D):
         # Recorded only when it would render: an outline-less line is the one

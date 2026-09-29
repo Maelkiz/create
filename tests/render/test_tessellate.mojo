@@ -15,6 +15,7 @@ from create.render._command import (
     letterbox_command,
     line_command,
     rect_command,
+    sector_command,
     sprite_command,
     triangle_command,
 )
@@ -34,6 +35,7 @@ from create.render._tessellate import (
     emit_letterbox,
     emit_line,
     emit_rect,
+    emit_sector,
     emit_sprite,
     emit_triangle,
 )
@@ -42,6 +44,7 @@ from create.render.autoscale import AutoScale
 from create.render.color import Color
 from create.render._viewport import Viewport
 from create.render._curve import bezier_device_points, stroke_quads
+from create.render._sector import sector_quads
 from create.math.bezier import Bezier
 
 comptime _FLOATS = 13
@@ -271,6 +274,34 @@ def test_a_bezier_is_two_triangles_per_stroke_quad() raises -> None:
     # The first quad's corners are the CPU's, vertex for vertex.
     assert_equal(_x(vb, 0), Float64(Float32(corners[0].x)))
     assert_equal(_y(vb, 1), Float64(Float32(corners[1].y)))
+
+
+def test_a_sector_is_two_triangles_per_quad() raises -> None:
+    var vb = VertexBuffer()
+    var v = _viewport(100, 100)
+    var s = _plain()
+    s.outline_enabled = True
+    s.outline_thickness = 3
+    var c = sector_command(v.base_matrix(), s, 0.0, 0.0, 40.0, 0.5, 4.0)
+    emit_sector(vb, c, v.scale)
+    var quads = sector_quads(c, c.transform, v.scale)
+    assert_true(len(quads.fill) > 0)
+    assert_true(len(quads.outline) > 0)
+    assert_equal(vb.count(), 6 * ((len(quads.fill) + len(quads.outline)) // 4))
+    # Fill first, its corners the CPU's, vertex for vertex.
+    assert_equal(_x(vb, 0), Float64(Float32(quads.fill[0].x)))
+    assert_equal(_y(vb, 1), Float64(Float32(quads.fill[1].y)))
+
+
+def test_a_sector_emits_only_its_visible_parts() raises -> None:
+    var vb = VertexBuffer()
+    var v = _viewport(100, 100)
+    # `_plain` fills only.
+    var c = sector_command(v.base_matrix(), _plain(), 0.0, 0.0, 40.0, 0.5, 4.0)
+    emit_sector(vb, c, v.scale)
+    var quads = sector_quads(c, c.transform, v.scale)
+    assert_equal(len(quads.outline), 0)
+    assert_equal(vb.count(), 6 * (len(quads.fill) // 4))
 
 
 def test_an_unoutlined_bezier_emits_nothing() raises -> None:

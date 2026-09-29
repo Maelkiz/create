@@ -33,6 +33,7 @@ from create.math.matrix import apply as mat_apply
 
 from ._command import (
     CMD_BEZIER,
+    CMD_SECTOR,
     CMD_CIRCLE,
     CMD_CLEAR,
     CMD_LETTERBOX,
@@ -107,6 +108,7 @@ from ._tessellate import (
     emit_letterbox,
     emit_line,
     emit_rect,
+    emit_sector,
     emit_silhouette_mask,
     emit_sprite,
     emit_triangle,
@@ -646,6 +648,8 @@ struct GLRenderer(Movable):
             emit_line(self.vertices, c, scale)
         elif c.kind == CMD_BEZIER:
             emit_bezier(self.vertices, c, scale)
+        elif c.kind == CMD_SECTOR:
+            emit_sector(self.vertices, c, scale)
         elif c.kind == CMD_TRIANGLE:
             emit_triangle(self.vertices, c, scale)
         elif c.kind == CMD_SPRITE:

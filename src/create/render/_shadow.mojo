@@ -58,6 +58,7 @@ def casts_outer_shadow(c: RenderCommand) -> Bool:
         return c.style._outline_visible()
     if c.kind == CMD_TEXT:
         return c.style.text_color.a > 0
+    # A sector (`CMD_SECTOR`) casts none yet.
     return c.kind == CMD_SPRITE
 
 
@@ -70,6 +71,7 @@ def casts_inset_shadow(c: RenderCommand) -> Bool:
     """
     if not c.style._shadow_visible() or not c.style.shadow_inset:
         return False
+    # A sector ignores `shadow_inset` too: the inset regions are these three.
     return c.kind == CMD_RECT or c.kind == CMD_CIRCLE or c.kind == CMD_TRIANGLE
 
 

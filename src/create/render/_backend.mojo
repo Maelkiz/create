@@ -3,6 +3,7 @@ from std.memory import unsafe_memcpy
 from std.math import max, min, abs, sqrt, ceil, floor, cos, sin, pi
 
 from create.math.matrix import Matrix, identity, inverse, apply as mat_apply
+from create.math.point2d import Point2D
 
 from ._command import (
     CMD_CLEAR,
@@ -14,9 +15,11 @@ from ._command import (
     CMD_TEXT,
     CMD_LETTERBOX,
     CMD_BEZIER,
+    CMD_SECTOR,
     RenderCommand,
 )
 from ._curve import bezier_device_points, bezier_shadow_mask, stroke_quads
+from ._sector import sector_quads
 from ._blur import (
     SHADOW_MASK_LIMIT,
     BlurredMask,
@@ -82,6 +85,27 @@ def device_bounds(
     var y_min = max(Int(min(min(p0[1], p1[1]), min(p2[1], p3[1]))), 0)
     var y_max = min(Int(max(max(p0[1], p1[1]), max(p2[1], p3[1]))) + 1, height)
     return (x_min, y_min, x_max, y_max)
+
+
+def _fill_quads[
+    o: Origin[mut=True]
+](s: Surface[o], corners: List[Point2D], color: Color):
+    """Fill each quad of `corners`, four corners apiece, with `fill_quad`.
+    Quads sharing an edge composite once, by its half-open rule."""
+    for q in range(0, len(corners), 4):
+        var qx: Array[Float64, 4] = [
+            corners[q].x,
+            corners[q + 1].x,
+            corners[q + 2].x,
+            corners[q + 3].x,
+        ]
+        var qy: Array[Float64, 4] = [
+            corners[q].y,
+            corners[q + 1].y,
+            corners[q + 2].y,
+            corners[q + 3].y,
+        ]
+        fill_quad(s, qx, qy, color)
 
 
 def _blurred_shadow[
@@ -1124,6 +1148,8 @@ struct Backend(Movable):
             self._line(t, c, scale, m)
         elif c.kind == CMD_BEZIER:
             self._bezier(t, c, scale, m)
+        elif c.kind == CMD_SECTOR:
+            self._sector(t, c, scale, m)
         elif c.kind == CMD_TRIANGLE:
             self._triangle(t, c, scale, m)
         elif c.kind == CMD_SPRITE:
@@ -1684,20 +1710,24 @@ struct Backend(Movable):
             bezier_device_points(c, m),
             Float64(outline_thickness_px(c.style, m, scale)),
         )
-        for q in range(0, len(corners), 4):
-            var qx: Array[Float64, 4] = [
-                corners[q].x,
-                corners[q + 1].x,
-                corners[q + 2].x,
-                corners[q + 3].x,
-            ]
-            var qy: Array[Float64, 4] = [
-                corners[q].y,
-                corners[q + 1].y,
-                corners[q + 2].y,
-                corners[q + 3].y,
-            ]
-            fill_quad(s, qx, qy, c.style.outline_color)
+        _fill_quads(s, corners, c.style.outline_color)
+
+    def _sector[
+        o: Origin[mut=True]
+    ](
+        mut self,
+        s: Surface[o],
+        c: RenderCommand,
+        scale: Float64,
+        m: Matrix[3, 3],
+    ):
+        """Fill `sector_quads`' tiling, fill then outline, one `fill_quad`
+        each: the two share their edges, so every pixel is composited once."""
+        var quads = sector_quads(c, m, scale)
+        if c.style._fill_visible():
+            _fill_quads(s, quads.fill, c.style.fill_color)
+        if c.style._outline_visible():
+            _fill_quads(s, quads.outline, c.style.outline_color)
 
     def _triangle[
         o: Origin[mut=True]

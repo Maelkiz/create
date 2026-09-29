@@ -40,7 +40,7 @@ when `DISPLAY`, `WAYLAND_DISPLAY` and `XDG_RUNTIME_DIR` are all unset — this
 test only skips if `GLWindow` construction itself raises.
 """
 
-from std.math import abs, max, min
+from std.math import abs, max, min, tau
 from std.testing import TestSuite, assert_true
 
 from create import *
@@ -132,7 +132,10 @@ comptime _SHAPE_TRANSLUCENT_CLOSED_SPLINE = 37
 comptime _SHAPE_SHADOWED_CLOSED_SPLINE = 38
 comptime _SHAPE_BLURRED_CLOSED_SPLINE = 39
 comptime _SHAPE_TRANSLUCENT_ARC = 40
-comptime _SHAPE_COUNT = 41
+comptime _SHAPE_SECTOR = 41
+comptime _SHAPE_TRANSLUCENT_PAC_MAN = 42
+comptime _SHAPE_OUTLINED_DISC_SECTOR = 43
+comptime _SHAPE_COUNT = 44
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -248,6 +251,12 @@ def _shape_name(shape: Int) -> String:
         return "blurred closed spline"
     elif shape == _SHAPE_TRANSLUCENT_ARC:
         return "translucent arc"
+    elif shape == _SHAPE_SECTOR:
+        return "sector"
+    elif shape == _SHAPE_TRANSLUCENT_PAC_MAN:
+        return "translucent pac-man sector"
+    elif shape == _SHAPE_OUTLINED_DISC_SECTOR:
+        return "outlined whole-turn sector"
     else:
         return "blurred line"
 
@@ -604,6 +613,26 @@ struct _Parity(Program):
             with canvas.style():
                 canvas.outline(Color(0x20, 0x40, 0xFF, 0x80), thickness=8)
                 canvas.arc((0, 0), 70, 0.5, -7.0)
+        elif self.shape == _SHAPE_SECTOR:
+            # Under a half turn, rotated, filled and outlined.
+            with canvas.style():
+                canvas.fill(Color(0x50, 0xA0, 0xD0))
+                canvas.outline(Color.BLACK, thickness=6)
+                with canvas.transform(rotate(0.4)):
+                    canvas.sector((-40, -55), 110, 0.2, 1.1)
+        elif self.shape == _SHAPE_TRANSLUCENT_PAC_MAN:
+            # Past a half turn, clockwise, so the tip is round; translucent,
+            # so a seam between fill and outline would show darker.
+            with canvas.style():
+                canvas.fill(Color(0xFF, 0xC0, 0x20, 0x80))
+                canvas.outline(Color(0x20, 0x40, 0xFF, 0x80), thickness=10)
+                canvas.sector((0, 0), 65, -0.6, -(tau - 1.2))
+        elif self.shape == _SHAPE_OUTLINED_DISC_SECTOR:
+            # A whole turn, outline only: a ring.
+            with canvas.style():
+                canvas.fill_enabled(False)
+                canvas.outline(Color(0x80, 0xFF, 0x80), thickness=8)
+                canvas.sector((0, 0), 60, 1.0, tau)
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline

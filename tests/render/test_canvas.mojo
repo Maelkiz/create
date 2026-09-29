@@ -17,7 +17,7 @@ from create.core.headless import run_headless
 from create.render.surface import MemorySurface
 from create.sprite.sprite import Sprite
 from std.memory import ArcPointer
-from create.math.geometry import Circle, Line, Rectangle, Triangle
+from create.math.geometry import Circle, Line, Rectangle, Sector, Triangle
 from create.math.matrix import rotate, scale, translate
 from create.math.point2d import Point2D
 
@@ -1306,6 +1306,146 @@ struct UnrecordedArc(Program):
 def test_an_arc_that_draws_nothing_records_nothing() raises -> None:
     var m = run_headless[UnrecordedArc](100, 100)
     assert_equal(m.pixel(50, 20), Color.BLACK)
+
+
+@fieldwise_init
+struct SectorEveryWay(Program):
+    """A quarter through each overload, running both ways round."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> SectorEveryWay:
+        return SectorEveryWay(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.fill(Color.WHITE)
+        canvas.outline_enabled(False)
+        # Counter-clockwise from +x: the upper right quarter.
+        canvas.sector((0.0, 0.0), 30.0, 0.0, pi / 2.0)
+        # Clockwise from -x: the upper left quarter.
+        canvas.sector((0.0, 0.0), 20, pi, -pi / 2.0)
+        # Clockwise from -y: the lower left quarter.
+        canvas.sector(Sector((0.0, 0.0), 40, -pi / 2.0, -pi / 2.0))
+
+
+def test_sector_fills_through_every_overload() raises -> None:
+    var m = run_headless[SectorEveryWay](100, 100)
+    assert_equal(m.pixel(65, 35), Color.WHITE)
+    assert_equal(m.pixel(40, 40), Color.WHITE)
+    assert_equal(m.pixel(30, 70), Color.WHITE)
+    # The lower right quarter is left out.
+    assert_equal(m.pixel(70, 70), Color.BLACK)
+
+
+def _outlined_quarter(mut canvas: Canvas, filled: Bool):
+    """A quarter with a 4-unit white outline, filled red or not at all."""
+    canvas.background(Color.BLACK)
+    canvas.fill(Color.RED)
+    canvas.fill_enabled(filled)
+    canvas.outline(Color.WHITE, thickness=4)
+    canvas.sector((0.0, 0.0), 40.0, 0.0, pi / 2.0)
+
+
+@fieldwise_init
+struct OutlinedSector(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> OutlinedSector:
+        return OutlinedSector(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        _outlined_quarter(canvas, filled=True)
+
+
+@fieldwise_init
+struct OutlineOnlySector(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> OutlineOnlySector:
+        return OutlineOnlySector(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        _outlined_quarter(canvas, filled=False)
+
+
+def _assert_quarter_outline(m: MemorySurface) raises:
+    # Just inside the arc, and just above the start edge.
+    assert_equal(m.pixel(76, 23), Color.WHITE)
+    assert_equal(m.pixel(70, 48), Color.WHITE)
+    # Just below the start edge: outside.
+    assert_equal(m.pixel(70, 52), Color.BLACK)
+
+
+def test_sector_outline_is_inset() raises -> None:
+    var filled = run_headless[OutlinedSector](100, 100)
+    var hollow = run_headless[OutlineOnlySector](100, 100)
+    _assert_quarter_outline(filled)
+    _assert_quarter_outline(hollow)
+    assert_equal(filled.pixel(70, 30), Color.RED)
+    assert_equal(hollow.pixel(70, 30), Color.BLACK)
+
+
+@fieldwise_init
+struct TranslucentPacMan(Program):
+    """Past a half turn, so its tip is round, fill and outline the same
+    translucent colour."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> TranslucentPacMan:
+        return TranslucentPacMan(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.fill(Color(255, 255, 255, 128))
+        canvas.outline(Color(255, 255, 255, 128), thickness=6)
+        canvas.sector((0.0, 0.0), 40.0, 0.6, tau - 1.2)
+
+
+def test_a_translucent_sector_composites_once() raises -> None:
+    var m = run_headless[TranslucentPacMan](100, 100)
+    var once = m.pixel(30, 50)
+    assert_true(once != Color.BLACK)
+    for y in range(100):
+        for x in range(100):
+            var c = m.pixel(x, y)
+            if c != Color.BLACK and c != once:
+                raise Error(
+                    String("pixel (", x, ", ", y, ") painted twice: ", c)
+                )
+    # The mouth is left out.
+    assert_equal(m.pixel(80, 50), Color.BLACK)
+
+
+@fieldwise_init
+struct RotatedSectorUnderCamera(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> RotatedSectorUnderCamera:
+        return RotatedSectorUnderCamera(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.camera(Camera(Point2D(10.0, 0.0), 2.0))
+        canvas.fill(Color.WHITE)
+        canvas.outline_enabled(False)
+        # The upper right quarter turned a quarter: the upper left, in
+        # world space, twice the size on screen, its tip at (-20, 0).
+        with canvas.transform(rotate(pi / 2.0)):
+            canvas.sector((0.0, 0.0), 15.0, 0.0, pi / 2.0)
+
+
+def test_a_sector_follows_the_transform_and_camera() raises -> None:
+    var m = run_headless[RotatedSectorUnderCamera](100, 100)
+    assert_equal(m.pixel(20, 40), Color.WHITE)
+    assert_equal(m.pixel(40, 40), Color.BLACK)
+    assert_equal(m.pixel(20, 60), Color.BLACK)
 
 
 @fieldwise_init
