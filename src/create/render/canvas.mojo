@@ -10,7 +10,7 @@ from ._viewport import Viewport
 from .camera import Camera
 from create.math.bezier import Bezier
 from create.math.spline import Spline
-from create.math.geometry import Rectangle, Circle, Line, Triangle
+from create.math.geometry import Rectangle, Circle, Line, Triangle, Arc
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 from create.math.matrix import (
@@ -737,7 +737,49 @@ struct Canvas:
             return
         # Converted here, in local space: the knot spacing is measured where
         # the points were given, so a non-uniform scale can't reshape it.
-        var curves = spline.beziers()
+        self._bezier_chain(spline.beziers())
+
+    def arc(
+        mut self,
+        position: Point2D,
+        r: Float64,
+        start_angle: Float64,
+        sweep_angle: Float64,
+    ):
+        """Stroke the arc of the circle around `position` with radius `r`,
+        from `start_angle` round by `sweep_angle`, in the outline colour and
+        thickness: an `Arc`.
+
+        Angles are radians, counter-clockwise from the +x axis (y is up); a
+        negative sweep runs clockwise, and a full turn or more is the whole
+        circle, closed on a mitred joint.
+
+        Drawn as one stroke, like `bezier`: no fill, nothing with the outline
+        off, butt ends when open, and a translucent stroke composites once. A
+        blurred shadow costs what a `bezier`'s does. A zero radius or sweep
+        draws nothing.
+        """
+        self.arc(Arc(position, r, start_angle, sweep_angle))
+
+    def arc(
+        mut self,
+        position: Point2D,
+        r: Int,
+        start_angle: Float64,
+        sweep_angle: Float64,
+    ):
+        self.arc(position, Float64(r), start_angle, sweep_angle)
+
+    def arc(mut self, a: Arc):
+        if not self._style.outline_enabled:
+            return
+        # Converted here, in local space: the transform maps Béziers
+        # exactly, so a non-uniform scale draws the arc of an ellipse.
+        self._bezier_chain(a.beziers())
+
+    def _bezier_chain(mut self, curves: List[Bezier]):
+        """Record `curves`, each starting where the last ends, as one
+        stroke. Nothing is recorded for no curves."""
         if len(curves) == 0:
             return
         var points = List[Point2D](capacity=3 * len(curves) + 1)

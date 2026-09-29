@@ -3,7 +3,7 @@
 # geometry conventions the library promises — centred origin, y up, centred
 # shapes, source-over alpha — are checked rather than eyeballed.
 
-from std.math import pi
+from std.math import pi, tau
 from std.os import remove
 from std.testing import (
     TestSuite,
@@ -1207,6 +1207,105 @@ struct UnrecordedSpline(Program):
 def test_a_spline_that_draws_nothing_records_nothing() raises -> None:
     var m = run_headless[UnrecordedSpline](100, 100)
     assert_equal(m.pixel(80, 20), Color.BLACK)
+
+
+@fieldwise_init
+struct ArcEveryWay(Program):
+    """An arc through each overload, running both ways round."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> ArcEveryWay:
+        return ArcEveryWay(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.WHITE, thickness=4)
+        # The upper half.
+        canvas.arc((0.0, 0.0), 30.0, 0.0, pi)
+        # Clockwise from +x: the lower right quarter.
+        canvas.arc((0.0, 0.0), 20, 0.0, -pi / 2.0)
+        # Counter-clockwise from -x: the lower left quarter.
+        canvas.arc(Arc((0.0, 0.0), 40, pi, pi / 2.0))
+
+
+def test_arc_strokes_through_every_overload() raises -> None:
+    var m = run_headless[ArcEveryWay](100, 100)
+    assert_equal(m.pixel(50, 20), Color.WHITE)
+    # Radius 20 at -45°, and not at -135°.
+    assert_equal(m.pixel(64, 64), Color.WHITE)
+    assert_equal(m.pixel(36, 64), Color.BLACK)
+    # Radius 40 at -135°, and not at -45°.
+    assert_equal(m.pixel(21, 78), Color.WHITE)
+    assert_equal(m.pixel(78, 78), Color.BLACK)
+    # Not a region: nothing fills the middle.
+    assert_equal(m.pixel(50, 50), Color.BLACK)
+
+
+@fieldwise_init
+struct ArcRing(Program):
+    """A whole turn, or just short of one, with a hard red shadow."""
+
+    var sweep: Float64
+
+    @staticmethod
+    def create(mut context: Context) raises -> ArcRing:
+        return ArcRing(tau)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.WHITE, thickness=4)
+        canvas.shadow(Color.RED, blur=0)
+        canvas.arc((0.0, 0.0), 30.0, 0.0, self.sweep)
+
+
+@fieldwise_init
+struct ArcGap(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> ArcGap:
+        return ArcGap(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.WHITE, thickness=4)
+        canvas.arc((0.0, 0.0), 30.0, 0.0, tau - 0.1)
+
+
+def test_a_whole_turn_arc_closes() raises -> None:
+    var ring = run_headless[ArcRing](100, 100)
+    var gap = run_headless[ArcGap](100, 100)
+    # Just below the start, which a butt end at angle 0 would leave bare.
+    assert_equal(ring.pixel(80, 50), Color.WHITE)
+    assert_equal(gap.pixel(80, 50), Color.BLACK)
+    # The shadow ring, 4 right and 4 down, inside the stroke's own.
+    assert_equal(ring.pixel(54, 24), Color.RED)
+
+
+@fieldwise_init
+struct UnrecordedArc(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> UnrecordedArc:
+        return UnrecordedArc(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        var before = len(canvas._state.backend.commands)
+        canvas.arc((0.0, 0.0), 0.0, 0.0, pi)
+        canvas.arc((0.0, 0.0), 30.0, 1.0, 0.0)
+        canvas.outline_enabled(False)
+        canvas.arc((0.0, 0.0), 30.0, 0.0, pi)
+        if len(canvas._state.backend.commands) != before:
+            raise Error("an arc that draws nothing was recorded")
+
+
+def test_an_arc_that_draws_nothing_records_nothing() raises -> None:
+    var m = run_headless[UnrecordedArc](100, 100)
+    assert_equal(m.pixel(50, 20), Color.BLACK)
 
 
 @fieldwise_init

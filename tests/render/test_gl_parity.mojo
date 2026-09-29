@@ -131,7 +131,8 @@ comptime _SHAPE_SPLINE = 36
 comptime _SHAPE_TRANSLUCENT_CLOSED_SPLINE = 37
 comptime _SHAPE_SHADOWED_CLOSED_SPLINE = 38
 comptime _SHAPE_BLURRED_CLOSED_SPLINE = 39
-comptime _SHAPE_COUNT = 40
+comptime _SHAPE_TRANSLUCENT_ARC = 40
+comptime _SHAPE_COUNT = 41
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -245,6 +246,8 @@ def _shape_name(shape: Int) -> String:
         return "shadowed closed spline"
     elif shape == _SHAPE_BLURRED_CLOSED_SPLINE:
         return "blurred closed spline"
+    elif shape == _SHAPE_TRANSLUCENT_ARC:
+        return "translucent arc"
     else:
         return "blurred line"
 
@@ -595,6 +598,12 @@ struct _Parity(Program):
                 )
             ):
                 _spline(canvas, closed=True)
+        elif self.shape == _SHAPE_TRANSLUCENT_ARC:
+            # Clockwise past a turn, so it closes; translucent, so the
+            # closing joint would show darker if painted twice.
+            with canvas.style():
+                canvas.outline(Color(0x20, 0x40, 0xFF, 0x80), thickness=8)
+                canvas.arc((0, 0), 70, 0.5, -7.0)
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline
