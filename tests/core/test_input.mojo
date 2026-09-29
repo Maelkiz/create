@@ -2,7 +2,7 @@ from std.testing import TestSuite, assert_equal, assert_true
 from create.core.input import Input
 from create.core.key import Key
 from create.core.context import Context
-from create.render.viewport import Viewport
+from create.render._viewport import Viewport
 from create.core._events import apply_events
 from create._window.event import Event, KeyDown, KeyUp
 from create.math.point2d import Point2D

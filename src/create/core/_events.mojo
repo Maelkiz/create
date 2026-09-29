@@ -26,7 +26,7 @@ from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
 from create.core.context import Context
-from create.render.viewport import Viewport
+from create.render._viewport import Viewport
 
 
 def apply_events(

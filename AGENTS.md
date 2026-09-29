@@ -24,7 +24,7 @@ it makes the library better.
 |---|---|---|
 | root | `src/create/__init__.mojo` | The preamble: star-imports all five subpackages below |
 | `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`, `Input`, `Key`, `MouseButton`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path` |
-| `render` | `src/create/render/` | `Canvas`, `Camera`, `Viewport`, colour/font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
+| `render` | `src/create/render/` | `Canvas`, `Camera`, colour/font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
 | `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes, `Random`, `Noise`, easing and `Tween`, util functions |
 | `sprite` | `src/create/sprite/` | `Sprite` (BMP/PNG/JPEG), `SpriteAnimation`, `SpriteAnimator` |
 | `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |

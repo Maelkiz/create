@@ -8,7 +8,7 @@ from std.testing import TestSuite, assert_equal, assert_true
 from create import *
 from create.core.headless import run_headless
 from create.render.surface import MemorySurface
-from create.render.viewport import Viewport
+from create.render._viewport import Viewport
 from create.render.style import Style
 from create.render._backend import Backend
 from create.render._raster import blend

@@ -38,7 +38,7 @@ from create.render._tessellate import (
 from create.math.matrix import rotate
 from create.render.autoscale import AutoScale
 from create.render.color import Color
-from create.render.viewport import Viewport
+from create.render._viewport import Viewport
 
 comptime _FLOATS = 13
 """Mirrors `_tessellate._VERTEX_FLOATS`; spelled out so a change to the vertex

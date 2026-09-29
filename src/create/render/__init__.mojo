@@ -4,7 +4,6 @@ from .align import Align
 from .blend_mode import BlendMode
 from .autoscale import AutoScale
 from .surface import Surface, MemorySurface
-from .viewport import Viewport
 from .font import Font, FontWeight
 from .style import Style
 from .camera import Camera

@@ -5,7 +5,7 @@ from std.testing import (
     assert_almost_equal,
 )
 from create.render.autoscale import AutoScale
-from create.render.viewport import Viewport
+from create.render._viewport import Viewport
 from create.math.matrix import apply
 
 

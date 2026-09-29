@@ -6,7 +6,7 @@ from .align import Align
 from .blend_mode import BlendMode
 from .autoscale import AutoScale
 from .font import Font
-from .viewport import Viewport
+from ._viewport import Viewport
 from .camera import Camera
 from create.math.geometry import Rectangle, Circle, Line, Triangle
 from create.math.point2d import Point2D
