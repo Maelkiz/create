@@ -37,7 +37,7 @@ struct App(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         self.angle += context.time.delta
-        self.fps = Int(context.framerate())
+        self.fps = Int(context.frame_rate())
 
         canvas.background(Color(0x20, 0x24, 0x2C))
 

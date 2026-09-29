@@ -12,13 +12,13 @@ struct Context(Copyable, Movable):
     Two directions share it. The loop writes `time` and `input` before each
     `update`, for the program to read; the program sets the dials, for the
     loop to read. Every dial is a method, like the `Canvas` style setters:
-    `context.autoclear(False)`, `context.max_framerate(30)`.
+    `context.autoclear(False)`, `context.max_frame_rate(30)`.
 
     A `Canvas` is built and dropped inside one frame, so a setting that has to
     survive the frame boundary cannot live on it. These do — the autoscale
     mode and design resolution the next frame's mapping is derived from,
     whether the next frame opens with a clear, the letterbox colour, and the
-    two the run loop reads after a frame has been released, `max_framerate`
+    two the run loop reads after a frame has been released, `max_frame_rate`
     and `quit`.
 
     Handed to `Program.create` on its own, before any frame exists, and
@@ -34,7 +34,7 @@ struct Context(Copyable, Movable):
     each frame. So a dial turned part-way through `update` applies to the *next*
     frame, uniformly — the clear of the frame being rendered was recorded before
     `update` was called, and one frame cannot record under two mappings. Set
-    them in `create` to have them hold from frame one. `max_framerate` and
+    them in `create` to have them hold from frame one. `max_frame_rate` and
     `quit` are the exception, and only because the loop reads them after the
     frame body returns.
     """
@@ -54,7 +54,7 @@ struct Context(Copyable, Movable):
     var _design_w: Int
     var _design_h: Int
     var _frame_count: Int
-    var _max_framerate: Int
+    var _max_frame_rate: Int
     var _quit: Bool
 
     def __init__(out self):
@@ -67,7 +67,7 @@ struct Context(Copyable, Movable):
         self._design_w = 0
         self._design_h = 0
         self._frame_count = 0
-        self._max_framerate = 0
+        self._max_frame_rate = 0
         self._quit = False
 
     def design_resolution(mut self, width: Int, height: Int):
@@ -115,7 +115,7 @@ struct Context(Copyable, Movable):
         """Frames rendered so far. 1 during the first `update`."""
         return self._frame_count
 
-    def framerate(self) -> Float64:
+    def frame_rate(self) -> Float64:
         """Current frames per second, derived from the last frame's delta.
 
         `0.0` on the first frame, where `delta` is still `0.0` and there is
@@ -125,7 +125,7 @@ struct Context(Copyable, Movable):
             return 0.0
         return 1.0 / self.time.delta
 
-    def max_framerate(mut self, fps: Int) raises:
+    def max_frame_rate(mut self, fps: Int) raises:
         """Limit the loop to at most `fps` frames per second.
 
         A cap tighter than the display's own pacing (vsync, or the CPU
@@ -136,9 +136,9 @@ struct Context(Copyable, Movable):
         """
         if fps <= 0:
             raise Error(
-                "max_framerate fps must be positive, got " + String(fps)
+                "max_frame_rate fps must be positive, got " + String(fps)
             )
-        self._max_framerate = fps
+        self._max_frame_rate = fps
 
     def _set_viewport(
         self, mut state: PersistentCanvasState, pixel_w: Int, pixel_h: Int

@@ -10,7 +10,7 @@ trait Program(Deinitable, Movable):
     a canvas it may not write to and no input at all, which is what forced a
     program to smuggle a decision from one into the other through a field —
     reading a key in `update` to file a screenshot in `render`, or caching a
-    framerate reading to render it. Deciding and rendering are the same frame's
+    frame rate reading to render it. Deciding and rendering are the same frame's
     work, so they are the same method's.
 
     There are no event callbacks. Input arrives on the context, as

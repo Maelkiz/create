@@ -210,7 +210,7 @@ anchor layout to the edges. Font size, outline thickness and sprite size scale b
 
 `Context` dials are methods (`context.autoclear(False)`, like the canvas style setters); its only
 fields are the readings `time` and `input`. Dials are read at frame construction, so a change
-mid-`update` applies next frame — except `max_framerate()` and `quit()`, read after `update` returns.
+mid-`update` applies next frame — except `max_frame_rate()` and `quit()`, read after `update` returns.
 
 ## Critical Gotchas
 
