@@ -12,7 +12,7 @@ shadow costs one blur per frame.
 
 from std.math import ceil, floor, sqrt
 
-from create.math.bezier import CubicBezier
+from create.math.bezier import Bezier
 from create.math.matrix import Matrix, apply as mat_apply
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
@@ -48,7 +48,7 @@ def bezier_device_points(c: RenderCommand, m: Matrix[3, 3]) -> List[Point2D]:
         mapped.append(mat_apply(m, p.x, p.y))
     var points = List[Point2D]()
     for i in range(0, len(mapped) - 3, 3):
-        var part = CubicBezier(
+        var part = Bezier(
             mapped[i], mapped[i + 1], mapped[i + 2], mapped[i + 3]
         ).flatten(FLATTEN_TOLERANCE_PX)
         var first = 0 if len(points) == 0 else 1

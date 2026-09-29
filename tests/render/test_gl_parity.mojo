@@ -251,7 +251,7 @@ def _shape_name(shape: Int) -> String:
 
 def _bezier(mut canvas: Canvas):
     """An S-curve with a sharp bend."""
-    canvas.bezier(CubicBezier((-90, -50), (-60, 90), (60, -90), (90, 50)))
+    canvas.bezier(Bezier((-90, -50), (-60, 90), (60, -90), (90, 50)))
 
 
 def _catmull_rom(mut canvas: Canvas, closed: Bool):

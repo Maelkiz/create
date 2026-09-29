@@ -8,7 +8,7 @@ from .autoscale import AutoScale
 from .font import Font
 from ._viewport import Viewport
 from .camera import Camera
-from create.math.bezier import CubicBezier
+from create.math.bezier import Bezier
 from create.math.catmull_rom import CatmullRomSpline
 from create.math.geometry import Rectangle, Circle, Line, Triangle
 from create.math.point2d import Point2D
@@ -700,9 +700,9 @@ struct Canvas:
         A blurred shadow is blurred afresh every frame (it cannot be cached
         like a sprite's), and on the GPU costs one extra draw call.
         """
-        self.bezier(CubicBezier(start, control1, control2, end))
+        self.bezier(Bezier(start, control1, control2, end))
 
-    def bezier(mut self, b: CubicBezier):
+    def bezier(mut self, b: Bezier):
         # Recorded only when it would render, as `line` is.
         if not self._style.outline_enabled:
             return

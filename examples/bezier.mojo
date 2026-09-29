@@ -10,7 +10,7 @@ comptime _SPEED = 260.0
 @fieldwise_init
 struct App(Program):
     var handles: List[Point2D]
-    """`start`, `control1`, `control2`, `end`, in the order `CubicBezier`
+    """`start`, `control1`, `control2`, `end`, in the order `Bezier`
     takes them."""
 
     var dragging: Int
@@ -46,7 +46,7 @@ struct App(Program):
         if self.dragging >= 0:
             self.handles[self.dragging] = mouse
 
-        var curve = CubicBezier(
+        var curve = Bezier(
             self.handles[0], self.handles[1], self.handles[2], self.handles[3]
         )
 

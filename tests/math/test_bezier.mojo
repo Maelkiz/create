@@ -5,13 +5,13 @@ from std.testing import (
     assert_almost_equal,
 )
 from std.math import abs, pi
-from create.math.bezier import CubicBezier
+from create.math.bezier import Bezier
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
 
-def _s_curve() -> CubicBezier:
-    return CubicBezier((0.0, 0.0), (100.0, 100.0), (0.0, 100.0), (100.0, 0.0))
+def _s_curve() -> Bezier:
+    return Bezier((0.0, 0.0), (100.0, 100.0), (0.0, 100.0), (100.0, 0.0))
 
 
 def _assert_point_near(p: Point2D, q: Point2D, tol: Float64 = 1e-9) raises:
@@ -35,7 +35,7 @@ def test_at_endpoints() raises -> None:
 
 
 def test_at_straight_curve_is_collinear() raises -> None:
-    var b = CubicBezier((0.0, 0.0), (1.0, 2.0), (3.0, 6.0), (4.0, 8.0))
+    var b = Bezier((0.0, 0.0), (1.0, 2.0), (3.0, 6.0), (4.0, 8.0))
     for i in range(11):
         var p = b.at(Float64(i) / 10.0)
         assert_almost_equal(p.y, 2.0 * p.x, atol=1e-12)
@@ -43,7 +43,7 @@ def test_at_straight_curve_is_collinear() raises -> None:
 
 def test_at_extrapolates() raises -> None:
     # A straight, evenly spaced curve is linear in t, so t = 2 is twice as far.
-    var b = CubicBezier((0.0, 0.0), (1.0, 0.0), (2.0, 0.0), (3.0, 0.0))
+    var b = Bezier((0.0, 0.0), (1.0, 0.0), (2.0, 0.0), (3.0, 0.0))
     _assert_point_near(b.at(2.0), Point2D(6.0, 0.0))
 
 
@@ -103,7 +103,7 @@ def test_bounds_is_tighter_than_control_points() raises -> None:
 
 def test_bounds_touches_the_extremes() raises -> None:
     # Tight: some sample reaches each edge to within the sample spacing.
-    var b = CubicBezier((0.0, 0.0), (-40.0, 80.0), (120.0, -30.0), (60.0, 20.0))
+    var b = Bezier((0.0, 0.0), (-40.0, 80.0), (120.0, -30.0), (60.0, 20.0))
     var r = b.bounds()
     var lo_x = 1e9
     var hi_x = -1e9
@@ -152,12 +152,12 @@ def test_flatten_stays_within_tolerance() raises -> None:
 
 
 def test_flatten_segment_count_is_capped() raises -> None:
-    var b = CubicBezier((0.0, 0.0), (1e9, 1e9), (-1e9, 1e9), (0.0, 0.0))
+    var b = Bezier((0.0, 0.0), (1e9, 1e9), (-1e9, 1e9), (0.0, 0.0))
     assert_equal(len(b.flatten(1e-9)), 1025)
 
 
 def test_flatten_degenerate_curve() raises -> None:
-    var b = CubicBezier((5.0, 5.0), (5.0, 5.0), (5.0, 5.0), (5.0, 5.0))
+    var b = Bezier((5.0, 5.0), (5.0, 5.0), (5.0, 5.0), (5.0, 5.0))
     var points = b.flatten(0.25)
     assert_equal(len(points), 2)
     assert_equal(points[0], Point2D(5.0, 5.0))
@@ -167,14 +167,14 @@ def test_flatten_degenerate_curve() raises -> None:
 def test_length_of_straight_curve() raises -> None:
     # Unevenly spaced controls: t is not proportional to distance, but the
     # length is still the endpoint distance.
-    var b = CubicBezier((0.0, 0.0), (0.5, 0.0), (1.0, 0.0), (10.0, 0.0))
+    var b = Bezier((0.0, 0.0), (0.5, 0.0), (1.0, 0.0), (10.0, 0.0))
     assert_almost_equal(b.length(), 10.0, atol=1e-9)
 
 
 def test_length_of_quarter_circle() raises -> None:
     # The standard four-arc circle approximation, radius 100.
     var k = 0.5522847498 * 100.0
-    var b = CubicBezier((100.0, 0.0), (100.0, k), (k, 100.0), (0.0, 100.0))
+    var b = Bezier((100.0, 0.0), (100.0, k), (k, 100.0), (0.0, 100.0))
     var quarter = pi * 100.0 / 2.0
     assert_true(abs(b.length() - quarter) / quarter < 1e-3)
 
@@ -203,7 +203,7 @@ def test_at_distance_clamps() raises -> None:
 def test_at_distance_steps_evenly() raises -> None:
     # Controls bunched at the start make `at` uneven in t; `at_distance`
     # must not be.
-    var b = CubicBezier((0.0, 0.0), (1.0, 0.0), (2.0, 0.0), (300.0, 200.0))
+    var b = Bezier((0.0, 0.0), (1.0, 0.0), (2.0, 0.0), (300.0, 200.0))
     var n = 50
     var step = b.length() / Float64(n)
     var previous = b.at_distance(0.0)
@@ -217,7 +217,7 @@ def test_at_distance_steps_evenly() raises -> None:
 
 
 def test_at_distance_on_degenerate_curve() raises -> None:
-    var b = CubicBezier((5.0, 5.0), (5.0, 5.0), (5.0, 5.0), (5.0, 5.0))
+    var b = Bezier((5.0, 5.0), (5.0, 5.0), (5.0, 5.0), (5.0, 5.0))
     assert_equal(b.length(), 0.0)
     assert_equal(b.at_distance(1.0), Point2D(5.0, 5.0))
 
@@ -239,11 +239,11 @@ def test_equality() raises -> None:
 
 
 def test_writes_keyword_form() raises -> None:
-    var b = CubicBezier((0.0, 0.0), (1.0, 2.0), (3.0, 4.0), (5.0, 6.0))
+    var b = Bezier((0.0, 0.0), (1.0, 2.0), (3.0, 4.0), (5.0, 6.0))
     assert_equal(
         String(b),
         (
-            "CubicBezier(start=Point2D(0.0, 0.0), control1=Point2D(1.0, 2.0),"
+            "Bezier(start=Point2D(0.0, 0.0), control1=Point2D(1.0, 2.0),"
             " control2=Point2D(3.0, 4.0), end=Point2D(5.0, 6.0))"
         ),
     )

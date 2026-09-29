@@ -1,6 +1,6 @@
 from .color import Color
 from .style import Style
-from create.math.bezier import CubicBezier
+from create.math.bezier import Bezier
 from create.math.matrix import Matrix, identity
 from create.math.point2d import Point2D
 
@@ -193,7 +193,7 @@ def triangle_command(
 
 
 def bezier_command(
-    transform: Matrix[3, 3], style: Style, curve: CubicBezier
+    transform: Matrix[3, 3], style: Style, curve: Bezier
 ) -> RenderCommand:
     return bezier_chain_command(
         transform,

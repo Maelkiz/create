@@ -24,7 +24,7 @@ from create.render._command import (
     bezier_command,
     bezier_chain_command,
 )
-from create.math.bezier import CubicBezier
+from create.math.bezier import Bezier
 from create.math.point2d import Point2D
 from create.math.matrix import identity, translate, rotate
 
@@ -72,7 +72,7 @@ def test_triangle_packs_all_three_vertices() raises -> None:
 
 
 def test_bezier_is_a_chain_of_one() raises -> None:
-    var curve = CubicBezier((1.0, 2.0), (3.0, 4.0), (5.0, 6.0), (7.0, 8.0))
+    var curve = Bezier((1.0, 2.0), (3.0, 4.0), (5.0, 6.0), (7.0, 8.0))
     var c = bezier_command(identity[3](), Style(), curve)
     assert_equal(c.kind, CMD_BEZIER)
     assert_equal(len(c.points), 4)

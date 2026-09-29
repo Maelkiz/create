@@ -70,7 +70,7 @@ def _axis_extremes(
     return (lo, hi)
 
 
-struct CubicBezier(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
+struct Bezier(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A cubic Bézier curve from `start` to `end`, shaped by `control1` and
     `control2`: `at`, `tangent`, `split`, `bounds`, `flatten`, `translate`.
 
@@ -105,7 +105,7 @@ struct CubicBezier(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         self.control2 = control2
         self.end = end
 
-    def __eq__(self, other: CubicBezier) -> Bool:
+    def __eq__(self, other: Bezier) -> Bool:
         return (
             self.start == other.start
             and self.control1 == other.control1
@@ -113,12 +113,12 @@ struct CubicBezier(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             and self.end == other.end
         )
 
-    def __ne__(self, other: CubicBezier) -> Bool:
+    def __ne__(self, other: Bezier) -> Bool:
         return not (self == other)
 
     def write_to[W: Writer](self, mut writer: W):
         writer.write(
-            "CubicBezier(start=",
+            "Bezier(start=",
             self.start,
             ", control1=",
             self.control1,
@@ -159,7 +159,7 @@ struct CubicBezier(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         var c = self.end - self.control2
         return (a * (mt * mt) + b * (2.0 * mt * t) + c * (t * t)) * 3.0
 
-    def split(self, t: Float64) -> Tuple[CubicBezier, CubicBezier]:
+    def split(self, t: Float64) -> Tuple[Bezier, Bezier]:
         """The curve cut at `t` into two, together tracing exactly the
         original: the first runs `start` to `at(t)`, the second `at(t)` to
         `end` (de Casteljau)."""
@@ -170,8 +170,8 @@ struct CubicBezier(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         var p123 = p12.lerp(p23, t)
         var mid = p012.lerp(p123, t)
         return (
-            CubicBezier(self.start, p01, p012, mid),
-            CubicBezier(mid, p123, p23, self.end),
+            Bezier(self.start, p01, p012, mid),
+            Bezier(mid, p123, p23, self.end),
         )
 
     def bounds(self) -> Rectangle:

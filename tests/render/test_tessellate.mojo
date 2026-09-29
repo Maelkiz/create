@@ -42,7 +42,7 @@ from create.render.autoscale import AutoScale
 from create.render.color import Color
 from create.render._viewport import Viewport
 from create.render._curve import bezier_device_points, stroke_quads
-from create.math.bezier import CubicBezier
+from create.math.bezier import Bezier
 
 comptime _FLOATS = 13
 """Mirrors `_tessellate._VERTEX_FLOATS`; spelled out so a change to the vertex
@@ -262,7 +262,7 @@ def test_a_bezier_is_two_triangles_per_stroke_quad() raises -> None:
     var c = bezier_command(
         v.base_matrix(),
         s,
-        CubicBezier((-40.0, -30.0), (-40.0, 60.0), (40.0, -60.0), (40.0, 30.0)),
+        Bezier((-40.0, -30.0), (-40.0, 60.0), (40.0, -60.0), (40.0, 30.0)),
     )
     emit_bezier(vb, c, v.scale)
     var corners = stroke_quads(bezier_device_points(c, c.transform), 3.0)
@@ -281,7 +281,7 @@ def test_an_unoutlined_bezier_emits_nothing() raises -> None:
         bezier_command(
             v.base_matrix(),
             _plain(),
-            CubicBezier((0.0, 0.0), (10.0, 10.0), (20.0, 10.0), (30.0, 0.0)),
+            Bezier((0.0, 0.0), (10.0, 10.0), (20.0, 10.0), (30.0, 0.0)),
         ),
         v.scale,
     )

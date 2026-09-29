@@ -5,7 +5,7 @@ from std.testing import (
     assert_almost_equal,
 )
 
-from create.math.bezier import CubicBezier
+from create.math.bezier import Bezier
 from create.math.matrix import identity, scale, translate
 from create.math.point2d import Point2D
 from create.render.color import Color
@@ -27,8 +27,8 @@ def _assert_point_near(p: Point2D, q: Point2D, tol: Float64 = 1e-9) raises:
     assert_almost_equal(p.y, q.y, atol=tol)
 
 
-def _s_curve() -> CubicBezier:
-    return CubicBezier((0.0, 0.0), (100.0, 100.0), (0.0, 100.0), (100.0, 0.0))
+def _s_curve() -> Bezier:
+    return Bezier((0.0, 0.0), (100.0, 100.0), (0.0, 100.0), (100.0, 0.0))
 
 
 def test_device_points_follow_the_transform() raises -> None:
@@ -64,12 +64,8 @@ def test_chain_flattens_to_one_polyline() raises -> None:
     var chain = _two_curve_chain()
     var c = bezier_chain_command(identity[3](), Style(), chain.copy())
     var points = bezier_device_points(c, c.transform)
-    var first = CubicBezier(chain[0], chain[1], chain[2], chain[3]).flatten(
-        0.25
-    )
-    var second = CubicBezier(chain[3], chain[4], chain[5], chain[6]).flatten(
-        0.25
-    )
+    var first = Bezier(chain[0], chain[1], chain[2], chain[3]).flatten(0.25)
+    var second = Bezier(chain[3], chain[4], chain[5], chain[6]).flatten(0.25)
     # The joint appears once.
     assert_equal(len(points), len(first) + len(second) - 1)
     _assert_point_near(points[0], chain[0])
@@ -157,7 +153,7 @@ def test_repeated_points_are_skipped() raises -> None:
 
 
 def test_zero_length_gives_no_quads() raises -> None:
-    var b = CubicBezier((5.0, 5.0), (5.0, 5.0), (5.0, 5.0), (5.0, 5.0))
+    var b = Bezier((5.0, 5.0), (5.0, 5.0), (5.0, 5.0), (5.0, 5.0))
     var c = bezier_command(identity[3](), Style(), b)
     assert_equal(
         len(stroke_quads(bezier_device_points(c, c.transform), 3.0)), 0

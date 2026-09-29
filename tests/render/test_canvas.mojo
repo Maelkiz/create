@@ -1033,9 +1033,7 @@ struct BezierBothWays(Program):
         canvas.outline(Color.WHITE, thickness=4)
         canvas.bezier((-40.0, 20.0), (-20.0, 40.0), (20.0, 40.0), (40.0, 20.0))
         canvas.bezier(
-            CubicBezier(
-                (-40.0, -20.0), (-20.0, -40.0), (20.0, -40.0), (40.0, -20.0)
-            )
+            Bezier((-40.0, -20.0), (-20.0, -40.0), (20.0, -40.0), (40.0, -20.0))
         )
 
 
@@ -1049,8 +1047,8 @@ def test_bezier_strokes_through_both_overloads() raises -> None:
     assert_equal(m.pixel(50, 30), Color.BLACK)
 
 
-def _zoomed_curve() -> CubicBezier:
-    return CubicBezier((-5.0, -4.0), (-5.0, 8.0), (5.0, -8.0), (5.0, 4.0))
+def _zoomed_curve() -> Bezier:
+    return Bezier((-5.0, -4.0), (-5.0, 8.0), (5.0, -8.0), (5.0, 4.0))
 
 
 @fieldwise_init

@@ -1,5 +1,5 @@
 from std.math import max, min, pow
-from .bezier import CubicBezier
+from .bezier import Bezier
 from .geometry import Rectangle
 from .point2d import Point2D
 from .vector2d import Vector2D
@@ -13,7 +13,7 @@ struct CatmullRomSpline(Copyable, Equatable, Movable, Writable):
     Each stretch between two neighbouring points is a cubic whose direction
     at each point is set by that point's neighbours, so the curve turns
     smoothly through every point without the off-curve controls a
-    `CubicBezier` needs. The first and last points have one neighbour each;
+    `Bezier` needs. The first and last points have one neighbour each;
     the curve leaves and arrives there heading along the missing neighbour's
     mirror image. With `closed`, the curve runs on from the last point back
     to the first and the ends have neighbours like any other point.
@@ -31,7 +31,7 @@ struct CatmullRomSpline(Copyable, Equatable, Movable, Writable):
     `at_distance` give the one point (the origin if there is none), `length`
     is 0 and `flatten` gives no points.
 
-    Like `CubicBezier`, a spline has no interior and is not a region.
+    Like `Bezier`, a spline has no interior and is not a region.
     """
 
     var points: List[Point2D]
@@ -71,7 +71,7 @@ struct CatmullRomSpline(Copyable, Equatable, Movable, Writable):
             writer.write(self.points[i])
         writer.write("], alpha=", self.alpha, ", closed=", self.closed, ")")
 
-    def beziers(self) -> List[CubicBezier]:
+    def beziers(self) -> List[Bezier]:
         """The spline as cubic Béziers, one per stretch between neighbouring
         points, each ending where the next starts. Exact, not an
         approximation: every stretch is a cubic, and any cubic is a Bézier.
@@ -83,7 +83,7 @@ struct CatmullRomSpline(Copyable, Equatable, Movable, Writable):
         """
         var p = self._distinct_points()
         var n = len(p)
-        var curves = List[CubicBezier]()
+        var curves = List[Bezier]()
         if n < 2:
             return curves^
         var segments = n if self.closed else n - 1
@@ -127,7 +127,7 @@ struct CatmullRomSpline(Copyable, Equatable, Movable, Writable):
 
     def length(self) -> Float64:
         """The distance along the curve from the first point to the last,
-        as each stretch's `CubicBezier.length` summed."""
+        as each stretch's `Bezier.length` summed."""
         var total = 0.0
         for c in self.beziers():
             total += c.length()
@@ -183,7 +183,7 @@ struct CatmullRomSpline(Copyable, Equatable, Movable, Writable):
     def flatten(self, tolerance: Float64) -> List[Point2D]:
         """Points along the curve, from the first point to the last
         inclusive, straying from it by at most `tolerance` between them:
-        each stretch's `CubicBezier.flatten`, joined without repeating the
+        each stretch's `Bezier.flatten`, joined without repeating the
         point where one stretch meets the next."""
         var points = List[Point2D]()
         for c in self.beziers():
@@ -199,7 +199,7 @@ struct CatmullRomSpline(Copyable, Equatable, Movable, Writable):
 
     def _segment(
         self, p0: Point2D, p1: Point2D, p2: Point2D, p3: Point2D
-    ) -> CubicBezier:
+    ) -> Bezier:
         """The stretch from `p1` to `p2` as a Bézier.
 
         Knots are spaced by distance to the power `alpha` (Barry–Goldman), and
@@ -213,7 +213,7 @@ struct CatmullRomSpline(Copyable, Equatable, Movable, Writable):
         var d2 = pow((p3 - p2).mag(), self.alpha)
         var m1 = ((p1 - p0) / d0 - (p2 - p0) / (d0 + d1) + (p2 - p1) / d1) * d1
         var m2 = ((p2 - p1) / d1 - (p3 - p1) / (d1 + d2) + (p3 - p2) / d2) * d1
-        return CubicBezier(p1, p1 + m1 / 3.0, p2 - m2 / 3.0, p2)
+        return Bezier(p1, p1 + m1 / 3.0, p2 - m2 / 3.0, p2)
 
     def _lone_point(self) -> Point2D:
         """Where a spline with no curve sits: its first point, or the origin

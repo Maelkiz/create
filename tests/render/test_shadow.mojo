@@ -10,7 +10,7 @@ from std.testing import (
 from create.math.matrix import Matrix, apply, identity, rotate, scale, translate
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
-from create.math.bezier import CubicBezier
+from create.math.bezier import Bezier
 from create.render.color import Color
 from create.render.style import Style
 from create.render._command import (
@@ -127,9 +127,7 @@ def test_bezier_casts_its_stroke_even_when_filled() raises -> None:
     s.outline_enabled = True
     s.outline_thickness = 3
     s.shadow_spread = 1.0
-    var curve = CubicBezier(
-        (0.0, 0.0), (10.0, 20.0), (20.0, -20.0), (30.0, 0.0)
-    )
+    var curve = Bezier((0.0, 0.0), (10.0, 20.0), (20.0, -20.0), (30.0, 0.0))
     var c = bezier_command(identity[3](), s, curve)
     assert_true(casts_outer_shadow(c))
     var sh = shadow_command(c, 1.0)

@@ -309,10 +309,8 @@ def test_line_with_outline_disabled_renders_nothing() raises -> None:
     assert_equal(m.pixel(50, 50), Color.BLACK)
 
 
-def _s_curve() -> CubicBezier:
-    return CubicBezier(
-        (-40.0, -30.0), (-40.0, 60.0), (40.0, -60.0), (40.0, 30.0)
-    )
+def _s_curve() -> Bezier:
+    return Bezier((-40.0, -30.0), (-40.0, 60.0), (40.0, -60.0), (40.0, 30.0))
 
 
 def _stroke(color: Color, thickness: Int) -> Style:
@@ -412,8 +410,8 @@ def test_translucent_bezier_chain_composites_once_at_the_joint() raises -> None:
     assert_true(painted > 0)
 
 
-def _straight(a: Point2D, b: Point2D) -> CubicBezier:
-    return CubicBezier(a, a + (b - a) / 3.0, b - (b - a) / 3.0, b)
+def _straight(a: Point2D, b: Point2D) -> Bezier:
+    return Bezier(a, a + (b - a) / 3.0, b - (b - a) / 3.0, b)
 
 
 def test_translucent_closed_bezier_chain_has_no_seam() raises -> None:
