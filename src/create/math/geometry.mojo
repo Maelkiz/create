@@ -1323,6 +1323,9 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
     counts as inside. With fewer than three vertices, or all of them in
     line, the polygon collapses to its edges.
 
+    It is a region: in every `overlaps` pair, `contains` both ways, and
+    met by `Line.intersects` and `Arc.intersects`.
+
     Like a `Triangle`'s, the fields are the vertices and `center()` (the
     centroid) is derived; `move_to` moves the centroid. The centroid and
     `area` are those of a simple polygon -- one whose edges do not cross.

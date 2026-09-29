@@ -17,6 +17,7 @@ and the layering rules.
 | `_shadow.mojo` | Shadow geometry shared by both backends: `shadow_command` (the hard silhouette as a command, offset matrix composed in), `BlurredSilhouette` (analytic Gaussian coverage for shapes), `InsetRegion` (an inset shadow's interior and cut) |
 | `_curve.mojo` | Bézier stroke geometry for both replays: flattening in device pixels, the mitred quad strip; the blurred shadow mask of any device quads (`quads_shadow_mask`) |
 | `_sector.mojo` | Sector fill and outline tiled into device quads for both replays (`sector_quads`), and its blurred shadow mask |
+| `_polygon.mojo` | Polygon fill and outline tiled into device quads for both replays (`polygon_quads`), and its blurred shadow mask |
 | `_blur.mojo` | Three-box-blur approximation of a Gaussian over an alpha mask, for text and sprite shadows; the blurred-mask cache limit and key |
 | `_transform.mojo`, `_image.mojo`, `_fillet.mojo` | Shared by both replay paths (split out to avoid an import cycle, or so both agree on the numbers) |
 | `_gl_target.mojo` | Offscreen FBO of an exact size, for the parity test and headless GPU |
@@ -31,8 +32,8 @@ and laid out at replay. Add a shape by extending `_command.mojo`'s kinds and `_b
 (plus `_tessellate.mojo`), never by calling `_raster.mojo` from `Canvas`.
 
 `RenderCommand.geom` has 6 slots, sized for a triangle's three points; the geometry table in
-`_command.mojo` gives each kind's layout. `CMD_BEZIER` alone uses `RenderCommand.points` instead, a
-`List` that stays empty (and unallocated) for every other kind.
+`_command.mojo` gives each kind's layout. `CMD_BEZIER` (control points) and `CMD_POLYGON` (vertices)
+use `RenderCommand.points` instead, a `List` that stays empty (and unallocated) for every other kind.
 
 `Canvas` holds no `Surface` and takes its geometry from the `Viewport` alone — don't add a `Surface`
 field or parameter, and don't import `_window` from `canvas.mojo`. What survives the frame boundary:
@@ -85,6 +86,31 @@ is the grown sector's outline band, thickened by twice the spread.
 
 `canvas.arc` needs none of this: it records a `CMD_BEZIER` chain.
 
+## Polygons
+
+A `CMD_POLYGON` (vertices in `points`, a grow in `geom[0]`) is tiled at replay by `polygon_quads`
+into the same kind of shared convex device quads as a sector, in local space and mapped per corner.
+The cut is into **horizontal slabs**: every y where an edge ends or two edges cross, so within a
+slab no edges cross, the edges sort by x, and a walk from the left keeps a winding count per
+*layer*. Each stretch between neighbouring edges is classified fill, outline or nothing
+(`_classify`), runs of one class merge, and each run is one trapezoid, every x taken from the
+edge's lower end so neighbouring quads share corners exactly.
+
+Layer 0 is the polygon (nonzero). The others are **bands**: points within `d` of some lines, a
+counter-clockwise rectangle along each line and a polygonised disc at each end, inside where the
+count is not zero. `Polygon._pieces()` cuts the edges at every crossing, each crossing found along
+the lower-indexed edge so both edges share its point exactly, into the **rim** (outside along one
+side) and the **seams** (wound on both sides). The outer band (radius `grow`) and the inner band
+(`grow - t`) are the rim's; offsetting by `d` is the polygon with (outwards) or without (inwards)
+its band. The seam band has radius `t/2`: fill is the inner offset off the seams, outline the rest
+of the outer offset, so a seam is stroked centred and as thick as the rim. A seam disc already
+inside an inner-band disc is left out.
+
+`geom[0]` is 0 for a render call and the spread for a shadow; an outline-only shadow's thickness
+`t + 2·spread` grows the seam band by the spread too, so the ring is the outline grown. Cost is
+quadratic in the edges, bands included (the crossing search) — ~155 µs per outlined 5-tip star,
+~240 µs per outlined pentagram; a sweep line is the known follow-up if that matters.
+
 ## Captures
 
 Requests filed on the `Backend` and serviced inside `present`/`present_gpu`, the only place holding
@@ -114,9 +140,10 @@ Both replays handle a command's shadow around the command itself, in the command
   masks are keyed by blur in the glyph cache and packed into the atlas; sprite masks are cached per
   `shadow_mask_key` in `Backend.shadow_masks` (CPU) and `GLRenderer.shadow_textures` (GPU), both
   dropped whole at `SHADOW_MASK_LIMIT`.
-  A Bézier's stroke and a sector's quads are rasterised into a mask and blurred too
-  (`quads_shadow_mask`, via `bezier_shadow_mask`/`sector_shadow_mask`), but **uncached**: they have
-  no stable id to key by, so each blurred Bézier or sector shadow costs one blur per frame, and on
+  A Bézier's stroke and a sector's or polygon's quads are rasterised into a mask and blurred too
+  (`quads_shadow_mask`, via `bezier_shadow_mask`/`sector_shadow_mask`/`polygon_shadow_mask`), but
+  **uncached**: they have no stable id to key by, so each blurred Bézier, sector or polygon shadow
+  costs one blur per frame, and on
   the GPU one texture upload plus one draw call; the textures are deleted after the frame's final
   flush.
 - **Inset** (`casts_inset_shadow`), *after* the command: the interior (`inset_interior`) is the
@@ -163,7 +190,7 @@ only ever hold quantities affine across a triangle, so interpolation evaluates t
 A batch breaks only on an opaque `CMD_CLEAR`, a second distinct unit-1 texture, a `BlendMode`
 change, or frame end — glyph atlas on texture unit 0, sprites on unit 1. A blurred sprite shadow's
 mask is its own unit-1 texture, so a shadowed sprite costs one extra draw call, and interleaving
-several costs one per switch; a blurred Bézier or sector shadow likewise costs one. Blurred text shadows
+several costs one per switch; a blurred Bézier, sector or polygon shadow likewise costs one. Blurred text shadows
 live in the atlas and cost none. Per frame, only the viewport is written, and only on resize.
 
 Before optimising: `pixi run benchmark frame` measures ~6 ms/frame at 1920x1080 (vsync off); the
