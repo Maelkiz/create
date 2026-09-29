@@ -723,12 +723,12 @@ struct Canvas:
 
         Filled by the nonzero rule, so a self-crossing polygon fills every
         area its edges wind round, whichever way they run. The outline is
-        inset, as a sector's is: it covers what lies inside within the
-        outline's thickness of an edge — the crossing edges of a pentagram
-        included — and a translucent polygon composites once. `corner_radius`
-        does not round a polygon, and it casts no inset shadow; a blurred drop
-        shadow costs what a `bezier`'s does. Fewer than three vertices draw
-        nothing.
+        inset along the outside, as a sector's is, and centred on an edge
+        running through the inside — a pentagram's inner pentagon — so every
+        edge is stroked as thick; a translucent polygon composites once.
+        `corner_radius` does not round a polygon, and it casts no inset
+        shadow; a blurred drop shadow costs what a `bezier`'s does. Fewer than
+        three vertices draw nothing.
         """
         self._state.backend.record(
             polygon_command(self._transform, self._style, p.vertices.copy())

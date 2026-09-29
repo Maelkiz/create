@@ -203,6 +203,19 @@ def test_translate() raises -> None:
     assert_equal(sq.vertices[2], Point2D(11.0, 8.0))
 
 
+def test_pieces_split_the_rim_from_the_seams() raises -> None:
+    var simple = _l_shape()._pieces()
+    assert_equal(len(simple[0]), 6)
+    assert_equal(len(simple[1]), 0)
+    # Each edge is cut in three: its ends run along the outside, its middle
+    # through the doubly wound centre.
+    var star = _pentagram()._pieces()
+    assert_equal(len(star[0]), 10)
+    assert_equal(len(star[1]), 5)
+    for seam in star[1]:
+        assert_true(seam.midpoint().dist(Point2D(0, 0)) < 5.0)
+
+
 def test_overlaps_circle() raises -> None:
     var l = _l_shape()
     # Sitting in the notch, clear of both arms.

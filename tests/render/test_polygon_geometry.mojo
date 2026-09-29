@@ -1,7 +1,7 @@
 from std.math import pi, sqrt
 from std.testing import TestSuite, assert_equal, assert_true
 
-from create.math.geometry import Polygon
+from create.math.geometry import Line, Polygon
 from create.math.matrix import (
     Matrix,
     apply as mat_apply,
@@ -103,12 +103,11 @@ def _once() -> Color:
     return surface.pixel(0, 0)
 
 
-def _signed_distance(s: Polygon, p: Point2D) -> Float64:
-    """How far `p` lies inside the polygon's edge; negative outside."""
+def _distance(lines: List[Line], p: Point2D) -> Float64:
     var d = Float64.MAX
-    for i in range(len(s.vertices)):
-        d = min(d, p.dist(s._edge(i).closest_point(p)))
-    return d if s.contains(p) else -d
+    for l in lines:
+        d = min(d, p.dist(l.closest_point(p)))
+    return d
 
 
 def _area(corners: List[Point2D]) -> Float64:
@@ -143,7 +142,8 @@ def _assert_tiles(
     """Quads convex, painted at most once, and covering the polygon grown
     by `grow`: each pixel centre more than a pixel from an edge is painted
     exactly when it lies no further than `grow` outside the polygon, and
-    painted in the fill exactly when it lies the outline's width further in.
+    painted in the fill exactly when it lies the outline's width further in
+    and more than half of it from the seams.
     """
     var device = _device(m)
     var q = _quads(s, device, style, grow)
@@ -157,6 +157,7 @@ def _assert_tiles(
     var back = inverse(device)
     var pixel_units = 1.0 / sqrt(abs(m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]))
     var near = 1.5 * pixel_units
+    var pieces = s._pieces()
     var t = 0.0
     if style._outline_visible() and len(q.fill) > 0 and len(q.outline) > 0:
         t = Float64(outline_thickness_px(style, device, 1.0)) / pixel_scale(
@@ -167,11 +168,20 @@ def _assert_tiles(
             var color = surface.pixel(x, y)
             assert_true(color.a == 0 or color == once)
             var p = Point2D(mat_apply(back, Float64(x) + 0.5, Float64(y) + 0.5))
-            var d = _signed_distance(s, p)
+            var d = _distance(pieces[0], p)
+            if not s.contains(p):
+                d = -d
             if abs(d + grow) > near:
                 assert_equal(color.a != 0, d >= -grow)
-            if t > 0.0 and abs(d + grow - t) > near:
-                assert_equal(fill.pixel(x, y).a != 0, d >= t - grow)
+            var seam = _distance(pieces[1], p)
+            if (
+                t > 0.0
+                and abs(d + grow - t) > near
+                and abs(seam - t / 2.0) > near
+            ):
+                assert_equal(
+                    fill.pixel(x, y).a != 0, d >= t - grow and seam > t / 2.0
+                )
 
 
 def _outlined(thickness: Int) -> Style:

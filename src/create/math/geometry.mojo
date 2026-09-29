@@ -1617,6 +1617,48 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
                     rim.append(middle)
         return rim^
 
+    def _pieces(self) -> Tuple[List[Line], List[Line]]:
+        """The edges cut wherever another edge crosses them, in two lists:
+        the rim, pieces with the outside along one side, then the seams,
+        pieces wound on both sides, running through the inside."""
+        var rim = List[Line]()
+        var seams = List[Line]()
+        for i in range(len(self.vertices)):
+            var e = self._edge(i)
+            if e.start == e.end:
+                continue
+            var cuts: List[Float64] = [0.0, 1.0]
+            var n = len(self.vertices)
+            for j in range(n):
+                var other = self._edge(j)
+                if j == i or not e.intersects(other):
+                    continue
+                # A neighbour meets the edge only at their shared vertex,
+                # unless it folds back along it; its cut there would be off
+                # by rounding.
+                var neighbour = j == (i + 1) % n or i == (j + 1) % n
+                if (
+                    neighbour
+                    and _cross(e.end - e.start, other.end - other.start) != 0.0
+                ):
+                    continue
+                _cut_at_line(e, other, cuts)
+            sort(cuts)
+            var start = e.start
+            for k in range(1, len(cuts)):
+                var t = max(0.0, min(cuts[k], 1.0))
+                if t <= max(0.0, min(cuts[k - 1], 1.0)):
+                    continue
+                # The ends exactly, so neighbouring edges share their vertex.
+                var end = e.end if t == 1.0 else e.start + (e.end - e.start) * t
+                var piece = Line(start, end)
+                if self._wound_beside(i, piece.midpoint()):
+                    seams.append(piece)
+                else:
+                    rim.append(piece)
+                start = end
+        return (rim^, seams^)
+
     def _holds_strictly(self, p: Point2D) -> Bool:
         """Whether everything close round `p` is inside: `p` inside and
         off the boundary, which an edge through it is only when the

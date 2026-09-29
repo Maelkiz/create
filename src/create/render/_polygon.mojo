@@ -13,21 +13,28 @@ left-to-right order, and each stretch between two neighbours is one
 trapezoid whose winding is counted walking in from the left. The fill rule
 is nonzero.
 
-The outline is an inset band: what lies inside and within
-`outline_thickness` of an edge. Points within `d` of the edges make a
-*band*: a rectangle of half-width `d` along every edge and a disc at every
-vertex, each wound once, so a point is in the band where its count is not
-zero. The band pieces are cut into the slabs with the edges, which keeps
-every trapezoid inside or outside each piece whole.
+The edges are cut where others cross them into the *rim*, pieces with the
+outside along one side, and the *seams*, pieces running through the inside
+(a pentagram's inner pentagon). The outline is an inset band along the rim
+-- what lies inside and within `outline_thickness` of it -- and a band
+centred on each seam, as thick in all, so every edge is stroked as thick.
+Points within `d` of some pieces make a *band*: a rectangle of half-width
+`d` along every piece and a disc at every end, each wound once, so a point
+is in the band where its count is not zero. The band pieces are cut into
+the slabs with the edges, which keeps every trapezoid inside or outside
+each piece whole.
 
 A shadow's spread offsets the whole polygon first (`geom[0]`, zero for a
-render call): outwards it is the polygon or its band, inwards the polygon
-without it. The fill is the polygon offset by the outline's width less, so
-the outline is an inset band of the offset polygon.
+render call): outwards it is the polygon or its rim's band, inwards the
+polygon without it. The fill is the polygon offset by the outline's width
+less, off the seams' band, so the outline is an inset band of the offset
+polygon. A shadow ring's thickness is the outline's plus twice the spread,
+so its seams' band grows by the spread as well.
 """
 
 from std.math import cos, max, min, sin, sqrt, tau
 
+from create.math.geometry import Line, Polygon
 from create.math.matrix import Matrix, apply as mat_apply
 from create.math.point2d import Point2D
 
@@ -104,19 +111,23 @@ def polygon_quads(
         t = Float64(outline_thickness_px(c.style, m, scale)) / sf
 
     # The polygon's outer edge is offset by `grow`, the fill's by `grow - t`;
-    # each needs the band of that radius, unless the offset is zero.
+    # each needs the rim's band of that radius, unless the offset is zero.
+    # The seams' band is half the outline's width, either side.
     var outer = grow
     var inner = grow - t
     var edges = List[_Edge]()
     _add_loop(edges, vertices, 0)
-    var outer_layer = 0
-    var inner_layer = 0
+    var layers = _Layers()
+    var pieces = Polygon(vertices^)._pieces()
     if outer != 0.0:
-        outer_layer = 1
-        _add_band(edges, vertices, abs(outer), sf, outer_layer)
+        layers.outer = layers.next()
+        _add_band(edges, pieces[0], abs(outer), sf, layers.outer)
     if t > 0.0 and inner != 0.0:
-        inner_layer = outer_layer + 1
-        _add_band(edges, vertices, abs(inner), sf, inner_layer)
+        layers.inner = layers.next()
+        _add_band(edges, pieces[0], abs(inner), sf, layers.inner)
+    if t > 0.0 and len(pieces[1]) > 0:
+        layers.seams = layers.next()
+        _add_band(edges, pieces[1], t / 2.0, sf, layers.seams)
 
     var ys = _slab_boundaries(edges)
     var active = List[_Edge]()
@@ -137,14 +148,12 @@ def polygon_quads(
 
         # Walk in from the left, where every count is zero. The stretch
         # after edge `i` runs to edge `i + 1`; runs of one class merge.
-        var counts = Array[Int, 3](fill=0)
+        var counts = Array[Int, 4](fill=0)
         var run_class = _NOTHING
         var run_start = 0
         for i in range(len(active)):
             counts[active[i].layer] -= active[i].sign
-            var cls = _classify(
-                counts, outer, inner, outer_layer, inner_layer, t > 0.0
-            )
+            var cls = _classify(counts, outer, inner, layers, t > 0.0)
             if cls == run_class:
                 continue
             if run_class != _NOTHING:
@@ -177,23 +186,42 @@ def polygon_shadow_mask(
     return quads_shadow_mask(corners, blur)
 
 
+@fieldwise_init
+struct _Layers(Copyable, ImplicitlyCopyable, Movable):
+    """Which count each band is wound into; 0, the polygon's own, for a band
+    not needed."""
+
+    var outer: Int
+    var inner: Int
+    var seams: Int
+
+    def __init__(out self):
+        self.outer = 0
+        self.inner = 0
+        self.seams = 0
+
+    def next(self) -> Int:
+        return max(self.outer, self.inner, self.seams) + 1
+
+
 def _classify(
-    counts: Array[Int, 3],
+    counts: Array[Int, 4],
     outer: Float64,
     inner: Float64,
-    outer_layer: Int,
-    inner_layer: Int,
+    layers: _Layers,
     outlined: Bool,
 ) -> Int:
     """Whether a stretch with these winding counts is fill, outline or
     neither: inside the polygon offset by `outer` and, if outlined, inside
-    or outside it offset by `inner`."""
+    it offset by `inner` and off the seams, or not."""
     var inside = counts[0] != 0
-    if not _offset_holds(inside, counts[outer_layer] != 0, outer):
+    if not _offset_holds(inside, counts[layers.outer] != 0, outer):
         return _NOTHING
     if not outlined:
         return _FILL
-    if _offset_holds(inside, counts[inner_layer] != 0, inner):
+    if layers.seams != 0 and counts[layers.seams] != 0:
+        return _OUTLINE
+    if _offset_holds(inside, counts[layers.inner] != 0, inner):
         return _FILL
     return _OUTLINE
 
@@ -244,24 +272,30 @@ def _add_loop(mut edges: List[_Edge], points: List[Point2D], layer: Int):
 
 def _add_band(
     mut edges: List[_Edge],
-    vertices: List[Point2D],
+    lines: List[Line],
     d: Float64,
     sf: Float64,
     layer: Int,
 ):
-    """The pieces of the band within `d` of the polygon's edges, each wound
-    counter-clockwise so the band's count is how many cover a point."""
-    var n = len(vertices)
+    """The pieces of the band within `d` of `lines`, each wound
+    counter-clockwise so the band's count is how many cover a point. An end
+    two lines share gets one disc."""
+    var ends = List[Point2D]()
+    for l in lines:
+        for p in [l.start, l.end]:
+            if p not in ends:
+                ends.append(p)
     var segments = circle_segments(d * sf)
     var disc = List[Point2D](capacity=segments)
-    for i in range(n):
-        var a = vertices[i]
-        var b = vertices[(i + 1) % n]
+    for a in ends:
         disc.clear()
         for k in range(segments):
             var angle = tau * Float64(k) / Float64(segments)
             disc.append(Point2D(a.x + d * cos(angle), a.y + d * sin(angle)))
         _add_loop(edges, disc, layer)
+    for l in lines:
+        var a = l.start
+        var b = l.end
         var dx = b.x - a.x
         var dy = b.y - a.y
         var length = sqrt(dx * dx + dy * dy)
