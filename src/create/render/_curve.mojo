@@ -5,9 +5,10 @@ time, so it stays smooth however far a camera zooms in. Both backends fill
 the same quads — the CPU through `fill_quad`, the GPU as vertices — which is what keeps them in parity.
 
 A blurred curve shadow is a mask rasterised from those same quads and blurred
-(`bezier_shadow_mask`), which both backends composite. Unlike a sprite's, it
-is not cached: a curve has no stable id to key it by, so every blurred curve
-shadow costs one blur per frame.
+(`bezier_shadow_mask`), which both backends composite; `quads_shadow_mask`
+builds one from any device quads, which is how sectors cast theirs too.
+Unlike a sprite's, it is not cached: a curve has no stable id to key it by,
+so every blurred curve shadow costs one blur per frame.
 """
 
 from std.math import ceil, floor, sqrt

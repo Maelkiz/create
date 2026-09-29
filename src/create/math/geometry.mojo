@@ -402,12 +402,12 @@ struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A line segment from `start` to `end`: `length`, `length_sq`,
     `midpoint`, `closest_point`, `intersects`, `move_to`, `translate`.
 
-    Unlike `Rectangle`/`Circle`/`Triangle`, `Line` has no interior and is
-    not a shape: it has no `center()`, `contains(region)` beyond the two
-    endpoint-based overloads below, `area()`, or `overlaps` overload. It is
-    the one type in this module that can be the *subject* of an asymmetric
-    relation, `l.intersects(x)` -- see the comment above `intersects`
-    for why that method exists only here.
+    Unlike `Rectangle`/`Circle`/`Triangle`/`Sector`, `Line` has no interior
+    and is not a shape: it has no `center()`, `contains(region)` beyond the
+    two endpoint-based overloads below, `area()`, or `overlaps` overload.
+    With `Arc`, it is a curve, the *subject* of the asymmetric relation
+    `l.intersects(x)` -- see the comment above `intersects` for why that
+    method exists only on curves.
 
     `intersects` and `_point_on_segment`-based checks treat the endpoints
     and any touching/collinear-overlapping point as inclusive. A

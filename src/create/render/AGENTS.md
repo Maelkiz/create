@@ -15,7 +15,8 @@ and the layering rules.
 | `_gl_backend.mojo` | `GLRenderer` — shader, vertex buffer, glyph atlas, sprite textures, batching |
 | `_tessellate.mojo` | `RenderCommand` to triangles for the GPU |
 | `_shadow.mojo` | Shadow geometry shared by both backends: `shadow_command` (the hard silhouette as a command, offset matrix composed in), `BlurredSilhouette` (analytic Gaussian coverage for shapes), `InsetRegion` (an inset shadow's interior and cut) |
-| `_curve.mojo` | Bézier stroke geometry for both replays: flattening in device pixels, the mitred quad strip, the blurred shadow mask |
+| `_curve.mojo` | Bézier stroke geometry for both replays: flattening in device pixels, the mitred quad strip; the blurred shadow mask of any device quads (`quads_shadow_mask`) |
+| `_sector.mojo` | Sector fill and outline tiled into device quads for both replays (`sector_quads`), and its blurred shadow mask |
 | `_blur.mojo` | Three-box-blur approximation of a Gaussian over an alpha mask, for text and sprite shadows; the blurred-mask cache limit and key |
 | `_transform.mojo`, `_image.mojo`, `_fillet.mojo` | Shared by both replay paths (split out to avoid an import cycle, or so both agree on the numbers) |
 | `_gl_target.mojo` | Offscreen FBO of an exact size, for the parity test and headless GPU |
@@ -67,6 +68,23 @@ centripetal knot spacing depends on distances, which a non-uniform scale would c
 converted after it would change shape rather than just stretch. Separate commands per curve would
 meet on butt ends and double-blend a translucent joint; one chain doesn't.
 
+## Sectors
+
+A `CMD_SECTOR` (`cx, cy, r, start, sweep`, and a grow in `geom[5]`) is tiled at replay by
+`sector_quads` into convex device quads — the same quads for both backends, so they agree the way
+curves do: the CPU fills them with `fill_quad`, whose half-open rule composites shared edges once,
+and the GPU pushes them as vertices. The tiling walks the sweep in thin wedges about the tip, and
+along each ray the sector is one stretch from the tip: fill in the middle, outline either side. The
+outline is inset, as a circle's is: the fill is the sector eroded by the outline thickness. Built in
+local space and mapped per corner, so a non-uniform transform gives an elliptical sector.
+
+`geom[5]` is 0 for a render call. A shadow sets it to its spread, and the tiling grows (or shrinks)
+the sector by exactly that first — round the tip and the arc's ends, into the missing wedge — rather
+than leaning on a corner radius, which a sector has none of. An outline-only sector's shadow ring
+is the grown sector's outline band, thickened by twice the spread.
+
+`canvas.arc` needs none of this: it records a `CMD_BEZIER` chain.
+
 ## Captures
 
 Requests filed on the `Backend` and serviced inside `present`/`present_gpu`, the only place holding
@@ -96,10 +114,11 @@ Both replays handle a command's shadow around the command itself, in the command
   masks are keyed by blur in the glyph cache and packed into the atlas; sprite masks are cached per
   `shadow_mask_key` in `Backend.shadow_masks` (CPU) and `GLRenderer.shadow_textures` (GPU), both
   dropped whole at `SHADOW_MASK_LIMIT`.
-  A Bézier's stroke is rasterised into a mask and blurred too (`bezier_shadow_mask`), but
-  **uncached**: it has no stable id to key by, so each blurred Bézier shadow costs one blur per
-  frame, and on the GPU one texture upload plus one draw call; the textures are deleted after the
-  frame's final flush.
+  A Bézier's stroke and a sector's quads are rasterised into a mask and blurred too
+  (`quads_shadow_mask`, via `bezier_shadow_mask`/`sector_shadow_mask`), but **uncached**: they have
+  no stable id to key by, so each blurred Bézier or sector shadow costs one blur per frame, and on
+  the GPU one texture upload plus one draw call; the textures are deleted after the frame's final
+  flush.
 - **Inset** (`casts_inset_shadow`), *after* the command: the interior (`inset_interior`) is the
   clip, the silhouette is the interior shrunk by the spread and moved by the shadow transform, and
   alpha is `1 − coverage`. The CPU tests pixel centres in the interior's box; the GPU tessellates
@@ -144,7 +163,7 @@ only ever hold quantities affine across a triangle, so interpolation evaluates t
 A batch breaks only on an opaque `CMD_CLEAR`, a second distinct unit-1 texture, a `BlendMode`
 change, or frame end — glyph atlas on texture unit 0, sprites on unit 1. A blurred sprite shadow's
 mask is its own unit-1 texture, so a shadowed sprite costs one extra draw call, and interleaving
-several costs one per switch; a blurred Bézier shadow likewise costs one. Blurred text shadows
+several costs one per switch; a blurred Bézier or sector shadow likewise costs one. Blurred text shadows
 live in the atlas and cost none. Per frame, only the viewport is written, and only on resize.
 
 Before optimising: `pixi run benchmark frame` measures ~6 ms/frame at 1920x1080 (vsync off); the

@@ -25,7 +25,7 @@ it makes the library better.
 | root | `src/create/__init__.mojo` | The preamble: star-imports all five subpackages below |
 | `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`, `Input`, `Key`, `MouseButton`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path`, `DateTime` |
 | `render` | `src/create/render/` | `Canvas`, `Camera`, colour/font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
-| `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes, `Bezier`, `Spline`, `Random`, `Noise`, easing and `Tween`, util functions |
+| `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes (`Rectangle`, `Circle`, `Triangle`, `Sector`, `Line`, `Arc`), `Bezier`, `Spline`, `Random`, `Noise`, easing and `Tween`, util functions |
 | `sprite` | `src/create/sprite/` | `Sprite` (BMP/PNG/JPEG), `SpriteAnimation`, `SpriteAnimator` |
 | `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |
 | `_bytes` | `src/create/_bytes.mojo` | Internal leaf: little-endian integer decoding |
@@ -167,13 +167,13 @@ one on; `blur`/`spread` default to a NaN "keep" sentinel, so `blur=12` works),
 `shadow_enabled(False)` switches it off, and `canvas.style(...)` takes the same parts as `shadow*`
 keywords.
 - **One silhouette, like CSS `drop-shadow`:** fill plus outline cast together (outline only casts
-  a ring); lines cast their stroke, text its glyphs, sprites their alpha. A translucent fill shows
+  a ring); lines and arcs cast their stroke, text its glyphs, sprites their alpha. A translucent fill shows
   its own shadow through it. Clear, background and letterbox never cast.
 - **`blur` is the CSS radius** (σ = blur / 2); `blur` and `spread` are world units, scaled like
   coordinates. Blur 0 is hard.
 - **`shadow_inset`** paints inside the shape instead, after it, clipped to the interior within the
-  outline. Rectangles, circles and triangles only — lines, text and sprites cast nothing while it
-  is set.
+  outline. Rectangles, circles and triangles only — sectors, lines, arcs, text and sprites cast
+  nothing while it is set.
 - **The offset is screen-fixed** by default (`(4, -4)`, down-right): rotation doesn't turn it, but
   camera zoom and autoscale scale it. `shadow_follows_transform(True)` turns it with the shape.
 - Shadows use the command's own opacity and blend mode.
@@ -243,7 +243,10 @@ mid-`update` applies next frame — except `max_frame_rate()` and `quit()`, read
 | `Random` / `Noise` | Both seeded, both in `[0, 1]`. `Random` is stateful (`mut`, `Movable`): each call is an independent sample. `Noise` is immutable (`Copyable`): `at(...)` is a pure function of its input, and nearby inputs give nearby values. `feature_size` divides space only; `at(position, time)` leaves `time` for the caller to scale. Averaged octaves cluster around 0.5 — stretch with `smoothstep` for contrast |
 | `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(position, r)`, `context.input.mouse`); a displacement is a `Vector2D` (`translate(delta)`, velocities); an extent is a scalar (`w`, `h`, `r`). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Only `Point2D` takes a bare tuple implicitly; a vector literal names its type (`p + Vector2D(1, 2)`), and `p - (1, 2)` is the displacement from `(1, 2)`, not a move |
 | Down / pressed / released | Input state for keys and mouse buttons alike. *Down* is held right now, true every frame (`key_down`, `mouse_down`); *pressed*/*released* are edges, true only in the frame it went down or came up (`key_pressed`, `mouse_released`). Unlike Processing's `mousePressed`, *pressed* never means held |
-| `overlaps` / `intersects` / `contains` | `overlaps(a, b)`: free, symmetric, regions only (`Rectangle`/`Circle`/`Triangle`). `line.intersects(x)`: `Line` only, since a line has no interior. `region.contains(x)`: asymmetric. A `Line` is never a region |
+| `overlaps` / `intersects` / `contains` | `overlaps(a, b)`: free, symmetric, regions only (`Rectangle`/`Circle`/`Triangle`/`Sector`). `curve.intersects(x)`: `Line` and `Arc` only, since a curve has no interior. `region.contains(x)`: asymmetric, every region against every region and `Line`. A `Line` or `Arc` is never a region |
+| Sweep | `Arc` and `Sector` share `position` (the circle's centre), `r`, `start_angle` and a **signed** `sweep_angle`, in radians from +x: positive is counter-clockwise (y is up), negative clockwise, and \|sweep\| ≥ tau is the whole circle. Stored as given, so `==` and printing round-trip; `end_angle()` is `start_angle + sweep_angle` |
+| `Arc` | A curve, like `Line`: no interior, never in `overlaps`. Constant speed, so `at_distance(d)` is exact. `beziers()` splits it into Béziers of at most 45°; `canvas.arc` strokes those as one chain, like `canvas.spline` |
+| `Sector` | A pie slice, a region: its tip at `position`, fanned out to its arc. Wider than a half turn it is not convex — the missing wedge is outside it, for `contains` and `overlaps` alike. `center()` is `position`, like `Circle`'s, not the centroid. `canvas.sector` insets its outline as a circle's; no `corner_radius`, no inset shadow |
 | `Bezier` | A cubic Bézier: `start`, `control1`, `control2`, `end`; passes through the endpoints only. A curve, not a region: `canvas.bezier` strokes it in the outline style and draws nothing with the outline off. `at(t)` is uneven in speed; `at_distance(d)` moves along it at constant speed |
 | `Spline` | A smooth curve through every one of `points`, in order (Catmull-Rom); `closed` runs it on back to the first. `alpha` spaces its knots: 0 uniform (can loop where points bunch), 0.5 centripetal (default, never does), 1 chordal. Same sampling methods as `Bezier`, `t` split evenly per stretch. `beziers()` converts it exactly; `canvas.spline` draws it as one stroke of those Béziers |
 
