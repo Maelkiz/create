@@ -26,7 +26,7 @@ from ._curve import (
     stroke_quads,
 )
 from ._sector import sector_quads, sector_shadow_mask
-from ._polygon import polygon_quads
+from ._polygon import polygon_quads, polygon_shadow_mask
 from ._blur import (
     SHADOW_MASK_LIMIT,
     BlurredMask,
@@ -1134,12 +1134,18 @@ struct Backend(Movable):
                 self._text(t, sh, scale, sm, blur)
             elif c.kind == CMD_SPRITE:
                 self._sprite_shadow(t, sh, scale, sm, blur)
-            elif c.kind == CMD_BEZIER or c.kind == CMD_SECTOR:
+            elif (
+                c.kind == CMD_BEZIER
+                or c.kind == CMD_SECTOR
+                or c.kind == CMD_POLYGON
+            ):
                 var placed: PlacedMask
                 if c.kind == CMD_BEZIER:
                     placed = bezier_shadow_mask(sh, sm, scale, blur)
-                else:
+                elif c.kind == CMD_SECTOR:
                     placed = sector_shadow_mask(sh, sm, scale, blur)
+                else:
+                    placed = polygon_shadow_mask(sh, sm, scale, blur)
                 blit_alpha(
                     t,
                     placed.mask.pixels.unsafe_ptr(),

@@ -32,6 +32,7 @@ from create.math.matrix import Matrix, apply as mat_apply
 from create.math.point2d import Point2D
 
 from ._command import RenderCommand
+from ._curve import PlacedMask, quads_shadow_mask
 from ._tessellate import circle_segments
 from ._transform import outline_thickness_px, pixel_scale
 
@@ -93,7 +94,8 @@ def polygon_quads(
     """
     var out = PolygonQuads()
     var vertices = c.points.copy()
-    if len(vertices) < 2:
+    # Fewer than three encloses nothing; not even a shadow grows from it.
+    if len(vertices) < 3:
         return out^
     var grow = c.geom[0]
     var sf = pixel_scale(m, scale)
@@ -156,6 +158,23 @@ def polygon_quads(
         out.fill = out.outline^
         out.outline = List[Point2D]()
     return out^
+
+
+def polygon_shadow_mask(
+    c: RenderCommand, m: Matrix[3, 3], scale: Float64, blur: Int
+) -> PlacedMask:
+    """The shadow command `c` (a `CMD_POLYGON`, one colour) mapped by `m`,
+    rasterised into an alpha mask and blurred by `blur` device pixels."""
+    var q = polygon_quads(c, m, scale)
+    # Only what the command paints: an outline-only ring leaves its middle.
+    var corners = List[Point2D]()
+    if c.style._fill_visible():
+        for p in q.fill:
+            corners.append(p)
+    if c.style._outline_visible():
+        for p in q.outline:
+            corners.append(p)
+    return quads_shadow_mask(corners, blur)
 
 
 def _classify(

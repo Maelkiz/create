@@ -98,6 +98,7 @@ from ._blur import (
 )
 from ._curve import PlacedMask, bezier_shadow_mask
 from ._sector import sector_shadow_mask
+from ._polygon import polygon_shadow_mask
 from ._image import _Image
 from ._tessellate import (
     MODE_SOLID,
@@ -625,6 +626,11 @@ struct GLRenderer(Movable):
                 elif c.kind == CMD_SECTOR:
                     self._mask_shadow(
                         sector_shadow_mask(sh, sh.transform, scale, blur),
+                        c.style.shadow_color,
+                    )
+                elif c.kind == CMD_POLYGON:
+                    self._mask_shadow(
+                        polygon_shadow_mask(sh, sh.transform, scale, blur),
                         c.style.shadow_color,
                     )
             self._one(c, images, text, width, height, scale)

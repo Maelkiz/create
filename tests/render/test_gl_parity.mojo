@@ -141,7 +141,9 @@ comptime _SHAPE_POLYGON = 46
 comptime _SHAPE_CONCAVE_POLYGON = 47
 comptime _SHAPE_TRANSLUCENT_STAR = 48
 comptime _SHAPE_PENTAGRAM = 49
-comptime _SHAPE_COUNT = 50
+comptime _SHAPE_SHADOWED_STAR = 50
+comptime _SHAPE_BLURRED_POLYGON_RING = 51
+comptime _SHAPE_COUNT = 52
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -275,6 +277,10 @@ def _shape_name(shape: Int) -> String:
         return "translucent star"
     elif shape == _SHAPE_PENTAGRAM:
         return "pentagram"
+    elif shape == _SHAPE_SHADOWED_STAR:
+        return "shadowed star"
+    elif shape == _SHAPE_BLURRED_POLYGON_RING:
+        return "blurred polygon ring"
     else:
         return "blurred line"
 
@@ -701,6 +707,30 @@ struct _Parity(Program):
                 canvas.fill(Color(0x80, 0xFF, 0x80))
                 canvas.outline(Color.BLACK, thickness=3)
                 canvas.polygon(tips[0], tips[2], tips[4], tips[1], tips[3])
+        elif self.shape == _SHAPE_SHADOWED_STAR:
+            # Spread, so the shadow rounds off every tip and fills the
+            # notches between them.
+            var s = _shadowed(
+                Style(fill=Color(0xFF, 0xC0, 0x20), outline_thickness=4)
+            )
+            s.shadow_spread = 6.0
+            with canvas.style(s):
+                canvas.polygon(Polygon.star((-10, 10), 70, 30, 5))
+        elif self.shape == _SHAPE_BLURRED_POLYGON_RING:
+            # Outline only, concave: the blurred mask of a ring.
+            var s = _blurred(
+                Style(outline=Color(0x80, 0xFF, 0x80), outline_thickness=8)
+            )
+            s.shadow_spread = 3.0
+            with canvas.style(s):
+                canvas.polygon(
+                    (-80, -70),
+                    (60, -70),
+                    (60, -10),
+                    (-20, -10),
+                    (-20, 50),
+                    (-80, 50),
+                )
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline

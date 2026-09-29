@@ -16,7 +16,11 @@ from create.render.color import Color
 from create.render.style import Style
 from create.render.surface import MemorySurface
 from create.render._command import CMD_POLYGON, polygon_command
-from create.render._polygon import PolygonQuads, polygon_quads
+from create.render._polygon import (
+    PolygonQuads,
+    polygon_quads,
+    polygon_shadow_mask,
+)
 from create.render._raster import fill_quad
 from create.render._transform import outline_thickness_px, pixel_scale
 
@@ -277,6 +281,31 @@ def test_a_grown_outline_only_polygon_is_a_ring() raises -> None:
     style.fill_enabled = False
     for p in _polygons():
         _assert_tiles(p, identity[3](), style, 3.0)
+
+
+def test_a_square_shadow_ring_has_its_area() raises -> None:
+    # A 40-wide square, 4-unit outline, spread 2: the ring runs from 2
+    # outside the edge to 6 inside, round only at its outer corners.
+    var p = Polygon((-20.0, -20.0), (20.0, -20.0), (20.0, 20.0), (-20.0, 20.0))
+    var style = _outlined(8)
+    style.fill_enabled = False
+    var q = _quads(p, identity[3](), style, 2.0)
+    var outside = 40.0 * 40.0 + 4.0 * 40.0 * 2.0 + pi * 4.0
+    var expected = outside - 28.0 * 28.0
+    var area = _area(q.outline)
+    assert_true(area < expected)
+    assert_true(area > expected - 1.0)
+
+
+def test_an_outline_only_polygon_masks_only_its_ring() raises -> None:
+    var style = Style(outline=Color.RED, outline_thickness=4)
+    var p = Polygon((-20.0, -20.0), (20.0, -20.0), (20.0, 20.0), (-20.0, 20.0))
+    var c = polygon_command(identity[3](), style, p.vertices.copy())
+    var placed = polygon_shadow_mask(c, c.transform, 1.0, 0)
+    # The device pixels whose lower-left corners are (0, 0) and (-19, 0).
+    var row = (0 - placed.y) * placed.mask.width
+    assert_equal(placed.mask.pixels[row - placed.x], 0)
+    assert_equal(placed.mask.pixels[row - 19 - placed.x], 255)
 
 
 def test_degenerate_polygons_give_no_quads() raises -> None:
