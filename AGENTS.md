@@ -109,7 +109,7 @@ A public value type implements `Writable` and prints as it would be written in s
 `Int`-wrapping enum (an unnamed value falls back to `Easing(99)`); keyword form otherwise, labelled
 by the constructor's keywords where it has them (`Circle(position=Point2D(0.0, 0.0), r=5.0)`) and by
 public field names where it doesn't (`Time`, `Tween`). Private fields are left out. Resource handles
-(`Font`, `Sprite`, `Sound`, `Audio`) are not printable.
+(`Font`, `Sprite`, `Sound`, `Audio`) and shared assets (`SpriteAnimation`) are not printable.
 
 ### Imports and public surface
 

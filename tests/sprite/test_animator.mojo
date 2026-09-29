@@ -155,5 +155,22 @@ def test_single_frame_animation_finishes() raises -> None:
     assert_true(a.is_finished())
 
 
+def test_writes_the_playhead() raises -> None:
+    var a = SpriteAnimator(_animation(4, fps=10.0))
+    a.loop()
+    a.update(0.2)
+    assert_equal(String(a), "SpriteAnimator(frame_index=2)")
+
+
+def test_a_copy_plays_independently_over_the_same_animation() raises -> None:
+    var a = SpriteAnimator(_animation(4, fps=10.0))
+    a.loop()
+    var b = a.copy()
+    b.update(0.2)
+    assert_equal(a.frame_index, 0)
+    assert_equal(b.frame_index, 2)
+    assert_true(Pointer(to=a.animation[]) == Pointer(to=b.animation[]))
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

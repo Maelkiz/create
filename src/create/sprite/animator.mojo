@@ -3,7 +3,7 @@ from std.memory import ArcPointer
 from create.sprite.animation import SpriteAnimation
 
 
-struct SpriteAnimator(Movable):
+struct SpriteAnimator(Copyable, Movable, Writable):
     """The playhead over one `SpriteAnimation`.
 
     An animation is the artwork and never moves; an animator is the frame a
@@ -41,6 +41,11 @@ struct SpriteAnimator(Movable):
         self._looping = False
         self._finished = False
         self._elapsed = 0.0
+
+    def write_to[W: Writer](self, mut writer: W):
+        # The animation is a shared asset, not printable, so only the
+        # playhead shows.
+        writer.write("SpriteAnimator(frame_index=", self.frame_index, ")")
 
     def use(mut self, var animation: ArcPointer[SpriteAnimation]):
         """Switch to `animation`, rewound to frame 0 and stopped.
