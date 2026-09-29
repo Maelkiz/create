@@ -147,9 +147,8 @@ def bezier_shadow_mask(
     """The stroke of `c` (a `CMD_BEZIER` shadow command) mapped by `m`,
     rasterised into an alpha mask and blurred by `blur` device pixels.
 
-    The quads are the ones the stroke itself fills, shifted by a whole number
-    of pixels onto the mask so every pixel centre falls where it would on the
-    device. A curve with no visible stroke gives an empty mask.
+    The quads are the ones the stroke itself fills. A curve with no visible
+    stroke gives an empty mask.
     """
     var corners = List[Point2D]()
     if c.style._outline_visible():
@@ -157,6 +156,17 @@ def bezier_shadow_mask(
             bezier_device_points(c, m),
             Float64(outline_thickness_px(c.style, m, scale)),
         )
+    return quads_shadow_mask(corners, blur)
+
+
+def quads_shadow_mask(corners: List[Point2D], blur: Int) -> PlacedMask:
+    """Device quads (four corners each, as `fill_quad` takes them)
+    rasterised into an alpha mask and blurred by `blur` device pixels.
+
+    The quads are shifted by a whole number of pixels onto the mask, so
+    every pixel centre falls where it would on the device and the mask holds
+    the same pixels the quads paint there. No quads give an empty mask.
+    """
     if len(corners) == 0:
         return PlacedMask(BlurredMask(List[UInt8](), 0, 0, 0), 0, 0)
     var lo = corners[0]
@@ -170,7 +180,7 @@ def bezier_shadow_mask(
     var height = Int(ceil(hi.y)) - y0 + 1
 
     # Filled white on a scratch surface, so the mask is the same pixels the
-    # hard stroke paints; only its alpha is kept.
+    # hard quads paint; only its alpha is kept.
     var scratch = MemorySurface(width, height)
     var s = scratch.surface()
     for q in range(0, len(corners), 4):
