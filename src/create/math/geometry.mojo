@@ -1223,6 +1223,186 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return [self.a, self.b, self.c]
 
 
+struct Polygon(Copyable, Equatable, Movable, Writable):
+    """A polygon through `vertices`, in order, closed back to the first:
+    `regular`, `star`, `center`, `area`, `bounds`, `closest_point`,
+    `contains`, `move_to`, `translate`.
+
+    Any vertices make a polygon, concave or crossing itself. What is inside
+    follows the nonzero rule: a point is inside when the edges wind round
+    it, either way, so a pentagram given as five crossing vertices is solid
+    through its middle. Vertex winding does not matter, and the boundary
+    counts as inside. With fewer than three vertices, or all of them in
+    line, the polygon collapses to its edges.
+
+    Like a `Triangle`'s, the fields are the vertices and `center()` (the
+    centroid) is derived; `move_to` moves the centroid. The centroid and
+    `area` are those of a simple polygon -- one whose edges do not cross.
+    """
+
+    var vertices: List[Point2D]
+
+    def __init__(out self, *vertices: Point2D):
+        self.vertices = List[Point2D](capacity=len(vertices))
+        for v in vertices:
+            self.vertices.append(v)
+
+    def __init__(out self, var vertices: List[Point2D]):
+        self.vertices = vertices^
+
+    @staticmethod
+    def regular(
+        position: Point2D,
+        r: Float64,
+        sides: Int,
+        start_angle: Float64 = tau / 4.0,
+    ) -> Polygon:
+        """A regular polygon of `sides` vertices on the circle around
+        `position` with radius `r`, the first at `start_angle` (radians
+        counter-clockwise from +x; straight up by default), the rest
+        following counter-clockwise."""
+        var vertices = List[Point2D](capacity=max(sides, 0))
+        for i in range(sides):
+            var angle = start_angle + tau * Float64(i) / Float64(sides)
+            vertices.append(position + _unit(angle) * r)
+        return Polygon(vertices^)
+
+    @staticmethod
+    def star(
+        position: Point2D,
+        r: Float64,
+        inner_r: Float64,
+        tips: Int,
+        start_angle: Float64 = tau / 4.0,
+    ) -> Polygon:
+        """A star of `tips` points about `position`: its tips on radius `r`,
+        the first at `start_angle` (straight up by default), and between
+        each two tips a vertex on radius `inner_r`, halfway round. The
+        outline does not cross itself, so it is a simple polygon."""
+        var vertices = List[Point2D](capacity=max(2 * tips, 0))
+        for i in range(2 * tips):
+            var angle = start_angle + pi * Float64(i) / Float64(tips)
+            vertices.append(
+                position + _unit(angle) * (r if i % 2 == 0 else inner_r)
+            )
+        return Polygon(vertices^)
+
+    def __eq__(self, other: Polygon) -> Bool:
+        return self.vertices == other.vertices
+
+    def __ne__(self, other: Polygon) -> Bool:
+        return not (self == other)
+
+    def write_to[W: Writer](self, mut writer: W):
+        writer.write("Polygon(vertices=[")
+        for i in range(len(self.vertices)):
+            if i > 0:
+                writer.write(", ")
+            writer.write(self.vertices[i])
+        writer.write("])")
+
+    def center(self) -> Point2D:
+        """The centroid of the enclosed area; with no area, the mean of the
+        vertices (the origin for none)."""
+        var n = len(self.vertices)
+        if n == 0:
+            return Point2D(0.0, 0.0)
+        var area2 = self._signed_area2()
+        if area2 == 0.0:
+            var sx = 0.0
+            var sy = 0.0
+            for v in self.vertices:
+                sx += v.x
+                sy += v.y
+            return Point2D(sx / Float64(n), sy / Float64(n))
+        var cx = 0.0
+        var cy = 0.0
+        for i in range(n):
+            var a = self.vertices[i]
+            var b = self.vertices[(i + 1) % n]
+            var cross = a.x * b.y - b.x * a.y
+            cx += (a.x + b.x) * cross
+            cy += (a.y + b.y) * cross
+        return Point2D(cx / (3.0 * area2), cy / (3.0 * area2))
+
+    def _signed_area2(self) -> Float64:
+        """Twice the signed area by the shoelace formula: positive for
+        counter-clockwise vertices."""
+        var n = len(self.vertices)
+        var sum = 0.0
+        for i in range(n):
+            var a = self.vertices[i]
+            var b = self.vertices[(i + 1) % n]
+            sum += a.x * b.y - b.x * a.y
+        return sum
+
+    def area(self) -> Float64:
+        return abs(self._signed_area2()) / 2.0
+
+    def bounds(self) -> Rectangle:
+        """The tightest axis-aligned rectangle around the vertices; a
+        zero-size one at the origin for none."""
+        if len(self.vertices) == 0:
+            return Rectangle(Point2D(0.0, 0.0), 0.0, 0.0)
+        var lo = self.vertices[0]
+        var hi = self.vertices[0]
+        for v in self.vertices:
+            lo = Point2D(min(lo.x, v.x), min(lo.y, v.y))
+            hi = Point2D(max(hi.x, v.x), max(hi.y, v.y))
+        return Rectangle(lo.lerp(hi, 0.5), hi.x - lo.x, hi.y - lo.y)
+
+    def closest_point(self, p: Point2D) -> Point2D:
+        """`p` itself when inside, else the nearest point on an edge. A
+        polygon with no vertices has no points, and returns `p`."""
+        if len(self.vertices) == 0 or self.contains(p):
+            return p
+        var best = self.vertices[0]
+        for i in range(len(self.vertices)):
+            var e = self._edge(i)
+            var q = _closest_on_segment(p, e.start, e.end)
+            if _dist_sq(p, q) < _dist_sq(p, best):
+                best = q
+        return best
+
+    def contains(self, p: Point2D) -> Bool:
+        for i in range(len(self.vertices)):
+            var e = self._edge(i)
+            if _point_on_segment(p, e.start, e.end):
+                return True
+        return self._winding(p) != 0
+
+    def move_to(mut self, position: Point2D):
+        self.translate(position - self.center())
+
+    def translate(mut self, delta: Vector2D):
+        for i in range(len(self.vertices)):
+            self.vertices[i] = self.vertices[i] + delta
+
+    def _edge(self, i: Int) -> Line:
+        """Edge `i`, from vertex `i` to the next, the last closing back to
+        the first."""
+        return Line(
+            self.vertices[i], self.vertices[(i + 1) % len(self.vertices)]
+        )
+
+    def _winding(self, p: Point2D) -> Int:
+        """How many times the edges wind counter-clockwise round `p`,
+        clockwise counting negative. Each edge counts where it crosses the
+        horizontal through `p` to its right, half-open in y so a vertex on
+        that line is counted once; a point on an edge gets whatever the
+        rounding of the crossing gives, so `contains` settles edges first.
+        """
+        var w = 0
+        for i in range(len(self.vertices)):
+            var e = self._edge(i)
+            if e.start.y <= p.y:
+                if e.end.y > p.y and _orientation(e.start, e.end, p) > 0:
+                    w += 1
+            elif e.end.y <= p.y and _orientation(e.start, e.end, p) < 0:
+                w -= 1
+        return w
+
+
 # `overlaps(a, b)` is the whole overlap-testing surface for regions: one
 # specialized, exact overload per unordered shape pair (`Rectangle`,
 # `Circle`, `Triangle`, `Sector` -- `Line` and `Arc` have no interior and are
