@@ -77,7 +77,8 @@ struct CubicBezier(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     The curve passes through `start` and `end` only; the controls pull it
     towards themselves and set the direction it leaves `start`
     (`control1 - start`) and arrives at `end` (`end - control2`). It is the
-    curve SVG paths, fonts and vector editors use.
+    curve SVG paths, fonts and vector editors use. For a smooth curve through
+    given points instead, see `CatmullRomSpline`.
 
     Like `Line`, a curve has no interior and is not a region: there is no
     `area`, `contains` or `overlaps` for it.

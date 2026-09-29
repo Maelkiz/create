@@ -29,8 +29,9 @@ into the backend at record time (the command carries an id); text is recorded as
 and laid out at replay. Add a shape by extending `_command.mojo`'s kinds and `_backend.mojo`'s replay
 (plus `_tessellate.mojo`), never by calling `_raster.mojo` from `Canvas`.
 
-`RenderCommand.geom` has 8 slots, sized for `CMD_BEZIER`'s four points; the geometry table in
-`_command.mojo` gives each kind's layout.
+`RenderCommand.geom` has 6 slots, sized for a triangle's three points; the geometry table in
+`_command.mojo` gives each kind's layout. `CMD_BEZIER` alone uses `RenderCommand.points` instead, a
+`List` that stays empty (and unallocated) for every other kind.
 
 `Canvas` holds no `Surface` and takes its geometry from the `Viewport` alone — don't add a `Surface`
 field or parameter, and don't import `_window` from `canvas.mojo`. What survives the frame boundary:
@@ -49,13 +50,22 @@ an opaque `canvas.background()` replaces it via `Backend.record_clear`, and a tr
 
 ## Curves
 
-A `CMD_BEZIER` records only its four control points. Each replay maps them through the command's
-transform (a Bézier is affine-invariant) and flattens in device pixels
-(`FLATTEN_TOLERANCE_PX`), so the curve stays smooth under any zoom. `stroke_quads` turns the
-polyline into a strip of quads sharing mitred edges — no gap, no overlap, so a translucent stroke
-composites once — which the CPU fills with `fill_quad` and the GPU pushes as vertices. Ends are
-butt. Known limitation: at a cusp the miter is clamped (`MITER_LIMIT`) and the quads either side
-overlap slightly.
+A `CMD_BEZIER` records a **chain** of cubic Béziers as control points in `points`: 3n+1 for n
+curves, each ending where the next starts (`bezier_command` records a chain of one,
+`bezier_chain_command` any). Each replay maps them through the command's transform (a Bézier is
+affine-invariant), flattens each curve in device pixels (`FLATTEN_TOLERANCE_PX`) so it stays smooth
+under any zoom, and joins the pieces into one polyline. `stroke_quads` turns that into a strip of
+quads sharing mitred edges — no gap, no overlap, so a translucent stroke composites once, across the
+joints between curves too — which the CPU fills with `fill_quad` and the GPU pushes as vertices.
+Ends are butt; a polyline whose last point is its first is a ring instead, its closing joint
+mitred like any other. Known limitation: at a cusp the miter is clamped (`MITER_LIMIT`) and the
+quads either side overlap slightly.
+
+`canvas.catmull_rom` converts its `CatmullRomSpline` to Béziers **at record time, in local space**,
+and records one chain. The conversion is exact, and doing it before the transform matters: the
+centripetal knot spacing depends on distances, which a non-uniform scale would change, so a spline
+converted after it would change shape rather than just stretch. Separate commands per curve would
+meet on butt ends and double-blend a translucent joint; one chain doesn't.
 
 ## Captures
 

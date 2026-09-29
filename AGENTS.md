@@ -25,7 +25,7 @@ it makes the library better.
 | root | `src/create/__init__.mojo` | The preamble: star-imports all five subpackages below |
 | `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`, `Input`, `Key`, `MouseButton`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path`, `DateTime` |
 | `render` | `src/create/render/` | `Canvas`, `Camera`, colour/font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
-| `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes, `CubicBezier`, `Random`, `Noise`, easing and `Tween`, util functions |
+| `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes, `CubicBezier`, `CatmullRomSpline`, `Random`, `Noise`, easing and `Tween`, util functions |
 | `sprite` | `src/create/sprite/` | `Sprite` (BMP/PNG/JPEG), `SpriteAnimation`, `SpriteAnimator` |
 | `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |
 | `_bytes` | `src/create/_bytes.mojo` | Internal leaf: little-endian integer decoding |
@@ -245,6 +245,7 @@ mid-`update` applies next frame — except `max_frame_rate()` and `quit()`, read
 | Down / pressed / released | Input state for keys and mouse buttons alike. *Down* is held right now, true every frame (`key_down`, `mouse_down`); *pressed*/*released* are edges, true only in the frame it went down or came up (`key_pressed`, `mouse_released`). Unlike Processing's `mousePressed`, *pressed* never means held |
 | `overlaps` / `intersects` / `contains` | `overlaps(a, b)`: free, symmetric, regions only (`Rectangle`/`Circle`/`Triangle`). `line.intersects(x)`: `Line` only, since a line has no interior. `region.contains(x)`: asymmetric. A `Line` is never a region |
 | `CubicBezier` | `start`, `control1`, `control2`, `end`; passes through the endpoints only. A curve, not a region: `canvas.bezier` strokes it in the outline style and draws nothing with the outline off. `at(t)` is uneven in speed; `at_distance(d)` moves along it at constant speed |
+| `CatmullRomSpline` | A smooth curve through every one of `points`, in order; `closed` runs it on back to the first. `alpha` spaces its knots: 0 uniform (can loop where points bunch), 0.5 centripetal (default, never does), 1 chordal. Same sampling methods as `CubicBezier`, `t` split evenly per stretch. `beziers()` converts it exactly; `canvas.catmull_rom` draws it as one stroke of those Béziers |
 
 ## Do
 
