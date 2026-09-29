@@ -402,7 +402,8 @@ struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A line segment from `start` to `end`: `length`, `length_sq`,
     `midpoint`, `closest_point`, `intersects`, `move_to`, `translate`.
 
-    Unlike `Rectangle`/`Circle`/`Triangle`/`Sector`, `Line` has no interior
+    Unlike `Rectangle`/`Circle`/`Triangle`/`Sector`/`Polygon`, `Line` has
+    no interior
     and is not a shape: it has no `center()`, `contains(region)` beyond the
     two endpoint-based overloads below, `area()`, or `overlaps` overload.
     With `Arc`, it is a curve, the *subject* of the asymmetric relation
@@ -474,7 +475,8 @@ struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     # because a circle's containment is radial from its centre), `Rectangle`
     # and `Triangle` via endpoint containment (covers a curve wholly inside,
     # which no edge test would catch) plus their edges as `Line`s, and
-    # `Sector` the same way, its edges being two radii and an `Arc`.
+    # `Sector` and `Polygon` the same way, a sector's edges being two radii
+    # and an `Arc`.
     def intersects(self, p: Point2D) -> Bool:
         return _point_on_segment(p, self.start, self.end)
 
@@ -485,6 +487,11 @@ struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         if s.contains(self.start) or s.contains(self.end):
             return True
         return s._boundary_meets(self)
+
+    def intersects(self, p: Polygon) -> Bool:
+        if p.contains(self.start) or p.contains(self.end):
+            return True
+        return p._boundary_meets(self)
 
     def intersects(self, c: Circle) -> Bool:
         return c.contains(self.closest_point(c.position))
@@ -823,6 +830,11 @@ struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         if s.contains(self.at(0.0)) or s.contains(self.at(1.0)):
             return True
         return s._boundary_meets(self)
+
+    def intersects(self, p: Polygon) -> Bool:
+        if p.contains(self.at(0.0)) or p.contains(self.at(1.0)):
+            return True
+        return p._boundary_meets(self)
 
     def move_to(mut self, position: Point2D):
         self.position = position
@@ -1385,6 +1397,18 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
             self.vertices[i], self.vertices[(i + 1) % len(self.vertices)]
         )
 
+    def _boundary_meets(self, l: Line) -> Bool:
+        for i in range(len(self.vertices)):
+            if l.intersects(self._edge(i)):
+                return True
+        return False
+
+    def _boundary_meets(self, a: Arc) -> Bool:
+        for i in range(len(self.vertices)):
+            if a.intersects(self._edge(i)):
+                return True
+        return False
+
     def _winding(self, p: Point2D) -> Int:
         """How many times the edges wind counter-clockwise round `p`,
         clockwise counting negative. Each edge counts where it crosses the
@@ -1405,7 +1429,8 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
 
 # `overlaps(a, b)` is the whole overlap-testing surface for regions: one
 # specialized, exact overload per unordered shape pair (`Rectangle`,
-# `Circle`, `Triangle`, `Sector` -- `Line` and `Arc` have no interior and are
+# `Circle`, `Triangle`, `Sector`, `Polygon` -- `Line` and `Arc` have no
+# interior and are
 # deliberately excluded, see the taxonomy comment above `Line.intersects`),
 # so a symmetric relation reads as a symmetric call -- `overlaps(a, b)` and
 # `overlaps(b, a)` always agree, and the reverse-order overload is a
@@ -1419,7 +1444,10 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
 # test any two regions share: one holds a point of the other (the tip, a
 # vertex), or their boundaries cross (`_polygon_overlaps_sector`). The
 # arc's boundary is found through `cos` and `sin`, so a sector touches
-# within the slack `Arc.intersects` allows rather than exactly.
+# within the slack `Arc.intersects` allows rather than exactly. A `Polygon`
+# may be concave or cross itself, so it takes the same shared test, save
+# that one vertex stands for a whole polygon: while no edges cross, the
+# other shape's inside/outside cannot change along the polygon's boundary.
 #
 # Every overload is boundary-inclusive: shapes that only touch (shared
 # edge, shared corner, tangent circles) count as overlapping. Degenerate
@@ -1513,3 +1541,63 @@ def overlaps(a: Sector, b: Sector) -> Bool:
         if b._boundary_meets(radius):
             return True
     return b._boundary_meets(a.arc())
+
+
+def _edges_meet_polygon[N: Int](pts: Array[Point2D, N], p: Polygon) -> Bool:
+    """Whether an edge of the straight-edged region with corners `pts`
+    meets `p`: reaches into it, or crosses one of its edges."""
+    for i in range(N):
+        if Line(pts[i], pts[(i + 1) % N]).intersects(p):
+            return True
+    return False
+
+
+def overlaps(a: Polygon, b: Circle) -> Bool:
+    return b.contains(a.closest_point(b.position))
+
+
+def overlaps(a: Circle, b: Polygon) -> Bool:
+    return overlaps(b, a)
+
+
+def overlaps(a: Polygon, b: Rectangle) -> Bool:
+    if _edges_meet_polygon(b._points(), a):
+        return True
+    return len(a.vertices) > 0 and b.contains(a.vertices[0])
+
+
+def overlaps(a: Rectangle, b: Polygon) -> Bool:
+    return overlaps(b, a)
+
+
+def overlaps(a: Polygon, b: Triangle) -> Bool:
+    if _edges_meet_polygon(b._points(), a):
+        return True
+    return len(a.vertices) > 0 and b.contains(a.vertices[0])
+
+
+def overlaps(a: Triangle, b: Polygon) -> Bool:
+    return overlaps(b, a)
+
+
+def overlaps(a: Polygon, b: Sector) -> Bool:
+    if a.contains(b.position):
+        return True
+    for v in a.vertices:
+        if b.contains(v):
+            return True
+    for i in range(len(a.vertices)):
+        if b._boundary_meets(a._edge(i)):
+            return True
+    return False
+
+
+def overlaps(a: Sector, b: Polygon) -> Bool:
+    return overlaps(b, a)
+
+
+def overlaps(a: Polygon, b: Polygon) -> Bool:
+    for i in range(len(a.vertices)):
+        if a._edge(i).intersects(b):
+            return True
+    return len(b.vertices) > 0 and a.contains(b.vertices[0])

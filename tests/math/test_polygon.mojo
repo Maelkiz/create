@@ -5,7 +5,16 @@ from std.testing import (
     assert_almost_equal,
 )
 from std.math import cos, pi, sin, tau
-from create.math.geometry import Polygon, Rectangle
+from create.math.geometry import (
+    overlaps,
+    Arc,
+    Circle,
+    Line,
+    Polygon,
+    Rectangle,
+    Sector,
+    Triangle,
+)
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
@@ -192,6 +201,123 @@ def test_translate() raises -> None:
     sq.translate(Vector2D(1, -2))
     assert_equal(sq.vertices[0], Point2D(1.0, -2.0))
     assert_equal(sq.vertices[2], Point2D(11.0, 8.0))
+
+
+def test_overlaps_circle() raises -> None:
+    var l = _l_shape()
+    # Sitting in the notch, clear of both arms.
+    var in_notch = Circle((8, 8), 1.5)
+    assert_true(not overlaps(l, in_notch))
+    assert_true(not overlaps(in_notch, l))
+    # Tangent to both edges of the notch.
+    var touching = Circle((8, 8), 3)
+    assert_true(overlaps(l, touching) and overlaps(touching, l))
+    # Polygon wholly inside a circle, and a circle wholly inside the arm.
+    var around = Circle((5, 5), 20)
+    assert_true(overlaps(l, around) and overlaps(around, l))
+    var inside = Circle((2.5, 2.5), 1)
+    assert_true(overlaps(l, inside) and overlaps(inside, l))
+
+
+def test_overlaps_rectangle() raises -> None:
+    var l = _l_shape()
+    var in_notch = Rectangle((8, 8), 3, 3)
+    assert_true(not overlaps(l, in_notch) and not overlaps(in_notch, l))
+    # Sharing the notch's edge counts.
+    var on_edge = Rectangle((7.5, 6), 5, 2)
+    assert_true(overlaps(l, on_edge) and overlaps(on_edge, l))
+    var around = Rectangle((5, 5), 30, 30)
+    assert_true(overlaps(l, around) and overlaps(around, l))
+    var inside = Rectangle((2, 2), 1, 1)
+    assert_true(overlaps(l, inside) and overlaps(inside, l))
+    var far = Rectangle((30, 0), 2, 2)
+    assert_true(not overlaps(l, far) and not overlaps(far, l))
+
+
+def test_overlaps_triangle() raises -> None:
+    var l = _l_shape()
+    var in_notch = Triangle((6, 6), (9, 6), (6, 9))
+    assert_true(not overlaps(l, in_notch) and not overlaps(in_notch, l))
+    # Bridging the notch from arm to arm, all vertices outside the L.
+    var bridging = Triangle((7, 12), (12, 7), (12, 12))
+    assert_true(not overlaps(l, bridging))
+    var crossing = Triangle((2, 12), (12, 2), (12, 12))
+    assert_true(overlaps(l, crossing) and overlaps(crossing, l))
+    var around = Triangle((-20, -20), (40, -20), (5, 40))
+    assert_true(overlaps(l, around) and overlaps(around, l))
+
+
+def test_overlaps_sector() raises -> None:
+    var l = _l_shape()
+    # The notch holds a quarter disc pointing into its corner.
+    var in_notch = Sector((9, 9), 3, pi, pi / 2.0)
+    assert_true(not overlaps(l, in_notch) and not overlaps(in_notch, l))
+    # The tip inside the polygon.
+    var tip_inside = Sector((2, 2), 50, 0.0, 0.1)
+    assert_true(overlaps(l, tip_inside) and overlaps(tip_inside, l))
+    # Reaching in from outside, the tip clear of the polygon.
+    var arc_reaches = Sector((20, 2), 11, pi - 0.2, 0.4)
+    assert_true(overlaps(l, arc_reaches) and overlaps(arc_reaches, l))
+    # The polygon wholly inside the sector.
+    var around = Sector((-5, -5), 40, 0.0, pi / 2.0)
+    assert_true(overlaps(l, around) and overlaps(around, l))
+
+
+def test_overlaps_polygon() raises -> None:
+    var l = _l_shape()
+    var in_notch = Polygon.regular((8, 8), 1.5, 5)
+    assert_true(not overlaps(l, in_notch) and not overlaps(in_notch, l))
+    var small = Polygon.regular((2, 2), 1, 6)
+    assert_true(overlaps(l, small) and overlaps(small, l))
+    var big = Polygon.regular((5, 5), 30, 3)
+    assert_true(overlaps(l, big) and overlaps(big, l))
+    assert_true(overlaps(l, l))
+    assert_true(not overlaps(l, Polygon()) and not overlaps(Polygon(), l))
+
+
+def test_overlaps_follow_the_nonzero_rule() raises -> None:
+    # A square wound twice around a hole: the outer ring counts once, the
+    # hole zero times -- a shape in the hole overlaps nothing.
+    var ring = Polygon(
+        (0, 0),
+        (10, 0),
+        (10, 10),
+        (0, 10),
+        (0, 0),
+        (3, 3),
+        (3, 7),
+        (7, 7),
+        (7, 3),
+        (3, 3),
+    )
+    assert_true(not ring.contains(Point2D(5, 5)))
+    var in_hole = Circle((5, 5), 1)
+    assert_true(not overlaps(ring, in_hole) and not overlaps(in_hole, ring))
+    var in_hole_polygon = Polygon.regular((5, 5), 1, 4)
+    assert_true(not overlaps(ring, in_hole_polygon))
+    assert_true(not overlaps(in_hole_polygon, ring))
+    # The pentagram's doubly wound centre is filled.
+    var star = _pentagram()
+    var at_center = Rectangle((0, 0), 1, 1)
+    assert_true(overlaps(star, at_center) and overlaps(at_center, star))
+
+
+def test_line_intersects() raises -> None:
+    var l = _l_shape()
+    # Across the notch, touching neither arm.
+    assert_true(not Line((6, 9), (9, 6)).intersects(l))
+    assert_true(Line((2, 2), (3, 3)).intersects(l))
+    assert_true(Line((-5, 2), (20, 2)).intersects(l))
+    assert_true(Line((5, 12), (5, 5)).intersects(l))
+    assert_true(not Line((20, 20), (30, 20)).intersects(l))
+
+
+def test_arc_intersects() raises -> None:
+    var l = _l_shape()
+    assert_true(not Arc((10, 10), 3, pi, pi / 2.0).intersects(l))
+    assert_true(Arc((10, 10), 6, pi, pi / 2.0).intersects(l))
+    assert_true(Arc((2, 2), 1, 0.0, tau).intersects(l))
+    assert_true(not Arc((30, 30), 2, 0.0, tau).intersects(l))
 
 
 def main() raises:
