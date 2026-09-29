@@ -688,8 +688,9 @@ struct Canvas:
         negative sweep runs clockwise, and a full turn or more is the whole
         disc. The outline is inset, as a circle's is: the fill stops where it
         starts, and a translucent sector composites once. `corner_radius` does
-        not round a sector, and it casts no shadow. A zero radius or sweep
-        draws nothing.
+        not round a sector, and it casts no inset shadow; a blurred drop
+        shadow costs what a `bezier`'s does. A zero radius or sweep draws
+        nothing.
         """
         self._state.backend.record(
             sector_command(
