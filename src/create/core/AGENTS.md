@@ -12,6 +12,7 @@ layering rules; the render side is in [../render/AGENTS.md](../render/AGENTS.md)
 | `_step.mojo` | `step` — one frame's body |
 | `_events.mojo` | `apply_events` — the one `Event`-to-`Input` fold, into `context.input` |
 | `context.mojo`, `time.mojo`, `input.mojo`, `key.mojo`, `mouse_button.mojo` | The run state the loop owns and the program reads: `Context` and its `time` and `input` readings |
+| `date_time.mojo` | `DateTime`, the wall clock via libc `clock_gettime` + `localtime_r`. Not run state: nothing in the loop touches it |
 
 ## Rules
 
