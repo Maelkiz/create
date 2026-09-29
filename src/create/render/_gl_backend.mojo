@@ -95,7 +95,8 @@ from ._blur import (
     blur_sprite_alpha,
     shadow_mask_key,
 )
-from ._curve import bezier_shadow_mask
+from ._curve import PlacedMask, bezier_shadow_mask
+from ._sector import sector_shadow_mask
 from ._image import _Image
 from ._tessellate import (
     MODE_SOLID,
@@ -615,7 +616,15 @@ struct GLRenderer(Movable):
                 elif c.kind == CMD_SPRITE:
                     self._sprite_shadow(sh, images, scale, blur)
                 elif c.kind == CMD_BEZIER:
-                    self._bezier_shadow(sh, scale, blur)
+                    self._mask_shadow(
+                        bezier_shadow_mask(sh, sh.transform, scale, blur),
+                        c.style.shadow_color,
+                    )
+                elif c.kind == CMD_SECTOR:
+                    self._mask_shadow(
+                        sector_shadow_mask(sh, sh.transform, scale, blur),
+                        c.style.shadow_color,
+                    )
             self._one(c, images, text, width, height, scale)
             # Over the command, clipped to its interior; solid-mode
             # geometry, so it batches with anything.
@@ -872,13 +881,9 @@ struct GLRenderer(Movable):
             self.shadow_textures[key] = name
         emit_sprite(self.vertices, c, scale, blur_reach(sigma))
 
-    def _bezier_shadow(
-        mut self, c: RenderCommand, scale: Float64, blur: Int
-    ) raises:
-        """The curve shadow command `c` blurred by `blur` device pixels: the
-        CPU replay's mask, uploaded for this frame only and drawn as one quad
-        where the CPU blits it."""
-        var placed = bezier_shadow_mask(c, c.transform, scale, blur)
+    def _mask_shadow(mut self, placed: PlacedMask, color: Color) raises:
+        """A blurred curve or sector shadow: the CPU replay's mask, uploaded
+        for this frame only and drawn as one quad where the CPU blits it."""
         ref mask = placed.mask
         if mask.width == 0 or mask.height == 0:
             return
@@ -899,7 +904,7 @@ struct GLRenderer(Movable):
             Float64(placed.y),
             Float64(mask.width),
             Float64(mask.height),
-            c.style.outline_color,
+            color,
         )
 
     def _upload(

@@ -17,6 +17,8 @@ corner rounds by `d` more, centred on the original vertex. That is exactly
 what a larger `corner_radius` on the grown rectangle or triangle renders, so
 no new shape kind is needed. `corner_radius` is a whole number of world
 units, so the rounding is to the nearest unit; the edges themselves are exact.
+A sector has no corner radius, so it carries the growth itself (`geom[5]`)
+and `sector_quads` tiles the Minkowski sum exactly.
 
 **Blur** is a Gaussian of standard deviation `sigma = shadow_blur / 2`, as in
 CSS, evaluated analytically per pixel rather than by blurring an image: the
@@ -34,6 +36,7 @@ from ._command import (
     CMD_CIRCLE,
     CMD_LINE,
     CMD_RECT,
+    CMD_SECTOR,
     CMD_SPRITE,
     CMD_TEXT,
     CMD_TRIANGLE,
@@ -52,13 +55,17 @@ def casts_outer_shadow(c: RenderCommand) -> Bool:
     """
     if not c.style._shadow_visible() or c.style.shadow_inset:
         return False
-    if c.kind == CMD_RECT or c.kind == CMD_CIRCLE or c.kind == CMD_TRIANGLE:
+    if (
+        c.kind == CMD_RECT
+        or c.kind == CMD_CIRCLE
+        or c.kind == CMD_TRIANGLE
+        or c.kind == CMD_SECTOR
+    ):
         return c.style._fill_visible() or c.style._outline_visible()
     if c.kind == CMD_LINE or c.kind == CMD_BEZIER:
         return c.style._outline_visible()
     if c.kind == CMD_TEXT:
         return c.style.text_color.a > 0
-    # A sector (`CMD_SECTOR`) casts none yet.
     return c.kind == CMD_SPRITE
 
 
@@ -174,13 +181,15 @@ def shadow_command(c: RenderCommand, scale: Float64) -> RenderCommand:
             )
         elif c.kind == CMD_CIRCLE:
             s.geom[2] = max(s.geom[2] + spread, 0.0)
+        elif c.kind == CMD_SECTOR:
+            s.geom[5] = spread
         return s^
 
     s.style.fill_color = color
     s.style.fill_enabled = True
     s.style.outline_enabled = False
-    # Rectangle and circle outlines are inset rings, so the fill's edge is
-    # already the outer edge; a triangle's outline is centred on its edges and
+    # Rectangle, circle and sector outlines are inset rings, so the fill's
+    # edge is already the outer edge; a triangle's outline is centred on its edges and
     # reaches half its width further out.
     var d = spread
     if c.kind == CMD_TRIANGLE and c.style._outline_visible():
@@ -197,6 +206,9 @@ def shadow_command(c: RenderCommand, scale: Float64) -> RenderCommand:
     elif c.kind == CMD_TRIANGLE:
         _grow_triangle(s.geom, d)
         s.style.corner_radius = max(c.style.corner_radius + Int(round(d)), 0)
+    elif c.kind == CMD_SECTOR:
+        # Grown exactly, by `sector_quads`: no corner radius to lean on.
+        s.geom[5] = d
     return s^
 
 

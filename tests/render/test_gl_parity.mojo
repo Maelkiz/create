@@ -135,7 +135,9 @@ comptime _SHAPE_TRANSLUCENT_ARC = 40
 comptime _SHAPE_SECTOR = 41
 comptime _SHAPE_TRANSLUCENT_PAC_MAN = 42
 comptime _SHAPE_OUTLINED_DISC_SECTOR = 43
-comptime _SHAPE_COUNT = 44
+comptime _SHAPE_SHADOWED_SECTOR = 44
+comptime _SHAPE_BLURRED_SECTOR_RING = 45
+comptime _SHAPE_COUNT = 46
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -257,6 +259,10 @@ def _shape_name(shape: Int) -> String:
         return "translucent pac-man sector"
     elif shape == _SHAPE_OUTLINED_DISC_SECTOR:
         return "outlined whole-turn sector"
+    elif shape == _SHAPE_SHADOWED_SECTOR:
+        return "shadowed sector"
+    elif shape == _SHAPE_BLURRED_SECTOR_RING:
+        return "blurred sector ring"
     else:
         return "blurred line"
 
@@ -633,6 +639,23 @@ struct _Parity(Program):
                 canvas.fill_enabled(False)
                 canvas.outline(Color(0x80, 0xFF, 0x80), thickness=8)
                 canvas.sector((0, 0), 60, 1.0, tau)
+        elif self.shape == _SHAPE_SHADOWED_SECTOR:
+            # Past a half turn and spread, so the shadow reaches round the
+            # tip into the missing wedge.
+            var s = _shadowed(
+                Style(fill=Color(0xFF, 0xC0, 0x20), outline_thickness=4)
+            )
+            s.shadow_spread = 6.0
+            with canvas.style(s):
+                canvas.sector((-10, 10), 60, 0.6, tau - 1.2)
+        elif self.shape == _SHAPE_BLURRED_SECTOR_RING:
+            # Outline only, under a half turn: the blurred mask of a ring.
+            var s = _blurred(
+                Style(outline=Color(0x80, 0xFF, 0x80), outline_thickness=8)
+            )
+            s.shadow_spread = 3.0
+            with canvas.style(s):
+                canvas.sector((-50, -40), 110, 0.2, 1.2)
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline

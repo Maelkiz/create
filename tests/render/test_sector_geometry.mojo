@@ -18,6 +18,7 @@ from create.render.surface import MemorySurface
 from create.render._command import CMD_SECTOR, sector_command
 from create.render._raster import fill_quad
 from create.render._sector import SectorQuads, sector_quads
+from create.render._transform import outline_thickness_px, pixel_scale
 
 comptime _SIZE = 64
 comptime _INK = Color(255, 255, 255, 128)
@@ -39,7 +40,9 @@ def _device(m: Matrix[3, 3]) -> Matrix[3, 3]:
     return translate(Float64(_SIZE) / 2.0, Float64(_SIZE) / 2.0) @ m
 
 
-def _quads(s: Sector, m: Matrix[3, 3], style: Style = Style()) -> SectorQuads:
+def _quads(
+    s: Sector, m: Matrix[3, 3], style: Style = Style(), grow: Float64 = 0.0
+) -> SectorQuads:
     var c = sector_command(
         m,
         style,
@@ -49,6 +52,7 @@ def _quads(s: Sector, m: Matrix[3, 3], style: Style = Style()) -> SectorQuads:
         s.start_angle,
         s.sweep_angle,
     )
+    c.geom[5] = grow
     return sector_quads(c, c.transform, 1.0)
 
 
@@ -83,10 +87,10 @@ def _once() -> Color:
     return surface.pixel(0, 0)
 
 
-def _boundary_distance(s: Sector, p: Point2D) -> Float64:
-    """How far `p` lies from the sector's edge, inside or out."""
+def _signed_distance(s: Sector, p: Point2D) -> Float64:
+    """How far `p` lies inside the sector's edge; negative outside."""
     if not s.contains(p):
-        return p.dist(s.closest_point(p))
+        return -p.dist(s.closest_point(p))
     var d = s.r - p.dist(s.position)
     if abs(s.sweep_angle) < tau:
         for radius in s._radii():
@@ -94,25 +98,41 @@ def _boundary_distance(s: Sector, p: Point2D) -> Float64:
     return d
 
 
-def _assert_tiles(s: Sector, m: Matrix[3, 3], style: Style = Style()) raises:
-    """Quads convex, painted at most once, and covering the sector: each
-    pixel centre more than a pixel from the edge is painted exactly when
-    the sector holds it."""
-    var q = _quads(s, _device(m), style)
+def _assert_tiles(
+    s: Sector, m: Matrix[3, 3], style: Style = Style(), grow: Float64 = 0.0
+) raises:
+    """Quads convex, painted at most once, and covering the sector grown by
+    `grow`: each pixel centre more than a pixel from an edge is painted
+    exactly when it lies no further than `grow` outside the sector, and
+    painted in the fill exactly when it lies the outline's width further in.
+    """
+    var device = _device(m)
+    var q = _quads(s, device, style, grow)
     for corners in [q.fill.copy(), q.outline.copy()]:
         for i in range(0, len(corners), 4):
             assert_true(_convex(corners, i))
     var surface = _painted(q)
+    var fill = MemorySurface(_SIZE, _SIZE)
+    _paint(fill, q.fill)
     var once = _once()
-    var back = inverse(_device(m))
+    var back = inverse(device)
     var pixel_units = 1.0 / sqrt(abs(m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]))
+    var near = 1.5 * pixel_units
+    var t = 0.0
+    if style._outline_visible() and len(q.fill) > 0 and len(q.outline) > 0:
+        t = Float64(outline_thickness_px(style, device, 1.0)) / pixel_scale(
+            device, 1.0
+        )
     for y in range(_SIZE):
         for x in range(_SIZE):
             var color = surface.pixel(x, y)
             assert_true(color.a == 0 or color == once)
             var p = Point2D(mat_apply(back, Float64(x) + 0.5, Float64(y) + 0.5))
-            if _boundary_distance(s, p) > 1.5 * pixel_units:
-                assert_equal(color.a != 0, s.contains(p))
+            var d = _signed_distance(s, p)
+            if abs(d + grow) > near:
+                assert_equal(color.a != 0, d >= -grow)
+            if t > 0.0 and abs(d + grow - t) > near:
+                assert_equal(fill.pixel(x, y).a != 0, d >= t - grow)
 
 
 def _convex(corners: List[Point2D], i: Int) -> Bool:
@@ -205,6 +225,36 @@ def test_outline_wider_than_the_radius_leaves_one_colour() raises -> None:
     assert_equal(len(q.fill), 0)
     assert_true(len(q.outline) > 0)
     _assert_tiles(s, identity[3](), style)
+
+
+def test_grown_sectors_tile_their_minkowski_sum() raises -> None:
+    # Round the tip and the arc's ends into the missing wedge, with the
+    # outline an inset band of the grown shape.
+    for s in _sectors():
+        _assert_tiles(s, identity[3](), _outlined(3), 4.0)
+        _assert_tiles(s, rotate(0.7) @ scale(1.1), _outlined(3), 3.0)
+
+
+def test_shrunk_sectors_tile_their_erosion() raises -> None:
+    for s in _sectors():
+        _assert_tiles(s, identity[3](), _outlined(3), -4.0)
+
+
+def test_a_grown_outline_only_sector_is_a_ring() raises -> None:
+    # A shadow's ring: the outline band of the grown sector, fill switched
+    # off, still tiles once with the hole in the right place.
+    var style = _outlined(10)
+    style.fill_enabled = False
+    for s in _sectors():
+        _assert_tiles(s, identity[3](), style, 3.0)
+
+
+def test_shrunk_to_nothing_gives_no_quads() raises -> None:
+    var q = _quads(
+        Sector((0.0, 0.0), 10.0, 0.0, 1.0), identity[3](), grow=-10.0
+    )
+    assert_equal(len(q.fill), 0)
+    assert_equal(len(q.outline), 0)
 
 
 def test_degenerate_sectors_give_no_quads() raises -> None:

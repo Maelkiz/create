@@ -18,8 +18,13 @@ from ._command import (
     CMD_SECTOR,
     RenderCommand,
 )
-from ._curve import bezier_device_points, bezier_shadow_mask, stroke_quads
-from ._sector import sector_quads
+from ._curve import (
+    PlacedMask,
+    bezier_device_points,
+    bezier_shadow_mask,
+    stroke_quads,
+)
+from ._sector import sector_quads, sector_shadow_mask
 from ._blur import (
     SHADOW_MASK_LIMIT,
     BlurredMask,
@@ -1127,8 +1132,12 @@ struct Backend(Movable):
                 self._text(t, sh, scale, sm, blur)
             elif c.kind == CMD_SPRITE:
                 self._sprite_shadow(t, sh, scale, sm, blur)
-            elif c.kind == CMD_BEZIER:
-                var placed = bezier_shadow_mask(sh, sm, scale, blur)
+            elif c.kind == CMD_BEZIER or c.kind == CMD_SECTOR:
+                var placed: PlacedMask
+                if c.kind == CMD_BEZIER:
+                    placed = bezier_shadow_mask(sh, sm, scale, blur)
+                else:
+                    placed = sector_shadow_mask(sh, sm, scale, blur)
                 blit_alpha(
                     t,
                     placed.mask.pixels.unsafe_ptr(),
@@ -1136,7 +1145,7 @@ struct Backend(Movable):
                     placed.mask.height,
                     placed.x,
                     placed.y,
-                    sh.style.outline_color,
+                    c.style.shadow_color,
                 )
         if c.kind == CMD_CLEAR:
             fill_all(t, c.style.fill_color)

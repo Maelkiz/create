@@ -21,12 +21,14 @@ from create.render._command import (
     clear_command,
     line_command,
     rect_command,
+    sector_command,
     sprite_command,
     text_command,
     triangle_command,
 )
 from create.render._shadow import (
     box_coverage,
+    casts_inset_shadow,
     casts_outer_shadow,
     edge_coverage,
     gaussian_cdf,
@@ -206,6 +208,45 @@ def test_triangle_silhouette_reaches_the_outline_outer_edge() raises -> None:
     # Centred bands reach half the thickness past each edge.
     assert_almost_equal(sh.geom[0], -1.0)
     assert_almost_equal(sh.geom[1], -1.0)
+
+
+def test_a_sector_casts_its_grown_silhouette() raises -> None:
+    # The outline is inset, so the silhouette is the sector; the spread
+    # rides along for `sector_quads` to grow it exactly.
+    var s = _shadowed()
+    s.shadow_spread = 2.0
+    var c = sector_command(identity[3](), s, 0.0, 0.0, 10.0, 0.5, -4.0)
+    assert_true(casts_outer_shadow(c))
+    var sh = shadow_command(c, 1.0)
+    assert_true(sh.style.fill_enabled)
+    assert_equal(sh.style.fill_color, s.shadow_color)
+    assert_false(sh.style.outline_enabled)
+    for i in range(5):
+        assert_equal(sh.geom[i], c.geom[i])
+    assert_equal(sh.geom[5], 2.0)
+
+
+def test_an_outline_only_sector_casts_its_ring() raises -> None:
+    var s = Style(outline=Color.RED, outline_thickness=3, shadow_enabled=True)
+    s.shadow_spread = 1.0
+    var c = sector_command(identity[3](), s, 0.0, 0.0, 10.0, 0.0, 1.0)
+    var sh = shadow_command(c, 1.0)
+    assert_false(sh.style.fill_enabled)
+    assert_equal(sh.style.outline_color, s.shadow_color)
+    assert_equal(sh.style.outline_thickness, 5)
+    assert_equal(sh.geom[5], 1.0)
+    s.outline_enabled = False
+    assert_false(
+        casts_outer_shadow(sector_command(identity[3](), s, 0, 0, 10, 0, 1))
+    )
+
+
+def test_a_sector_casts_no_inset_shadow() raises -> None:
+    var s = _shadowed()
+    s.shadow_inset = True
+    var c = sector_command(identity[3](), s, 0.0, 0.0, 10.0, 0.0, 1.0)
+    assert_false(casts_inset_shadow(c))
+    assert_false(casts_outer_shadow(c))
 
 
 def test_text_shadow_recolours_the_glyphs() raises -> None:
