@@ -8,6 +8,12 @@ comptime _ANGLE_EPSILON = 1e-12
 as on its edge. The edges come from `cos`/`sin` of the angles, which round, so
 without it a point exactly on an edge (`Arc.at(1)`, say) could test outside."""
 
+comptime _RADIUS_EPSILON = 1e-9
+"""How far, as a fraction of the radius, a point may lie off an arc's circle
+and still count as on it. A point on an arc is found through `cos`, `sin` and
+`sqrt`, which round, so exact equality would miss most of them: tangents,
+crossings, the arc's own `at`."""
+
 comptime _MAX_ARC_BEZIER_ANGLE = pi / 4.0
 """The widest piece `Arc.beziers` approximates with one cubic. At 45° the
 cubic strays from the circle by about 4e-6 of the radius: under a quarter
@@ -431,16 +437,21 @@ struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             return True
         return False
 
-    # `l.intersects(x)` is the line-as-subject relation -- asymmetric, unlike
-    # `overlaps`, because a `Line` has no interior and cannot be an operand of
-    # a symmetric region test. Point and Line are exact by construction; a
-    # region is tested by the cheapest exact method for that shape --
-    # `Circle` via `closest_point`-then-`contains` (exact only because a
-    # circle's containment is radial from its centre), `Rectangle` and
-    # `Triangle` via endpoint containment (covers a segment wholly inside,
+    # `x.intersects(y)` is the curve-as-subject relation, for `Line` and
+    # `Arc` -- asymmetric, unlike `overlaps`, because a curve has no interior
+    # and cannot be an operand of a symmetric region test. Two curves meet
+    # where they cross or touch: exactly for two `Line`s, within
+    # `_RADIUS_EPSILON` once an `Arc` is involved, since its points are
+    # rounded. A region is tested by the cheapest exact method for that
+    # shape -- `Circle` via `closest_point`-then-`contains` (exact only
+    # because a circle's containment is radial from its centre), `Rectangle`
+    # and `Triangle` via endpoint containment (covers a curve wholly inside,
     # which no edge test would catch) plus their edges as `Line`s.
     def intersects(self, p: Point2D) -> Bool:
         return _point_on_segment(p, self.start, self.end)
+
+    def intersects(self, a: Arc) -> Bool:
+        return a.intersects(self)
 
     def intersects(self, c: Circle) -> Bool:
         return c.contains(self.closest_point(c.position))
@@ -483,7 +494,7 @@ struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A circular arc: part of the circle around `position` with radius `r`,
     from `start_angle` round by `sweep_angle`. `end_angle`, `at`, `tangent`,
     `length`, `at_distance`, `bounds`, `flatten`, `beziers`,
-    `closest_point`, `move_to`, `translate`.
+    `closest_point`, `intersects`, `move_to`, `translate`.
 
     Angles are radians, counted counter-clockwise from the +x axis: y is up,
     so this is the direction `rotate` turns. The sweep is signed -- positive
@@ -676,6 +687,95 @@ struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         var b = self.at(1.0)
         return a if _dist_sq(p, a) <= _dist_sq(p, b) else b
 
+    def _spans(self, p: Point2D) -> Bool:
+        """Whether the direction from the centre to `p` lies within the
+        sweep, however far `p` is from the circle."""
+        var s = _normalized_sweep(self.start_angle, self.sweep_angle)
+        return _in_sweep(p - self.position, s[0], s[1])
+
+    # The `intersects` family is documented above `Line.intersects`.
+    def intersects(self, p: Point2D) -> Bool:
+        var off = abs((p - self.position).mag() - self.r)
+        return off <= _RADIUS_EPSILON * self.r and self._spans(p)
+
+    def intersects(self, l: Line) -> Bool:
+        var d = l.end - l.start
+        var len_sq = d.mag_sq()
+        if len_sq == 0.0:
+            return self.intersects(l.start)
+        var f = l.start - self.position
+        # The line through the segment comes nearest the centre at `t_near`
+        # along it, `h` away, and crosses the circle `half` either side of
+        # there. Each crossing, pulled back onto the segment, is a meeting
+        # exactly when it is on the arc; a tangent just short of the circle
+        # after rounding still gets its one touching point.
+        var length = sqrt(len_sq)
+        var h = abs(_cross(d, f)) / length
+        if h > self.r * (1.0 + _RADIUS_EPSILON):
+            return False
+        var t_near = -f.dot(d) / len_sq
+        var half = sqrt(max(0.0, self.r * self.r - h * h)) / length
+        var t0 = max(0.0, min(t_near - half, 1.0))
+        var t1 = max(0.0, min(t_near + half, 1.0))
+        return self.intersects(l.start + d * t0) or self.intersects(
+            l.start + d * t1
+        )
+
+    def intersects(self, other: Arc) -> Bool:
+        if self.r == 0.0:
+            return other.intersects(self.position)
+        if other.r == 0.0:
+            return self.intersects(other.position)
+        var between = other.position - self.position
+        var d = between.mag()
+        var slack = _RADIUS_EPSILON * (self.r + other.r)
+        if d <= slack:
+            # One circle: the arcs meet where their sweeps overlap, which
+            # is exactly when one holds an end of the other.
+            if abs(self.r - other.r) > slack:
+                return False
+            return (
+                self._spans(other.at(0.0))
+                or self._spans(other.at(1.0))
+                or other._spans(self.at(0.0))
+                or other._spans(self.at(1.0))
+            )
+        if d > self.r + other.r + slack or d < abs(self.r - other.r) - slack:
+            return False
+        # The circles cross on the chord `along` from this centre towards
+        # the other, `h` either side of the line between them.
+        var along = (d * d + self.r * self.r - other.r * other.r) / (2.0 * d)
+        var h = sqrt(max(0.0, self.r * self.r - along * along))
+        var u = between * (1.0 / d)
+        var mid = self.position + u * along
+        var side = Vector2D(-u.y, u.x) * h
+        var p = mid + side
+        var q = mid - side
+        return (self._spans(p) and other._spans(p)) or (
+            self._spans(q) and other._spans(q)
+        )
+
+    def intersects(self, c: Circle) -> Bool:
+        return c.contains(self.closest_point(c.position))
+
+    def intersects(self, r: Rectangle) -> Bool:
+        if r.contains(self.at(0.0)) or r.contains(self.at(1.0)):
+            return True
+        var pts = r._points()
+        for i in range(4):
+            if self.intersects(Line(pts[i], pts[(i + 1) % 4])):
+                return True
+        return False
+
+    def intersects(self, t: Triangle) -> Bool:
+        if t.contains(self.at(0.0)) or t.contains(self.at(1.0)):
+            return True
+        var pts = t._points()
+        for i in range(3):
+            if self.intersects(Line(pts[i], pts[(i + 1) % 3])):
+                return True
+        return False
+
     def move_to(mut self, position: Point2D):
         self.position = position
 
@@ -816,9 +916,9 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
 # `overlaps(a, b)` is the whole overlap-testing surface for regions: one
 # specialized, exact overload per unordered shape pair (`Rectangle`,
-# `Circle`, `Triangle` -- `Line` has no interior and is deliberately
-# excluded, see the taxonomy comment above `Line.intersects`), so a
-# symmetric relation reads as a symmetric call -- `overlaps(a, b)` and
+# `Circle`, `Triangle` -- `Line` and `Arc` have no interior and are
+# deliberately excluded, see the taxonomy comment above `Line.intersects`),
+# so a symmetric relation reads as a symmetric call -- `overlaps(a, b)` and
 # `overlaps(b, a)` always agree, and the reverse-order overload is a
 # one-line delegation to the other. Each pair picks the cheapest exact
 # test for that combination rather than routing through a single generic

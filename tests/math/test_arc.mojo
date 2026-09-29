@@ -5,7 +5,7 @@ from std.testing import (
     assert_almost_equal,
 )
 from std.math import abs, ceil, pi, tau
-from create.math.geometry import Arc
+from create.math.geometry import Arc, Circle, Line, Rectangle, Triangle
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
@@ -180,6 +180,144 @@ def test_move_to_and_translate_move_the_centre() raises -> None:
     assert_equal(a.position, Point2D(3.0, 4.0))
     a.translate(Vector2D(1.0, -1.0))
     assert_equal(a.position, Point2D(4.0, 3.0))
+
+
+def _assert_meets(a: Arc, l: Line, expected: Bool) raises:
+    assert_equal(a.intersects(l), expected)
+    assert_equal(l.intersects(a), expected)
+
+
+def test_intersects_point_on_the_arc() raises -> None:
+    var a = Arc((1, 2), 10, 0.3, 2.0)
+    assert_true(a.intersects(a.at(0.0)))
+    assert_true(a.intersects(a.at(0.37)))
+    assert_true(a.intersects(a.at(1.0)))
+
+
+def test_intersects_point_off_the_arc() raises -> None:
+    var a = Arc((0, 0), 10, 0.0, pi / 2.0)
+    assert_true(not a.intersects(Point2D(0.0, 0.0)))
+    assert_true(not a.intersects(Point2D(10.001, 0.0)))
+    # On the circle, but outside the sweep.
+    assert_true(not a.intersects(Point2D(0.0, -10.0)))
+
+
+def test_intersects_line_crossing_once_and_twice() raises -> None:
+    var a = Arc((0, 0), 10, 0.0, pi)
+    _assert_meets(a, Line((0, 0), (0, 20)), True)
+    _assert_meets(a, Line((-20, 5), (20, 5)), True)
+
+
+def test_intersects_line_only_where_it_crosses_the_sweep() raises -> None:
+    # The upper half: a chord below the centre crosses only the missing half.
+    var a = Arc((0, 0), 10, 0.0, pi)
+    _assert_meets(a, Line((-20, -5), (20, -5)), False)
+    # Clockwise from +x down to -x: the lower half, which the chord crosses.
+    _assert_meets(Arc((0, 0), 10, 0.0, -pi), Line((-20, -5), (20, -5)), True)
+
+
+def test_intersects_line_short_of_or_inside_the_circle() raises -> None:
+    var a = Arc((0, 0), 10, 0.0, tau)
+    _assert_meets(a, Line((-3, 0), (3, 0)), False)
+    _assert_meets(a, Line((11, 0), (20, 0)), False)
+    _assert_meets(a, Line((-20, 11), (20, 11)), False)
+
+
+def test_intersects_tangent_line() raises -> None:
+    var a = Arc((0, 0), 10, 0.0, pi)
+    _assert_meets(a, Line((-5, 10), (5, 10)), True)
+    _assert_meets(a, Line((-5, -10), (5, -10)), False)
+
+
+def test_intersects_line_ending_on_the_arc() raises -> None:
+    var a = Arc((3, -2), 7, 0.4, 1.9)
+    _assert_meets(a, Line(a.at(0.6), a.at(0.6) + Vector2D(50, 50)), True)
+    _assert_meets(a, Line(a.at(1.0), a.position), True)
+
+
+def test_intersects_line_along_a_radius() raises -> None:
+    var a = Arc((0, 0), 10, 0.0, pi / 2.0)
+    _assert_meets(a, Line((0, 0), (0, 10)), True)
+    _assert_meets(a, Line((0, 0), (0, -10)), False)
+
+
+def test_intersects_degenerate_line() raises -> None:
+    var a = Arc((0, 0), 10, 0.0, pi)
+    _assert_meets(a, Line((0, 10), (0, 10)), True)
+    _assert_meets(a, Line((0, 5), (0, 5)), False)
+
+
+def test_intersects_crossing_arcs() raises -> None:
+    var a = Arc((0, 0), 10, 0.0, pi)
+    assert_true(a.intersects(Arc((10, 0), 10, pi / 2.0, pi)))
+    # The same circles cross at (5, ±8.66); a lower arc misses the upper one.
+    assert_true(not a.intersects(Arc((10, 0), 10, pi, pi / 2.0)))
+    assert_true(Arc((10, 0), 10, pi / 2.0, pi).intersects(a))
+
+
+def test_intersects_tangent_arcs() raises -> None:
+    var a = Arc((0, 0), 10, -1.0, 2.0)
+    assert_true(a.intersects(Arc((20, 0), 10, pi - 1.0, 2.0)))
+    # Internally tangent at (10, 0).
+    assert_true(a.intersects(Arc((5, 0), 5, -1.0, 2.0)))
+
+
+def test_intersects_disjoint_and_nested_circles() raises -> None:
+    var a = Arc((0, 0), 10, 0.0, tau)
+    assert_true(not a.intersects(Arc((30, 0), 5, 0.0, tau)))
+    assert_true(not a.intersects(Arc((1, 0), 5, 0.0, tau)))
+
+
+def test_intersects_concentric_arcs() raises -> None:
+    var a = Arc((0, 0), 10, 0.0, pi / 2.0)
+    assert_true(a.intersects(Arc((0, 0), 10, 1.0, 2.0)))
+    assert_true(a.intersects(Arc((0, 0), 10, pi / 2.0, pi / 2.0)))
+    assert_true(not a.intersects(Arc((0, 0), 10, pi, pi / 2.0)))
+    assert_true(not a.intersects(Arc((0, 0), 5, 0.0, pi / 2.0)))
+
+
+def test_intersects_arc_holding_the_other_within_its_sweep() raises -> None:
+    # One concentric arc wholly within the other's sweep.
+    var a = Arc((0, 0), 10, 0.0, pi)
+    assert_true(a.intersects(Arc((0, 0), 10, 1.0, 0.5)))
+    assert_true(Arc((0, 0), 10, 1.0, 0.5).intersects(a))
+
+
+def test_intersects_circle() raises -> None:
+    var a = Arc((0, 0), 10, 0.0, pi)
+    assert_true(a.intersects(Circle((0, 12), 2)))
+    assert_true(a.intersects(Circle((0, 10), 1)))
+    assert_true(a.intersects(Circle((0, 0), 20)))
+    assert_true(not a.intersects(Circle((0, 0), 5)))
+    assert_true(not a.intersects(Circle((0, -10), 1)))
+
+
+def test_intersects_rectangle() raises -> None:
+    var a = Arc((0, 0), 10, 0.0, pi)
+    assert_true(a.intersects(Rectangle((0, 10), 4, 4)))
+    assert_true(a.intersects(Rectangle((0, 0), 100, 100)))
+    assert_true(a.intersects(Rectangle((0, 15), 40, 10)))
+    assert_true(not a.intersects(Rectangle((0, 0), 4, 4)))
+    assert_true(not a.intersects(Rectangle((0, -10), 4, 4)))
+
+
+def test_intersects_triangle() raises -> None:
+    var a = Arc((0, 0), 10, 0.0, pi)
+    assert_true(a.intersects(Triangle((-2, 8), (2, 8), (0, 12))))
+    assert_true(a.intersects(Triangle((-50, -1), (50, -1), (0, 50))))
+    assert_true(not a.intersects(Triangle((-2, 0), (2, 0), (0, 2))))
+    assert_true(not a.intersects(Triangle((-2, -8), (2, -8), (0, -12))))
+
+
+def test_intersects_collapsed_arcs() raises -> None:
+    var point = Arc((0, 10), 0, 0.0, 1.0)
+    _assert_meets(point, Line((-5, 10), (5, 10)), True)
+    _assert_meets(point, Line((-5, 11), (5, 11)), False)
+    assert_true(Arc((0, 0), 10, 0.0, pi).intersects(point))
+    assert_true(point.intersects(Arc((0, 0), 10, 0.0, pi)))
+    var no_sweep = Arc((0, 0), 10, pi / 2.0, 0.0)
+    _assert_meets(no_sweep, Line((-5, 10), (5, 10)), True)
+    _assert_meets(no_sweep, Line((1, 0), (1, 20)), False)
 
 
 def main() raises:
