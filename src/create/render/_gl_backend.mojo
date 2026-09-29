@@ -94,6 +94,7 @@ from ._blur import (
     blur_sprite_alpha,
     shadow_mask_key,
 )
+from ._curve import bezier_shadow_mask
 from ._image import _Image
 from ._tessellate import (
     MODE_SOLID,
@@ -106,6 +107,7 @@ from ._tessellate import (
     emit_letterbox,
     emit_line,
     emit_rect,
+    emit_silhouette_mask,
     emit_sprite,
     emit_triangle,
 )
@@ -422,6 +424,10 @@ struct GLRenderer(Movable):
     the sprite unit, so a blurred sprite shadow costs a draw call per
     distinct mask it switches to, where a hard one samples the sprite's own
     texture and costs none."""
+    var frame_textures: List[UInt32]
+    """Textures used for one frame only — blurred curve shadows, whose masks
+    have no stable key to cache by — deleted once the frame's last batch has
+    drawn."""
     var bound: UInt32
     """What is on texture unit 1 — the sprite unit — right now. Kept across
     frames, since nothing else in the library binds there. A batch is one
@@ -447,6 +453,7 @@ struct GLRenderer(Movable):
         self.font_generation = 0
         self.textures = Dict[Int, UInt32]()
         self.shadow_textures = Dict[Int, UInt32]()
+        self.frame_textures = List[UInt32]()
         self.bound = 0
         self.vertices = VertexBuffer()
         self.draw_calls = 0
@@ -597,8 +604,7 @@ struct GLRenderer(Movable):
                 var blur = Int(
                     c.style.shadow_blur * pixel_scale(sh.transform, scale) + 0.5
                 )
-                # A Bézier has no blurred path yet: its shadow stays hard.
-                if blur == 0 or c.kind == CMD_BEZIER:
+                if blur == 0:
                     self._one(sh, images, text, width, height, scale)
                 elif blurs_analytically(c):
                     emit_blurred_shadow(self.vertices, sh, scale)
@@ -606,12 +612,19 @@ struct GLRenderer(Movable):
                     self._text(sh, text, scale, blur)
                 elif c.kind == CMD_SPRITE:
                     self._sprite_shadow(sh, images, scale, blur)
+                elif c.kind == CMD_BEZIER:
+                    self._bezier_shadow(sh, scale, blur)
             self._one(c, images, text, width, height, scale)
             # Over the command, clipped to its interior; solid-mode
             # geometry, so it batches with anything.
             if casts_inset_shadow(c):
                 emit_inset_shadow(self.vertices, c, scale)
         self._flush()
+        for name in self.frame_textures:
+            _delete_object(self.gl.delete_textures, name)
+            if name == self.bound:
+                self.bound = 0
+        self.frame_textures.clear()
 
     def _one(
         mut self,
@@ -854,6 +867,36 @@ struct GLRenderer(Movable):
             self.bound = name
             self.shadow_textures[key] = name
         emit_sprite(self.vertices, c, scale, blur_reach(sigma))
+
+    def _bezier_shadow(
+        mut self, c: RenderCommand, scale: Float64, blur: Int
+    ) raises:
+        """The curve shadow command `c` blurred by `blur` device pixels: the
+        CPU replay's mask, uploaded for this frame only and drawn as one quad
+        where the CPU blits it."""
+        var placed = bezier_shadow_mask(c, c.transform, scale, blur)
+        ref mask = placed.mask
+        if mask.width == 0 or mask.height == 0:
+            return
+        # Uploading rebinds the sprite unit; see `_sprite_shadow`.
+        self._flush()
+        var rgba = List[UInt8](length=mask.width * mask.height * 4, fill=255)
+        for i in range(mask.width * mask.height):
+            rgba[i * 4 + 3] = mask.pixels[i]
+        var name = self._upload(
+            mask.width, mask.height, Int(rgba.unsafe_ptr()), GL_NEAREST
+        )
+        _ = rgba^
+        self.bound = name
+        self.frame_textures.append(name)
+        emit_silhouette_mask(
+            self.vertices,
+            Float64(placed.x),
+            Float64(placed.y),
+            Float64(mask.width),
+            Float64(mask.height),
+            c.style.outline_color,
+        )
 
     def _upload(
         mut self, width: Int, height: Int, pixels: Int, filter: Int32

@@ -843,6 +843,44 @@ def test_a_blurred_text_shadow_is_softer_than_a_hard_one() raises -> None:
     assert_true(spill_soft > 50)
 
 
+def test_a_blurred_bezier_shadow_fades_past_the_stroke() raises -> None:
+    # Red under green, so a pixel with red and no green is shadow alone.
+    var hard = _shadowed(Color.GREEN, Color.RED)
+    hard.fill_enabled = False
+    hard.outline_enabled = True
+    hard.outline_color = Color.GREEN
+    hard.outline_thickness = 4
+    hard.shadow_offset = Vector2D(0, 0)
+    var soft = hard.copy()
+    soft.shadow_blur = 8.0
+    var a = List[RenderCommand]()
+    a.append(clear_command(Color.BLACK))
+    a.append(bezier_command(_base(), hard^, _s_curve()))
+    var b = List[RenderCommand]()
+    b.append(clear_command(Color.BLACK))
+    b.append(bezier_command(_base(), soft^, _s_curve()))
+    var ma = _replay(a)
+    var mb = _replay(b)
+    var spill_hard = 0
+    var spill_soft = 0
+    var brightest = 0
+    for y in range(_H):
+        for x in range(_W):
+            if ma.pixel(x, y).g == 0 and ma.pixel(x, y).r > 0:
+                spill_hard += 1
+            var p = mb.pixel(x, y)
+            if p.g == 0 and p.r > 0:
+                spill_soft += 1
+                brightest = max(brightest, Int(p.r))
+    assert_equal(spill_hard, 0)
+    assert_true(spill_soft > 100, "the blur doesn't spill past the stroke")
+    # Spilled shadow is a fade, never the solid shadow colour.
+    assert_true(brightest < 255)
+    # Beyond the blur's reach, nothing.
+    assert_equal(mb.pixel(2, 2), Color.BLACK)
+    assert_equal(mb.pixel(_W - 3, _H - 3), Color.BLACK)
+
+
 def _inset(fill: Color, offset: Vector2D, blur: Float64 = 0.0) -> Style:
     """`fill` with a red inset shadow thrown by `offset`."""
     var s = _shadowed(fill, Color.RED)

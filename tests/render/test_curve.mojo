@@ -6,15 +6,20 @@ from std.testing import (
 )
 
 from create.math.bezier import CubicBezier
-from create.math.matrix import identity, scale
+from create.math.matrix import identity, scale, translate
 from create.math.point2d import Point2D
+from create.render.color import Color
 from create.render.style import Style
+from create.render.surface import MemorySurface
+from create.render._blur import blur_reach
 from create.render._command import bezier_command
 from create.render._curve import (
     MITER_LIMIT,
     bezier_device_points,
+    bezier_shadow_mask,
     stroke_quads,
 )
+from create.render._raster import fill_quad
 
 
 def _assert_point_near(p: Point2D, q: Point2D, tol: Float64 = 1e-9) raises:
@@ -97,6 +102,84 @@ def test_zero_length_gives_no_quads() raises -> None:
 def test_zero_width_gives_no_quads() raises -> None:
     var points: List[Point2D] = [(0.0, 0.0), (10.0, 0.0)]
     assert_equal(len(stroke_quads(points, 0.0)), 0)
+
+
+def _stroked(thickness: Int) -> Style:
+    var s = Style()
+    s.outline_thickness = thickness
+    return s^
+
+
+def _mass(pixels: List[UInt8]) -> Int:
+    var total = 0
+    for p in pixels:
+        total += Int(p)
+    return total
+
+
+def test_an_unblurred_mask_is_the_stroke_itself() raises -> None:
+    # Moved in from the edges, so the whole stroke lands on the surface.
+    var c = bezier_command(translate(10.0, 10.0), _stroked(5), _s_curve())
+    var placed = bezier_shadow_mask(c, c.transform, 1.0, 0)
+    assert_equal(placed.mask.pad, 0)
+    # The same quads filled straight onto a device-sized surface.
+    var device = MemorySurface(120, 120)
+    var s = device.surface()
+    var corners = stroke_quads(bezier_device_points(c, c.transform), 5.0)
+    for q in range(0, len(corners), 4):
+        var qx: Array[Float64, 4] = [
+            corners[q].x,
+            corners[q + 1].x,
+            corners[q + 2].x,
+            corners[q + 3].x,
+        ]
+        var qy: Array[Float64, 4] = [
+            corners[q].y,
+            corners[q + 1].y,
+            corners[q + 2].y,
+            corners[q + 3].y,
+        ]
+        fill_quad(s, qx, qy, Color.WHITE)
+    var inked = 0
+    for y in range(120):
+        for x in range(120):
+            var mx = x - placed.x
+            var my = y - placed.y
+            var covered = UInt8(0)
+            if (
+                mx >= 0
+                and my >= 0
+                and mx < placed.mask.width
+                and my < placed.mask.height
+            ):
+                covered = placed.mask.pixels[my * placed.mask.width + mx]
+            assert_equal(covered, device.pixel(x, y).a)
+            if covered > 0:
+                inked += 1
+    assert_equal(_mass(placed.mask.pixels), inked * 255)
+
+
+def test_a_blurred_mask_grows_by_the_reach_and_keeps_its_mass() raises -> None:
+    var c = bezier_command(identity[3](), _stroked(5), _s_curve())
+    var hard = bezier_shadow_mask(c, c.transform, 1.0, 0)
+    var soft = bezier_shadow_mask(c, c.transform, 1.0, 8)
+    var pad = blur_reach(4.0)
+    assert_equal(soft.mask.pad, pad)
+    assert_equal(soft.x, hard.x - pad)
+    assert_equal(soft.y, hard.y - pad)
+    assert_equal(soft.mask.width, hard.mask.width + 2 * pad)
+    var before = Float64(_mass(hard.mask.pixels))
+    var after = Float64(_mass(soft.mask.pixels))
+    assert_true(abs(after - before) / before < 0.02)
+
+
+def test_an_invisible_stroke_gives_an_empty_mask() raises -> None:
+    var s = _stroked(5)
+    s.outline_enabled = False
+    var c = bezier_command(identity[3](), s, _s_curve())
+    var placed = bezier_shadow_mask(c, c.transform, 1.0, 8)
+    assert_equal(placed.mask.width, 0)
+    assert_equal(len(placed.mask.pixels), 0)
 
 
 def main() raises:

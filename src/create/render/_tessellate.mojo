@@ -842,6 +842,26 @@ def emit_sprite(
     vb.push(x0, y1, 0.0, 1.0, tint, mode)
 
 
+def emit_silhouette_mask(
+    mut vb: VertexBuffer,
+    x: Float64,
+    y: Float64,
+    w: Float64,
+    h: Float64,
+    color: Color,
+):
+    """One quad in device pixels over a whole blurred mask on the sprite
+    unit, placed where `blit_alpha` would put it, so texels land one-to-one
+    on device pixels. `MODE_SILHOUETTE` scales `color`'s alpha by the
+    sampled alpha."""
+    vb.push(x, y, 0.0, 0.0, color, MODE_SILHOUETTE)
+    vb.push(x + w, y, 1.0, 0.0, color, MODE_SILHOUETTE)
+    vb.push(x + w, y + h, 1.0, 1.0, color, MODE_SILHOUETTE)
+    vb.push(x, y, 0.0, 0.0, color, MODE_SILHOUETTE)
+    vb.push(x + w, y + h, 1.0, 1.0, color, MODE_SILHOUETTE)
+    vb.push(x, y + h, 0.0, 1.0, color, MODE_SILHOUETTE)
+
+
 def emit_glyph(
     mut vb: VertexBuffer,
     x: Float64,

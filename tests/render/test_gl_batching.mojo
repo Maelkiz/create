@@ -235,6 +235,70 @@ struct BlurredSprite[shadows: Bool](Program):
             canvas.sprite(self.image, (0.0, 0.0), 20, 20)
 
 
+@fieldwise_init
+struct BlurredBezier[shadows: Bool](Program):
+    """A Bézier between two rects, with or without a blurred shadow."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> BlurredBezier[Self.shadows]:
+        return BlurredBezier[Self.shadows](0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.fill(Color.RED)
+        canvas.rectangle((-30.0, 0.0), 20.0, 20.0)
+        var st = Style(outline=Color.GREEN, outline_thickness=4)
+        st.shadow_enabled = Self.shadows
+        st.shadow_blur = 8.0
+        with canvas.style(st):
+            # Recorded directly: `canvas` has no Bézier call of its own yet.
+            canvas._state.backend.record(
+                bezier_command(
+                    canvas._transform,
+                    canvas._style,
+                    CubicBezier((-30, -30), (-10, 30), (10, -30), (30, 30)),
+                )
+            )
+        canvas.rectangle((30.0, 0.0), 20.0, 20.0)
+
+
+def _live_textures(mut state: PersistentCanvasState) raises -> Int:
+    """How many of the first 4096 texture names are live textures."""
+    ref gl = state.backend.gl.value().gl
+    var live = 0
+    for name in range(1, 4097):
+        if gl.is_texture(UInt32(name)) != 0:
+            live += 1
+    return live
+
+
+def _texture_growth[P: Program](mut win: GLWindow, frames: Int) raises -> Int:
+    """How many more live textures there are after `frames` frames of `P`
+    than after its first."""
+    var target = _GLTarget(GL(), 100, 100)
+    var state = PersistentCanvasState(RenderBackend.GPU)
+    var context = Context()
+    context.design_resolution(100, 100)
+    var program = P.create(context)
+    context._set_viewport(state, 100, 100)
+    var now = 0
+    context.time._start(now)
+    var first = 0
+    for i in range(frames):
+        now += 16
+        context._advance_frame(now)
+        state = step(program, context, state^)
+        state.backend.present_gpu(100, 100, state.view.scale)
+        if i == 0:
+            first = _live_textures(state)
+    var growth = _live_textures(state) - first
+    _ = state^
+    _ = target^
+    return growth
+
+
 def _gpu_frame[
     P: Program
 ](
@@ -393,6 +457,20 @@ def test_gl_batching_behaviours() raises -> None:
         _gpu_draw_calls[RectsAround[True]](win),
         _gpu_draw_calls[RectsAround[False]](win),
         "bezier between rects: extra draw calls",
+    )
+
+    # Case 10: a blurred Bézier shadow samples a mask texture made for the
+    # frame, so it breaks the batch once — and that texture is freed with
+    # the frame, not left behind by each one.
+    assert_equal(
+        _gpu_draw_calls[BlurredBezier[True]](win),
+        _gpu_draw_calls[BlurredBezier[False]](win) + 1,
+        "blurred bezier shadow: expected one extra draw call",
+    )
+    assert_equal(
+        _texture_growth[BlurredBezier[True]](win, 100),
+        0,
+        "blurred bezier shadow: textures leak across frames",
     )
 
     _ = win^

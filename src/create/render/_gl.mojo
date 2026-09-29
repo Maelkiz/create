@@ -167,6 +167,7 @@ comptime _Uniform2f = def(Int32, Float32, Float32) thin abi("C") -> None
 comptime _Uniform1i = def(Int32, Int32) thin abi("C") -> None
 
 comptime _BindTexture = def(UInt32, UInt32) thin abi("C") -> None
+comptime _IsTexture = def(UInt32) thin abi("C") -> UInt8
 comptime _TexImage2D = def(
     UInt32, Int32, Int32, Int32, Int32, Int32, UInt32, UInt32, _Address
 ) thin abi("C") -> None
@@ -307,6 +308,8 @@ struct GL(Movable):
     var delete_buffers: _DeleteObjects
     var delete_vertex_arrays: _DeleteObjects
     var delete_textures: _DeleteObjects
+    var is_texture: _IsTexture
+    """No frame uses it either: tests ask it whether a texture was freed."""
 
     def __init__(out self) raises:
         """Bind every entry point, then require a GL 3.3 or better context."""
@@ -394,6 +397,7 @@ struct GL(Movable):
             lib, "glDeleteVertexArrays"
         )
         self.delete_textures = _bind[_DeleteObjects](lib, "glDeleteTextures")
+        self.is_texture = _bind[_IsTexture](lib, "glIsTexture")
 
         self._lib = lib^
 

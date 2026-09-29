@@ -3,16 +3,26 @@
 A curve is flattened and stroked in *device* space at replay, not at record
 time, so it stays smooth however far a camera zooms in. Both backends fill
 the same quads — the CPU through `fill_quad`, the GPU as vertices — which is what keeps them in parity.
+
+A blurred curve shadow is a mask rasterised from those same quads and blurred
+(`bezier_shadow_mask`), which both backends composite. Unlike a sprite's, it
+is not cached: a curve has no stable id to key it by, so every blurred curve
+shadow costs one blur per frame.
 """
 
-from std.math import sqrt
+from std.math import ceil, floor, sqrt
 
 from create.math.bezier import CubicBezier
 from create.math.matrix import Matrix, apply as mat_apply
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
+from ._blur import BlurredMask, blur_alpha
 from ._command import RenderCommand
+from ._raster import fill_quad
+from ._transform import outline_thickness_px
+from .color import Color
+from .surface import MemorySurface
 
 comptime FLATTEN_TOLERANCE_PX = 0.25
 """How far, in device pixels, a flattened curve may stray from the true one:
@@ -91,3 +101,70 @@ def stroke_quads(points: List[Point2D], width: Float64) -> List[Point2D]:
         corners.append(path[i + 1] - offsets[i + 1])
         corners.append(path[i] - offsets[i])
     return corners^
+
+
+struct PlacedMask(Movable):
+    """A blurred mask and where its top-left pixel lands on the device."""
+
+    var mask: BlurredMask
+    var x: Int
+    var y: Int
+
+    def __init__(out self, var mask: BlurredMask, x: Int, y: Int):
+        self.mask = mask^
+        self.x = x
+        self.y = y
+
+
+def bezier_shadow_mask(
+    c: RenderCommand, m: Matrix[3, 3], scale: Float64, blur: Int
+) -> PlacedMask:
+    """The stroke of `c` (a `CMD_BEZIER` shadow command) mapped by `m`,
+    rasterised into an alpha mask and blurred by `blur` device pixels.
+
+    The quads are the ones the stroke itself fills, shifted by a whole number
+    of pixels onto the mask so every pixel centre falls where it would on the
+    device. A curve with no visible stroke gives an empty mask.
+    """
+    var corners = List[Point2D]()
+    if c.style._outline_visible():
+        corners = stroke_quads(
+            bezier_device_points(c, m),
+            Float64(outline_thickness_px(c.style, m, scale)),
+        )
+    if len(corners) == 0:
+        return PlacedMask(BlurredMask(List[UInt8](), 0, 0, 0), 0, 0)
+    var lo = corners[0]
+    var hi = corners[0]
+    for p in corners:
+        lo = Point2D(min(lo.x, p.x), min(lo.y, p.y))
+        hi = Point2D(max(hi.x, p.x), max(hi.y, p.y))
+    var x0 = Int(floor(lo.x))
+    var y0 = Int(floor(lo.y))
+    var width = Int(ceil(hi.x)) - x0 + 1
+    var height = Int(ceil(hi.y)) - y0 + 1
+
+    # Filled white on a scratch surface, so the mask is the same pixels the
+    # hard stroke paints; only its alpha is kept.
+    var scratch = MemorySurface(width, height)
+    var s = scratch.surface()
+    for q in range(0, len(corners), 4):
+        var qx: Array[Float64, 4] = [
+            corners[q].x - Float64(x0),
+            corners[q + 1].x - Float64(x0),
+            corners[q + 2].x - Float64(x0),
+            corners[q + 3].x - Float64(x0),
+        ]
+        var qy: Array[Float64, 4] = [
+            corners[q].y - Float64(y0),
+            corners[q + 1].y - Float64(y0),
+            corners[q + 2].y - Float64(y0),
+            corners[q + 3].y - Float64(y0),
+        ]
+        fill_quad(s, qx, qy, Color.WHITE)
+    var alpha = List[UInt8](length=width * height, fill=0)
+    for i in range(width * height):
+        alpha[i] = scratch.data[i * 4 + 3]
+    var mask = blur_alpha(alpha, width, height, Float64(blur) / 2.0)
+    var pad = mask.pad
+    return PlacedMask(mask^, x0 - pad, y0 - pad)
