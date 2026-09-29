@@ -11,6 +11,7 @@ from create.render._command import (
     CMD_SPRITE,
     CMD_TEXT,
     CMD_LETTERBOX,
+    CMD_BEZIER,
     RenderCommand,
     clear_command,
     rect_command,
@@ -20,7 +21,9 @@ from create.render._command import (
     sprite_command,
     text_command,
     letterbox_command,
+    bezier_command,
 )
+from create.math.bezier import CubicBezier
 from create.math.matrix import identity, translate, rotate
 
 
@@ -63,6 +66,14 @@ def test_triangle_packs_all_three_vertices() raises -> None:
     )
     assert_equal(c.kind, CMD_TRIANGLE)
     for i in range(6):
+        assert_equal(c.geom[i], Float64(i + 1))
+
+
+def test_bezier_packs_all_four_points() raises -> None:
+    var curve = CubicBezier((1.0, 2.0), (3.0, 4.0), (5.0, 6.0), (7.0, 8.0))
+    var c = bezier_command(identity[3](), Style(), curve)
+    assert_equal(c.kind, CMD_BEZIER)
+    for i in range(8):
         assert_equal(c.geom[i], Float64(i + 1))
 
 
