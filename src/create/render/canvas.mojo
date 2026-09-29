@@ -15,6 +15,7 @@ from create.math.geometry import (
     Circle,
     Line,
     Rectangle,
+    Polygon,
     Sector,
     Triangle,
 )
@@ -37,6 +38,7 @@ from ._command import (
     clear_command,
     letterbox_command,
     line_command,
+    polygon_command,
     rect_command,
     sector_command,
     sprite_command,
@@ -715,6 +717,30 @@ struct Canvas:
 
     def sector(mut self, s: Sector):
         self.sector(s.position, s.r, s.start_angle, s.sweep_angle)
+
+    def polygon(mut self, p: Polygon):
+        """Draw the polygon through `p.vertices`, closed back to the first.
+
+        Filled by the nonzero rule, so a self-crossing polygon fills every
+        area its edges wind round, whichever way they run. The outline is
+        inset, as a sector's is: it covers what lies inside within the
+        outline's thickness of an edge — the crossing edges of a pentagram
+        included — and a translucent polygon composites once. `corner_radius`
+        does not round a polygon, and it casts no inset shadow; a blurred drop
+        shadow costs what a `bezier`'s does. Fewer than three vertices draw
+        nothing.
+        """
+        self._state.backend.record(
+            polygon_command(self._transform, self._style, p.vertices.copy())
+        )
+
+    def polygon(mut self, *vertices: Point2D):
+        var points = List[Point2D](capacity=len(vertices))
+        for v in vertices:
+            points.append(v)
+        self._state.backend.record(
+            polygon_command(self._transform, self._style, points^)
+        )
 
     def line(mut self, start: Point2D, end: Point2D):
         # Recorded only when it would render: an outline-less line is the one

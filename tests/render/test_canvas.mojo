@@ -17,7 +17,14 @@ from create.core.headless import run_headless
 from create.render.surface import MemorySurface
 from create.sprite.sprite import Sprite
 from std.memory import ArcPointer
-from create.math.geometry import Circle, Line, Rectangle, Sector, Triangle
+from create.math.geometry import (
+    Circle,
+    Line,
+    Polygon,
+    Rectangle,
+    Sector,
+    Triangle,
+)
 from create.math.matrix import rotate, scale, translate
 from create.math.point2d import Point2D
 
@@ -1420,6 +1427,110 @@ def test_a_translucent_sector_composites_once() raises -> None:
                 )
     # The mouth is left out.
     assert_equal(m.pixel(80, 50), Color.BLACK)
+
+
+@fieldwise_init
+struct PolygonEveryWay(Program):
+    """An L through the value overload, a triangle through the variadic one."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> PolygonEveryWay:
+        return PolygonEveryWay(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.fill(Color.WHITE)
+        canvas.outline_enabled(False)
+        canvas.polygon(
+            Polygon(
+                (-40.0, -40.0),
+                (0.0, -40.0),
+                (0.0, 0.0),
+                (-20.0, 0.0),
+                (-20.0, 40.0),
+                (-40.0, 40.0),
+            )
+        )
+        canvas.polygon((10.0, 10.0), (40.0, 10.0), (40.0, 40.0))
+
+
+def test_polygon_fills_through_every_overload() raises -> None:
+    var m = run_headless[PolygonEveryWay](100, 100)
+    # The L's foot and upright.
+    assert_equal(m.pixel(30, 70), Color.WHITE)
+    assert_equal(m.pixel(20, 20), Color.WHITE)
+    # Its notch is left out.
+    assert_equal(m.pixel(40, 40), Color.BLACK)
+    # The triangle, above its diagonal and below it.
+    assert_equal(m.pixel(85, 20), Color.WHITE)
+    assert_equal(m.pixel(65, 20), Color.BLACK)
+
+
+@fieldwise_init
+struct OutlinedSquare(Program):
+    """A 60-wide square, red with an 8-unit white outline."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> OutlinedSquare:
+        return OutlinedSquare(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.fill(Color.RED)
+        canvas.outline(Color.WHITE, thickness=8)
+        canvas.polygon(
+            (-30.0, -30.0), (30.0, -30.0), (30.0, 30.0), (-30.0, 30.0)
+        )
+
+
+def test_polygon_outline_is_inset() raises -> None:
+    var m = run_headless[OutlinedSquare](100, 100)
+    # Inside the edge at x = 80: outline to 72, then fill.
+    assert_equal(m.pixel(76, 50), Color.WHITE)
+    assert_equal(m.pixel(68, 50), Color.RED)
+    assert_equal(m.pixel(82, 50), Color.BLACK)
+    # The convex corner stays sharp.
+    assert_equal(m.pixel(79, 79), Color.WHITE)
+
+
+@fieldwise_init
+struct TranslucentStar(Program):
+    """Fill and outline the same translucent colour, turned and squashed."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> TranslucentStar:
+        return TranslucentStar(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.fill(Color(255, 255, 255, 128))
+        canvas.outline(Color(255, 255, 255, 128), thickness=5)
+        with canvas.transform(rotate(0.4) @ scale(1.2, 0.8)):
+            canvas.polygon(Polygon.star((0.0, 0.0), 40.0, 16.0, 5))
+        # Self-crossing too: a pentagram beside it.
+        var tips = Polygon.regular((0.0, 0.0), 12.0, 5).vertices.copy()
+        with canvas.transform(translate(30.0, -30.0)):
+            canvas.polygon(tips[0], tips[2], tips[4], tips[1], tips[3])
+
+
+def test_a_translucent_polygon_composites_once() raises -> None:
+    var m = run_headless[TranslucentStar](100, 100)
+    var once = m.pixel(50, 50)
+    assert_true(once != Color.BLACK)
+    assert_equal(m.pixel(80, 80), once)
+    for y in range(100):
+        for x in range(100):
+            var c = m.pixel(x, y)
+            if c != Color.BLACK and c != once:
+                raise Error(
+                    String("pixel (", x, ", ", y, ") painted twice: ", c)
+                )
 
 
 @fieldwise_init

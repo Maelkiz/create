@@ -32,6 +32,7 @@ from create.math.point2d import Point2D
 from ._command import RenderCommand
 from ._curve import bezier_device_points, stroke_quads
 from ._sector import sector_quads
+from ._polygon import polygon_quads
 from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
 from ._shadow import (
     SIL_RECT,
@@ -555,6 +556,16 @@ def emit_sector(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
     """`sector_quads`' tiling, the same quads the CPU fills: fill, then
     outline."""
     var quads = sector_quads(c, c.transform, scale)
+    if c.style._fill_visible():
+        _emit_quads(vb, quads.fill, c.style.fill_color)
+    if c.style._outline_visible():
+        _emit_quads(vb, quads.outline, c.style.outline_color)
+
+
+def emit_polygon(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
+    """`polygon_quads`' tiling, the same quads the CPU fills: fill, then
+    outline."""
+    var quads = polygon_quads(c, c.transform, scale)
     if c.style._fill_visible():
         _emit_quads(vb, quads.fill, c.style.fill_color)
     if c.style._outline_visible():

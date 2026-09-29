@@ -137,7 +137,11 @@ comptime _SHAPE_TRANSLUCENT_PAC_MAN = 42
 comptime _SHAPE_OUTLINED_DISC_SECTOR = 43
 comptime _SHAPE_SHADOWED_SECTOR = 44
 comptime _SHAPE_BLURRED_SECTOR_RING = 45
-comptime _SHAPE_COUNT = 46
+comptime _SHAPE_POLYGON = 46
+comptime _SHAPE_CONCAVE_POLYGON = 47
+comptime _SHAPE_TRANSLUCENT_STAR = 48
+comptime _SHAPE_PENTAGRAM = 49
+comptime _SHAPE_COUNT = 50
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -263,6 +267,14 @@ def _shape_name(shape: Int) -> String:
         return "shadowed sector"
     elif shape == _SHAPE_BLURRED_SECTOR_RING:
         return "blurred sector ring"
+    elif shape == _SHAPE_POLYGON:
+        return "polygon"
+    elif shape == _SHAPE_CONCAVE_POLYGON:
+        return "concave polygon"
+    elif shape == _SHAPE_TRANSLUCENT_STAR:
+        return "translucent star"
+    elif shape == _SHAPE_PENTAGRAM:
+        return "pentagram"
     else:
         return "blurred line"
 
@@ -656,6 +668,39 @@ struct _Parity(Program):
             s.shadow_spread = 3.0
             with canvas.style(s):
                 canvas.sector((-50, -40), 110, 0.2, 1.2)
+        elif self.shape == _SHAPE_POLYGON:
+            # A hexagon under rotation and non-uniform scale, outlined.
+            with canvas.style():
+                canvas.fill(Color(0x50, 0xA0, 0xD0))
+                canvas.outline(Color.BLACK, thickness=6)
+                with canvas.transform(rotate(0.3) @ scale(1.3, 0.8)):
+                    canvas.polygon(Polygon.regular((0, 0), 70, 6))
+        elif self.shape == _SHAPE_CONCAVE_POLYGON:
+            # An L: the outline rounds off round the reflex corner.
+            with canvas.style():
+                canvas.fill(Color(0xFF, 0xC0, 0x20))
+                canvas.outline(Color.BLACK, thickness=8)
+                canvas.polygon(
+                    (-80, -70),
+                    (80, -70),
+                    (80, -10),
+                    (-20, -10),
+                    (-20, 70),
+                    (-80, 70),
+                )
+        elif self.shape == _SHAPE_TRANSLUCENT_STAR:
+            # Translucent, so a seam between quads would show darker.
+            with canvas.style():
+                canvas.fill(Color(0xFF, 0xC0, 0x20, 0x80))
+                canvas.outline(Color(0x20, 0x40, 0xFF, 0x80), thickness=8)
+                canvas.polygon(Polygon.star((0, 0), 80, 35, 5))
+        elif self.shape == _SHAPE_PENTAGRAM:
+            # Five self-crossing edges: the centre is wound twice.
+            var tips = Polygon.regular((0, 0), 80, 5).vertices.copy()
+            with canvas.style():
+                canvas.fill(Color(0x80, 0xFF, 0x80))
+                canvas.outline(Color.BLACK, thickness=3)
+                canvas.polygon(tips[0], tips[2], tips[4], tips[1], tips[3])
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline

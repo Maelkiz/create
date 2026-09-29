@@ -16,6 +16,7 @@ from ._command import (
     CMD_LETTERBOX,
     CMD_BEZIER,
     CMD_SECTOR,
+    CMD_POLYGON,
     RenderCommand,
 )
 from ._curve import (
@@ -25,6 +26,7 @@ from ._curve import (
     stroke_quads,
 )
 from ._sector import sector_quads, sector_shadow_mask
+from ._polygon import polygon_quads
 from ._blur import (
     SHADOW_MASK_LIMIT,
     BlurredMask,
@@ -1159,6 +1161,8 @@ struct Backend(Movable):
             self._bezier(t, c, scale, m)
         elif c.kind == CMD_SECTOR:
             self._sector(t, c, scale, m)
+        elif c.kind == CMD_POLYGON:
+            self._polygon(t, c, scale, m)
         elif c.kind == CMD_TRIANGLE:
             self._triangle(t, c, scale, m)
         elif c.kind == CMD_SPRITE:
@@ -1733,6 +1737,23 @@ struct Backend(Movable):
         """Fill `sector_quads`' tiling, fill then outline, one `fill_quad`
         each: the two share their edges, so every pixel is composited once."""
         var quads = sector_quads(c, m, scale)
+        if c.style._fill_visible():
+            _fill_quads(s, quads.fill, c.style.fill_color)
+        if c.style._outline_visible():
+            _fill_quads(s, quads.outline, c.style.outline_color)
+
+    def _polygon[
+        o: Origin[mut=True]
+    ](
+        mut self,
+        s: Surface[o],
+        c: RenderCommand,
+        scale: Float64,
+        m: Matrix[3, 3],
+    ):
+        """Fill `polygon_quads`' tiling, fill then outline, as `_sector`
+        does."""
+        var quads = polygon_quads(c, m, scale)
         if c.style._fill_visible():
             _fill_quads(s, quads.fill, c.style.fill_color)
         if c.style._outline_visible():
