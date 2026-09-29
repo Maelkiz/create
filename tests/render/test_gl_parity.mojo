@@ -127,7 +127,11 @@ comptime _SHAPE_BEZIER = 32
 comptime _SHAPE_TRANSLUCENT_BEZIER = 33
 comptime _SHAPE_SHADOWED_BEZIER = 34
 comptime _SHAPE_BLURRED_BEZIER = 35
-comptime _SHAPE_COUNT = 36
+comptime _SHAPE_CATMULL_ROM = 36
+comptime _SHAPE_TRANSLUCENT_CLOSED_CATMULL_ROM = 37
+comptime _SHAPE_SHADOWED_CLOSED_CATMULL_ROM = 38
+comptime _SHAPE_BLURRED_CLOSED_CATMULL_ROM = 39
+comptime _SHAPE_COUNT = 40
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -233,6 +237,14 @@ def _shape_name(shape: Int) -> String:
         return "shadowed bezier"
     elif shape == _SHAPE_BLURRED_BEZIER:
         return "blurred bezier"
+    elif shape == _SHAPE_CATMULL_ROM:
+        return "catmull-rom"
+    elif shape == _SHAPE_TRANSLUCENT_CLOSED_CATMULL_ROM:
+        return "translucent closed catmull-rom"
+    elif shape == _SHAPE_SHADOWED_CLOSED_CATMULL_ROM:
+        return "shadowed closed catmull-rom"
+    elif shape == _SHAPE_BLURRED_CLOSED_CATMULL_ROM:
+        return "blurred closed catmull-rom"
     else:
         return "blurred line"
 
@@ -240,6 +252,14 @@ def _shape_name(shape: Int) -> String:
 def _bezier(mut canvas: Canvas):
     """An S-curve with a sharp bend."""
     canvas.bezier(CubicBezier((-90, -50), (-60, 90), (60, -90), (90, 50)))
+
+
+def _catmull_rom(mut canvas: Canvas, closed: Bool):
+    """A wave through five unevenly spaced points; closed, a lopsided loop
+    that turns sharply where it closes."""
+    canvas.catmull_rom(
+        [(-90, -40), (-50, 50), (0, -20), (20, 30), (80, 40)], closed=closed
+    )
 
 
 @fieldwise_init
@@ -552,6 +572,29 @@ struct _Parity(Program):
                 )
             ):
                 _bezier(canvas)
+        elif self.shape == _SHAPE_CATMULL_ROM:
+            with canvas.style():
+                canvas.outline(Color(0x80, 0xFF, 0x80), thickness=5)
+                _catmull_rom(canvas, closed=False)
+        elif self.shape == _SHAPE_TRANSLUCENT_CLOSED_CATMULL_ROM:
+            # Translucent, so a seam painted twice would show darker.
+            with canvas.style():
+                canvas.outline(Color(0x20, 0x40, 0xFF, 0x80), thickness=8)
+                _catmull_rom(canvas, closed=True)
+        elif self.shape == _SHAPE_SHADOWED_CLOSED_CATMULL_ROM:
+            with canvas.style(
+                _shadowed(
+                    Style(outline=Color(0x80, 0xFF, 0x80), outline_thickness=5)
+                )
+            ):
+                _catmull_rom(canvas, closed=True)
+        elif self.shape == _SHAPE_BLURRED_CLOSED_CATMULL_ROM:
+            with canvas.style(
+                _blurred(
+                    Style(outline=Color(0x80, 0xFF, 0x80), outline_thickness=5)
+                )
+            ):
+                _catmull_rom(canvas, closed=True)
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline

@@ -9,6 +9,7 @@ from .font import Font
 from ._viewport import Viewport
 from .camera import Camera
 from create.math.bezier import CubicBezier
+from create.math.catmull_rom import CatmullRomSpline
 from create.math.geometry import Rectangle, Circle, Line, Triangle
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
@@ -23,6 +24,7 @@ from create.sprite.animator import SpriteAnimator
 from ._backend import Backend, _ImageRequest
 from .render_backend import RenderBackend
 from ._command import (
+    bezier_chain_command,
     bezier_command,
     circle_command,
     clear_command,
@@ -705,6 +707,46 @@ struct Canvas:
             return
         self._state.backend.record(
             bezier_command(self._transform, self._style, b)
+        )
+
+    def catmull_rom(
+        mut self,
+        var points: List[Point2D],
+        alpha: Float64 = 0.5,
+        closed: Bool = False,
+    ):
+        """Stroke a smooth curve through every one of `points`, in order, in
+        the outline colour and thickness: a `CatmullRomSpline`.
+
+        `alpha` sets how the spacing of the points shapes the curve: 0 can
+        loop or cusp where points bunch up, 0.5 (centripetal) never does,
+        1 hugs the points more loosely still. With `closed`, the curve runs
+        on from the last point back to the first, and that joint is mitred
+        like the rest.
+
+        Drawn as one stroke, like `bezier`: no fill, nothing with the outline
+        off, butt ends when open, and a translucent stroke composites once. A
+        blurred shadow costs what a `bezier`'s does. Fewer than two distinct
+        points draw nothing.
+        """
+        self.catmull_rom(CatmullRomSpline(points^, alpha, closed))
+
+    def catmull_rom(mut self, spline: CatmullRomSpline):
+        if not self._style.outline_enabled:
+            return
+        # Converted here, in local space: the knot spacing is measured where
+        # the points were given, so a non-uniform scale can't reshape it.
+        var curves = spline.beziers()
+        if len(curves) == 0:
+            return
+        var points = List[Point2D](capacity=3 * len(curves) + 1)
+        points.append(curves[0].start)
+        for c in curves:
+            points.append(c.control1)
+            points.append(c.control2)
+            points.append(c.end)
+        self._state.backend.record(
+            bezier_chain_command(self._transform, self._style, points^)
         )
 
     def triangle(mut self, a: Point2D, b: Point2D, c: Point2D):

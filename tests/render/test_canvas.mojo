@@ -1125,6 +1125,92 @@ def test_an_unoutlined_bezier_records_nothing() raises -> None:
     assert_equal(m.pixel(50, 20), Color.BLACK)
 
 
+def _square_corners() -> List[Point2D]:
+    return [(-30.0, -30.0), (30.0, -30.0), (30.0, 30.0), (-30.0, 30.0)]
+
+
+@fieldwise_init
+struct ClosedCatmullRom(Program):
+    """A closed spline through a square's corners, by its points, with a
+    hard red shadow."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> ClosedCatmullRom:
+        return ClosedCatmullRom(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.WHITE, thickness=4)
+        canvas.shadow(Color.RED, blur=0)
+        canvas.catmull_rom(_square_corners(), closed=True)
+
+
+@fieldwise_init
+struct OpenCatmullRom(Program):
+    """The same points as an open `CatmullRomSpline` value."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> OpenCatmullRom:
+        return OpenCatmullRom(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline(Color.WHITE, thickness=4)
+        canvas.catmull_rom(CatmullRomSpline(_square_corners()))
+
+
+def test_catmull_rom_passes_through_every_point() raises -> None:
+    var closed = run_headless[ClosedCatmullRom](100, 100)
+    var open = run_headless[OpenCatmullRom](100, 100)
+    for p in _square_corners():
+        var x = 50 + Int(p.x)
+        var y = 50 - Int(p.y)
+        assert_equal(closed.pixel(x, y), Color.WHITE, String(p))
+        assert_equal(open.pixel(x, y), Color.WHITE, String(p))
+    # Not a region: nothing fills the middle.
+    assert_equal(closed.pixel(50, 50), Color.BLACK)
+    assert_equal(open.pixel(50, 50), Color.BLACK)
+
+
+def test_a_closed_catmull_rom_strokes_its_closing_curve() raises -> None:
+    var closed = run_headless[ClosedCatmullRom](100, 100)
+    var open = run_headless[OpenCatmullRom](100, 100)
+    # The curve from the last corner back to the first bulges out to
+    # x = -37.5 at its middle: device column 12.
+    assert_equal(closed.pixel(12, 50), Color.WHITE)
+    assert_equal(open.pixel(12, 50), Color.BLACK)
+    # Its shadow, 4 right and 4 down, clear of the stroke.
+    assert_equal(closed.pixel(17, 54), Color.RED)
+
+
+@fieldwise_init
+struct UnrecordedCatmullRom(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> UnrecordedCatmullRom:
+        return UnrecordedCatmullRom(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        var before = len(canvas._state.backend.commands)
+        # One distinct point is no curve.
+        canvas.catmull_rom([(10.0, 10.0), (10.0, 10.0)])
+        canvas.outline_enabled(False)
+        canvas.catmull_rom(_square_corners())
+        if len(canvas._state.backend.commands) != before:
+            raise Error("a catmull_rom that draws nothing was recorded")
+
+
+def test_a_catmull_rom_that_draws_nothing_records_nothing() raises -> None:
+    var m = run_headless[UnrecordedCatmullRom](100, 100)
+    assert_equal(m.pixel(80, 20), Color.BLACK)
+
+
 @fieldwise_init
 struct NoFillRect(Program):
     var _unused: Int

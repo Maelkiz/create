@@ -8,12 +8,14 @@ from std.testing import (
 )
 
 from create.math.matrix import Matrix, apply, identity, rotate, scale, translate
+from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 from create.math.bezier import CubicBezier
 from create.render.color import Color
 from create.render.style import Style
 from create.render._command import (
     RenderCommand,
+    bezier_chain_command,
     bezier_command,
     circle_command,
     clear_command,
@@ -140,6 +142,26 @@ def test_bezier_casts_its_stroke_even_when_filled() raises -> None:
         assert_equal(sh.points[i], c.points[i])
     s.outline_enabled = False
     assert_false(casts_outer_shadow(bezier_command(identity[3](), s, curve)))
+
+
+def test_a_bezier_chain_casts_every_curve() raises -> None:
+    var s = _shadowed()
+    s.outline_enabled = True
+    var chain: List[Point2D] = [
+        (0.0, 0.0),
+        (10.0, 20.0),
+        (20.0, 20.0),
+        (30.0, 0.0),
+        (40.0, -20.0),
+        (50.0, -20.0),
+        (0.0, 0.0),
+    ]
+    var c = bezier_chain_command(identity[3](), s, chain.copy())
+    assert_true(casts_outer_shadow(c))
+    var sh = shadow_command(c, 1.0)
+    assert_equal(len(sh.points), len(chain))
+    for i in range(len(chain)):
+        assert_equal(sh.points[i], chain[i])
 
 
 def test_spread_grows_each_kind() raises -> None:
