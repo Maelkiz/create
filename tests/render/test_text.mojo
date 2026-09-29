@@ -171,9 +171,9 @@ def test_repeating_a_render_adds_no_cache_entries() raises -> None:
     # the frame it first appears and on no frame after.
     var t = TextRenderer()
     var top_left = _style(Align.TOP_LEFT)
-    var first = _render_with(t, top_left.copy())
+    var first = _render_with(t, top_left)
     var after_first = len(t._glyphs)
-    var second = _render_with(t, top_left.copy())
+    var second = _render_with(t, top_left)
     assert_true(after_first > 0, "nothing was cached")
     assert_equal(len(t._glyphs), after_first)
     # A cache that served a stale or wrongly-keyed mask would still render
@@ -186,17 +186,17 @@ def test_size_and_weight_are_part_of_the_key() raises -> None:
     var t = TextRenderer()
     var base = _style(Align.TOP_LEFT)
 
-    var regular = _render_with(t, base.copy())
+    var regular = _render_with(t, base)
     var entries = len(t._glyphs)
 
-    var bigger = base.copy()
+    var bigger = base
     bigger.font_size = base.font_size * 2
     var big = _render_with(t, bigger^)
     assert_true(len(t._glyphs) > entries, "a new size reused the old masks")
     entries = len(t._glyphs)
     assert_false(_same_pixels(regular, big), "a larger size drew the same ink")
 
-    var bold = base.copy()
+    var bold = base
     bold.font_weight = FontWeight.BLACK
     var heavy = _render_with(t, bold^)
     assert_true(len(t._glyphs) > entries, "a new weight reused the old masks")
@@ -256,7 +256,7 @@ def test_a_blurred_glyph_peaks_under_its_stem() raises -> None:
     var plain = MemorySurface(120, 120)
     var blurred = MemorySurface(120, 120)
     var t = TextRenderer()
-    t.render(plain.surface(), "l", 60.0, 60.0, style.copy(), 1.0)
+    t.render(plain.surface(), "l", 60.0, 60.0, style, 1.0)
     t.render(blurred.surface(), "l", 60.0, 60.0, style^, 1.0, 6)
     var box = _ink_box(plain)
     var wide = _ink_box(blurred)

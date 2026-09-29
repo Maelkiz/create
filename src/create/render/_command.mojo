@@ -103,7 +103,7 @@ struct RenderCommand(Copyable, Movable):
         self.geom[4] = g4
         self.geom[5] = g5
         self.transform = transform
-        self.style = style.copy()
+        self.style = style
         if self.style.opacity != 1.0:
             self.style.fill_color = _scaled_alpha(
                 self.style.fill_color, self.style.opacity

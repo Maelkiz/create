@@ -1,4 +1,4 @@
-struct Time(Copyable, Movable, Writable):
+struct Time(Copyable, ImplicitlyCopyable, Movable, Writable):
     """Per-frame timing, ticked once per frame by the run loop.
 
     Owns the previous tick stamp so the frame delta is derived in one place.

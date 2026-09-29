@@ -25,6 +25,12 @@ def test_zero_init() raises -> None:
     assert_equal(m[1, 1], 0.0)
 
 
+def test_compares_by_elements() raises -> None:
+    assert_true(translate(1.0, 2.0) == translate(1.0, 2.0))
+    assert_true(translate(1.0, 2.0) != translate(1.0, 3.0))
+    assert_true(identity[3]() == scale(1.0, 1.0))
+
+
 def test_get_set() raises -> None:
     var m = Matrix[3, 3]()
     m[1, 2] = 7.5

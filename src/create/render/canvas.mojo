@@ -116,11 +116,11 @@ struct OverlayGuard[origin: Origin[mut=True]](Movable):
     var _saved_transform_inv: Matrix[3, 3]
 
     def __init__(out self, ref[Self.origin] canvas: Canvas):
-        self._saved_camera = canvas._camera.copy()
-        self._saved_user = canvas._user.copy()
-        self._saved_user_inv = canvas._user_inv.copy()
-        self._saved_transform = canvas._transform.copy()
-        self._saved_transform_inv = canvas._transform_inv.copy()
+        self._saved_camera = canvas._camera
+        self._saved_user = canvas._user
+        self._saved_user_inv = canvas._user_inv
+        self._saved_transform = canvas._transform
+        self._saved_transform_inv = canvas._transform_inv
         canvas._camera = Camera()
         canvas._user = identity[3]()
         canvas._user_inv = identity[3]()
@@ -132,7 +132,7 @@ struct OverlayGuard[origin: Origin[mut=True]](Movable):
         pass
 
     def __exit__(mut self):
-        self._canvas[]._camera = self._saved_camera.copy()
+        self._canvas[]._camera = self._saved_camera
         self._canvas[]._user = self._saved_user
         self._canvas[]._user_inv = self._saved_user_inv
         self._canvas[]._transform = self._saved_transform
@@ -150,20 +150,20 @@ struct StyleGuard[origin: Origin[mut=True]](Movable):
     var _saved: Style
 
     def __init__(out self, ref[Self.origin] canvas: Canvas):
-        self._saved = canvas._style.copy()
+        self._saved = canvas._style
         self._canvas = Pointer(to=canvas)
 
     def __init__(out self, ref[Self.origin] canvas: Canvas, style: Style):
         """Snapshot, then replace the canvas's style with `style`."""
-        self._saved = canvas._style.copy()
-        canvas._style = style.copy()
+        self._saved = canvas._style
+        canvas._style = style
         self._canvas = Pointer(to=canvas)
 
     def __enter__(mut self):
         pass
 
     def __exit__(mut self):
-        self._canvas[]._style = self._saved.copy()
+        self._canvas[]._style = self._saved
 
 
 struct Canvas:
@@ -256,7 +256,7 @@ struct Canvas:
         turning one mid-frame changes the next frame rather than this one
         halfway through.
         """
-        self._view = state.view.copy()
+        self._view = state.view
         self.width = state.view.width
         self.height = state.view.height
         self.scale = state.view.scale
@@ -495,7 +495,7 @@ struct Canvas:
             canvas.text("Score: " + str(self.score), (0, canvas.top() - 20))
         ```
         """
-        self._camera = cam.copy()
+        self._camera = cam
         self._sync_transform()
 
     def overlay(mut self) -> OverlayGuard[origin_of(self)]:

@@ -2,7 +2,7 @@ from std.math import sin, cos, tan, abs, min, max
 
 
 struct Matrix[rows: Int, cols: Int](
-    Copyable, ImplicitlyCopyable, Movable, Writable
+    Copyable, Equatable, ImplicitlyCopyable, Movable, Writable
 ):
     """A fixed-size matrix, row-major, sized at compile time.
 
@@ -48,6 +48,15 @@ struct Matrix[rows: Int, cols: Int](
             for c in range(Self.cols):
                 result[c, r] = self[r, c]
         return result^
+
+    def __eq__(self, other: Self) -> Bool:
+        for i in range(Self.rows * Self.cols):
+            if self.data[i] != other.data[i]:
+                return False
+        return True
+
+    def __ne__(self, other: Self) -> Bool:
+        return not (self == other)
 
     def write_to[W: Writer](self, mut writer: W):
         writer.write("Matrix[", Self.rows, "x", Self.cols, "](")

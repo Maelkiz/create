@@ -6,7 +6,7 @@ from create.math.matrix import (
 )
 
 
-struct Camera(Copyable, Movable, Writable):
+struct Camera(Copyable, ImplicitlyCopyable, Movable, Writable):
     """What part of world space maps onto the screen.
 
     `position` is the world point centred on screen; `zoom` scales around it

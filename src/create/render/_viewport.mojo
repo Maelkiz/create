@@ -8,7 +8,7 @@ from create.math.point2d import Point2D
 from .autoscale import AutoScale
 
 
-struct Viewport(Copyable, Movable):
+struct Viewport(Copyable, ImplicitlyCopyable, Movable):
     """The design-space mapping: how world coordinates land on the framebuffer.
 
     One home for the geometry `Canvas` reports and renders through, so the two

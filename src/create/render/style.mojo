@@ -15,7 +15,7 @@ literal converts to `Float64` or to an `Optional`, not through both — and not
 a negative number, since a negative spread is meaningful."""
 
 
-struct Style(Copyable, Movable, Writable):
+struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
     """How the next shape or glyph is painted, independent of where it goes.
 
     The canvas holds one, set piece by piece through `canvas.fill`,
