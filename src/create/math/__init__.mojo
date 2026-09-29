@@ -1,4 +1,4 @@
-from .geometry import overlaps, Rectangle, Circle, Line, Triangle, Arc
+from .geometry import overlaps, Rectangle, Circle, Line, Triangle, Arc, Sector
 from .bezier import Bezier
 from .spline import Spline
 from .util import (

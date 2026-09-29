@@ -783,6 +783,130 @@ struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         self.position = self.position + delta
 
 
+struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
+    """A sector -- a slice of pie: the region between two radii of the
+    circle around `position` with radius `r`, from `start_angle` round by
+    `sweep_angle`. `end_angle`, `center`, `area`, `arc`, `bounds`,
+    `closest_point`, `contains`, `move_to`, `translate`.
+
+    The angles are an `Arc`'s: radians, counter-clockwise from the +x axis,
+    and a signed sweep, so a negative one runs clockwise and a full turn or
+    more is the whole circle. The fields keep what was given.
+
+    `center()` is `position`, the tip of the slice, as for `Circle`: not the
+    centroid. `contains` treats the boundary as inside, within the slack
+    `Arc.intersects` allows, so points found on the sector's own arc count;
+    `closest_point` returns the query point itself when it is inside. A sweep wider than a
+    half turn is not convex. A zero `r` collapses the sector to its tip, and
+    a zero sweep to the one radius at `start_angle`. `r` is assumed
+    non-negative.
+    """
+
+    var position: Point2D
+    var r: Float64
+    var start_angle: Float64
+    var sweep_angle: Float64
+
+    def __init__(
+        out self,
+        position: Point2D,
+        r: Float64,
+        start_angle: Float64,
+        sweep_angle: Float64,
+    ):
+        self.position = position
+        self.r = r
+        self.start_angle = start_angle
+        self.sweep_angle = sweep_angle
+
+    def __init__(
+        out self,
+        position: Point2D,
+        r: Int,
+        start_angle: Float64,
+        sweep_angle: Float64,
+    ):
+        self = Sector(position, Float64(r), start_angle, sweep_angle)
+
+    def __eq__(self, other: Sector) -> Bool:
+        return (
+            self.position == other.position
+            and self.r == other.r
+            and self.start_angle == other.start_angle
+            and self.sweep_angle == other.sweep_angle
+        )
+
+    def __ne__(self, other: Sector) -> Bool:
+        return not (self == other)
+
+    def write_to[W: Writer](self, mut writer: W):
+        writer.write(
+            "Sector(position=",
+            self.position,
+            ", r=",
+            self.r,
+            ", start_angle=",
+            self.start_angle,
+            ", sweep_angle=",
+            self.sweep_angle,
+            ")",
+        )
+
+    def end_angle(self) -> Float64:
+        """`start_angle + sweep_angle`: where the sector ends, as an angle."""
+        return self.start_angle + self.sweep_angle
+
+    def center(self) -> Point2D:
+        return self.position
+
+    def area(self) -> Float64:
+        return 0.5 * self.r * self.r * abs(self.arc()._sweep())
+
+    def arc(self) -> Arc:
+        """The curved edge of the sector, running the same way round."""
+        return Arc(self.position, self.r, self.start_angle, self.sweep_angle)
+
+    def bounds(self) -> Rectangle:
+        """The tightest axis-aligned rectangle around the sector: its arc's,
+        widened to take in the tip."""
+        var b = self.arc().bounds()
+        var lo = Point2D(
+            min(b.left(), self.position.x), min(b.bottom(), self.position.y)
+        )
+        var hi = Point2D(
+            max(b.right(), self.position.x), max(b.top(), self.position.y)
+        )
+        return Rectangle(lo.lerp(hi, 0.5), hi.x - lo.x, hi.y - lo.y)
+
+    def closest_point(self, p: Point2D) -> Point2D:
+        if self.contains(p):
+            return p
+        # Outside, the nearest point is on the boundary: one of the two
+        # radii or the arc.
+        var a = self.arc()
+        var best = a.closest_point(p)
+        var ends: Array[Point2D, 2] = [a.at(0.0), a.at(1.0)]
+        for end in ends:
+            var q = _closest_on_segment(p, self.position, end)
+            if _dist_sq(p, q) < _dist_sq(p, best):
+                best = q
+        return best
+
+    def contains(self, p: Point2D) -> Bool:
+        # The arc is found through `cos` and `sin`, as is its sweep, so both
+        # boundaries get an arc's slack: the sector holds its own edge.
+        var reach = self.r * (1.0 + _RADIUS_EPSILON)
+        if _dist_sq(p, self.position) > reach * reach:
+            return False
+        return self.arc()._spans(p)
+
+    def move_to(mut self, position: Point2D):
+        self.position = position
+
+    def translate(mut self, delta: Vector2D):
+        self.position = self.position + delta
+
+
 struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A triangle defined by its three vertices `a`, `b`, `c`: `center`,
     `area`, `closest_point`, `contains`, `move_to`, `translate`.
