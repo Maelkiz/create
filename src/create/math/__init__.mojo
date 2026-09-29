@@ -1,4 +1,5 @@
 from .geometry import overlaps, Rectangle, Circle, Line, Triangle
+from .bezier import CubicBezier
 from .util import (
     lerp,
     map,
