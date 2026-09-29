@@ -15,6 +15,7 @@ from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.autoscale import AutoScale
 from create.render.canvas import PersistentCanvasState
+from create.render._command import bezier_command
 from create.render.render_backend import RenderBackend
 from create.sprite.sprite import Sprite
 from std.testing import TestSuite, assert_equal, assert_true
@@ -110,6 +111,32 @@ struct ManyShapes(Program):
                     Float64(gy) - Float64(_GRID) / 2.0
                 ) * _CELL + _CELL / 2.0
                 canvas.rectangle((wx, wy), _CELL - 2.0, _CELL - 2.0)
+
+
+@fieldwise_init
+struct RectsAround[bezier: Bool](Program):
+    """Two rects, with a Bézier between them when `bezier` is set."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> RectsAround[Self.bezier]:
+        return RectsAround[Self.bezier](0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.fill(Color.RED)
+        canvas.rectangle((-30.0, 0.0), 20.0, 20.0)
+        comptime if Self.bezier:
+            # Recorded directly: `canvas` has no Bézier call of its own yet.
+            canvas._state.backend.record(
+                bezier_command(
+                    canvas._transform,
+                    canvas._style,
+                    CubicBezier((-30, -30), (-10, 30), (10, -30), (30, 30)),
+                )
+            )
+        canvas.rectangle((30.0, 0.0), 20.0, 20.0)
 
 
 @fieldwise_init
@@ -358,6 +385,14 @@ def test_gl_batching_behaviours() raises -> None:
         _gpu_draw_calls[BlurredSprite[True]](win),
         _gpu_draw_calls[BlurredSprite[False]](win) + 1,
         "blurred sprite shadow: expected one extra draw call",
+    )
+
+    # Case 9: a Bézier stroke is solid quads like any shape's, so it rides
+    # in the batch it lands in.
+    assert_equal(
+        _gpu_draw_calls[RectsAround[True]](win),
+        _gpu_draw_calls[RectsAround[False]](win),
+        "bezier between rects: extra draw calls",
     )
 
     _ = win^

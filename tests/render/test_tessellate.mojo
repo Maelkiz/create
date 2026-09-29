@@ -10,6 +10,7 @@ otherwise be prerequisites for testing a coordinate flip.
 from std.testing import TestSuite, assert_equal, assert_true
 
 from create.render._command import (
+    bezier_command,
     circle_command,
     letterbox_command,
     line_command,
@@ -27,6 +28,7 @@ from create.render._tessellate import (
     MODE_TEXTURE,
     VertexBuffer,
     circle_segments,
+    emit_bezier,
     emit_blurred_shadow,
     emit_circle,
     emit_letterbox,
@@ -39,6 +41,8 @@ from create.math.matrix import rotate
 from create.render.autoscale import AutoScale
 from create.render.color import Color
 from create.render._viewport import Viewport
+from create.render._curve import bezier_device_points, stroke_quads
+from create.math.bezier import CubicBezier
 
 comptime _FLOATS = 13
 """Mirrors `_tessellate._VERTEX_FLOATS`; spelled out so a change to the vertex
@@ -244,6 +248,41 @@ def test_an_unoutlined_line_emits_nothing() raises -> None:
     emit_line(
         vb,
         line_command(v.base_matrix(), _plain(), -10.0, 0.0, 10.0, 0.0),
+        v.scale,
+    )
+    assert_equal(vb.count(), 0)
+
+
+def test_a_bezier_is_two_triangles_per_stroke_quad() raises -> None:
+    var vb = VertexBuffer()
+    var v = _viewport(100, 100)
+    var s = _plain()
+    s.outline_enabled = True
+    s.outline_thickness = 3
+    var c = bezier_command(
+        v.base_matrix(),
+        s,
+        CubicBezier((-40.0, -30.0), (-40.0, 60.0), (40.0, -60.0), (40.0, 30.0)),
+    )
+    emit_bezier(vb, c, v.scale)
+    var corners = stroke_quads(bezier_device_points(c, c.transform), 3.0)
+    assert_true(len(corners) > 4)
+    assert_equal(vb.count(), 6 * (len(corners) // 4))
+    # The first quad's corners are the CPU's, vertex for vertex.
+    assert_equal(_x(vb, 0), Float64(Float32(corners[0].x)))
+    assert_equal(_y(vb, 1), Float64(Float32(corners[1].y)))
+
+
+def test_an_unoutlined_bezier_emits_nothing() raises -> None:
+    var vb = VertexBuffer()
+    var v = _viewport(100, 100)
+    emit_bezier(
+        vb,
+        bezier_command(
+            v.base_matrix(),
+            _plain(),
+            CubicBezier((0.0, 0.0), (10.0, 10.0), (20.0, 10.0), (30.0, 0.0)),
+        ),
         v.scale,
     )
     assert_equal(vb.count(), 0)

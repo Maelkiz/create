@@ -29,6 +29,7 @@ from std.math import abs, ceil, cos, max, min, sin, sqrt, pi
 from create.math.matrix import Matrix, inverse, apply as mat_apply
 
 from ._command import RenderCommand
+from ._curve import bezier_device_points, stroke_quads
 from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
 from ._shadow import (
     SIL_RECT,
@@ -533,6 +534,30 @@ def emit_line(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
         Float64(outline_thickness_px(c.style, m, scale)),
         c.style.outline_color,
     )
+
+
+def emit_bezier(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
+    """`stroke_quads`' mitred strip, the same quads the CPU fills. Like a
+    line, a curve has no interior, so `fill` never applies."""
+    if not c.style._outline_visible():
+        return
+    var m = c.transform
+    var corners = stroke_quads(
+        bezier_device_points(c, m),
+        Float64(outline_thickness_px(c.style, m, scale)),
+    )
+    for q in range(0, len(corners), 4):
+        vb.quad(
+            corners[q].x,
+            corners[q].y,
+            corners[q + 1].x,
+            corners[q + 1].y,
+            corners[q + 2].x,
+            corners[q + 2].y,
+            corners[q + 3].x,
+            corners[q + 3].y,
+            c.style.outline_color,
+        )
 
 
 def _fillet_arc_span(

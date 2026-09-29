@@ -32,6 +32,7 @@ from std.memory import unsafe_memcpy
 from create.math.matrix import apply as mat_apply
 
 from ._command import (
+    CMD_BEZIER,
     CMD_CIRCLE,
     CMD_CLEAR,
     CMD_LETTERBOX,
@@ -97,6 +98,7 @@ from ._image import _Image
 from ._tessellate import (
     MODE_SOLID,
     VertexBuffer,
+    emit_bezier,
     emit_blurred_shadow,
     emit_circle,
     emit_glyph,
@@ -628,6 +630,8 @@ struct GLRenderer(Movable):
             emit_circle(self.vertices, c, scale)
         elif c.kind == CMD_LINE:
             emit_line(self.vertices, c, scale)
+        elif c.kind == CMD_BEZIER:
+            emit_bezier(self.vertices, c, scale)
         elif c.kind == CMD_TRIANGLE:
             emit_triangle(self.vertices, c, scale)
         elif c.kind == CMD_SPRITE:

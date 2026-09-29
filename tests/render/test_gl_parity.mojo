@@ -49,6 +49,7 @@ from create.render.render_backend import RenderBackend
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.canvas import PersistentCanvasState
+from create.render._command import bezier_command
 from create._window import GLWindow
 
 comptime _DESIGN_W = 200
@@ -123,7 +124,9 @@ comptime _SHAPE_INSET_CIRCLE = 28
 comptime _SHAPE_BLURRED_INSET_CIRCLE = 29
 comptime _SHAPE_INSET_TRIANGLE = 30
 comptime _SHAPE_BLURRED_INSET_TRIANGLE = 31
-comptime _SHAPE_COUNT = 32
+comptime _SHAPE_BEZIER = 32
+comptime _SHAPE_TRANSLUCENT_BEZIER = 33
+comptime _SHAPE_COUNT = 34
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -221,8 +224,24 @@ def _shape_name(shape: Int) -> String:
         return "inset triangle"
     elif shape == _SHAPE_BLURRED_INSET_TRIANGLE:
         return "blurred inset rounded triangle"
+    elif shape == _SHAPE_BEZIER:
+        return "bezier"
+    elif shape == _SHAPE_TRANSLUCENT_BEZIER:
+        return "translucent bezier"
     else:
         return "blurred line"
+
+
+def _bezier(mut canvas: Canvas):
+    """An S-curve with a sharp bend, recorded straight into the backend:
+    `canvas` has no Bézier call of its own yet."""
+    canvas._state.backend.record(
+        bezier_command(
+            canvas._transform,
+            canvas._style,
+            CubicBezier((-90, -50), (-60, 90), (60, -90), (90, 50)),
+        )
+    )
 
 
 @fieldwise_init
@@ -511,6 +530,16 @@ struct _Parity(Program):
                 )
             ):
                 canvas.triangle((-60, -45), (50, -45), (-5, 50))
+        elif self.shape == _SHAPE_BEZIER:
+            with canvas.style():
+                canvas.outline(Color(0x80, 0xFF, 0x80), thickness=5)
+                _bezier(canvas)
+        elif self.shape == _SHAPE_TRANSLUCENT_BEZIER:
+            # Translucent, so a joint painted twice would show as a darker
+            # seam in the interior colour.
+            with canvas.style():
+                canvas.outline(Color(0x20, 0x40, 0xFF, 0x80), thickness=8)
+                _bezier(canvas)
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline
