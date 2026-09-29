@@ -140,9 +140,15 @@ def sector_shadow_mask(
     """The shadow command `c` (a `CMD_SECTOR`, one colour) mapped by `m`,
     rasterised into an alpha mask and blurred by `blur` device pixels."""
     var q = sector_quads(c, m, scale)
-    for p in q.outline:
-        q.fill.append(p)
-    return quads_shadow_mask(q.fill, blur)
+    # Only what the command paints: an outline-only ring leaves its middle.
+    var corners = List[Point2D]()
+    if c.style._fill_visible():
+        for p in q.fill:
+            corners.append(p)
+    if c.style._outline_visible():
+        for p in q.outline:
+            corners.append(p)
+    return quads_shadow_mask(corners, blur)
 
 
 def _offset_extent(

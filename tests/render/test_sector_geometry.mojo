@@ -17,7 +17,11 @@ from create.render.style import Style
 from create.render.surface import MemorySurface
 from create.render._command import CMD_SECTOR, sector_command
 from create.render._raster import fill_quad
-from create.render._sector import SectorQuads, sector_quads
+from create.render._sector import (
+    SectorQuads,
+    sector_quads,
+    sector_shadow_mask,
+)
 from create.render._transform import outline_thickness_px, pixel_scale
 
 comptime _SIZE = 64
@@ -238,6 +242,16 @@ def test_grown_sectors_tile_their_minkowski_sum() raises -> None:
 def test_shrunk_sectors_tile_their_erosion() raises -> None:
     for s in _sectors():
         _assert_tiles(s, identity[3](), _outlined(3), -4.0)
+
+
+def test_an_outline_only_sector_masks_only_its_ring() raises -> None:
+    var style = Style(outline=Color.RED, outline_thickness=4)
+    var c = sector_command(identity[3](), style, 0.0, 0.0, 20.0, 0.0, tau)
+    var placed = sector_shadow_mask(c, c.transform, 1.0, 0)
+    # The device pixels whose lower-left corners are (0, 0) and (-19, 0).
+    var row = (0 - placed.y) * placed.mask.width
+    assert_equal(placed.mask.pixels[row - placed.x], 0)
+    assert_equal(placed.mask.pixels[row - 19 - placed.x], 255)
 
 
 def test_a_grown_outline_only_sector_is_a_ring() raises -> None:
