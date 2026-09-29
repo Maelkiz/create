@@ -446,12 +446,18 @@ struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     # shape -- `Circle` via `closest_point`-then-`contains` (exact only
     # because a circle's containment is radial from its centre), `Rectangle`
     # and `Triangle` via endpoint containment (covers a curve wholly inside,
-    # which no edge test would catch) plus their edges as `Line`s.
+    # which no edge test would catch) plus their edges as `Line`s, and
+    # `Sector` the same way, its edges being two radii and an `Arc`.
     def intersects(self, p: Point2D) -> Bool:
         return _point_on_segment(p, self.start, self.end)
 
     def intersects(self, a: Arc) -> Bool:
         return a.intersects(self)
+
+    def intersects(self, s: Sector) -> Bool:
+        if s.contains(self.start) or s.contains(self.end):
+            return True
+        return s._boundary_meets(self)
 
     def intersects(self, c: Circle) -> Bool:
         return c.contains(self.closest_point(c.position))
@@ -776,6 +782,11 @@ struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
                 return True
         return False
 
+    def intersects(self, s: Sector) -> Bool:
+        if s.contains(self.at(0.0)) or s.contains(self.at(1.0)):
+            return True
+        return s._boundary_meets(self)
+
     def move_to(mut self, position: Point2D):
         self.position = position
 
@@ -899,6 +910,24 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         if _dist_sq(p, self.position) > reach * reach:
             return False
         return self.arc()._spans(p)
+
+    def _radii(self) -> Array[Line, 2]:
+        """The two straight edges, from the tip out to where the arc starts
+        and ends."""
+        var a = self.arc()
+        return [Line(self.position, a.at(0.0)), Line(self.position, a.at(1.0))]
+
+    def _boundary_meets(self, l: Line) -> Bool:
+        for radius in self._radii():
+            if l.intersects(radius):
+                return True
+        return self.arc().intersects(l)
+
+    def _boundary_meets(self, a: Arc) -> Bool:
+        for radius in self._radii():
+            if a.intersects(radius):
+                return True
+        return a.intersects(self.arc())
 
     def move_to(mut self, position: Point2D):
         self.position = position
@@ -1040,7 +1069,7 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
 # `overlaps(a, b)` is the whole overlap-testing surface for regions: one
 # specialized, exact overload per unordered shape pair (`Rectangle`,
-# `Circle`, `Triangle` -- `Line` and `Arc` have no interior and are
+# `Circle`, `Triangle`, `Sector` -- `Line` and `Arc` have no interior and are
 # deliberately excluded, see the taxonomy comment above `Line.intersects`),
 # so a symmetric relation reads as a symmetric call -- `overlaps(a, b)` and
 # `overlaps(b, a)` always agree, and the reverse-order overload is a
@@ -1049,7 +1078,12 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 # algorithm -- `Circle` vs. anything else is a `closest_point`-then-
 # `contains` check (exact only because a circle's containment is radial
 # from its centre), and any pair of straight-edged shapes is SAT over
-# `_polygons_overlap`.
+# `_polygons_overlap`. A `Sector` is curved, and past a half turn not even
+# convex, so against a polygon or another sector it is not SAT but the
+# test any two regions share: one holds a point of the other (the tip, a
+# vertex), or their boundaries cross (`_polygon_overlaps_sector`). The
+# arc's boundary is found through `cos` and `sin`, so a sector touches
+# within the slack `Arc.intersects` allows rather than exactly.
 #
 # Every overload is boundary-inclusive: shapes that only touch (shared
 # edge, shared corner, tangent circles) count as overlapping. Degenerate
@@ -1097,3 +1131,49 @@ def overlaps(a: Triangle, b: Rectangle) -> Bool:
 
 def overlaps(a: Triangle, b: Triangle) -> Bool:
     return _polygons_overlap(a._points(), b._points())
+
+
+def _polygon_overlaps_sector[N: Int](pts: Array[Point2D, N], s: Sector) -> Bool:
+    """Whether the sector holds a vertex of the polygon, or an edge of the
+    polygon crosses the sector's boundary. With the polygon holding the
+    sector's tip, which the caller tests, that is every way to overlap."""
+    for p in pts:
+        if s.contains(p):
+            return True
+    for i in range(N):
+        if s._boundary_meets(Line(pts[i], pts[(i + 1) % N])):
+            return True
+    return False
+
+
+def overlaps(a: Sector, b: Circle) -> Bool:
+    return b.contains(a.closest_point(b.position))
+
+
+def overlaps(a: Circle, b: Sector) -> Bool:
+    return overlaps(b, a)
+
+
+def overlaps(a: Sector, b: Rectangle) -> Bool:
+    return b.contains(a.position) or _polygon_overlaps_sector(b._points(), a)
+
+
+def overlaps(a: Rectangle, b: Sector) -> Bool:
+    return overlaps(b, a)
+
+
+def overlaps(a: Sector, b: Triangle) -> Bool:
+    return b.contains(a.position) or _polygon_overlaps_sector(b._points(), a)
+
+
+def overlaps(a: Triangle, b: Sector) -> Bool:
+    return overlaps(b, a)
+
+
+def overlaps(a: Sector, b: Sector) -> Bool:
+    if a.contains(b.position) or b.contains(a.position):
+        return True
+    for radius in a._radii():
+        if b._boundary_meets(radius):
+            return True
+    return b._boundary_meets(a.arc())

@@ -5,7 +5,15 @@ from std.testing import (
     assert_almost_equal,
 )
 from std.math import pi, tau
-from create.math.geometry import Arc, Sector
+from create.math.geometry import (
+    Arc,
+    Circle,
+    Line,
+    Rectangle,
+    Sector,
+    Triangle,
+    overlaps,
+)
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
@@ -161,6 +169,129 @@ def test_move_to_and_translate_move_the_tip() raises -> None:
     assert_equal(s.position, Point2D(3.0, 4.0))
     s.translate(Vector2D(1.0, -1.0))
     assert_equal(s.position, Point2D(4.0, 3.0))
+
+
+def _assert_overlap(a: Sector, b: Circle, expected: Bool) raises:
+    assert_equal(overlaps(a, b), expected)
+    assert_equal(overlaps(b, a), expected)
+
+
+def _assert_overlap(a: Sector, b: Rectangle, expected: Bool) raises:
+    assert_equal(overlaps(a, b), expected)
+    assert_equal(overlaps(b, a), expected)
+
+
+def _assert_overlap(a: Sector, b: Triangle, expected: Bool) raises:
+    assert_equal(overlaps(a, b), expected)
+    assert_equal(overlaps(b, a), expected)
+
+
+def _assert_overlap(a: Sector, b: Sector, expected: Bool) raises:
+    assert_equal(overlaps(a, b), expected)
+    assert_equal(overlaps(b, a), expected)
+
+
+def test_overlaps_a_circle() raises -> None:
+    var s = Sector((0, 0), 10, 0.0, pi / 2.0)
+    _assert_overlap(s, Circle((5, 5), 1), True)
+    _assert_overlap(s, Circle((-5, -5), 3), False)
+    # Straddling a radius from outside.
+    _assert_overlap(s, Circle((5, -1), 2), True)
+    # Just beyond the arc.
+    _assert_overlap(s, Circle((0, 12), 1.9), False)
+    _assert_overlap(s, Circle((0, 12), 2), True)
+
+
+def test_does_not_overlap_in_the_missing_wedge() raises -> None:
+    # Three quarters, missing the lower right quadrant.
+    var s = Sector((0, 0), 10, 0.0, 1.5 * pi)
+    _assert_overlap(s, Circle((5, -5), 2), False)
+    _assert_overlap(s, Rectangle((5, -5), 4, 4), False)
+    _assert_overlap(s, Triangle((2, -2), (8, -2), (2, -8)), False)
+    _assert_overlap(s, Sector((5, -5), 3, 0.0, tau), False)
+
+
+def test_overlaps_a_polygon_holding_it() raises -> None:
+    var s = Sector((0, 0), 10, 0.3, 1.0)
+    _assert_overlap(s, Rectangle((0, 0), 100, 100), True)
+    _assert_overlap(s, Triangle((-50, -50), (50, -50), (0, 50)), True)
+    # Holding it but not its tip.
+    _assert_overlap(
+        Sector((-20, 0), 30, -0.1, 0.2), Rectangle((5, 0), 4, 4), True
+    )
+
+
+def test_overlaps_a_polygon_it_holds() raises -> None:
+    var s = Sector((0, 0), 10, 0.0, pi / 2.0)
+    _assert_overlap(s, Rectangle((3, 3), 1, 1), True)
+    _assert_overlap(s, Triangle((2, 2), (3, 2), (2, 3)), True)
+
+
+def test_overlaps_a_polygon_crossing_only_its_edges() raises -> None:
+    # A thin bar across the slice, no vertex inside and not holding the tip.
+    var s = Sector((0, 0), 10, 0.0, pi / 2.0)
+    _assert_overlap(s, Rectangle((5, 5), 40.0, 0.5), True)
+    # Crossing just the arc.
+    _assert_overlap(
+        Sector((0, 0), 10, -0.2, 0.4), Rectangle((10, 0), 0.5, 20.0), True
+    )
+
+
+def test_touching_overlaps() raises -> None:
+    var s = Sector((0, 0), 10, 0.0, pi / 2.0)
+    _assert_overlap(s, Rectangle((-1, 5), 2, 2), True)
+    _assert_overlap(s, Triangle((0, 0), (-3, -1), (-1, -3)), True)
+    _assert_overlap(s, Circle((0, 15), 5), True)
+
+
+def test_overlaps_another_sector() raises -> None:
+    var s = Sector((0, 0), 10, 0.0, pi / 2.0)
+    # Holding the other's tip.
+    _assert_overlap(s, Sector((3, 3), 1, 0.0, 0.5), True)
+    # Tips apart, slices crossing.
+    _assert_overlap(s, Sector((12, 5), 10, pi - 0.2, 0.4), True)
+    # Tips apart, pointing away.
+    _assert_overlap(s, Sector((12, 5), 10, -0.2, 0.4), False)
+    # One wholly inside the other's missing wedge.
+    _assert_overlap(
+        Sector((0, 0), 10, 0.0, 1.5 * pi),
+        Sector((5, -5), 10, -0.2, 0.4),
+        False,
+    )
+
+
+def test_degenerate_sectors_overlap_as_their_shape() raises -> None:
+    # Zero radius: the tip.
+    _assert_overlap(Sector((4, 5), 0, 0.0, pi), Circle((4, 6), 1), True)
+    _assert_overlap(Sector((4, 5), 0, 0.0, pi), Circle((4, 7), 1), False)
+    # Zero sweep: one radius, along +y.
+    var ray = Sector((0, 0), 10, pi / 2.0, 0.0)
+    _assert_overlap(ray, Rectangle((0, 5), 40, 1), True)
+    _assert_overlap(ray, Rectangle((0, -5), 40, 1), False)
+
+
+def test_line_intersects() raises -> None:
+    var s = Sector((0, 0), 10, 0.0, 1.5 * pi)
+    # Wholly inside.
+    assert_true(Line((-3, 3), (-4, 4)).intersects(s))
+    # Crossing an edge from outside.
+    assert_true(Line((15, 5), (5, 5)).intersects(s))
+    # Wholly in the missing wedge.
+    assert_true(not Line((2, -2), (5, -6)).intersects(s))
+    # Touching a radius.
+    assert_true(Line((3, 0), (3, -5)).intersects(s))
+
+
+def test_arc_intersects() raises -> None:
+    var s = Sector((0, 0), 10, 0.0, pi / 2.0)
+    # Wholly inside.
+    assert_true(Arc((0, 0), 5, 0.2, 0.5).intersects(s))
+    # Crossing the curved edge.
+    assert_true(Arc((10, 10), 5, pi, 1.0).intersects(s))
+    # On the far side of the circle.
+    assert_true(not Arc((0, 0), 5, pi, 0.5).intersects(s))
+    # Crossing only a radius.
+    assert_true(Arc((5, 0), 2, 0.0, -pi).intersects(s))
 
 
 def main() raises:
