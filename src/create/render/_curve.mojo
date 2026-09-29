@@ -64,8 +64,10 @@ def stroke_quads(points: List[Point2D], width: Float64) -> List[Point2D]:
     Neighbouring quads meet on a mitred edge — both use the same two corners
     — so the band has no gap at a joint and no overlap either, and a
     translucent stroke composites once everywhere. The two ends are butt, as
-    a line's are. Repeated points are skipped; a polyline of no length gives
-    no quads.
+    a line's are. A polyline that ends where it starts, around at least
+    three distinct points, is a ring instead: it has no ends, and its last
+    quad meets its first on a mitred edge like any other joint. Repeated
+    points are skipped; a polyline of no length gives no quads.
 
     At a cusp the miter is clamped to `MITER_LIMIT`, which lets the two
     quads either side overlap slightly there.
@@ -77,38 +79,53 @@ def stroke_quads(points: List[Point2D], width: Float64) -> List[Point2D]:
     var corners = List[Point2D]()
     if len(path) < 2 or width <= 0.0:
         return corners^
+    var closed = len(path) >= 4 and path[0] == path[len(path) - 1]
+    if closed:
+        # The repeat of the first point; the ring wraps round to it instead.
+        _ = path.pop()
 
     var half = width / 2.0
-    var segments = len(path) - 1
+    var n = len(path)
+    var segments = n if closed else n - 1
     var normals = List[Vector2D](capacity=segments)
     for i in range(segments):
-        var d = path[i + 1] - path[i]
+        var d = path[(i + 1) % n] - path[i]
         normals.append(Vector2D(-d.y, d.x) / d.mag())
 
     # Each vertex's offset to the band's left edge; the right edge is its
-    # negation. An interior vertex's offset lies along the bisector of its
-    # two normals, long enough that both neighbouring edges stay `half` away.
-    var offsets = List[Vector2D](capacity=len(path))
-    offsets.append(normals[0] * half)
-    for j in range(1, segments):
-        var bisector = normals[j - 1] + normals[j]
-        var length = bisector.mag()
-        if length == 0.0:
-            # The path doubles straight back: no bisector exists.
-            offsets.append(normals[j] * half)
-            continue
-        bisector /= length
-        var reach = half / bisector.dot(normals[j])
-        offsets.append(bisector * min(reach, MITER_LIMIT * half))
-    offsets.append(normals[segments - 1] * half)
+    # negation. A joint's offset lies along the bisector of its two
+    # normals, long enough that both neighbouring edges stay `half` away;
+    # an open end's is its one segment's normal.
+    var offsets = List[Vector2D](capacity=n)
+    for j in range(n):
+        if not closed and j == 0:
+            offsets.append(normals[0] * half)
+        elif not closed and j == n - 1:
+            offsets.append(normals[segments - 1] * half)
+        else:
+            offsets.append(_miter(normals[(j - 1 + n) % n], normals[j], half))
 
     corners.reserve(4 * segments)
     for i in range(segments):
+        var k = (i + 1) % n
         corners.append(path[i] + offsets[i])
-        corners.append(path[i + 1] + offsets[i + 1])
-        corners.append(path[i + 1] - offsets[i + 1])
+        corners.append(path[k] + offsets[k])
+        corners.append(path[k] - offsets[k])
         corners.append(path[i] - offsets[i])
     return corners^
+
+
+def _miter(before: Vector2D, after: Vector2D, half: Float64) -> Vector2D:
+    """The offset to the left edge at a joint between segments with unit
+    normals `before` and `after`, clamped to `MITER_LIMIT` half-widths."""
+    var bisector = before + after
+    var length = bisector.mag()
+    if length == 0.0:
+        # The path doubles straight back: no bisector exists.
+        return after * half
+    bisector /= length
+    var reach = half / bisector.dot(after)
+    return bisector * min(reach, MITER_LIMIT * half)
 
 
 struct PlacedMask(Movable):

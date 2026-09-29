@@ -87,6 +87,31 @@ def test_chain_stroke_shares_edges_across_the_joint() raises -> None:
         assert_equal(corners[4 * q + 2], corners[4 * (q + 1) + 3])
 
 
+def test_closed_polyline_strokes_as_a_ring() raises -> None:
+    var points: List[Point2D] = [
+        (0.0, 0.0),
+        (10.0, 0.0),
+        (10.0, 10.0),
+        (0.0, 10.0),
+        (0.0, 0.0),
+    ]
+    var corners = stroke_quads(points, 2.0)
+    # Four sides, the last closing back to the start.
+    assert_equal(len(corners), 16)
+    for q in range(4):
+        var next = (q + 1) % 4
+        assert_equal(corners[4 * q + 1], corners[4 * next])
+        assert_equal(corners[4 * q + 2], corners[4 * next + 3])
+    # The start is mitred like any corner, not butt.
+    _assert_point_near(corners[0], Point2D(1.0, 1.0))
+    _assert_point_near(corners[3], Point2D(-1.0, -1.0))
+
+
+def test_there_and_back_is_not_a_ring() raises -> None:
+    var points: List[Point2D] = [(0.0, 0.0), (10.0, 0.0), (0.0, 0.0)]
+    assert_equal(len(stroke_quads(points, 2.0)), 8)
+
+
 def test_straight_polyline_gives_a_straight_band() raises -> None:
     var points: List[Point2D] = [(0.0, 0.0), (10.0, 0.0), (20.0, 0.0)]
     var corners = stroke_quads(points, 4.0)

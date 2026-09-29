@@ -412,6 +412,46 @@ def test_translucent_bezier_chain_composites_once_at_the_joint() raises -> None:
     assert_true(painted > 0)
 
 
+def _straight(a: Point2D, b: Point2D) -> CubicBezier:
+    return CubicBezier(a, a + (b - a) / 3.0, b - (b - a) / 3.0, b)
+
+
+def test_translucent_closed_bezier_chain_has_no_seam() raises -> None:
+    # A triangle of straight curves, closing at a sharp corner: mitred like
+    # the other two, so no notch outside it and no double blend inside.
+    var a = Point2D(-40.0, -30.0)
+    var b = Point2D(40.0, -30.0)
+    var apex = Point2D(0.0, 40.0)
+    var chain: List[Point2D] = [a]
+    for side in [_straight(a, b), _straight(b, apex), _straight(apex, a)]:
+        chain.append(side.control1)
+        chain.append(side.control2)
+        chain.append(side.end)
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(
+        bezier_chain_command(
+            _base(), _stroke(Color(255, 255, 255, 128), 6), chain^
+        )
+    )
+    var m = _replay(cmds)
+    var mid = mat_apply(_base(), 0.0, -30.0)
+    var once = m.pixel(Int(mid[0]), Int(mid[1]))
+    assert_true(once != Color.BLACK and once != Color.WHITE)
+    # Three units out from the seam's corner, along its bisector: inside the
+    # mitre, outside both butt ends.
+    var centroid = Point2D(0.0, -20.0 / 3.0)
+    var outward = (a - centroid).normalize()
+    var tip = a + outward * 3.0
+    var q = mat_apply(_base(), tip.x, tip.y)
+    assert_equal(m.pixel(Int(q[0]), Int(q[1])), once)
+    for y in range(_H):
+        for x in range(_W):
+            var px = m.pixel(x, y)
+            if px != Color.BLACK:
+                assert_equal(px, once)
+
+
 def test_triangle_replays_inside_only() raises -> None:
     var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
