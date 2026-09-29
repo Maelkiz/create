@@ -1623,34 +1623,55 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
         pieces wound on both sides, running through the inside."""
         var rim = List[Line]()
         var seams = List[Line]()
-        for i in range(len(self.vertices)):
+        var n = len(self.vertices)
+        for i in range(n):
             var e = self._edge(i)
+            var d = e.end - e.start
             if e.start == e.end:
                 continue
-            var cuts: List[Float64] = [0.0, 1.0]
-            var n = len(self.vertices)
+            var cuts = List[Point2D]()
             for j in range(n):
                 var other = self._edge(j)
                 if j == i or not e.intersects(other):
                     continue
-                # A neighbour meets the edge only at their shared vertex,
-                # unless it folds back along it; its cut there would be off
-                # by rounding.
-                var neighbour = j == (i + 1) % n or i == (j + 1) % n
-                if (
-                    neighbour
-                    and _cross(e.end - e.start, other.end - other.start) != 0.0
-                ):
+                if _cross(d, other.end - other.start) == 0.0:
+                    # Running along it: cut where the other's ends fall.
+                    cuts.append(other.start)
+                    cuts.append(other.end)
                     continue
-                _cut_at_line(e, other, cuts)
-            sort(cuts)
-            var start = e.start
+                # A neighbour meets the edge only at their shared vertex.
+                if j == (i + 1) % n or i == (j + 1) % n:
+                    continue
+                # Found along the lower of the two edges, so both are cut at
+                # the very same point and their pieces share their ends.
+                var first = e if i < j else other
+                var second = other if i < j else e
+                var fraction = List[Float64]()
+                _cut_at_line(first, second, fraction)
+                cuts.append(
+                    first.start + (first.end - first.start) * fraction[0]
+                )
+            # In order along the edge; there are only a handful.
+            var along = List[Float64](capacity=len(cuts))
+            for p in cuts:
+                along.append((p - e.start).dot(d) / d.mag_sq())
             for k in range(1, len(cuts)):
-                var t = max(0.0, min(cuts[k], 1.0))
-                if t <= max(0.0, min(cuts[k - 1], 1.0)):
+                var m = k
+                while m > 0 and along[m - 1] > along[m]:
+                    along.swap_elements(m - 1, m)
+                    cuts.swap_elements(m - 1, m)
+                    m -= 1
+            var start = e.start
+            var at = 0.0
+            for k in range(len(cuts) + 1):
+                var end = e.end
+                if k < len(cuts):
+                    if along[k] <= at or along[k] >= 1.0:
+                        continue
+                    at = along[k]
+                    end = cuts[k]
+                if end == start:
                     continue
-                # The ends exactly, so neighbouring edges share their vertex.
-                var end = e.end if t == 1.0 else e.start + (e.end - e.start) * t
                 var piece = Line(start, end)
                 if self._wound_beside(i, piece.midpoint()):
                     seams.append(piece)

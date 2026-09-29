@@ -118,32 +118,57 @@ def polygon_quads(
     var edges = List[_Edge]()
     _add_loop(edges, vertices, 0)
     var layers = _Layers()
-    var pieces = Polygon(vertices^)._pieces()
+    var pieces = (List[Line](), List[Line]())
+    if outer != 0.0 or t > 0.0:
+        pieces = Polygon(vertices^)._pieces()
+    ref rim = pieces[0]
+    ref seams = pieces[1]
+    var corners = _ends(rim)
     if outer != 0.0:
         layers.outer = layers.next()
-        _add_band(edges, pieces[0], abs(outer), sf, layers.outer)
+        _add_band(edges, rim, corners, abs(outer), sf, layers.outer)
     if t > 0.0 and inner != 0.0:
         layers.inner = layers.next()
-        _add_band(edges, pieces[0], abs(inner), sf, layers.inner)
-    if t > 0.0 and len(pieces[1]) > 0:
+        _add_band(edges, rim, corners, abs(inner), sf, layers.inner)
+    if t > 0.0 and len(seams) > 0:
         layers.seams = layers.next()
-        _add_band(edges, pieces[1], t / 2.0, sf, layers.seams)
+        var ends = List[Point2D]()
+        for p in _ends(seams):
+            # Inside a disc of the fill's own band, a seam's adds nothing.
+            if not (inner <= -t / 2.0 and p in corners):
+                ends.append(p)
+        _add_band(edges, seams, ends, t / 2.0, sf, layers.seams)
 
     var ys = _slab_boundaries(edges)
+    var starts = List[Float64](capacity=len(edges))
+    for e in edges:
+        starts.append(e.y0)
+    _sort_by(edges, starts)
+    # The edges spanning the slab, carried from one to the next in their
+    # order across it, which changes little, so sorting them stays cheap.
     var active = List[_Edge]()
     var middles = List[Float64]()
+    var next = 0
     for k in range(len(ys) - 1):
         var y_lo = ys[k]
         var y_hi = ys[k + 1]
         if y_hi <= y_lo:
             continue
+        var kept = 0
+        for i in range(len(active)):
+            if active[i].y1 >= y_hi:
+                active[kept] = active[i]
+                kept += 1
+        while len(active) > kept:
+            _ = active.pop()
+        while next < len(edges) and edges[next].y0 <= y_lo:
+            if edges[next].y1 >= y_hi:
+                active.append(edges[next])
+            next += 1
         var y_mid = 0.5 * (y_lo + y_hi)
-        active.clear()
         middles.clear()
-        for e in edges:
-            if e.y0 <= y_lo and e.y1 >= y_hi:
-                active.append(e)
-                middles.append(e.x_at(y_mid))
+        for e in active:
+            middles.append(e.x_at(y_mid))
         _sort_by(active, middles)
 
         # Walk in from the left, where every count is zero. The stretch
@@ -270,21 +295,27 @@ def _add_loop(mut edges: List[_Edge], points: List[Point2D], layer: Int):
             edges.append(_Edge(b.x, b.y, a.x, a.y, -1, layer))
 
 
-def _add_band(
-    mut edges: List[_Edge],
-    lines: List[Line],
-    d: Float64,
-    sf: Float64,
-    layer: Int,
-):
-    """The pieces of the band within `d` of `lines`, each wound
-    counter-clockwise so the band's count is how many cover a point. An end
-    two lines share gets one disc."""
+def _ends(lines: List[Line]) -> List[Point2D]:
+    """Every end of `lines`, once."""
     var ends = List[Point2D]()
     for l in lines:
         for p in [l.start, l.end]:
             if p not in ends:
                 ends.append(p)
+    return ends^
+
+
+def _add_band(
+    mut edges: List[_Edge],
+    lines: List[Line],
+    ends: List[Point2D],
+    d: Float64,
+    sf: Float64,
+    layer: Int,
+):
+    """The pieces of the band within `d` of `lines`: a rectangle along
+    each and a disc at each of `ends`, each wound counter-clockwise so the
+    band's count is how many cover a point."""
     var segments = circle_segments(d * sf)
     var disc = List[Point2D](capacity=segments)
     for a in ends:
