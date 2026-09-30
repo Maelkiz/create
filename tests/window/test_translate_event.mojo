@@ -9,6 +9,7 @@ from create._window import (
     Event,
     KeyDown,
     KeyUp,
+    TextInput,
     MouseMoved,
     MouseButtonDown,
     MouseButtonUp,
@@ -18,11 +19,13 @@ from create._window._sdl import (
     SDL_EVENT_QUIT,
     SDL_EVENT_KEY_DOWN,
     SDL_EVENT_KEY_UP,
+    SDL_EVENT_TEXT_INPUT,
     SDL_EVENT_MOUSE_MOTION,
     SDL_EVENT_MOUSE_BUTTON_DOWN,
     SDL_EVENT_MOUSE_BUTTON_UP,
     SDL_EVENT_MOUSE_WHEEL,
     _OFF_KEY_KEYCODE,
+    _OFF_TEXT_TEXT,
     _OFF_MOTION_X,
     _OFF_MOTION_Y,
     _OFF_BUTTON_INDEX,
@@ -32,7 +35,13 @@ from create._window._sdl import (
     _OFF_WHEEL_Y,
 )
 from create._window.event import translate_event
-from _raw_event import new_event_buffer, write_u8, write_u32, write_f32
+from _raw_event import (
+    new_event_buffer,
+    write_u8,
+    write_u32,
+    write_f32,
+    write_pointer,
+)
 
 
 def test_unhandled_kind_returns_none() raises -> None:
@@ -57,6 +66,17 @@ def test_keyup_translates() raises -> None:
     var translated = translate_event(SDL_EVENT_KEY_UP, buf.unsafe_ptr())
     assert_true(Bool(translated))
     assert_equal(translated.value()[KeyUp].keycode, 42)
+
+
+def test_text_input_translates() raises -> None:
+    var text = String("é!")
+    var buf = new_event_buffer(SDL_EVENT_TEXT_INPUT)
+    write_pointer(buf, _OFF_TEXT_TEXT, text.as_c_string_span().ptr())
+    var translated = translate_event(SDL_EVENT_TEXT_INPUT, buf.unsafe_ptr())
+    assert_true(Bool(translated))
+    var e = translated.value()
+    assert_true(e.isa[TextInput]())
+    assert_equal(e[TextInput].text, "é!")
 
 
 def test_mouse_motion_translates() raises -> None:

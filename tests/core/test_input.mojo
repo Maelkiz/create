@@ -4,7 +4,7 @@ from create.core.key import Key
 from create.core.context import Context
 from create.render._viewport import Viewport
 from create.core._events import apply_events
-from create._window.event import Event, KeyDown, KeyUp
+from create._window.event import Event, KeyDown, KeyUp, TextInput
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
@@ -144,6 +144,37 @@ def test_key_ignores_auto_repeat_of_a_held_key() raises -> None:
     events.append(KeyDown(Key.A))
     _ = apply_events(events, Viewport(), context)
     assert_equal(context.input.key, Key.B)
+
+
+def test_key_typed_counts_a_press_and_each_auto_repeat() raises -> None:
+    var context = Context()
+    var events = List[Event]()
+    events.append(KeyDown(Key.BACKSPACE))
+    _ = apply_events(events, Viewport(), context)
+    assert_true(context.input.key_typed(Key.BACKSPACE))
+    assert_true(context.input.key_pressed(Key.BACKSPACE))
+
+    # Held, then auto-repeated: typed again, but not a new press.
+    events.clear()
+    _ = apply_events(events, Viewport(), context)
+    assert_false(context.input.key_typed("backspace"))
+    events.append(KeyDown(Key.BACKSPACE))
+    _ = apply_events(events, Viewport(), context)
+    assert_true(context.input.key_typed("backspace"))
+    assert_false(context.input.key_pressed(Key.BACKSPACE))
+
+
+def test_text_joins_a_frames_input_and_clears_the_next() raises -> None:
+    var context = Context()
+    var events = List[Event]()
+    events.append(TextInput("h"))
+    events.append(TextInput("é"))
+    _ = apply_events(events, Viewport(), context)
+    assert_equal(context.input.text, "hé")
+
+    events.clear()
+    _ = apply_events(events, Viewport(), context)
+    assert_equal(context.input.text, "")
 
 
 def test_keycodes_outside_ascii_and_named_keys() raises -> None:

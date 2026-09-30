@@ -20,6 +20,7 @@ from create._window.event import (
     MouseWheel,
     Quit,
     Resized,
+    TextInput,
 )
 
 from create.math.point2d import Point2D
@@ -57,6 +58,9 @@ def apply_events(
             var keycode = event[KeyDown].keycode
             if keycode == 27 and context._quit_on_escape:
                 quit = True
+            # A KeyDown for a key already held is SDL's auto-repeat: typed,
+            # but not a new press.
+            input._typed_keys.set(keycode)
             if not input.key_down(keycode):
                 input.key = keycode
                 input._held_keys.set(keycode)
@@ -65,6 +69,8 @@ def apply_events(
             var keycode = event[KeyUp].keycode
             input._held_keys.clear(keycode)
             input._released_keys.set(keycode)
+        elif event.isa[TextInput]():
+            input.text += event[TextInput].text
         elif event.isa[MouseMoved]():
             var e = event[MouseMoved]
             # Pointer positions reach the program in screen space — the same

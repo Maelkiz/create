@@ -75,6 +75,7 @@ struct Window:
         self._height = actual_height
         try:
             self._sdl.set_render_vsync(self._renderer, True)
+            self._sdl.start_text_input(self._handle)
             self._texture = self._sdl.create_texture(
                 self._renderer, Int32(actual_width), Int32(actual_height)
             )

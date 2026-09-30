@@ -31,3 +31,13 @@ def write_f32(
     mut buf: Array[UInt8, SDL_EVENT_SIZE], offset: Int, value: Float32
 ):
     buf.unsafe_ptr().unsafe_offset(offset).unsafe_bitcast[Float32]()[] = value
+
+
+def write_pointer(
+    mut buf: Array[UInt8, SDL_EVENT_SIZE],
+    offset: Int,
+    value: Pointer[Int8, _],
+):
+    buf.unsafe_ptr().unsafe_offset(offset).unsafe_bitcast[
+        type_of(value)
+    ]()[] = value

@@ -57,6 +57,7 @@ comptime SDL_EVENT_QUIT: UInt32 = 0x100
 comptime SDL_EVENT_WINDOW_RESIZED: UInt32 = 0x206
 comptime SDL_EVENT_KEY_DOWN: UInt32 = 0x300
 comptime SDL_EVENT_KEY_UP: UInt32 = 0x301
+comptime SDL_EVENT_TEXT_INPUT: UInt32 = 0x303
 comptime SDL_EVENT_MOUSE_MOTION: UInt32 = 0x400
 comptime SDL_EVENT_MOUSE_BUTTON_DOWN: UInt32 = 0x401
 comptime SDL_EVENT_MOUSE_BUTTON_UP: UInt32 = 0x402
@@ -83,6 +84,8 @@ comptime _OFF_KEY_SCANCODE = 24
 comptime _OFF_KEY_KEYCODE = 28
 comptime _OFF_KEY_MOD = 32
 comptime _OFF_KEY_REPEAT = 37
+
+comptime _OFF_TEXT_TEXT = 24
 
 comptime _OFF_MOTION_X = 28
 comptime _OFF_MOTION_Y = 32
@@ -191,6 +194,16 @@ struct SDL:
         offset readers) — not used by `Window` itself.
         """
         return self.lib.call["SDL_PushEvent", Bool](buf)
+
+    def start_text_input(self, window: Int) raises:
+        """Turns on `SDL_EVENT_TEXT_INPUT` delivery for `window`.
+
+        SDL3 sends no text events until this is called, unlike SDL2. On a
+        desktop it only enables the IME, so each window turns it on for its
+        whole life rather than per text field.
+        """
+        if not self.lib.call["SDL_StartTextInput", Bool](window):
+            raise Error("SDL_StartTextInput failed: " + self.get_error())
 
     def get_ticks(self) raises -> UInt64:
         return self.lib.call["SDL_GetTicks", UInt64]()
@@ -339,6 +352,15 @@ def key_mod(buf: Pointer[UInt8, _]) -> UInt16:
 
 def key_repeat(buf: Pointer[UInt8, _]) -> Bool:
     return buf.unsafe_offset(_OFF_KEY_REPEAT).unsafe_bitcast[UInt8]()[] != 0
+
+
+def text_input_text(buf: Pointer[UInt8, _]) -> String:
+    """The event's UTF-8 text, copied out: SDL owns the bytes only until the
+    next poll."""
+    var text = buf.unsafe_offset(_OFF_TEXT_TEXT).unsafe_bitcast[
+        Pointer[UInt8, MutUntrackedOrigin]
+    ]()[]
+    return String(unsafe_from_utf8_ptr=text)
 
 
 def mouse_x(buf: Pointer[UInt8, _]) -> Float32:

@@ -12,6 +12,7 @@ from create._window import (
     Resized,
     KeyDown,
     KeyUp,
+    TextInput,
     MouseMoved,
     MouseButtonDown,
     MouseButtonUp,
@@ -23,6 +24,7 @@ from create._window._sdl import (
     SDL_EVENT_WINDOW_RESIZED,
     SDL_EVENT_KEY_DOWN,
     SDL_EVENT_KEY_UP,
+    SDL_EVENT_TEXT_INPUT,
     SDL_EVENT_MOUSE_MOTION,
     SDL_EVENT_MOUSE_BUTTON_DOWN,
     SDL_EVENT_MOUSE_BUTTON_UP,
@@ -30,6 +32,7 @@ from create._window._sdl import (
     _OFF_WINDOW_DATA1,
     _OFF_WINDOW_DATA2,
     _OFF_KEY_KEYCODE,
+    _OFF_TEXT_TEXT,
     _OFF_MOTION_X,
     _OFF_MOTION_Y,
     _OFF_BUTTON_INDEX,
@@ -44,6 +47,7 @@ from _raw_event import (
     write_u32,
     write_i32,
     write_f32,
+    write_pointer,
 )
 
 
@@ -98,6 +102,20 @@ def test_keyup_delivers() raises -> None:
     assert_equal(len(events), 1)
     assert_true(events[0].isa[KeyUp]())
     assert_equal(events[0][KeyUp].keycode, 42)
+
+
+def test_text_input_delivers() raises -> None:
+    var w = Window("t", 64, 64)
+    var text = String("Zoë")
+    var buf = new_event_buffer(SDL_EVENT_TEXT_INPUT)
+    write_pointer(buf, _OFF_TEXT_TEXT, text.as_c_string_span().ptr())
+    var sdl = SDL()
+    assert_true(sdl.push_event(buf.unsafe_ptr()))
+
+    var events = w.events()
+    assert_equal(len(events), 1)
+    assert_true(events[0].isa[TextInput]())
+    assert_equal(events[0][TextInput].text, "Zoë")
 
 
 def test_mouse_motion_delivers() raises -> None:

@@ -5,11 +5,13 @@ from std.utils import Variant
 from ._sdl import (
     SDL_EVENT_KEY_DOWN,
     SDL_EVENT_KEY_UP,
+    SDL_EVENT_TEXT_INPUT,
     SDL_EVENT_MOUSE_MOTION,
     SDL_EVENT_MOUSE_BUTTON_DOWN,
     SDL_EVENT_MOUSE_BUTTON_UP,
     SDL_EVENT_MOUSE_WHEEL,
     key_keycode,
+    text_input_text,
     mouse_x,
     mouse_y,
     button_index,
@@ -39,6 +41,15 @@ struct KeyDown(ImplicitlyCopyable, Movable):
 @fieldwise_init
 struct KeyUp(ImplicitlyCopyable, Movable):
     var keycode: Int
+
+
+@fieldwise_init
+struct TextInput(ImplicitlyCopyable, Movable):
+    """Text the user typed, UTF-8: usually one character, but an IME can
+    commit several at once. Arrives beside, not instead of, the `KeyDown`
+    events of the keys that produced it."""
+
+    var text: String
 
 
 @fieldwise_init
@@ -72,6 +83,7 @@ comptime Event = Variant[
     Resized,
     KeyDown,
     KeyUp,
+    TextInput,
     MouseMoved,
     MouseButtonDown,
     MouseButtonUp,
@@ -95,6 +107,8 @@ def translate_event(kind: UInt32, ptr: Pointer[UInt8, _]) -> Optional[Event]:
         return Event(KeyDown(Int(key_keycode(ptr))))
     elif kind == SDL_EVENT_KEY_UP:
         return Event(KeyUp(Int(key_keycode(ptr))))
+    elif kind == SDL_EVENT_TEXT_INPUT:
+        return Event(TextInput(text_input_text(ptr)))
     elif kind == SDL_EVENT_MOUSE_MOTION:
         return Event(MouseMoved(Int(mouse_x(ptr)), Int(mouse_y(ptr))))
     elif kind == SDL_EVENT_MOUSE_BUTTON_DOWN:

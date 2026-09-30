@@ -37,13 +37,21 @@ struct Input(Copyable, Movable):
     *pressed* and *released* are the edges, true only in the frame the key or
     button went down or came up (`key_pressed`, `mouse_released`).
     Unlike Processing, where `mousePressed` means held: here *pressed* is only
-    ever the edge.
+    ever the edge. Keys add *typed*: pressed, or auto-repeated while held
+    (`key_typed`) — what an editing key like Backspace acts on.
+
+    `text` is what those keys wrote, as characters rather than keys: shift,
+    the keyboard layout and any IME already applied. A text field appends
+    `text` and handles Backspace, Enter and the arrows through `key_typed`.
     """
 
     # Keycode of the most recent key press, compared against `Key` (0 before
     # any). Kept until the next press, like `mouse_button`; auto-repeat of a
     # held key does not count as a press.
     var key: Int
+    # The text typed this frame, UTF-8 — empty on most frames, several
+    # characters when typing outpaces the frame rate. Zeroed every frame.
+    var text: String
     var mouse_x: Int
     var mouse_y: Int
     var mouse: Point2D
@@ -61,6 +69,7 @@ struct Input(Copyable, Movable):
     var _held_keys: _KeySet
     var _pressed_keys: _KeySet
     var _released_keys: _KeySet
+    var _typed_keys: _KeySet
     # Mouse buttons are a handful of small ints (1..5), not the sparse 32-bit
     # keycode space `_KeySet` handles — a plain bitmask is enough.
     var _held_buttons: Int
@@ -69,6 +78,7 @@ struct Input(Copyable, Movable):
 
     def __init__(out self):
         self.key = 0
+        self.text = ""
         self.mouse_x = 0
         self.mouse_y = 0
         self.mouse = Point2D(0, 0)
@@ -78,18 +88,21 @@ struct Input(Copyable, Movable):
         self._held_keys = _KeySet()
         self._pressed_keys = _KeySet()
         self._released_keys = _KeySet()
+        self._typed_keys = _KeySet()
         self._held_buttons = 0
         self._pressed_buttons = 0
         self._released_buttons = 0
 
     def _new_frame(mut self):
-        """Clears the per-frame edge state: pressed/released keys and
-        buttons, and the scroll delta. Called once per frame before events are
+        """Clears the per-frame edge state: pressed/released/typed keys and
+        buttons, the typed text and the scroll delta. Called once per frame before events are
         processed, so a press held across frames stays in `_held_keys`/
         `_held_buttons` but drops out of the pressed bits after the frame it
         happened in."""
         self._pressed_keys.clear_all()
         self._released_keys.clear_all()
+        self._typed_keys.clear_all()
+        self.text = ""
         self.mouse_wheel = Vector2D(0, 0)
         self._pressed_buttons = 0
         self._released_buttons = 0
@@ -180,6 +193,16 @@ struct Input(Copyable, Movable):
     def key_released(self, key: String) -> Bool:
         """Whether this key came up this frame. See `_check` for the names."""
         return self._check(key, self._released_keys)
+
+    def key_typed(self, keycode: Int) -> Bool:
+        """Whether this key went down or auto-repeated this frame — true once
+        per press, then at the system's repeat rate while held."""
+        return self._typed_keys.test(keycode)
+
+    def key_typed(self, key: String) -> Bool:
+        """Whether this key went down or auto-repeated this frame. See
+        `_check` for the names."""
+        return self._check(key, self._typed_keys)
 
     def mouse_down(self, button: Int = MouseButton.LEFT) -> Bool:
         """Whether this mouse button is held right now.

@@ -104,6 +104,7 @@ struct GLWindow:
             raise e
         try:
             self._sdl.gl_make_current(self._handle, self._context)
+            self._sdl.start_text_input(self._handle)
         except e:
             self._sdl.gl_destroy_context(self._context)
             self._sdl.destroy_window(self._handle)

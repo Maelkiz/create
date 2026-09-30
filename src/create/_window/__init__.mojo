@@ -20,6 +20,7 @@ from .event import (
     Resized,
     KeyDown,
     KeyUp,
+    TextInput,
     MouseMoved,
     MouseButtonDown,
     MouseButtonUp,
