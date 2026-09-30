@@ -1,25 +1,20 @@
 from create import *
 
 
-def without_last_character(text: String) -> String:
-    """Drop the last character, not the last byte: `text` is UTF-8, so an
-    accented letter can be two bytes and must go as one."""
-    var bytes = text.as_bytes()
-    var end = len(bytes)
-    if end == 0:
-        return text
-    end -= 1
-    # Continuation bytes are 0b10xxxxxx; the character starts before them.
-    while end > 0 and (bytes[end] & 0xC0) == 0x80:
-        end -= 1
-    return String(text[byte=0:end])
+def characters(text: String) -> List[String]:
+    """`text` split into characters, not bytes: an accented letter is two
+    bytes of UTF-8 but one character to type."""
+    var result = List[String]()
+    for character in text.codepoint_slices():
+        result.append(String(character))
+    return result^
 
 
 @fieldwise_init
 struct TypingTest(Program):
     var phrases: List[String]
     var phrase: Int
-    var typed: String
+    var typed: EditableText
     var started_at: Float64
     var keystrokes: Int
     var mistakes: Int
@@ -34,7 +29,7 @@ struct TypingTest(Program):
                 "sphinx of black quartz, judge my vow",
             ],
             phrase=0,
-            typed="",
+            typed=EditableText(),
             started_at=0,
             keystrokes=0,
             mistakes=0,
@@ -43,44 +38,46 @@ struct TypingTest(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color(30, 30, 40))
-        ref target = self.phrases[self.phrase]
-        var finished = self.typed == target
+        var target = characters(self.phrases[self.phrase])
+        var finished = self.typed.text == self.phrases[self.phrase]
 
         if finished:
             if context.input.key_pressed(Key.ENTER):
                 self.phrase = (self.phrase + 1) % len(self.phrases)
-                self.typed = ""
+                self.typed.text = ""
                 self.result = ""
         else:
-            # `text` is this frame's typed characters; editing keys come
-            # through `key_typed`, so holding Backspace keeps deleting.
-            for character in context.input.text.codepoint_slices():
-                if not self.typed:
-                    self.started_at = context.time.elapsed
-                    self.keystrokes = 0
-                    self.mistakes = 0
-                self.typed += character
-                self.keystrokes += 1
-                if not target.startswith(self.typed):
-                    self.mistakes += 1
-            if context.input.key_typed(Key.BACKSPACE):
-                self.typed = without_last_character(self.typed)
-            if self.typed == target:
-                self.result = self.score(target, context.time.elapsed)
+            self.count_keystrokes(context, target)
+            # Typed text, Backspace, Delete and the arrow keys, all in one.
+            self.typed.update(context.input)
+            if self.typed.text == self.phrases[self.phrase]:
+                self.result = self.score(len(target), context.time.elapsed)
 
-        var on_track = target.startswith(self.typed)
-        var caret = "_" if Int(context.time.elapsed * 2) % 2 == 0 else " "
-
-        canvas.text_align(Align.CENTER)
+        # Both lines start at the same left edge, so each typed letter sits
+        # under the one it should match.
         canvas.font_size(28)
+        canvas.text_align(Align.LEFT)
+        var left = -canvas.text_width(self.phrases[self.phrase]) / 2
         canvas.text_color(Color(200, 200, 220))
-        canvas.text(target, (0, 60))
-        canvas.text_color(
-            Color(120, 200, 140) if on_track else Color(230, 90, 90)
-        )
-        canvas.text(self.typed + ("" if finished else caret), (0, 0))
+        canvas.text(self.phrases[self.phrase], (left, 60))
+
+        var x = left
+        var typed = characters(self.typed.text)
+        for i in range(len(typed)):
+            var right = i < len(target) and typed[i] == target[i]
+            canvas.text_color(
+                Color(120, 200, 140) if right else Color(230, 90, 90)
+            )
+            canvas.text(typed[i], (x, 0))
+            x += canvas.text_width(typed[i])
+
+        if not finished and Int(context.time.elapsed * 2) % 2 == 0:
+            var caret_x = left + canvas.text_width(self.typed.before_caret())
+            canvas.outline(Color.WHITE, thickness=2)
+            canvas.line((caret_x, -16), (caret_x, 16))
 
         canvas.font_size(20)
+        canvas.text_align(Align.CENTER)
         canvas.text_color(Color(150, 150, 170))
         if finished:
             canvas.text(self.result, (0, -80))
@@ -88,12 +85,28 @@ struct TypingTest(Program):
         else:
             canvas.text("Type the phrase above", (0, -80))
 
-    def score(self, target: String, now: Float64) -> String:
+    def count_keystrokes(mut self, context: Context, target: List[String]):
+        """Count this frame's typed characters, and those that went in wrong
+        for where the caret put them. The clock starts on the first."""
+        var typed = characters(context.input.text)
+        if not typed:
+            return
+        if not self.typed.text:
+            self.started_at = context.time.elapsed
+            self.keystrokes = 0
+            self.mistakes = 0
+        var position = len(characters(self.typed.before_caret()))
+        for i in range(len(typed)):
+            self.keystrokes += 1
+            var at = position + i
+            if at >= len(target) or typed[i] != target[at]:
+                self.mistakes += 1
+
+    def score(self, characters: Int, now: Float64) -> String:
         """Words per minute counts five characters as a word, the standard
         typing-test measure; accuracy is the share of keystrokes that were
         right when typed, so a corrected mistake still counts against it."""
         var minutes = max(now - self.started_at, 0.001) / 60
-        var characters = len(target.codepoint_slices())
         var wpm = Int(Float64(characters) / 5 / minutes)
         var accuracy = (
             100 * (self.keystrokes - self.mistakes) // max(self.keystrokes, 1)
