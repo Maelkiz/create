@@ -46,6 +46,7 @@ from ._command import (
     triangle_command,
 )
 from .style import Style, _KEEP
+from ._transform import pixel_scale
 
 
 comptime _AUTOCLEAR_COLOR = Color(200)
@@ -1047,6 +1048,21 @@ struct Canvas:
         """Swap the face. Lives in `PersistentCanvasState`, so unlike the style
         settings a font outlives the frame that set it."""
         self._state.backend.text.set_font(f^)
+
+    def text_width(mut self, s: String) raises -> Float64:
+        """How wide `text(s, ...)` would render under the current font, size
+        and weight, in the units the next render call is positioned in.
+
+        Exact for any prefix too, since glyphs sit advance to advance with no
+        kerning, so a caret after a string's first few characters goes at the
+        text's left edge plus the width of those characters. With the default
+        `Align.CENTER`, that left edge is `position.x - text_width(s) / 2`.
+
+        Raises only if the default font has to be loaded and cannot be.
+        """
+        var scale = pixel_scale(self._transform, self.scale)
+        var pixels = self._state.backend.text.width(s, self._style, scale)
+        return Float64(pixels) / scale
 
     def text(mut self, s: String, position: Point2D):
         if self._style.text_color.a == 0:

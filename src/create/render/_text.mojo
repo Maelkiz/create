@@ -18,6 +18,11 @@ fills costs one repopulating frame and needs no recency bookkeeping.
 """
 
 
+def _pixel_size(style: Style, pixel_scale: Float64) -> Int:
+    """The font size in pixels: world units scaled, never below one."""
+    return max(Int(Float64(style.font_size) * pixel_scale + 0.5), 1)
+
+
 struct PlacedGlyph(Copyable, Movable):
     """One glyph of a laid-out string, positioned in device pixels.
 
@@ -179,6 +184,25 @@ struct TextRenderer(Movable):
         """
         return self._glyphs[key].pixels.copy()
 
+    def _advance(
+        mut self, s: String, size: Int, weight: Int, blur: Int
+    ) raises -> Int:
+        """The pen advance across `s` in pixels: its width as laid out, since
+        glyphs are placed advance to advance with no kerning."""
+        var advance = 0
+        for cp in s.codepoints():
+            var key = self._ensure_glyph(Int(cp), size, weight, blur)
+            advance += self._glyphs[key].advance_x
+        return advance
+
+    def width(
+        mut self, s: String, style: Style, pixel_scale: Float64
+    ) raises -> Int:
+        """How wide `layout` makes `s`, in pixels, without placing it."""
+        var size = _pixel_size(style, pixel_scale)
+        self._ensure_font(size)
+        return self._advance(s, size, style.font_weight, 0)
+
     def layout(
         mut self,
         s: String,
@@ -198,15 +222,12 @@ struct TextRenderer(Movable):
         Every glyph is in the cache when this returns, so a caller can read
         each one's mask by key without another FreeType call.
         """
-        var size = max(Int(Float64(style.font_size) * pixel_scale + 0.5), 1)
+        var size = _pixel_size(style, pixel_scale)
         self._ensure_font(size)
         var weight = style.font_weight
 
         # Two passes: measure the total advance for alignment, then place.
-        var tw = 0
-        for cp in s.codepoints():
-            var key = self._ensure_glyph(Int(cp), size, weight, blur)
-            tw += self._glyphs[key].advance_x
+        var tw = self._advance(s, size, weight, blur)
 
         var pen_x = Int(tx)
         var pen_y = Int(ty)

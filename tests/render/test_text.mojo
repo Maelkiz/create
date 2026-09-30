@@ -285,5 +285,26 @@ def test_align_writes_its_constant_name() raises -> None:
     assert_equal(String(Align(99)), "Align(99)")
 
 
+def test_width_is_the_distance_alignment_moves_text_by() raises -> None:
+    var t = TextRenderer()
+    var left = t.layout("Hi", 40.0, 30.0, _style(Align.LEFT), 1.0)
+    var right = t.layout("Hi", 40.0, 30.0, _style(Align.RIGHT), 1.0)
+    assert_equal(left[0].x - right[0].x, t.width("Hi", _style(Align.LEFT), 1.0))
+
+
+def test_width_of_a_string_is_the_sum_of_its_parts() raises -> None:
+    var t = TextRenderer()
+    var style = _style(Align.LEFT)
+    var whole = t.width("Hé!", style, 1.0)
+    assert_true(whole > 0)
+    assert_equal(
+        whole,
+        t.width("H", style, 1.0)
+        + t.width("é", style, 1.0)
+        + t.width("!", style, 1.0),
+    )
+    assert_equal(t.width("", style, 1.0), 0)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

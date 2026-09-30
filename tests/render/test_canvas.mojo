@@ -1928,6 +1928,53 @@ def test_text_renders_below_and_right_of_a_top_left_anchor() raises -> None:
 
 
 @fieldwise_init
+struct MeasuredText(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> MeasuredText:
+        return MeasuredText(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.text_color(Color.WHITE)
+        canvas.font_size(24)
+        canvas.text_align(Align.LEFT)
+        var width = canvas.text_width("Hi")
+        assert_true(width > 0, "Hi measured no width")
+        # A caret after "H" sits between the two glyphs.
+        assert_true(canvas.text_width("H") < width)
+        assert_equal(canvas.text_width(""), 0.0)
+        # World units: a doubling transform renders twice the pixels but
+        # measures the same.
+        with canvas.transform(scale(2.0, 2.0)):
+            assert_almost_equal(canvas.text_width("Hi"), width, atol=0.5)
+        canvas.text("Hi", (0.0, 0.0))
+        # Mark where the text should end, in red, below it.
+        canvas.outline_enabled(False)
+        canvas.fill(Color.RED)
+        canvas.rectangle((width, -40.0), 1.0, 10.0)
+
+
+def test_text_width_matches_the_rendered_ink() raises -> None:
+    # Left-aligned at the buffer centre (100, 100), the ink ends within a
+    # glyph's side bearing of the measured width, marked in red below it.
+    var m = run_headless[MeasuredText](200, 200)
+    var red_x = -1
+    for x in range(200):
+        if m.pixel(x, 140) == Color.RED:
+            red_x = x
+            break
+    assert_true(red_x > 100, "no width marker")
+    var ink_right = -1
+    for y in range(80, 120):
+        for x in range(200):
+            if m.pixel(x, y) != Color.BLACK and m.pixel(x, y) != Color.RED:
+                ink_right = max(ink_right, x)
+    assert_true(abs(ink_right - red_x) <= 3, "ink ends away from the width")
+
+
+@fieldwise_init
 struct TransparentText(Program):
     var _unused: Int
 
