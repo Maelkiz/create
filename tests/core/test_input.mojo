@@ -1,4 +1,4 @@
-from std.testing import TestSuite, assert_equal, assert_true
+from std.testing import TestSuite, assert_equal, assert_false, assert_true
 from create.core.input import Input
 from create.core.key import Key
 from create.core.context import Context
@@ -144,6 +144,27 @@ def test_key_ignores_auto_repeat_of_a_held_key() raises -> None:
     events.append(KeyDown(Key.A))
     _ = apply_events(events, Viewport(), context)
     assert_equal(context.input.key, Key.B)
+
+
+def test_keycodes_outside_ascii_and_named_keys() raises -> None:
+    # AltGr's `MODE` (scancode 257 | 1 << 30), a Cyrillic letter's codepoint
+    # and an extended key (1 << 29): all valid SDL keycodes a fixed-width
+    # bitmask would index out of range.
+    var context = Context()
+    var events = List[Event]()
+    for keycode in [(1 << 30) | 257, 0x0444, (1 << 29) | 1]:
+        events.append(KeyDown(keycode))
+    _ = apply_events(events, Viewport(), context)
+    for keycode in [(1 << 30) | 257, 0x0444, (1 << 29) | 1]:
+        assert_true(context.input.key_down(keycode))
+        assert_true(context.input.key_pressed(keycode))
+
+    events.clear()
+    events.append(KeyUp((1 << 30) | 257))
+    _ = apply_events(events, Viewport(), context)
+    assert_false(context.input.key_down((1 << 30) | 257))
+    assert_true(context.input.key_released((1 << 30) | 257))
+    assert_true(context.input.key_down(0x0444))
 
 
 def test_named_key_shift_both_sides() raises -> None:

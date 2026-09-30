@@ -2,7 +2,7 @@ from std.math import floor
 
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
-from .key import Key, _KeyBits
+from .key import Key, _KeySet
 from .mouse_button import MouseButton
 
 
@@ -58,11 +58,11 @@ struct Input(Copyable, Movable):
     # MouseMoved later in the same frame would otherwise overwrite it before
     # a program ever sees where the click actually started.
     var mouse_press_position: Point2D
-    var _held_keys: _KeyBits
-    var _pressed_keys: _KeyBits
-    var _released_keys: _KeyBits
-    # Mouse buttons are a handful of small ints (1..5), not the ~500-wide
-    # keycode space `_KeyBits` is sized for — a plain bitmask is enough.
+    var _held_keys: _KeySet
+    var _pressed_keys: _KeySet
+    var _released_keys: _KeySet
+    # Mouse buttons are a handful of small ints (1..5), not the sparse 32-bit
+    # keycode space `_KeySet` handles — a plain bitmask is enough.
     var _held_buttons: Int
     var _pressed_buttons: Int
     var _released_buttons: Int
@@ -75,9 +75,9 @@ struct Input(Copyable, Movable):
         self.mouse_button = 0
         self.mouse_wheel = Vector2D(0, 0)
         self.mouse_press_position = Point2D(0, 0)
-        self._held_keys = _KeyBits()
-        self._pressed_keys = _KeyBits()
-        self._released_keys = _KeyBits()
+        self._held_keys = _KeySet()
+        self._pressed_keys = _KeySet()
+        self._released_keys = _KeySet()
         self._held_buttons = 0
         self._pressed_buttons = 0
         self._released_buttons = 0
@@ -107,7 +107,7 @@ struct Input(Copyable, Movable):
         self.mouse_x = Int(floor(x))
         self.mouse_y = Int(floor(y))
 
-    def _check(self, key: String, bits: _KeyBits) -> Bool:
+    def _check(self, key: String, bits: _KeySet) -> Bool:
         """Resolve a key name against `bits`.
 
         Accepts a single character (`"a"`, `"7"`, `"/"`) or a named key

@@ -160,33 +160,38 @@ struct Key:
         return -1
 
 
-struct _KeyBits(Copyable, Movable):
-    """512-bit membership set over keycodes: printable ASCII (0-127) map
-    directly, SDL scancode-based keys (arrows, F-keys, modifiers, nav —
-    all >= 1 << 30, spanning a ~230-wide band) map via an offset into the
-    upper half of the same word array."""
+struct _KeySet(Copyable, Movable):
+    """A set of keycodes, held as a short list.
 
-    var _words: Array[UInt64, 8]
+    SDL3 keycodes are sparse 32-bit values: a character key is its Unicode
+    codepoint (anything up to 0x10FFFF on a non-Latin layout), a
+    non-character key is its scancode with bit 30 set (scancodes run to
+    511, AltGr's `MODE` among them), and a few extended keys carry bit 29.
+    No fixed-width bitmask covers that without being huge, while only a
+    handful of keys are ever down at once — so a linear scan over a list
+    stays cheap and accepts every keycode SDL can send.
+    """
+
+    var _keycodes: List[Int]
 
     def __init__(out self):
-        self._words = Array[UInt64, 8](fill=0)
-
-    def _index(self, keycode: Int) -> Int:
-        if keycode >= 1073741824:
-            return 256 + (keycode - 1073741824)
-        return keycode
+        self._keycodes = []
 
     def set(mut self, keycode: Int):
-        var i = self._index(keycode)
-        self._words[i // 64] |= UInt64(1) << UInt64(i % 64)
+        if not self.test(keycode):
+            self._keycodes.append(keycode)
 
     def clear(mut self, keycode: Int):
-        var i = self._index(keycode)
-        self._words[i // 64] &= ~(UInt64(1) << UInt64(i % 64))
+        for i in range(len(self._keycodes)):
+            if self._keycodes[i] == keycode:
+                _ = self._keycodes.pop(i)
+                return
 
     def test(self, keycode: Int) -> Bool:
-        var i = self._index(keycode)
-        return (self._words[i // 64] & (UInt64(1) << UInt64(i % 64))) != 0
+        for held in self._keycodes:
+            if held == keycode:
+                return True
+        return False
 
     def clear_all(mut self):
-        self._words = Array[UInt64, 8](fill=0)
+        self._keycodes.clear()
