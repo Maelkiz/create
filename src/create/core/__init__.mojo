@@ -3,6 +3,7 @@ from .time import Time
 from .date_time import DateTime
 from .key import Key
 from .input import Input
+from .editable_text import EditableText
 from .mouse_button import MouseButton
 from .path import source_path
 from .program import Program
