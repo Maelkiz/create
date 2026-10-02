@@ -3,6 +3,7 @@ from .style import Style
 from create.math.bezier import Bezier
 from create.math.matrix import Matrix, identity
 from create.math.point2d import Point2D
+from create.math.vector2d import Vector2D
 
 comptime CMD_CLEAR = 0
 """Paint the whole framebuffer. `style.fill_color` is the colour."""
@@ -145,6 +146,46 @@ struct RenderCommand(Copyable, Movable):
         self.image_w = 0
         self.image_h = 0
         self.silhouette = False
+
+
+def _fill_box(c: RenderCommand) -> Tuple[Point2D, Vector2D]:
+    """The local box a fill gradient spans: its centre and half-extents.
+
+    The shape's own bounds, before the transform, so the gradient moves and
+    turns with it. A sector spans its whole circle, like a circle, so a
+    slice shows the part of the circle's gradient it covers; a triangle and
+    a polygon span their vertices' bounds. Both replays read this, so they
+    agree on where a gradient lies.
+    """
+    if c.kind == CMD_RECT:
+        return (
+            Point2D(c.geom[0], c.geom[1]),
+            Vector2D(c.geom[2] / 2.0, c.geom[3] / 2.0),
+        )
+    if c.kind == CMD_CIRCLE or c.kind == CMD_SECTOR:
+        return (Point2D(c.geom[0], c.geom[1]), Vector2D(c.geom[2], c.geom[2]))
+    var lo_x = Float64.MAX
+    var lo_y = Float64.MAX
+    var hi_x = -Float64.MAX
+    var hi_y = -Float64.MAX
+    if c.kind == CMD_TRIANGLE:
+        for i in range(3):
+            lo_x = min(lo_x, c.geom[2 * i])
+            hi_x = max(hi_x, c.geom[2 * i])
+            lo_y = min(lo_y, c.geom[2 * i + 1])
+            hi_y = max(hi_y, c.geom[2 * i + 1])
+    else:
+        for p in c.points:
+            lo_x = min(lo_x, p.x)
+            hi_x = max(hi_x, p.x)
+            lo_y = min(lo_y, p.y)
+            hi_y = max(hi_y, p.y)
+    if lo_x > hi_x:
+        return (Point2D(0.0, 0.0), Vector2D(0.0, 0.0))
+    return (
+        Point2D((lo_x + hi_x) / 2.0, (lo_y + hi_y) / 2.0),
+        Vector2D((hi_x - lo_x) / 2.0, (hi_y - lo_y) / 2.0),
+    )
 
 
 def clear_command(color: Color) -> RenderCommand:

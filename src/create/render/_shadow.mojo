@@ -153,6 +153,8 @@ def shadow_command(c: RenderCommand, scale: Float64) -> RenderCommand:
     var s = c.copy()
     s.transform = shadow_transform(c, scale)
     s.style.shadow_enabled = False
+    # A shadow is one colour: the fill's gradient stays with the shape.
+    s.style.fill_gradient = None
     var color = c.style.shadow_color
     var spread = c.style.shadow_spread
 

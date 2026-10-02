@@ -9,6 +9,7 @@ from create.render.color import Color
 from create.render.gradient import Gradient
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
+from create.math.matrix import apply, inverse, rotate, scale, translate
 
 
 comptime CENTER = Point2D(0.0, 0.0)
@@ -192,6 +193,66 @@ def test_prints_as_source() raises -> None:
             " center=Point2D(0.5, 0.0))"
         ),
     )
+
+
+def _check_mapping(g: Gradient) raises:
+    # A device mapping is `_t_at` seen through the inverse transform, for any
+    # transform: compare the two at a few device pixels.
+    var m = translate(50.0, 40.0) @ rotate(0.7) @ scale(3.0, 2.0)
+    var minv = inverse(m)
+    var center = Point2D(5.0, -2.0)
+    var half = Vector2D(12.0, 7.0)
+    var mapping = g._device_mapping(minv, center, half)
+    for p in [(0.5, 0.5), (60.5, 10.5), (13.5, 77.5)]:
+        var local = apply(minv, p[0], p[1])
+        assert_almost_equal(
+            mapping.t(p[0], p[1]),
+            g._t_at(Point2D(local[0], local[1]), center, half),
+            atol=1e-9,
+        )
+
+
+def test_device_mapping_matches_t_at_linear() raises -> None:
+    _check_mapping(
+        Gradient.linear(Color.RED, Color.BLUE, direction=Vector2D(1.0, -2.0))
+    )
+
+
+def test_device_mapping_matches_t_at_radial() raises -> None:
+    _check_mapping(Gradient.radial(Color.RED, Color.BLUE, center=(0.3, -0.6)))
+
+
+def test_device_mapping_of_a_zero_direction_is_the_first_stop() raises -> None:
+    var g = Gradient.linear(Color.RED, Color.BLUE, direction=Vector2D.ZERO)
+    var mapping = g._device_mapping(inverse(rotate(0.3)), CENTER, SQUARE)
+    assert_equal(g._sample(mapping.t(7.5, 3.5), 7, 3), Color.RED)
+
+
+def test_sample_leaves_exact_colours_alone() raises -> None:
+    # Dithering only ever rounds a fraction: a colour the ramp holds exactly
+    # comes out as itself at every pixel of the 4x4 pattern.
+    var g = Gradient.linear(Color(10, 20, 30, 40), Color(10, 20, 30, 40))
+    for y in range(4):
+        for x in range(4):
+            assert_equal(g._sample(0.5, x, y), Color(10, 20, 30, 40))
+    var ends = Gradient.linear(Color.RED, Color.BLUE)
+    assert_equal(ends._sample(-1.0, 0, 0), Color.RED)
+    assert_equal(ends._sample(2.0, 3, 3), Color.BLUE)
+
+
+def test_sample_dithers_between_levels() raises -> None:
+    # Half way between two neighbouring levels, the 4x4 pattern paints half
+    # its pixels one level and half the other.
+    var g = Gradient.linear(Color(0, 0, 0), Color(255, 255, 255))
+    var t = 100.5 / 255.0
+    var high = 0
+    for y in range(4):
+        for x in range(4):
+            var c = g._sample(t, x, y)
+            assert_true(c.r == 100 or c.r == 101)
+            if c.r == 101:
+                high += 1
+    assert_equal(high, 8)
 
 
 def main() raises:

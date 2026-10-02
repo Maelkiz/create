@@ -18,6 +18,7 @@ from ._command import (
     CMD_SECTOR,
     CMD_POLYGON,
     RenderCommand,
+    _fill_box,
 )
 from ._curve import (
     PlacedMask,
@@ -34,6 +35,7 @@ from ._blur import (
     shadow_mask_key,
 )
 from ._raster import (
+    FillPaint,
     blend,
     blit_alpha,
     blit_sprite,
@@ -96,7 +98,7 @@ def device_bounds(
 
 def _fill_quads[
     o: Origin[mut=True]
-](s: Surface[o], corners: List[Point2D], color: Color):
+](s: Surface[o], corners: List[Point2D], color: FillPaint):
     """Fill each quad of `corners`, four corners apiece, with `fill_quad`.
     Quads sharing an edge composite once, by its half-open rule."""
     for q in range(0, len(corners), 4):
@@ -113,6 +115,18 @@ def _fill_quads[
             corners[q + 3].y,
         ]
         fill_quad(s, qx, qy, color)
+
+
+def _fill_paint(c: RenderCommand, m: Matrix[3, 3]) -> FillPaint:
+    """What `c`'s fill paints, for a command mapped to device pixels by `m`:
+    its colour, or its gradient placed over its `_fill_box`."""
+    if not c.style.fill_gradient:
+        return c.style.fill_color
+    ref gradient = c.style.fill_gradient.value()
+    var box = _fill_box(c)
+    return FillPaint(
+        gradient, gradient._device_mapping(inverse(m), box[0], box[1])
+    )
 
 
 def _blurred_shadow[
@@ -389,7 +403,7 @@ def _circle_arc_row[
     full_fill: Bool,
     outline_visible: Bool,
     fill_enabled: Bool,
-    fill_col: Color,
+    fill_col: FillPaint,
     outline_col: Color,
 ):
     """One row of a circle (or a rounded rect's corner quarter-disc,
@@ -1216,7 +1230,7 @@ struct Backend(Movable):
             var ih = Int(abs(p1[1] - p0[1]))
             if r_local <= 0.0:
                 if c.style._fill_visible():
-                    fill_pixels(s, x0, y0, x0 + iw, y0 + ih, c.style.fill_color)
+                    fill_pixels(s, x0, y0, x0 + iw, y0 + ih, _fill_paint(c, m))
                 if c.style._outline_visible():
                     var sw = outline_thickness_px(c.style, m, scale)
                     var sc = c.style.outline_color
@@ -1238,7 +1252,7 @@ struct Backend(Movable):
                 var pr_i = Int(pr)
                 var fill_enabled = c.style._fill_visible()
                 var outline_enabled = c.style._outline_visible()
-                var fill_col = c.style.fill_color
+                var fill_col = _fill_paint(c, m)
                 var outline_col = c.style.outline_color
                 var sw = outline_thickness_px(
                     c.style, m, scale
@@ -1382,7 +1396,7 @@ struct Backend(Movable):
             if r_local <= 0.0:
                 var fill_enabled = c.style._fill_visible()
                 var outline_enabled = c.style._outline_visible()
-                var fill_col = c.style.fill_color
+                var fill_col = _fill_paint(c, m)
                 var outline_col = c.style.outline_color
                 for row in range(b[1], b[3]):
                     var local0 = mat_apply(minv, Float64(b[0]), Float64(row))
@@ -1471,7 +1485,7 @@ struct Backend(Movable):
                 # negative radius.
                 var fill_enabled = c.style._fill_visible()
                 var outline_enabled = c.style._outline_visible()
-                var fill_col = c.style.fill_color
+                var fill_col = _fill_paint(c, m)
                 var outline_col = c.style.outline_color
                 var r2 = r_local * r_local
                 var a = step_x * step_x + step_y * step_y
@@ -1609,7 +1623,7 @@ struct Backend(Movable):
             )
             var fill_enabled = c.style._fill_visible()
             var outline_enabled = c.style._outline_visible()
-            var fill_col = c.style.fill_color
+            var fill_col = _fill_paint(c, m)
             var outline_col = c.style.outline_color
             for row in range(y0, y1):
                 var dy = Float64(row) - pcy
@@ -1645,7 +1659,7 @@ struct Backend(Movable):
             var step_y = minv[1, 0]
             var fill_enabled = c.style._fill_visible()
             var outline_enabled = c.style._outline_visible()
-            var fill_col = c.style.fill_color
+            var fill_col = _fill_paint(c, m)
             var outline_col = c.style.outline_color
             var full_fill = not outline_enabled or r_inner <= 0.0
             var a = step_x * step_x + step_y * step_y
@@ -1744,7 +1758,7 @@ struct Backend(Movable):
         each: the two share their edges, so every pixel is composited once."""
         var quads = sector_quads(c, m, scale)
         if c.style._fill_visible():
-            _fill_quads(s, quads.fill, c.style.fill_color)
+            _fill_quads(s, quads.fill, _fill_paint(c, m))
         if c.style._outline_visible():
             _fill_quads(s, quads.outline, c.style.outline_color)
 
@@ -1761,7 +1775,7 @@ struct Backend(Movable):
         does."""
         var quads = polygon_quads(c, m, scale)
         if c.style._fill_visible():
-            _fill_quads(s, quads.fill, c.style.fill_color)
+            _fill_quads(s, quads.fill, _fill_paint(c, m))
         if c.style._outline_visible():
             _fill_quads(s, quads.outline, c.style.outline_color)
 
@@ -1798,7 +1812,7 @@ struct Backend(Movable):
                     p2[1],
                     p3[0],
                     p3[1],
-                    c.style.fill_color,
+                    _fill_paint(c, m),
                 )
             if c.style._outline_visible():
                 var sw = outline_thickness_px(c.style, m, scale)
@@ -1810,7 +1824,7 @@ struct Backend(Movable):
 
         var fill_enabled = c.style._fill_visible()
         var outline_enabled = c.style._outline_visible()
-        var fill_col = c.style.fill_color
+        var fill_col = _fill_paint(c, m)
         var outline_col = c.style.outline_color
         var W = s.width
         var x_min = max(Int(floor(min(min(p1[0], p2[0]), p3[0]))), 0)

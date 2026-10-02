@@ -5,6 +5,7 @@ from std.sys import is_big_endian
 from .blend_mode import BlendMode
 from .color import Color
 from .font import _GlyphInfo
+from .gradient import Gradient, _DeviceMapping
 from .surface import Surface
 
 
@@ -220,6 +221,77 @@ def fill_span[
         i += 1
 
 
+@fieldwise_init
+struct _Shader(Copyable, ImplicitlyCopyable, Movable):
+    """A gradient placed in device pixels: what a gradient fill samples."""
+
+    var gradient: Gradient
+    var mapping: _DeviceMapping
+
+
+struct FillPaint(Copyable, ImplicitlyCopyable, Movable):
+    """What a fill's runs paint: one colour, or a gradient sampled per pixel.
+
+    `fill_span`, `fill_pixels`, `fill_quad` and `fill_triangle` take one, and
+    a `Color` converts implicitly, so a caller painting an outline or a
+    shadow passes its colour as before; only the fill-colour call sites build
+    a gradient one. The choice is made once per run, never per pixel of a
+    solid fill, and a solid one is no more than its colour and a flag.
+    """
+
+    var color: Color
+    var shader: Optional[_Shader]
+
+    @implicit
+    @always_inline
+    def __init__(out self, color: Color):
+        self.color = color
+        self.shader = None
+
+    def __init__(out self, gradient: Gradient, mapping: _DeviceMapping):
+        self.color = Color.TRANSPARENT
+        self.shader = _Shader(gradient, mapping)
+
+    def _paints_nothing(self) -> Bool:
+        if self.shader:
+            return not self.shader.value().gradient._visible()
+        return self.color.a == 0
+
+
+def _shade_span[
+    o: Origin[mut=True]
+](s: Surface[o], off: Int, count: Int, gradient: Gradient, m: _DeviceMapping):
+    """`fill_span` for a gradient: each pixel's colour from its centre's
+    parameter, composited one at a time through `blend`. The parameter's
+    inputs step by a constant per pixel along the row, so only a radial
+    gradient pays a `sqrt` per pixel."""
+    var index = off // 4
+    var y = index // s.width
+    var x0 = index - y * s.width
+    var xc = Float64(x0) + 0.5
+    var yc = Float64(y) + 0.5
+    var u = m.u[0] * xc + m.u[1] * yc + m.u[2]
+    var v = m.v[0] * xc + m.v[1] * yc + m.v[2]
+    for i in range(count):
+        var t = sqrt(u * u + v * v) if m.radial else u
+        blend(s, off + i * 4, gradient._sample(t, x0 + i, y))
+        u += m.u[0]
+        v += m.v[0]
+
+
+@always_inline
+def fill_span[
+    o: Origin[mut=True]
+](s: Surface[o], off: Int, count: Int, paint: FillPaint):
+    """`fill_span` for a `FillPaint`: the colour's own loop, or the
+    gradient's."""
+    if paint.shader:
+        ref shader = paint.shader.value()
+        _shade_span(s, off, count, shader.gradient, shader.mapping)
+    else:
+        fill_span(s, off, count, paint.color)
+
+
 def fill_all[o: Origin[mut=True]](s: Surface[o], c: Color):
     """Composite `c` over every pixel — the whole frame, no clipping needed."""
     fill_span(s, 0, s.width * s.height, c)
@@ -227,12 +299,12 @@ def fill_all[o: Origin[mut=True]](s: Surface[o], c: Color):
 
 def fill_pixels[
     o: Origin[mut=True]
-](s: Surface[o], x0: Int, y0: Int, x1: Int, y1: Int, c: Color):
+](s: Surface[o], x0: Int, y0: Int, x1: Int, y1: Int, c: FillPaint):
     """Fill the half-open device-space rect `[x0, x1) x [y0, y1)`, clipped.
 
     Clipped once for the whole rect, then one `fill_span` per row.
     """
-    if c.a == 0:
+    if c._paints_nothing():
         return
     var W = s.width
     var r0 = max(y0, 0)
@@ -240,6 +312,12 @@ def fill_pixels[
     var c0 = max(x0, 0)
     var c1 = min(x1, W)
     if c1 <= c0:
+        return
+    if not c.shader:
+        # Solid, decided once for the whole rect rather than per row.
+        var color = c.color
+        for row in range(r0, r1):
+            fill_span(s, (row * W + c0) * 4, c1 - c0, color)
         return
     for row in range(r0, r1):
         fill_span(s, (row * W + c0) * 4, c1 - c0, c)
@@ -286,7 +364,7 @@ def line_pixels[
 
 def fill_quad[
     o: Origin[mut=True]
-](s: Surface[o], qx: Array[Float64, 4], qy: Array[Float64, 4], c: Color):
+](s: Surface[o], qx: Array[Float64, 4], qy: Array[Float64, 4], c: FillPaint):
     """Fill the convex device quad with corners `(qx[i], qy[i])`, in order
     around its edge, by pixel centre.
 
@@ -339,7 +417,7 @@ def fill_triangle[
     y2: Float64,
     x3: Float64,
     y3: Float64,
-    c: Color,
+    c: FillPaint,
 ):
     """Fill a device-space triangle by scanline span.
 
