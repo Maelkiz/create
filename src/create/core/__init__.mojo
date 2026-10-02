@@ -5,6 +5,8 @@ from .key import Key
 from .input import Input
 from .editable_text import EditableText
 from .mouse_button import MouseButton
+from .gamepad import Gamepad
+from .gamepad_button import GamepadButton
 from .path import source_path
 from .program import Program
 from .window_mode import WindowMode

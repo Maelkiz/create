@@ -4,10 +4,12 @@ from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 from .key import Key, _KeySet
 from .mouse_button import MouseButton
+from .gamepad import Gamepad
 
 
 struct Input(Copyable, Movable):
-    """Keyboard and mouse state for one frame, read as `context.input`.
+    """Keyboard, mouse and gamepad state for one frame, read as
+    `context.input`.
 
     The whole input surface — there are no event callbacks, because every
     window event either lands on a field here or is already reflected in
@@ -43,6 +45,10 @@ struct Input(Copyable, Movable):
     `text` is what those keys wrote, as characters rather than keys: shift,
     the keyboard layout and any IME already applied. A text field appends
     `text` and handles Backspace, Enter and the arrows through `key_typed`.
+
+    Gamepads are read by player through `gamepad(index)`. Each pad takes the
+    lowest free slot as it connects and keeps it until it disconnects, so
+    unplugging player one leaves player two where they were.
     """
 
     # Keycode of the most recent key press, compared against `Key` (0 before
@@ -75,6 +81,9 @@ struct Input(Copyable, Movable):
     var _held_buttons: Int
     var _pressed_buttons: Int
     var _released_buttons: Int
+    # One slot per player; a disconnected pad leaves a `Gamepad()` behind
+    # for the next one to connect.
+    var _gamepads: List[Gamepad]
 
     def __init__(out self):
         self.key = 0
@@ -92,10 +101,11 @@ struct Input(Copyable, Movable):
         self._held_buttons = 0
         self._pressed_buttons = 0
         self._released_buttons = 0
+        self._gamepads = []
 
     def _new_frame(mut self):
         """Clears the per-frame edge state: pressed/released/typed keys and
-        buttons, the typed text and the scroll delta. Called once per frame before events are
+        buttons (gamepads' too), the typed text and the scroll delta. Called once per frame before events are
         processed, so a press held across frames stays in `_held_keys`/
         `_held_buttons` but drops out of the pressed bits after the frame it
         happened in."""
@@ -106,6 +116,8 @@ struct Input(Copyable, Movable):
         self.mouse_wheel = Vector2D(0, 0)
         self._pressed_buttons = 0
         self._released_buttons = 0
+        for i in range(len(self._gamepads)):
+            self._gamepads[i]._new_frame()
 
     def _set_mouse(mut self, x: Float64, y: Float64):
         """Record a screen-space pointer position.
@@ -221,3 +233,38 @@ struct Input(Copyable, Movable):
     def mouse_released(self, button: Int = MouseButton.LEFT) -> Bool:
         """Whether this mouse button came up this frame — true once."""
         return (self._released_buttons & (1 << button)) != 0
+
+    def gamepad(self, index: Int = 0) -> Gamepad:
+        """The gamepad in slot `index` — player one is 0, the default, so a
+        one-player program needs no argument.
+
+        A slot no gamepad holds reads as a disconnected `Gamepad()`, all
+        zero and nothing down, so this never fails and needs no check first.
+        """
+        if 0 <= index < len(self._gamepads):
+            return self._gamepads[index]
+        return Gamepad()
+
+    def _gamepad_slot(self, id: Int) -> Int:
+        """The slot of the connected pad SDL calls `id`, or -1."""
+        for i in range(len(self._gamepads)):
+            if self._gamepads[i].connected and self._gamepads[i]._id == id:
+                return i
+        return -1
+
+    def _connect_gamepad(mut self, id: Int):
+        if self._gamepad_slot(id) != -1:
+            return
+        var pad = Gamepad()
+        pad.connected = True
+        pad._id = id
+        for i in range(len(self._gamepads)):
+            if not self._gamepads[i].connected:
+                self._gamepads[i] = pad
+                return
+        self._gamepads.append(pad)
+
+    def _disconnect_gamepad(mut self, id: Int):
+        var slot = self._gamepad_slot(id)
+        if slot != -1:
+            self._gamepads[slot] = Gamepad()

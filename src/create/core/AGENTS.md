@@ -11,7 +11,7 @@ layering rules; the render side is in [../render/AGENTS.md](../render/AGENTS.md)
 | `headless.mojo`, `_headless_gl.mojo` | `run_headless` over an owned buffer, CPU and GPU |
 | `_step.mojo` | `step` — one frame's body |
 | `_events.mojo` | `apply_events` — the one `Event`-to-`Input` fold, into `context.input` |
-| `context.mojo`, `time.mojo`, `input.mojo`, `key.mojo`, `mouse_button.mojo` | The run state the loop owns and the program reads: `Context` and its `time` and `input` readings |
+| `context.mojo`, `time.mojo`, `input.mojo`, `key.mojo`, `mouse_button.mojo`, `gamepad.mojo`, `gamepad_button.mojo` | The run state the loop owns and the program reads: `Context` and its `time` and `input` readings |
 | `editable_text.mojo` | `EditableText`, a caret-editing line fed from `Input`. Not run state: the program owns one per field |
 | `date_time.mojo` | `DateTime`, the wall clock via libc `clock_gettime` + `localtime_r`. Not run state: nothing in the loop touches it |
 
@@ -29,6 +29,12 @@ the dials reach `render` in one place.
 
 `Input._set_mouse(x, y)` is the only writer of `mouse`/`mouse_x`/`mouse_y`; every event arm that
 carries a position calls it and adds only what is its own.
+
+**Gamepads are opened in `_window`, read in `core`.** SDL sends no axis or button events for a pad
+until it is opened, so both windows' `events()` call `track_gamepad` (open on added, close on
+removed) before translating; `apply_events` only assigns slots by SDL's id. The gamepad subsystem is
+best-effort: `SDL.init_subsystems` raises only if video fails, and a refused gamepad subsystem just
+means no gamepad events.
 
 **Take the CPU `Surface` after event processing**, sized from the window, never the viewport:
 `Window._resize` reallocates the buffer during events, and a stale extent defeats every raster loop's

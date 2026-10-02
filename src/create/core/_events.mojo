@@ -12,6 +12,11 @@ The window itself is deliberately absent: the arms only ever need to say
 
 from create._window.event import (
     Event,
+    GamepadAdded,
+    GamepadAxisMoved,
+    GamepadButtonDown,
+    GamepadButtonUp,
+    GamepadRemoved,
     KeyDown,
     KeyUp,
     MouseButtonDown,
@@ -106,6 +111,25 @@ def apply_events(
         elif event.isa[MouseWheel]():
             var e = event[MouseWheel]
             input.mouse_wheel = Vector2D(Float64(e.x), Float64(e.y))
+        elif event.isa[GamepadAdded]():
+            input._connect_gamepad(event[GamepadAdded].id)
+        elif event.isa[GamepadRemoved]():
+            input._disconnect_gamepad(event[GamepadRemoved].id)
+        elif event.isa[GamepadAxisMoved]():
+            var e = event[GamepadAxisMoved]
+            var slot = input._gamepad_slot(e.id)
+            if slot != -1:
+                input._gamepads[slot]._set_axis(e.axis, e.value)
+        elif event.isa[GamepadButtonDown]():
+            var e = event[GamepadButtonDown]
+            var slot = input._gamepad_slot(e.id)
+            if slot != -1:
+                input._gamepads[slot]._press(e.button)
+        elif event.isa[GamepadButtonUp]():
+            var e = event[GamepadButtonUp]
+            var slot = input._gamepad_slot(e.id)
+            if slot != -1:
+                input._gamepads[slot]._release(e.button)
         elif event.isa[Resized]():
             pass  # The viewport is re-derived every frame regardless.
     return quit
