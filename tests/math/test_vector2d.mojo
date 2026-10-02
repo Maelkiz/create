@@ -28,15 +28,24 @@ def test_init_tuple() raises -> None:
 
 
 def test_zero() raises -> None:
-    var v = Vector2D.zero()
+    var v = Vector2D.ZERO
     assert_equal(v.x, 0.0)
     assert_equal(v.y, 0.0)
 
 
 def test_one() raises -> None:
-    var v = Vector2D.one()
+    var v = Vector2D.ONE
     assert_equal(v.x, 1.0)
     assert_equal(v.y, 1.0)
+
+
+def test_directions() raises -> None:
+    assert_equal(Vector2D.UP, Vector2D(0.0, 1.0))
+    assert_equal(Vector2D.DOWN, Vector2D(0.0, -1.0))
+    assert_equal(Vector2D.LEFT, Vector2D(-1.0, 0.0))
+    assert_equal(Vector2D.RIGHT, Vector2D(1.0, 0.0))
+    assert_equal(Vector2D.UP, -Vector2D.DOWN)
+    assert_equal(Vector2D.LEFT, -Vector2D.RIGHT)
 
 
 def test_add() raises -> None:
@@ -164,7 +173,7 @@ def test_write_to_contains_type_name() raises -> None:
 
 
 def test_normalize_zero_vector_is_nan() raises -> None:
-    var n = Vector2D.zero().normalize()
+    var n = Vector2D.ZERO.normalize()
     assert_true(isnan(n.x))
     assert_true(isnan(n.y))
 

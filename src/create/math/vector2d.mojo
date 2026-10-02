@@ -17,6 +17,10 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     `Point2D` parameter; the explicit tuple constructors take them the rest of
     the way: `Vector3D(v.xyz())`. Having to name the accessor is what keeps
     the conversion visible.
+
+    The direction constants follow the screen's axes, y up: `UP` is
+    `Vector2D(0, 1)` and `DOWN` is `Vector2D(0, -1)`, so gravity is
+    `Vector2D.DOWN * 9.81`.
     """
 
     var x: Float64
@@ -31,14 +35,6 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     def __init__(out self, t: Tuple[Float64, Float64]):
         self = Vector2D(t[0], t[1])
-
-    @staticmethod
-    def zero() -> Vector2D:
-        return Vector2D(0.0, 0.0)
-
-    @staticmethod
-    def one() -> Vector2D:
-        return Vector2D(1.0, 1.0)
 
     def __add__(self, other: Vector2D) -> Vector2D:
         return Vector2D(self.x + other.x, self.y + other.y)
@@ -109,3 +105,11 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     def xyz(self, z: Float64 = 0.0) -> Tuple[Float64, Float64, Float64]:
         return (self.x, self.y, z)
+
+    comptime ZERO = Vector2D(0.0, 0.0)
+    comptime ONE = Vector2D(1.0, 1.0)
+
+    comptime UP = Vector2D(0.0, 1.0)
+    comptime DOWN = Vector2D(0.0, -1.0)
+    comptime LEFT = Vector2D(-1.0, 0.0)
+    comptime RIGHT = Vector2D(1.0, 0.0)

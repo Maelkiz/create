@@ -31,14 +31,6 @@ struct Vector3D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def __init__(out self, t: Tuple[Float64, Float64, Float64]):
         self = Vector3D(t[0], t[1], t[2])
 
-    @staticmethod
-    def zero() -> Vector3D:
-        return Vector3D(0.0, 0.0, 0.0)
-
-    @staticmethod
-    def one() -> Vector3D:
-        return Vector3D(1.0, 1.0, 1.0)
-
     def __add__(self, other: Vector3D) -> Vector3D:
         return Vector3D(self.x + other.x, self.y + other.y, self.z + other.z)
 
@@ -121,3 +113,6 @@ struct Vector3D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     def xyz(self) -> Tuple[Float64, Float64, Float64]:
         return (self.x, self.y, self.z)
+
+    comptime ZERO = Vector3D(0.0, 0.0, 0.0)
+    comptime ONE = Vector3D(1.0, 1.0, 1.0)

@@ -31,14 +31,14 @@ def test_init_tuple() raises -> None:
 
 
 def test_zero() raises -> None:
-    var v = Vector3D.zero()
+    var v = Vector3D.ZERO
     assert_equal(v.x, 0.0)
     assert_equal(v.y, 0.0)
     assert_equal(v.z, 0.0)
 
 
 def test_one() raises -> None:
-    var v = Vector3D.one()
+    var v = Vector3D.ONE
     assert_equal(v.x, 1.0)
     assert_equal(v.y, 1.0)
     assert_equal(v.z, 1.0)
@@ -201,7 +201,7 @@ def test_write_to_contains_type_name() raises -> None:
 
 
 def test_normalize_zero_vector_is_nan() raises -> None:
-    var n = Vector3D.zero().normalize()
+    var n = Vector3D.ZERO.normalize()
     assert_true(isnan(n.x))
     assert_true(isnan(n.y))
     assert_true(isnan(n.z))
