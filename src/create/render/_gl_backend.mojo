@@ -104,6 +104,7 @@ from ._image import _Image
 from ._tessellate import (
     MODE_SOLID,
     VertexBuffer,
+    _shade_fill,
     emit_bezier,
     emit_blurred_shadow,
     emit_circle,
@@ -773,7 +774,11 @@ struct GLRenderer(Movable):
         # A fill gradient's ramp row is looked up before its command emits
         # anything: claiming a row can flush the batch.
         if c.kind == CMD_CLEAR:
-            self._clear(c.style.fill_color, width, height)
+            if c.style.fill_gradient:
+                var row = self._ramp_row(c)
+                self._clear_gradient(c, row, width, height)
+            else:
+                self._clear(c.style.fill_color, width, height)
         elif c.kind == CMD_RECT:
             var row = self._ramp_row(c)
             emit_rect(self.vertices, c, scale, row)
@@ -1090,6 +1095,20 @@ struct GLRenderer(Movable):
         var w = Float64(width)
         var h = Float64(height)
         self.vertices.quad(0.0, 0.0, w, 0.0, w, h, 0.0, h, color)
+
+    def _clear_gradient(
+        mut self, c: RenderCommand, row: Int, width: Int, height: Int
+    ) raises:
+        """A gradient `CMD_CLEAR`: one framebuffer-sized quad, shaded like a
+        gradient fill. Never a `glClear`, which takes one colour, but an
+        opaque gradient composited over the frame replaces it all the same,
+        and it batches with what is around it."""
+        self._blend_mode(BlendMode.NORMAL)
+        var w = Float64(width)
+        var h = Float64(height)
+        var first = self.vertices.count()
+        self.vertices.quad(0.0, 0.0, w, 0.0, w, h, 0.0, h, Color.TRANSPARENT)
+        _shade_fill(self.vertices, first, c, row)
 
     def _blend_mode(mut self, mode: BlendMode) raises:
         """Set the GL blend state for `mode`, flushing first if that changes

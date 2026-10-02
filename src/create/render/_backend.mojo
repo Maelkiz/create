@@ -18,6 +18,7 @@ from ._command import (
     CMD_SECTOR,
     CMD_POLYGON,
     RenderCommand,
+    _clear_is_opaque,
     _fill_box,
 )
 from ._curve import (
@@ -943,7 +944,7 @@ struct Backend(Movable):
         `background()` records one clear, not two.
         """
         if (
-            c.style.fill_color.a == 255
+            _clear_is_opaque(c)
             and len(self.commands) > 0
             and self.commands[len(self.commands) - 1].kind == CMD_CLEAR
         ):
@@ -1170,7 +1171,12 @@ struct Backend(Movable):
                     c.style.shadow_color,
                 )
         if c.kind == CMD_CLEAR:
-            fill_all(t, c.style.fill_color)
+            if c.style.fill_gradient:
+                var paint = _fill_paint(c, m)
+                for row in range(t.height):
+                    fill_span(t, row * t.width * 4, t.width, paint)
+            else:
+                fill_all(t, c.style.fill_color)
         elif c.kind == CMD_RECT:
             self._rect(t, c, scale, m)
         elif c.kind == CMD_CIRCLE:

@@ -1,4 +1,5 @@
 from .color import Color, _scaled_alpha
+from .gradient import Gradient
 from .style import Style
 from create.math.bezier import Bezier
 from create.math.matrix import Matrix, identity
@@ -57,7 +58,7 @@ struct RenderCommand(Copyable, Movable):
 
     | kind | 0 | 1 | 2 | 3 | 4 | 5 |
     |---|---|---|---|---|---|---|
-    | `CMD_CLEAR` | — | — | — | — | — | — |
+    | `CMD_CLEAR` | `x` | `y` | `w` | `h` | — | — |
     | `CMD_RECT` | `x` | `y` | `w` | `h` | — | — |
     | `CMD_CIRCLE` | `cx` | `cy` | `r` | — | — | — |
     | `CMD_LINE` | `x0` | `y0` | `x1` | `y1` | — | — |
@@ -157,7 +158,7 @@ def _fill_box(c: RenderCommand) -> Tuple[Point2D, Vector2D]:
     a polygon span their vertices' bounds. Both replays read this, so they
     agree on where a gradient lies.
     """
-    if c.kind == CMD_RECT:
+    if c.kind == CMD_RECT or c.kind == CMD_CLEAR:
         return (
             Point2D(c.geom[0], c.geom[1]),
             Vector2D(c.geom[2] / 2.0, c.geom[3] / 2.0),
@@ -195,6 +196,27 @@ def clear_command(color: Color) -> RenderCommand:
     s.fill_color = color
     s.fill_enabled = True
     return RenderCommand(CMD_CLEAR, identity[3](), s)
+
+
+def clear_command(
+    gradient: Gradient, screen: Matrix[3, 3], w: Float64, h: Float64
+) -> RenderCommand:
+    """Paint the whole framebuffer with `gradient`, spread over the `w` x `h`
+    screen-space area centred on the origin — the design area — which
+    `screen` maps to pixels. Beyond that area, as in the letterbox, its end
+    colours carry on. The geometry is the rectangle's, which is the box
+    `_fill_box` reads."""
+    var s = Style()
+    s.fill_gradient = gradient
+    s.fill_enabled = True
+    return RenderCommand(CMD_CLEAR, screen, s, 0.0, 0.0, w, h)
+
+
+def _clear_is_opaque(c: RenderCommand) -> Bool:
+    """Whether the clear `c` hides everything under it."""
+    if c.style.fill_gradient:
+        return c.style.fill_gradient.value()._opaque()
+    return c.style.fill_color.a == 255
 
 
 def rect_command(

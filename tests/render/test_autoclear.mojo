@@ -120,5 +120,31 @@ def test_autoclear_records_nothing_when_off() raises -> None:
     assert_equal(len(out.backend.commands), 0)
 
 
+def _commands_after_background(gradient: Gradient) raises -> Int:
+    var context = Context()
+    var state = PersistentCanvasState()
+    context._set_viewport(state, 200, 100)
+    var canvas = context._new_canvas(state^)
+    canvas.background(gradient)
+    var out = canvas^._release()
+    return len(out.backend.commands)
+
+
+def test_an_opaque_gradient_background_replaces_the_autoclear() raises -> None:
+    assert_equal(
+        _commands_after_background(Gradient.linear(Color.RED, Color.BLUE)), 1
+    )
+
+
+def test_a_translucent_gradient_background_keeps_both() raises -> None:
+    # One translucent stop is enough: somewhere, the clear shows through.
+    assert_equal(
+        _commands_after_background(
+            Gradient.linear(Color.RED, Color.BLUE.with_alpha(254))
+        ),
+        2,
+    )
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

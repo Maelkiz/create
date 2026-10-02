@@ -602,6 +602,26 @@ struct Canvas:
         """
         self._state.backend.record_clear(clear_command(color))
 
+    def background(mut self, gradient: Gradient):
+        """Paint the whole framebuffer with `gradient` — a sky, a vignette.
+
+        It spans the screen, `left()` to `right()` and `bottom()` to
+        `top()`, whatever the camera is doing; under `EXTEND` that is the
+        whole window. Where `FIT` leaves letterbox bars, the bars are painted
+        over it as usual.
+
+        Like a colour, it replaces `context.autoclear`'s clear if every stop
+        is opaque, and blends over what is there otherwise.
+        """
+        self._state.backend.record_clear(
+            clear_command(
+                gradient,
+                self._base,
+                Float64(self.width),
+                Float64(self.height),
+            )
+        )
+
     def save_image(
         mut self,
         path: String,
