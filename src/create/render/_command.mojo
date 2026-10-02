@@ -1,4 +1,4 @@
-from .color import Color
+from .color import Color, _scaled_alpha
 from .style import Style
 from create.math.bezier import Bezier
 from create.math.matrix import Matrix, identity
@@ -30,12 +30,6 @@ zero for a render call, a shadow's spread otherwise."""
 
 comptime _GEOM_SLOTS = 6
 """Widest fixed geometry any kind needs: a triangle's three corners."""
-
-
-def _scaled_alpha(color: Color, opacity: Float64) -> Color:
-    """`color` with its alpha multiplied by `opacity`, clamped to `UInt8`."""
-    var a = Float64(color.a) * opacity
-    return Color(color.r, color.g, color.b, UInt8(max(0.0, min(255.0, a))))
 
 
 struct RenderCommand(Copyable, Movable):

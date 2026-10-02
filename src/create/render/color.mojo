@@ -32,6 +32,12 @@ def _mix(a: UInt8, b: UInt8, t: Float64) -> UInt8:
     return UInt8(Int(fa + (fb - fa) * t + 0.5))
 
 
+def _scaled_alpha(color: Color, opacity: Float64) -> Color:
+    """`color` with its alpha multiplied by `opacity`, clamped to `UInt8`."""
+    var a = Float64(color.a) * opacity
+    return Color(color.r, color.g, color.b, UInt8(max(0.0, min(255.0, a))))
+
+
 struct Color(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     var r: UInt8
     var g: UInt8
