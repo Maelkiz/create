@@ -17,8 +17,13 @@ from create._window import (
     MouseButtonDown,
     MouseButtonUp,
     MouseWheel,
+    GamepadAdded,
+    GamepadRemoved,
 )
 from create._window._sdl import (
+    SDL_EVENT_GAMEPAD_ADDED,
+    SDL_EVENT_GAMEPAD_REMOVED,
+    _OFF_GAMEPAD_ID,
     SDL,
     SDL_EVENT_QUIT,
     SDL_EVENT_WINDOW_RESIZED,
@@ -180,6 +185,30 @@ def test_mouse_wheel_delivers() raises -> None:
     assert_true(events[0].isa[MouseWheel]())
     assert_equal(events[0][MouseWheel].x, 0)
     assert_equal(events[0][MouseWheel].y, -1)
+
+
+def test_gamepad_that_cannot_be_opened_is_not_announced() raises -> None:
+    var w = Window("t", 64, 64)
+    var buf = new_event_buffer(SDL_EVENT_GAMEPAD_ADDED)
+    write_u32(buf, _OFF_GAMEPAD_ID, 123456)
+    var sdl = SDL()
+    assert_true(sdl.push_event(buf.unsafe_ptr()))
+    for event in w.events():
+        assert_false(event.isa[GamepadAdded]())
+
+
+def test_gamepad_removed_delivers() raises -> None:
+    var w = Window("t", 64, 64)
+    var buf = new_event_buffer(SDL_EVENT_GAMEPAD_REMOVED)
+    write_u32(buf, _OFF_GAMEPAD_ID, 123456)
+    var sdl = SDL()
+    assert_true(sdl.push_event(buf.unsafe_ptr()))
+    var found = False
+    for event in w.events():
+        if event.isa[GamepadRemoved]():
+            assert_equal(event[GamepadRemoved].id, 123456)
+            found = True
+    assert_true(found)
 
 
 def main() raises:

@@ -112,7 +112,8 @@ def apply_events(
             var e = event[MouseWheel]
             input.mouse_wheel = Vector2D(Float64(e.x), Float64(e.y))
         elif event.isa[GamepadAdded]():
-            input._connect_gamepad(event[GamepadAdded].id)
+            ref added = event[GamepadAdded]
+            input._connect_gamepad(added.id, added.name)
         elif event.isa[GamepadRemoved]():
             input._disconnect_gamepad(event[GamepadRemoved].id)
         elif event.isa[GamepadAxisMoved]():

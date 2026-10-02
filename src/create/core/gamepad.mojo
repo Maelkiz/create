@@ -26,6 +26,10 @@ struct Gamepad(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     A slot that holds no gamepad reads all zero and `connected` False, so a
     program can read player two's pad before one is plugged in.
+    `connected_this_frame` and `disconnected_this_frame` are the edges of
+    `connected`, true only in the frame the pad arrived or left — the frame
+    to show "Player 2 joined" or to pause. In the frame a pad leaves, its
+    slot still has its `name`, so the message can say which.
     """
 
     comptime STICK_DEAD_ZONE = 0.2
@@ -35,6 +39,11 @@ struct Gamepad(Copyable, ImplicitlyCopyable, Movable, Writable):
     """
 
     var connected: Bool
+    var connected_this_frame: Bool
+    var disconnected_this_frame: Bool
+    # The product name, e.g. "Xbox Series X Controller" — for showing, not
+    # for telling layouts apart. Empty when SDL knows none.
+    var name: String
     var left_stick: Vector2D
     var right_stick: Vector2D
     var left_trigger: Float64
@@ -55,6 +64,9 @@ struct Gamepad(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     def __init__(out self):
         self.connected = False
+        self.connected_this_frame = False
+        self.disconnected_this_frame = False
+        self.name = ""
         self.left_stick = Vector2D.ZERO
         self.right_stick = Vector2D.ZERO
         self.left_trigger = 0.0
@@ -71,6 +83,12 @@ struct Gamepad(Copyable, ImplicitlyCopyable, Movable, Writable):
         writer.write(
             "Gamepad(connected=",
             self.connected,
+            ", connected_this_frame=",
+            self.connected_this_frame,
+            ", disconnected_this_frame=",
+            self.disconnected_this_frame,
+            ", name=",
+            repr(self.name),
             ", left_stick=",
             self.left_stick,
             ", right_stick=",
@@ -99,6 +117,11 @@ struct Gamepad(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _new_frame(mut self):
         self._pressed_buttons = 0
         self._released_buttons = 0
+        self.connected_this_frame = False
+        self.disconnected_this_frame = False
+        # Kept through the frame the pad left in, for saying which one.
+        if not self.connected:
+            self.name = ""
 
     def _press(mut self, button: Int):
         if not self.button_down(button):

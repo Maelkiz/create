@@ -14,8 +14,6 @@ from create._window import (
     MouseButtonDown,
     MouseButtonUp,
     MouseWheel,
-    GamepadAdded,
-    GamepadRemoved,
     GamepadAxisMoved,
     GamepadButtonDown,
     GamepadButtonUp,
@@ -146,16 +144,17 @@ def test_mouse_wheel_translates() raises -> None:
     assert_equal(e[MouseWheel].y, -1)
 
 
-def test_gamepad_added_and_removed_translate() raises -> None:
-    var added = new_event_buffer(SDL_EVENT_GAMEPAD_ADDED)
-    write_u32(added, _OFF_GAMEPAD_ID, 7)
-    var e = translate_event(SDL_EVENT_GAMEPAD_ADDED, added.unsafe_ptr()).value()
-    assert_equal(e[GamepadAdded].id, 7)
-
-    var removed = new_event_buffer(SDL_EVENT_GAMEPAD_REMOVED)
-    write_u32(removed, _OFF_GAMEPAD_ID, 7)
-    e = translate_event(SDL_EVENT_GAMEPAD_REMOVED, removed.unsafe_ptr()).value()
-    assert_equal(e[GamepadRemoved].id, 7)
+def test_gamepad_added_and_removed_are_left_to_the_window() raises -> None:
+    """They need SDL to open or close the pad, so `translate_gamepad_device`
+    takes them instead."""
+    var buf = new_event_buffer(SDL_EVENT_GAMEPAD_ADDED)
+    write_u32(buf, _OFF_GAMEPAD_ID, 7)
+    assert_false(
+        Bool(translate_event(SDL_EVENT_GAMEPAD_ADDED, buf.unsafe_ptr()))
+    )
+    assert_false(
+        Bool(translate_event(SDL_EVENT_GAMEPAD_REMOVED, buf.unsafe_ptr()))
+    )
 
 
 def _axis_event(axis: UInt8, value: Int16) raises -> GamepadAxisMoved:

@@ -92,9 +92,11 @@ struct MouseWheel(ImplicitlyCopyable, Movable):
 @fieldwise_init
 struct GamepadAdded(ImplicitlyCopyable, Movable):
     """A gamepad was connected, or was already when the window opened. `id`
-    names it in every later gamepad event until `GamepadRemoved`."""
+    names it in every later gamepad event until `GamepadRemoved`; `name` is
+    the product name SDL knows it by, empty if none."""
 
     var id: Int
+    var name: String
 
 
 @fieldwise_init
@@ -152,7 +154,8 @@ def translate_event(kind: UInt32, ptr: Pointer[UInt8, _]) -> Optional[Event]:
     Covers every event kind except `SDL_EVENT_QUIT` and
     `SDL_EVENT_WINDOW_RESIZED`, which callers handle themselves (they touch
     caller state -- `_open`, pixel buffer/dimensions -- that this free
-    function has no access to). Returns `None` for any other unrecognized
+    function has no access to), and gamepads being added or removed, which
+    `translate_gamepad_device` handles because they need SDL. Returns `None` for any other unrecognized
     event kind, same as the inline loop's `continue` used to do.
     """
     if kind == SDL_EVENT_KEY_DOWN:
@@ -177,10 +180,6 @@ def translate_event(kind: UInt32, ptr: Pointer[UInt8, _]) -> Optional[Event]:
         )
     elif kind == SDL_EVENT_MOUSE_WHEEL:
         return Event(MouseWheel(Int(wheel_x(ptr)), Int(wheel_y(ptr))))
-    elif kind == SDL_EVENT_GAMEPAD_ADDED:
-        return Event(GamepadAdded(Int(gamepad_id(ptr))))
-    elif kind == SDL_EVENT_GAMEPAD_REMOVED:
-        return Event(GamepadRemoved(Int(gamepad_id(ptr))))
     elif kind == SDL_EVENT_GAMEPAD_AXIS_MOTION:
         var value = Float64(gamepad_axis_value(ptr)) / Float64(
             SDL_JOYSTICK_AXIS_MAX
@@ -204,14 +203,25 @@ def translate_event(kind: UInt32, ptr: Pointer[UInt8, _]) -> Optional[Event]:
         return None
 
 
-def track_gamepad(sdl: SDL, kind: UInt32, ptr: Pointer[UInt8, _]) raises:
-    """Opens a gamepad as SDL announces it and closes it on removal.
+def translate_gamepad_device(
+    sdl: SDL, kind: UInt32, ptr: Pointer[UInt8, _]
+) raises -> Optional[Event]:
+    """Opens a gamepad as SDL announces it and closes it on removal, as the
+    events saying so.
 
-    The one side effect of a gamepad event, kept out of `translate_event`
-    (which has no SDL to call) and shared by `Window` and `GLWindow`, which
-    call it on every event before translating it.
+    Kept out of `translate_event` because these two need SDL: a pad sends
+    nothing until it is opened, and its name is read from the open pad. A
+    pad that could not be opened is never announced, since it will send
+    nothing; its removal still arrives and is ignored downstream. Shared by
+    `Window` and `GLWindow`, which try it before `translate_event`.
     """
     if kind == SDL_EVENT_GAMEPAD_ADDED:
-        sdl.open_gamepad(gamepad_id(ptr))
+        var id = gamepad_id(ptr)
+        if not sdl.open_gamepad(id):
+            return None
+        return Event(GamepadAdded(Int(id), sdl.gamepad_name(id)))
     elif kind == SDL_EVENT_GAMEPAD_REMOVED:
-        sdl.close_gamepad(gamepad_id(ptr))
+        var id = gamepad_id(ptr)
+        sdl.close_gamepad(id)
+        return Event(GamepadRemoved(Int(id)))
+    return None

@@ -185,18 +185,28 @@ struct SDL:
             self.lib.call["SDL_QuitSubSystem"](SDL_INIT_GAMEPAD)
         self.lib.call["SDL_QuitSubSystem"](SDL_INIT_VIDEO)
 
-    def open_gamepad(self, id: UInt32) raises:
+    def open_gamepad(self, id: UInt32) raises -> Bool:
         """Opens the gamepad SDL announced as `id`: SDL sends no axis or
-        button events for a pad until it is opened. A pad that unplugged
-        in between fails to open, which needs no handling — its removal
-        event follows."""
-        _ = self.lib.call["SDL_OpenGamepad", Int](id)
+        button events for a pad until it is opened. False if it could not
+        be — a pad unplugged in between, whose removal event follows."""
+        return self.lib.call["SDL_OpenGamepad", Int](id) != 0
 
     def close_gamepad(self, id: UInt32) raises:
         """Closes the gamepad opened as `id`, if it still is."""
         var gamepad = self.lib.call["SDL_GetGamepadFromID", Int](id)
         if gamepad != 0:
             self.lib.call["SDL_CloseGamepad"](gamepad)
+
+    def gamepad_name(self, id: UInt32) raises -> String:
+        """The open gamepad's product name, or empty if SDL has none."""
+        var name = self.lib.call["SDL_GetGamepadNameForID", Int](id)
+        if name == 0:
+            return ""
+        return String(
+            unsafe_from_utf8_ptr=Pointer[UInt8, MutUntrackedOrigin](
+                unsafe_from_address=name
+            )
+        )
 
     def create_window(
         self,

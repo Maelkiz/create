@@ -46,7 +46,7 @@ struct Input(Copyable, Movable):
     the keyboard layout and any IME already applied. A text field appends
     `text` and handles Backspace, Enter and the arrows through `key_typed`.
 
-    Gamepads are read by player through `gamepad(index)`. Each pad takes the
+    Gamepads are read by player through `gamepad(player)`. Each pad takes the
     lowest free slot as it connects and keeps it until it disconnects, so
     unplugging player one leaves player two where they were.
     """
@@ -234,15 +234,15 @@ struct Input(Copyable, Movable):
         """Whether this mouse button came up this frame — true once."""
         return (self._released_buttons & (1 << button)) != 0
 
-    def gamepad(self, index: Int = 0) -> Gamepad:
-        """The gamepad in slot `index` — player one is 0, the default, so a
+    def gamepad(self, player: Int = 0) -> Gamepad:
+        """The gamepad in slot `player` — player one is 0, the default, so a
         one-player program needs no argument.
 
         A slot no gamepad holds reads as a disconnected `Gamepad()`, all
         zero and nothing down, so this never fails and needs no check first.
         """
-        if 0 <= index < len(self._gamepads):
-            return self._gamepads[index]
+        if 0 <= player < len(self._gamepads):
+            return self._gamepads[player]
         return Gamepad()
 
     def _gamepad_slot(self, id: Int) -> Int:
@@ -252,19 +252,28 @@ struct Input(Copyable, Movable):
                 return i
         return -1
 
-    def _connect_gamepad(mut self, id: Int):
+    def _connect_gamepad(mut self, id: Int, name: String):
         if self._gamepad_slot(id) != -1:
             return
         var pad = Gamepad()
         pad.connected = True
+        pad.connected_this_frame = True
+        pad.name = name
         pad._id = id
         for i in range(len(self._gamepads)):
             if not self._gamepads[i].connected:
-                self._gamepads[i] = pad
+                # A pad that left this same frame still gets its edge.
+                pad.disconnected_this_frame = self._gamepads[
+                    i
+                ].disconnected_this_frame
+                self._gamepads[i] = pad^
                 return
-        self._gamepads.append(pad)
+        self._gamepads.append(pad^)
 
     def _disconnect_gamepad(mut self, id: Int):
         var slot = self._gamepad_slot(id)
         if slot != -1:
-            self._gamepads[slot] = Gamepad()
+            var pad = Gamepad()
+            pad.disconnected_this_frame = True
+            pad.name = self._gamepads[slot].name
+            self._gamepads[slot] = pad^

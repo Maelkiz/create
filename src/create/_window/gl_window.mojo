@@ -23,7 +23,13 @@ from ._sdl import (
     window_data1,
     window_data2,
 )
-from .event import Event, Quit, Resized, track_gamepad, translate_event
+from .event import (
+    Event,
+    Quit,
+    Resized,
+    translate_event,
+    translate_gamepad_device,
+)
 
 
 struct GLWindow:
@@ -231,8 +237,9 @@ struct GLWindow:
                 self._height = new_height
                 events.append(Event(Resized(new_width, new_height)))
             else:
-                track_gamepad(self._sdl, kind, ptr)
-                var translated = translate_event(kind, ptr)
+                var translated = translate_gamepad_device(self._sdl, kind, ptr)
+                if not translated:
+                    translated = translate_event(kind, ptr)
                 if translated:
                     events.append(translated.value())
         return events^
