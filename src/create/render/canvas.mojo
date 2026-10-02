@@ -2,6 +2,7 @@ from std.collections import Optional
 from std.utils.numerics import isnan, nan
 
 from .color import Color
+from .gradient import Gradient
 from .align import Align
 from .blend_mode import BlendMode
 from .autoscale import AutoScale
@@ -373,6 +374,7 @@ struct Canvas:
         mut self,
         *,
         fill: Optional[Color] = None,
+        fill_gradient: Optional[Gradient] = None,
         fill_enabled: Optional[Bool] = None,
         outline: Optional[Color] = None,
         outline_thickness: Optional[Int] = None,
@@ -397,7 +399,8 @@ struct Canvas:
 
         Each keyword applied goes through the setter of the same name, so it
         behaves exactly like calling that setter; the rest of the style is kept.
-        With no keywords it only scopes: for helpers that set style before
+        `fill_gradient` goes through `fill`'s `Gradient` overload; given
+        beside `fill`, the gradient paints. With no keywords it only scopes: for helpers that set style before
         rendering, where without it a callee's `outline_enabled(False)`
         silently applies to whatever the caller renders next.
 
@@ -409,6 +412,10 @@ struct Canvas:
         var guard = StyleGuard[origin_of(self)](self)
         if fill:
             self.fill(fill.value())
+        # After the colour, which clears a gradient: given both, the gradient
+        # paints and the colour is kept.
+        if fill_gradient:
+            self.fill(fill_gradient.value())
         if outline or outline_thickness:
             self.outline(outline, outline_thickness)
         # After the colors, which switch fill and outline on: an explicit
@@ -524,9 +531,9 @@ struct Canvas:
         return OverlayGuard[origin_of(self)](self)
 
     def fill(mut self, color: Optional[Color] = None):
-        """Paint the inside of shapes, switching the fill on. `color` left
-        unset keeps the current one, so `fill()` alone brings back the last
-        fill. The fill is *off* by default, in white, so `fill()` on a fresh
+        """Paint the inside of shapes, switching the fill on. A `color`
+        replaces any gradient; left unset, the current fill is kept, colour
+        or gradient, so `fill()` alone brings back the last fill. The fill is *off* by default, in white, so `fill()` on a fresh
         frame paints shapes white.
 
         Holds until changed or until the frame ends — every frame starts from
@@ -534,6 +541,19 @@ struct Canvas:
         """
         if color:
             self._style.fill_color = color.value()
+            self._style.fill_gradient = None
+        self._style.fill_enabled = True
+
+    def fill(mut self, gradient: Gradient):
+        """Paint the inside of shapes with `gradient`, switching the fill on.
+        It spans each shape's own bounding box, so it moves and turns with
+        the shape; see `Gradient`. Only fills take one: outlines, text and
+        shadows keep their colours.
+
+        Holds until a `fill(color)` replaces it or the frame ends. The fill
+        color is kept meanwhile, so `fill(color)` alone brings a solid back.
+        """
+        self._style.fill_gradient = gradient
         self._style.fill_enabled = True
 
     def outline(
@@ -557,9 +577,9 @@ struct Canvas:
         self._style.outline_enabled = True
 
     def fill_enabled(mut self, enabled: Bool):
-        """Switch the fill off or back on. The fill color is kept while off,
-        so `fill_enabled(True)` brings back the same color; `fill(...)`
-        switches it on too."""
+        """Switch the fill off or back on. The fill color and any gradient
+        are kept while off, so `fill_enabled(True)` brings back the same
+        fill; `fill(...)` switches it on too."""
         self._style.fill_enabled = enabled
 
     def outline_enabled(mut self, enabled: Bool):

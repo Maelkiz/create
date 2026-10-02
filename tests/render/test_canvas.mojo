@@ -9,6 +9,7 @@ from std.testing import (
     TestSuite,
     assert_equal,
     assert_almost_equal,
+    assert_false,
     assert_true,
 )
 
@@ -2482,6 +2483,76 @@ def test_both_captures_can_be_pending_in_one_frame() raises -> None:
     var img = _saved(_BOTH_IMG)
     assert_equal(shot.width, 640)
     assert_equal(img.width, 200)
+
+
+def _fresh_canvas() raises -> Canvas:
+    var context = Context()
+    var state = PersistentCanvasState()
+    context._set_viewport(state, 100, 100)
+    return context._new_canvas(state^)
+
+
+comptime _SKY = Gradient.linear(Color.BLUE, Color.ORANGE)
+
+
+def test_fill_gradient_switches_the_fill_on() raises -> None:
+    var canvas = _fresh_canvas()
+    canvas.fill(_SKY)
+    assert_true(canvas._style.fill_enabled)
+    assert_true(canvas._style.fill_gradient.value() == _SKY)
+
+
+def test_fill_color_clears_the_gradient() raises -> None:
+    var canvas = _fresh_canvas()
+    canvas.fill(_SKY)
+    canvas.fill(Color.RED)
+    assert_false(Bool(canvas._style.fill_gradient))
+    assert_equal(canvas._style.fill_color, Color.RED)
+
+
+def test_bare_fill_and_fill_enabled_keep_the_gradient() raises -> None:
+    var canvas = _fresh_canvas()
+    canvas.fill(Color.RED)
+    canvas.fill(_SKY)
+    canvas.fill_enabled(False)
+    canvas.fill_enabled(True)
+    canvas.fill()
+    assert_true(canvas._style.fill_gradient.value() == _SKY)
+    assert_equal(canvas._style.fill_color, Color.RED)
+
+
+def test_fill_gradient_keyword_beside_fill_paints_the_gradient() raises -> None:
+    var canvas = _fresh_canvas()
+    with canvas.style(fill=Color.RED, fill_gradient=_SKY):
+        assert_true(canvas._style.fill_gradient.value() == _SKY)
+        assert_equal(canvas._style.fill_color, Color.RED)
+        assert_true(canvas._style.fill_enabled)
+    assert_false(Bool(canvas._style.fill_gradient))
+    with canvas.style(fill_gradient=_SKY, fill_enabled=False):
+        assert_false(canvas._style.fill_enabled)
+
+
+@fieldwise_init
+struct GradientFills(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> GradientFills:
+        return GradientFills(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline_enabled(False)
+        canvas.fill(_SKY)
+        canvas.rectangle((-25, 0), 20, 20)
+        with canvas.style(fill_gradient=_SKY):
+            canvas.rectangle((25, 0), 20, 20)
+
+
+def test_gradient_fills_render_through_every_overload() raises -> None:
+    var m = run_headless[GradientFills](100, 100)
+    assert_true(m.pixel(25, 50) != Color.BLACK)
+    assert_true(m.pixel(75, 50) != Color.BLACK)
 
 
 def main() raises:

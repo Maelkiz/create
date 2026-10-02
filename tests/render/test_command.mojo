@@ -1,6 +1,7 @@
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
 from create.render.color import Color
+from create.render.gradient import Gradient
 from create.render.style import Style
 from create.render._command import (
     CMD_CLEAR,
@@ -191,6 +192,19 @@ def test_opacity_folds_into_the_shadow_color() raises -> None:
     var c = rect_command(identity[3](), s, 0.0, 0.0, 1.0, 1.0)
     assert_equal(c.style.shadow_color.a, 100)
     assert_equal(c.style.opacity, 1.0)
+
+
+def test_opacity_folds_into_the_fill_gradient() raises -> None:
+    var s = Style(
+        fill_gradient=Gradient.linear(Color.RED, Color.BLUE.with_alpha(200)),
+        opacity=0.5,
+    )
+    var c = rect_command(identity[3](), s, 0.0, 0.0, 1.0, 1.0)
+    ref stops = c.style.fill_gradient.value()._stops[]
+    assert_equal(stops[0][1].a, 127)
+    assert_equal(stops[1][1].a, 100)
+    # The style it was recorded from still holds the full-alpha stops.
+    assert_equal(s.fill_gradient.value()._stops[][0][1].a, 255)
 
 
 def main() raises:

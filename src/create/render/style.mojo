@@ -4,6 +4,7 @@ from std.utils.numerics import isnan, nan
 from .align import Align
 from .blend_mode import BlendMode
 from .color import Color
+from .gradient import Gradient
 from .font import FontWeight
 from create.math.vector2d import Vector2D
 
@@ -46,12 +47,17 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
     like them: naming any part of the fill, outline or shadow switches it
     on, unless `fill_enabled`, `outline_enabled` or `shadow_enabled` says
     otherwise, so `Style(shadow=Color.RED, shadow_enabled=False)` keeps a
-    shadow ready but off. Every part left unset is what a fresh frame
-    starts with. The font is not part of a style: it is a loaded resource,
+    shadow ready but off. `fill_gradient` is the keyword for `fill`'s
+    `Gradient` overload, since one keyword can't take both: given beside
+    `fill`, the gradient paints and the colour is kept for when it is
+    cleared. Every part left unset is what a fresh frame starts with. The font is not part of a style: it is a loaded resource,
     set with `canvas.font` and kept across frames.
     """
 
     var fill_color: Color
+    var fill_gradient: Optional[Gradient]
+    """Paints the fill instead of `fill_color` while set; `fill_color` is
+    kept for when it is cleared."""
     var fill_enabled: Bool
     var outline_color: Color
     var outline_thickness: Int
@@ -75,6 +81,7 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         out self,
         *,
         fill: Optional[Color] = None,
+        fill_gradient: Optional[Gradient] = None,
         fill_enabled: Optional[Bool] = None,
         outline: Optional[Color] = None,
         outline_thickness: Optional[Int] = None,
@@ -95,7 +102,10 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         shadow_enabled: Optional[Bool] = None,
     ):
         self.fill_color = fill.or_else(Color.WHITE)
-        self.fill_enabled = fill_enabled.or_else(Bool(fill))
+        self.fill_gradient = fill_gradient
+        self.fill_enabled = fill_enabled.or_else(
+            Bool(fill) or Bool(fill_gradient)
+        )
         self.outline_color = outline.or_else(Color.BLACK)
         self.outline_thickness = outline_thickness.or_else(1)
         self.outline_enabled = outline_enabled.or_else(True)
@@ -126,6 +136,13 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         writer.write(
             "Style(fill=",
             self.fill_color,
+            ", fill_gradient=",
+        )
+        if self.fill_gradient:
+            writer.write(self.fill_gradient.value())
+        else:
+            writer.write("None")
+        writer.write(
             ", fill_enabled=",
             self.fill_enabled,
             ", outline=",
@@ -168,11 +185,15 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _fill_visible(self) -> Bool:
         """Whether the fill actually paints anything.
 
-        `fill_enabled` alone isn't enough — a fully transparent color paints
-        nothing either, and every rasteriser gate should skip that work
+        `fill_enabled` alone isn't enough — a fully transparent color, or a
+        gradient whose every stop is, paints nothing either, and every rasteriser gate should skip that work
         rather than render an invisible fill.
         """
-        return self.fill_enabled and self.fill_color.a > 0
+        if not self.fill_enabled:
+            return False
+        if self.fill_gradient:
+            return self.fill_gradient.value()._visible()
+        return self.fill_color.a > 0
 
     def _outline_visible(self) -> Bool:
         """Whether the outline actually paints anything.

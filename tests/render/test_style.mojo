@@ -93,7 +93,8 @@ def test_style_writes_constructor_keywords() raises -> None:
     assert_equal(
         String(Style()),
         (
-            "Style(fill=Color(255, 255, 255, 255), fill_enabled=False,"
+            "Style(fill=Color(255, 255, 255, 255), fill_gradient=None,"
+            " fill_enabled=False,"
             " outline=Color(0, 0, 0, 255), outline_thickness=1,"
             " outline_enabled=True, corner_radius=0, text_color=Color(0, 0, 0,"
             " 255), font_size=16, font_weight=400, text_align=Align.CENTER,"
@@ -111,6 +112,32 @@ def test_shadow_is_visible_only_when_enabled_and_opaque_enough() raises -> None:
     assert_false(
         Style(shadow=Color.TRANSPARENT, shadow_enabled=True)._shadow_visible()
     )
+
+
+def test_fill_gradient_keyword_switches_the_fill_on() raises -> None:
+    var sky = Gradient.linear(Color.RED, Color.BLUE)
+    var s = Style(fill_gradient=sky)
+    assert_true(s.fill_enabled)
+    assert_true(s.fill_gradient.value() == sky)
+    assert_equal(s.fill_color, Color.WHITE)
+    assert_false(Style(fill_gradient=sky, fill_enabled=False).fill_enabled)
+
+
+def test_fill_gradient_beside_fill_keeps_both() raises -> None:
+    var sky = Gradient.linear(Color.RED, Color.BLUE)
+    var s = Style(fill=Color.GREEN, fill_gradient=sky)
+    assert_true(s.fill_gradient.value() == sky)
+    assert_equal(s.fill_color, Color.GREEN)
+
+
+def test_fill_visibility_follows_the_gradient() raises -> None:
+    assert_true(
+        Style(
+            fill_gradient=Gradient.linear(Color.TRANSPARENT, Color.RED)
+        )._fill_visible()
+    )
+    var clear = Gradient.linear(Color.TRANSPARENT, Color.TRANSPARENT)
+    assert_false(Style(fill=Color.RED, fill_gradient=clear)._fill_visible())
 
 
 def main() raises:

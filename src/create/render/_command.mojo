@@ -123,6 +123,12 @@ struct RenderCommand(Copyable, Movable):
             self.style.fill_color = _scaled_alpha(
                 self.style.fill_color, self.style.opacity
             )
+            if self.style.fill_gradient:
+                self.style.fill_gradient = (
+                    self.style.fill_gradient.value()._with_opacity(
+                        self.style.opacity
+                    )
+                )
             self.style.outline_color = _scaled_alpha(
                 self.style.outline_color, self.style.opacity
             )
