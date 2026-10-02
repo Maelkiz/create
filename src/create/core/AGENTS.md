@@ -31,10 +31,15 @@ the dials reach `render` in one place.
 carries a position calls it and adds only what is its own.
 
 **Gamepads are opened in `_window`, read in `core`.** SDL sends no axis or button events for a pad
-until it is opened, so both windows' `events()` call `track_gamepad` (open on added, close on
-removed) before translating; `apply_events` only assigns slots by SDL's id. The gamepad subsystem is
-best-effort: `SDL.init_subsystems` raises only if video fails, and a refused gamepad subsystem just
-means no gamepad events.
+until it is opened, so both windows' `events()` try `translate_gamepad_device` before
+`translate_event`: it opens a pad on added (reading its name, which needs the open pad) and closes
+it on removed, and a pad that fails to open is never announced. `apply_events` only assigns slots by
+SDL's id. The gamepad subsystem is best-effort: `SDL.init_subsystems` raises only if video fails, and
+a refused gamepad subsystem just means no gamepad events.
+
+**Rumble flows the other way.** `context.rumble` queues a request addressed by SDL's id; both
+windowed loops send the queue after presenting, and `_advance_frame` empties it, which is also how
+the headless loop drops it.
 
 **Take the CPU `Surface` after event processing**, sized from the window, never the viewport:
 `Window._resize` reallocates the buffer during events, and a stale extent defeats every raster loop's
