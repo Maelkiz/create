@@ -20,13 +20,16 @@ namespace any scratch path under `/tmp` per file.
 `MemorySurface.pixel(x, y)` reads it back — assert on pixels, don't eyeball.
 `core/test_step.mojo` scripts `context.input` and calls `step` directly for input-driven behaviour.
 
-**GPU coverage, two tiers:**
+**GPU coverage, three tiers:**
 - `render/test_gl_parity.mojo` renders one shape kind per frame through both backends and compares
   structurally (bounding box, centroid, ink coverage within tolerance, interior colour), not pixel by
   pixel — rasterisers may legitimately differ at edges, and exactness would forbid GPU antialiasing.
 - `run_headless(..., backend=RenderBackend.GPU)` for what parity can't see across several commands
   in one frame: batch breaks, buffer growth and per-frame texture cleanup
   (`render/test_gl_batching.mojo`), and the GPU capture paths (`render/test_gl_capture.mojo`).
+- Per pixel, where both backends are meant to compute the same colour: `render/test_gradient_fill.mojo`
+  renders each gradient scene through both and compares every pixel at least two pixels from an
+  edge, within one level per channel.
 
 GL tests skip without a context. `pixi run test` uses SDL's offscreen driver when no display is set
 (`DISPLAY`, `WAYLAND_DISPLAY`, `XDG_RUNTIME_DIR` all unset), which gives a software GL 3.3 context —

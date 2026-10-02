@@ -8,7 +8,8 @@ and the layering rules.
 | File | Role |
 |---|---|
 | `canvas.mojo` | `Canvas` (records commands, touches no pixels), `PersistentCanvasState`, the guards |
-| `_command.mojo` | `RenderCommand` and its kind constants |
+| `_command.mojo` | `RenderCommand` and its kind constants; `_fill_box`, the box a fill gradient spans |
+| `gradient.mojo` | `Gradient`; its ramp, its device mapping (`_DeviceMapping`) and the dithered sample both replays share |
 | `_backend.mojo` | `Backend` — fonts, glyph cache, interned images; replays commands via `present` (CPU) or `present_gpu` |
 | `_raster.mojo` | CPU rasteriser over a `Surface`; called only from `_backend.mojo` |
 | `_gl.mojo` | GL entry points resolved at runtime; the only file that talks to the driver |
@@ -47,8 +48,44 @@ The camera is folded into `RenderCommand.transform`; nothing below `Canvas` know
 a field rather than a trait because Mojo has no dynamic dispatch.
 
 The autoclear is a recorded `CMD_CLEAR`, so every path handles it: the GPU turns it into `glClear`,
-an opaque `canvas.background()` replaces it via `Backend.record_clear`, and a transparent
-`save_image` masks it out.
+an opaque `canvas.background()` replaces it via `Backend.record_clear` (`_clear_is_opaque`), and a
+transparent `save_image` masks it out.
+
+## Gradients
+
+A fill gradient rides on the command's `Style` (`fill_gradient`); opacity scales its stops at
+record time. Everything a replay needs comes from three pieces in `gradient.mojo`, shared so the
+backends agree:
+- **The ramp:** `RAMP_SIZE` (256) colours sampled from the stops at construction, behind an
+  `ArcPointer` with the stops, so copying a `Gradient` (and the `Style` holding one) is a refcount.
+- **The device mapping:** `_device_mapping(inverse(m), center, half)`, with the box from
+  `_fill_box(c)`. The parameter (linear) or the position whose length it is (radial) is **affine
+  in device pixels** — the whole design rests on that.
+- **The sample:** `_sample(t, x, y)` reads linearly between two ramp entries and adds the 4x4
+  Bayer threshold (`_BAYER`) before flooring to bytes. Exact ramp colours come out unchanged.
+
+**CPU:** the fill call sites pass a `FillPaint` (`_raster.mojo`) from `_fill_paint(c, m)` — a
+`Color` converts implicitly, so outline and shadow calls are untouched. `fill_span`'s `FillPaint`
+overload is the choke point: a solid goes to the colour loop, a gradient to `_shade_span`, which
+steps the mapping along the row and `blend`s each pixel. Decide solid-or-gradient once per run (or
+per rect, in `fill_pixels`), never per pixel; a solid `FillPaint` is a colour and an empty
+`Optional`. `shadow_command` clears the gradient — a shadow is one colour.
+
+**GPU:** the fill emitters take a `ramp_row`; after emitting a fill, `_shade_fill` rewrites that
+run of vertices to `MODE_GRADIENT` with the mapping's value at each vertex — the same post-pass
+`emit_inset_shadow` uses. So a fill's vertices must be one contiguous run (`emit_circle` emits its
+fan, then its ring). The ramp texture (256x256 RGBA, unit 2) holds one ramp per row, cached by
+`_stops_key` + `_same_stops` across frames; full, it flushes and starts over. Linear filtering along
+the row is the CPU's read between entries; the shader indexes `BAYER` by device pixel counted from
+the top, as the CPU does.
+
+**Background:** `background(gradient)` records a `CMD_CLEAR` with the rectangle's geometry (the
+design area) and the canvas's base matrix, so `_fill_box` and the mapping work as for a rect, and a
+capture's `pre` maps it like any command. The CPU shades every row; the GPU draws a framebuffer quad
+(never `glClear`, which takes one colour).
+
+Parity is checked per pixel, not just structurally: `test_gradient_fill.mojo` renders each scene on
+both backends and compares away from edges within one level.
 
 ## Curves
 
@@ -189,9 +226,11 @@ only ever hold quantities affine across a triangle, so interpolation evaluates t
 | `MODE_SHADOW_BOX` | 4 | Blurred rect/rounded rect/circle/line shadow; `s3` a ring |
 | `MODE_SHADOW_EDGES` | 5 | Blurred triangle shadow, three edge distances; `s3` a ring |
 | `MODE_INSET_BOX` / `MODE_INSET_EDGES` | 6 / 7 | 4 / 5 without ring, coverage inverted |
+| `MODE_GRADIENT` | 8 | Gradient fill: `uv` the device mapping, `s0` radial, `s1` ramp row; samples unit 2, dithers |
 
 A batch breaks only on an opaque `CMD_CLEAR`, a second distinct unit-1 texture, a `BlendMode`
-change, or frame end — glyph atlas on texture unit 0, sprites on unit 1. A blurred sprite shadow's
+change, or frame end — glyph atlas on texture unit 0, sprites on unit 1, gradient ramps on unit 2
+(never rebound, so gradients batch with anything; a ramp texture refill flushes once). A blurred sprite shadow's
 mask is its own unit-1 texture, so a shadowed sprite costs one extra draw call, and interleaving
 several costs one per switch; a blurred Bézier, sector or polygon shadow likewise costs one. Blurred text shadows
 live in the atlas and cost none. Per frame, only the viewport is written, and only on resize.

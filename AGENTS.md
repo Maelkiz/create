@@ -24,7 +24,7 @@ it makes the library better.
 |---|---|---|
 | root | `src/create/__init__.mojo` | The preamble: star-imports all five subpackages below |
 | `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`, `Input`, `Key`, `MouseButton`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path`, `DateTime` |
-| `render` | `src/create/render/` | `Canvas`, `Camera`, colour/font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
+| `render` | `src/create/render/` | `Canvas`, `Camera`, colour/gradient/font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
 | `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes (`Rectangle`, `Circle`, `Triangle`, `Sector`, `Polygon`, `Line`, `Arc`), `Bezier`, `Spline`, `Random`, `Noise`, easing and `Tween`, util functions |
 | `sprite` | `src/create/sprite/` | `Sprite` (BMP/PNG/JPEG), `SpriteAnimation`, `SpriteAnimator` |
 | `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |
@@ -161,6 +161,20 @@ outline or shadow switches it on unless its `*_enabled` keyword says otherwise. 
 a field built in `create`.
 The font is not part of a style: it lives on `PersistentCanvasState` and outlives the frame.
 
+**Gradients** fill regions and backgrounds: `canvas.fill(gradient)` and `canvas.background(gradient)`
+are overloads beside the colour ones, and the `Style`/`canvas.style` keyword is `fill_gradient=`,
+not `fill=` — one keyword can't take both types, and an `Optional[Paint]` wrapper would need two
+implicit conversions from a bare `Color`, which Mojo won't chain.
+- While set, the gradient fills and `fill_color` is kept: `fill(color)` clears the gradient,
+  `fill()`/`fill_enabled(...)` keep it. Given `fill=` and `fill_gradient=` together, the gradient
+  wins.
+- Fills only: outlines, lines, curves and text ignore it, and a shadow stays the silhouette in
+  `shadow_color` (a fill fading to transparent still casts a full shadow).
+- `background(gradient)` spans the screen (`left()`…`top()`), ignoring the camera; it replaces the
+  autoclear only if every stop is opaque.
+- Build one in `create` and keep it as a field (or in a `Style`): construction samples its ramp, and
+  the GPU uploads one ramp per distinct set of stops.
+
 **Shadows** are part of `Style`, **off by default**: `canvas.shadow(color=, offset=, blur=, spread=,
 inset=)` switches one on (unset parts keep their values, so `shadow()` alone switches the current
 one on; `blur`/`spread` default to a NaN "keep" sentinel, so `blur=12` works),
@@ -241,7 +255,8 @@ mid-`update` applies next frame — except `max_frame_rate()` and `quit()`, read
 | `Easing` / `Tween` | An `Easing` is a stateless curve over a 0-to-1 fraction (`ease(curve, t)`); a `Tween` walks that fraction over a duration. Each entity owns its own `Tween` |
 | `Time` / `DateTime` | `context.time` is the run's clock: ticked by the loop, zero at the first frame, synthetic in headless runs. `DateTime.now()` is the computer's local wall clock, read once into consistent fields (`year` … `millisecond`) — take one reading per frame rather than calling it per field |
 | `Random` / `Noise` | Both seeded, both in `[0, 1]`. `Random` is stateful (`mut`, `Movable`): each call is an independent sample. `Noise` is immutable (`Copyable`): `at(...)` is a pure function of its input, and nearby inputs give nearby values. `feature_size` divides space only; `at(position, time)` leaves `time` for the caller to scale. Averaged octaves cluster around 0.5 — stretch with `smoothstep` for contrast |
-| `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(position, r)`, `context.input.mouse`); a displacement is a `Vector2D` (`translate(delta)`, velocities); an extent is a scalar (`w`, `h`, `r`). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Only `Point2D` takes a bare tuple implicitly; a vector literal names its type (`p + Vector2D(1, 2)`), and `p - (1, 2)` is the displacement from `(1, 2)`, not a move |
+| `Gradient` | Stops (0..1 positions, each a `Color`) across a fill or the background. **Placed by the shape's local bounding box**, before the transform, so it moves and turns with the shape and one `Style` suits every entity. `linear` runs along `direction` (a `Vector2D`, default `DOWN`, any length; its extreme corners land on 0 and 1, as in CSS); `radial` runs from `center` in the box's unit space (-1..1, y up) out to its edges, an ellipse on a long box. A sector's box is its whole circle. A zero `direction` or a zero-size box paints the first stop. Blends premultiplied (a fade to `TRANSPARENT` stays clean) and is dithered on both backends |
+| `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(position, r)`, `context.input.mouse`); a displacement is a `Vector2D` (`translate(delta)`, velocities); an extent is a scalar (`w`, `h`, `r`). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Only `Point2D` takes a bare tuple implicitly; a vector literal names its type (`p + Vector2D(1, 2)`), and `p - (1, 2)` is the displacement from `(1, 2)`, not a move. Named vectors are `comptime` constants: `Vector2D.ZERO`, `ONE`, `UP`, `DOWN`, `LEFT`, `RIGHT` (y up, so `DOWN` is `(0, -1)`) |
 | Down / pressed / released | Input state for keys and mouse buttons alike. *Down* is held right now, true every frame (`key_down`, `mouse_down`); *pressed*/*released* are edges, true only in the frame it went down or came up (`key_pressed`, `mouse_released`). Unlike Processing's `mousePressed`, *pressed* never means held |
 | Typed / `text` | Text entry. `key_typed` is pressed or auto-repeated while held, for editing keys (Backspace, arrows); `context.input.text` is this frame's typed characters, UTF-8, with shift, layout and IME applied — append it, don't rebuild it from keycodes. Both reset every frame. `EditableText` does the editing: fed `context.input` each frame, it keeps `text` and a caret, whole characters at a time; `canvas.text_width(field.before_caret())` places the caret. See [examples/typing.mojo](examples/typing.mojo) |
 | `overlaps` / `intersects` / `contains` | `overlaps(a, b)`: free, symmetric, regions only (`Rectangle`/`Circle`/`Triangle`/`Sector`/`Polygon`). `curve.intersects(x)`: `Line` and `Arc` only, since a curve has no interior. `region.contains(x)`: asymmetric, every region against every region and `Line`. A `Line` or `Arc` is never a region |
