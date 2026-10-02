@@ -199,5 +199,66 @@ def test_opacity_scales_the_gradient() raises -> None:
     _near(m.pixel(50, 50), Color(127, 0, 0), tolerance=1)
 
 
+def _gpu_matches_cpu[n: Int]() raises -> Bool:
+    """Whether the GL backend paints scene `n` as the CPU does, pixel for
+    pixel within one level, away from the shapes' edges, where the two
+    rasterisers may claim different pixels. False if there is no GL context
+    to try it with."""
+    var gpu: MemorySurface
+    try:
+        gpu = run_headless[Scene[n]](100, 100, backend=RenderBackend.GPU)
+    except:
+        return False
+    var cpu = _render[n]()
+    var compared = 0
+    for y in range(2, 98):
+        for x in range(2, 98):
+            # Only where the CPU's whole 5x5 neighbourhood is one shape's
+            # interior or one background: no edge within two pixels.
+            var steady = True
+            var ink = cpu.pixel(x, y) != Color.BLACK
+            for dy in range(-2, 3):
+                for dx in range(-2, 3):
+                    if (cpu.pixel(x + dx, y + dy) != Color.BLACK) != ink:
+                        steady = False
+            if not steady:
+                continue
+            var a = cpu.pixel(x, y)
+            var b = gpu.pixel(x, y)
+            var ok = (
+                abs(Int(a.r) - Int(b.r)) <= 1
+                and abs(Int(a.g) - Int(b.g)) <= 1
+                and abs(Int(a.b) - Int(b.b)) <= 1
+            )
+            assert_true(
+                ok,
+                String(
+                    "scene ", n, " at (", x, ", ", y, "): CPU ", a, ", GPU ", b
+                ),
+            )
+            compared += 1
+    assert_true(compared > 1000, String("scene ", n, ": too few pixels"))
+    return True
+
+
+def test_the_gpu_paints_the_same_gradients() raises -> None:
+    if not _gpu_matches_cpu[RECT_DOWN]():
+        print("SKIP — no GL context")
+        return
+    _ = _gpu_matches_cpu[RECT_RIGHT]()
+    _ = _gpu_matches_cpu[RADIAL_CIRCLE]()
+    _ = _gpu_matches_cpu[ROTATED_RECT]()
+    _ = _gpu_matches_cpu[ZERO_DIRECTION]()
+    _ = _gpu_matches_cpu[OUTLINED]()
+    _ = _gpu_matches_cpu[TRANSLUCENT_STOP]()
+    _ = _gpu_matches_cpu[TRIANGLE]()
+    _ = _gpu_matches_cpu[SECTOR]()
+    _ = _gpu_matches_cpu[POLYGON]()
+    _ = _gpu_matches_cpu[ADDED]()
+    _ = _gpu_matches_cpu[SHADOWED]()
+    _ = _gpu_matches_cpu[HALF_OPACITY]()
+    _ = _gpu_matches_cpu[ROUNDED_RECT]()
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

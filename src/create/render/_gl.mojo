@@ -74,6 +74,7 @@ comptime GL_INFO_LOG_LENGTH: UInt32 = 0x8B84
 comptime GL_TEXTURE_2D: UInt32 = 0x0DE1
 comptime GL_TEXTURE0: UInt32 = 0x84C0
 comptime GL_TEXTURE1: UInt32 = 0x84C1
+comptime GL_TEXTURE2: UInt32 = 0x84C2
 comptime GL_RGBA: UInt32 = 0x1908
 comptime GL_RGBA8: Int32 = 0x8058
 comptime GL_RED: UInt32 = 0x1903

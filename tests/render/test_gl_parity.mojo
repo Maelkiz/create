@@ -50,6 +50,7 @@ from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.canvas import PersistentCanvasState
 from create._window import GLWindow
+from create.math.matrix import rotate
 
 comptime _DESIGN_W = 200
 comptime _DESIGN_H = 150
@@ -143,7 +144,17 @@ comptime _SHAPE_TRANSLUCENT_STAR = 48
 comptime _SHAPE_PENTAGRAM = 49
 comptime _SHAPE_SHADOWED_STAR = 50
 comptime _SHAPE_BLURRED_POLYGON_RING = 51
-comptime _SHAPE_COUNT = 52
+comptime _SHAPE_GRADIENT_RECT = 52
+comptime _SHAPE_GRADIENT_ROUNDED_RECT = 53
+comptime _SHAPE_RADIAL_CIRCLE = 54
+comptime _SHAPE_RADIAL_ELLIPSE = 55
+comptime _SHAPE_ROTATED_GRADIENT_RECT = 56
+comptime _SHAPE_TRANSLUCENT_GRADIENT_RECT = 57
+comptime _SHAPE_GRADIENT_TRIANGLE = 58
+comptime _SHAPE_GRADIENT_ROUNDED_TRIANGLE = 59
+comptime _SHAPE_GRADIENT_SECTOR = 60
+comptime _SHAPE_GRADIENT_STAR = 61
+comptime _SHAPE_COUNT = 62
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -281,6 +292,26 @@ def _shape_name(shape: Int) -> String:
         return "shadowed star"
     elif shape == _SHAPE_BLURRED_POLYGON_RING:
         return "blurred polygon ring"
+    elif shape == _SHAPE_GRADIENT_RECT:
+        return "gradient rect"
+    elif shape == _SHAPE_GRADIENT_ROUNDED_RECT:
+        return "outlined rounded gradient rect"
+    elif shape == _SHAPE_RADIAL_CIRCLE:
+        return "radial circle"
+    elif shape == _SHAPE_RADIAL_ELLIPSE:
+        return "off-centre radial ellipse"
+    elif shape == _SHAPE_ROTATED_GRADIENT_RECT:
+        return "rotated gradient rect"
+    elif shape == _SHAPE_TRANSLUCENT_GRADIENT_RECT:
+        return "translucent gradient rect"
+    elif shape == _SHAPE_GRADIENT_TRIANGLE:
+        return "gradient triangle"
+    elif shape == _SHAPE_GRADIENT_ROUNDED_TRIANGLE:
+        return "rounded gradient triangle"
+    elif shape == _SHAPE_GRADIENT_SECTOR:
+        return "gradient sector"
+    elif shape == _SHAPE_GRADIENT_STAR:
+        return "gradient star"
     else:
         return "blurred line"
 
@@ -731,6 +762,104 @@ struct _Parity(Program):
                     (-20, 50),
                     (-80, 50),
                 )
+        elif self.shape == _SHAPE_GRADIENT_RECT:
+            # Three stops, one off-centre, so the ramp has a bend in it.
+            with canvas.style(outline_enabled=False):
+                canvas.fill(
+                    Gradient.linear(
+                        [
+                            (0.0, Color(0xFF, 0x40, 0x20)),
+                            (0.3, Color(0x20, 0xFF, 0x80)),
+                            (1.0, Color(0x40, 0x20, 0xFF)),
+                        ]
+                    )
+                )
+                canvas.rectangle((0, 0), 160, 110)
+        elif self.shape == _SHAPE_GRADIENT_ROUNDED_RECT:
+            with canvas.style():
+                canvas.outline(Color.BLACK, thickness=5)
+                canvas.corner_radius(18)
+                canvas.fill(
+                    Gradient.linear(
+                        Color(0xFF, 0xE0, 0x40),
+                        Color(0xC0, 0x20, 0x80),
+                        direction=Vector2D(1, 1),
+                    )
+                )
+                canvas.rectangle((0, 0), 150, 100)
+        elif self.shape == _SHAPE_RADIAL_CIRCLE:
+            with canvas.style(outline_enabled=False):
+                canvas.fill(
+                    Gradient.radial(Color.WHITE, Color(0x20, 0x60, 0xFF))
+                )
+                canvas.circle((0, 0), 60)
+        elif self.shape == _SHAPE_RADIAL_ELLIPSE:
+            # A long box, so the radial is an ellipse, centred off its middle.
+            with canvas.style(outline_enabled=False):
+                canvas.fill(
+                    Gradient.radial(
+                        Color(0xFF, 0xFF, 0xA0),
+                        Color(0x80, 0x20, 0x20),
+                        center=(-0.4, 0.3),
+                    )
+                )
+                canvas.rectangle((0, 0), 170, 90)
+        elif self.shape == _SHAPE_ROTATED_GRADIENT_RECT:
+            with canvas.style(outline_enabled=False):
+                canvas.fill(
+                    Gradient.linear(
+                        Color(0xFF, 0x80, 0x20), Color(0x20, 0x80, 0xFF)
+                    )
+                )
+                with canvas.transform(rotate(0.6)):
+                    canvas.rectangle((0, 0), 120, 70)
+        elif self.shape == _SHAPE_TRANSLUCENT_GRADIENT_RECT:
+            with canvas.style(outline_enabled=False):
+                canvas.fill(
+                    Gradient.linear(
+                        Color(0xFF, 0x40, 0x40, 0xF0),
+                        Color(0xFF, 0x40, 0x40, 0x30),
+                        direction=Vector2D.RIGHT,
+                    )
+                )
+                canvas.rectangle((0, 0), 160, 100)
+        elif self.shape == _SHAPE_GRADIENT_TRIANGLE:
+            with canvas.style():
+                canvas.outline(Color.BLACK, thickness=3)
+                canvas.fill(
+                    Gradient.linear(
+                        Color(0xFF, 0xD0, 0x20), Color(0xD0, 0x20, 0x20)
+                    )
+                )
+                canvas.triangle((-80, -60), (80, -50), (10, 65))
+        elif self.shape == _SHAPE_GRADIENT_ROUNDED_TRIANGLE:
+            with canvas.style(outline_enabled=False):
+                canvas.corner_radius(12)
+                canvas.fill(
+                    Gradient.radial(
+                        Color(0xA0, 0xFF, 0xA0), Color(0x20, 0x60, 0x20)
+                    )
+                )
+                canvas.triangle((-80, -60), (80, -50), (10, 65))
+        elif self.shape == _SHAPE_GRADIENT_SECTOR:
+            with canvas.style():
+                canvas.outline(Color.BLACK, thickness=3)
+                canvas.fill(
+                    Gradient.linear(
+                        Color(0x40, 0xFF, 0x40),
+                        Color(0x20, 0x20, 0xC0),
+                        direction=Vector2D.RIGHT,
+                    )
+                )
+                canvas.sector((0, 0), 65.0, 0.4, 4.8)
+        elif self.shape == _SHAPE_GRADIENT_STAR:
+            with canvas.style(outline_enabled=False):
+                canvas.fill(
+                    Gradient.linear(
+                        Color(0xFF, 0xA0, 0x40), Color(0xFF, 0x60, 0xC0)
+                    )
+                )
+                canvas.polygon(Polygon.star((0, 0), 70, 30, 5))
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline

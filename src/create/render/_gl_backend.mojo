@@ -75,6 +75,7 @@ from ._gl import (
     GL_STREAM_DRAW,
     GL_TEXTURE0,
     GL_TEXTURE1,
+    GL_TEXTURE2,
     GL_TEXTURE_2D,
     GL_TEXTURE_MAG_FILTER,
     GL_TEXTURE_MIN_FILTER,
@@ -127,10 +128,16 @@ from ._text import PlacedGlyph, TextRenderer
 from ._transform import pixel_scale
 from .blend_mode import BlendMode
 from .color import Color
+from .gradient import Gradient, RAMP_SIZE
 
 comptime _VERTEX_FLOATS = 13
 """Mirrors `_tessellate._VERTEX_FLOATS`, which the attribute layout below
 unpacks into five attributes."""
+
+comptime _RAMP_ROWS = 256
+"""Gradient ramps the ramp texture holds at once, one per row. A frame with
+more distinct gradients than this flushes and starts the texture over, so it
+still renders, at a draw call per refill."""
 
 comptime ATLAS_SIZE = 1024
 """The glyph atlas is square and fixed: a resize would have to re-pack and
@@ -185,7 +192,15 @@ in vec4 v_shape;
 
 uniform sampler2D u_atlas;
 uniform sampler2D u_sprite;
+uniform sampler2D u_ramp;
 uniform int u_premultiply;
+uniform vec2 u_viewport;
+
+// `gradient.mojo`'s `_BAYER`, entry for entry.
+const float BAYER[16] = float[16](
+    0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0,
+    3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0
+);
 
 out vec4 frag_color;
 
@@ -228,6 +243,17 @@ void main() {
         frag_color = v_color * texture(u_sprite, v_uv);
     } else if (v_mode < 3.5) {
         frag_color = vec4(v_color.rgb, v_color.a * texture(u_sprite, v_uv).a);
+    } else if (v_mode > 7.5) {
+        // Gradient: `Gradient._sample`, with texture filtering reading
+        // between ramp entries and the dither indexed by device pixel, rows
+        // counted from the top as the CPU counts them.
+        float t = clamp(v_shape.x > 0.5 ? length(v_uv) : v_uv.x, 0.0, 1.0);
+        vec4 c = texture(u_ramp, vec2(
+            (t * 255.0 + 0.5) / 256.0, (v_shape.y + 0.5) / 256.0
+        ));
+        ivec2 p = ivec2(gl_FragCoord.x, u_viewport.y - gl_FragCoord.y);
+        float d = (BAYER[(p.y & 3) * 4 + (p.x & 3)] + 0.5) / 16.0;
+        frag_color = min(floor(c * 255.0 + d), 255.0) / 255.0;
     } else {
         // `s3` is the ring: subtract the silhouette shrunk by it. Modes 6
         // and 7 are 4 and 5 inverted, for an inset shadow.
@@ -434,6 +460,14 @@ struct GLRenderer(Movable):
     """Textures used for one frame only — blurred curve shadows, whose masks
     have no stable key to cache by — deleted once the frame's last batch has
     drawn."""
+    var ramps: UInt32
+    """Gradient ramps, `RAMP_SIZE` texels a row, permanently on unit 2."""
+    var ramp_rows: Dict[Int, List[Int]]
+    """`Gradient._stops_key` to the rows holding ramps of that key — usually
+    one; more only on a hash collision, told apart by `ramp_gradients`."""
+    var ramp_gradients: List[Gradient]
+    """The gradient whose ramp each row holds, in row order. Kept across
+    frames, so a gradient built once in `create` uploads once."""
     var bound: UInt32
     """What is on texture unit 1 — the sprite unit — right now. Kept across
     frames, since nothing else in the library binds there. A batch is one
@@ -460,6 +494,9 @@ struct GLRenderer(Movable):
         self.textures = Dict[Int, UInt32]()
         self.shadow_textures = Dict[Int, UInt32]()
         self.frame_textures = List[UInt32]()
+        self.ramps = _gen_object(self.gl.gen_textures)
+        self.ramp_rows = Dict[Int, List[Int]]()
+        self.ramp_gradients = List[Gradient]()
         self.bound = 0
         self.vertices = VertexBuffer()
         self.draw_calls = 0
@@ -478,6 +515,7 @@ struct GLRenderer(Movable):
         self.blend_mode = BlendMode.NORMAL
         self._setup_vertex_array()
         self._setup_atlas()
+        self._setup_ramps()
 
         # Set once: nothing here varies per frame, and the program and VAO are
         # the only ones this process ever binds.
@@ -485,6 +523,7 @@ struct GLRenderer(Movable):
         self.gl.bind_vertex_array(self.vao)
         self._sampler_unit("u_atlas", 0)
         self._sampler_unit("u_sprite", 1)
+        self._sampler_unit("u_ramp", 2)
 
         self.gl.enable(GL_BLEND)
         # Straight (non-premultiplied) alpha, matching `_raster.blend`, so a
@@ -498,6 +537,7 @@ struct GLRenderer(Movable):
         _delete_object(self.gl.delete_buffers, self.vbo)
         _delete_object(self.gl.delete_vertex_arrays, self.vao)
         _delete_object(self.gl.delete_textures, self.atlas)
+        _delete_object(self.gl.delete_textures, self.ramps)
         for ref entry in self.textures.items():
             _delete_object(self.gl.delete_textures, entry.value)
         for ref entry in self.shadow_textures.items():
@@ -562,6 +602,81 @@ struct GLRenderer(Movable):
         self.gl.tex_parameteri(
             GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE
         )
+
+    def _setup_ramps(mut self) raises:
+        """The gradient ramp texture, allocated blank on unit 2 for good.
+
+        Filtered linearly along a row, which is the CPU's read between two
+        ramp entries; a row is sampled at its centre, so its neighbours never
+        bleed in.
+        """
+        self.gl.active_texture(GL_TEXTURE2)
+        self.gl.bind_texture(GL_TEXTURE_2D, self.ramps)
+        var blank = List[UInt8](length=RAMP_SIZE * _RAMP_ROWS * 4, fill=0)
+        self.gl.tex_image_2d(
+            GL_TEXTURE_2D,
+            0,
+            GL_RGBA8,
+            Int32(RAMP_SIZE),
+            Int32(_RAMP_ROWS),
+            0,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            Int(blank.unsafe_ptr()),
+        )
+        _ = blank^
+        self.gl.tex_parameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        self.gl.tex_parameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        self.gl.tex_parameteri(
+            GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE
+        )
+        self.gl.tex_parameteri(
+            GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE
+        )
+
+    def _ramp_row(mut self, c: RenderCommand) raises -> Int:
+        """The ramp texture row holding `c`'s fill gradient's ramp, uploading
+        it on first sight; -1 when `c` fills with no gradient."""
+        if not c.style.fill_gradient or not c.style._fill_visible():
+            return -1
+        ref gradient = c.style.fill_gradient.value()
+        var key = gradient._stops_key()
+        if key in self.ramp_rows:
+            for row in self.ramp_rows[key]:
+                if self.ramp_gradients[row]._same_stops(gradient):
+                    return row
+        if len(self.ramp_gradients) == _RAMP_ROWS:
+            # Full: what is batched still reads the old rows, so draw it
+            # before any is overwritten.
+            self._flush()
+            self.ramp_rows.clear()
+            self.ramp_gradients.clear()
+        var row = len(self.ramp_gradients)
+        self.ramp_gradients.append(gradient)
+        if key not in self.ramp_rows:
+            self.ramp_rows[key] = List[Int]()
+        self.ramp_rows[key].append(row)
+        var texels = List[UInt8](capacity=RAMP_SIZE * 4)
+        for ref color in gradient._ramp[]:
+            texels.append(color.r)
+            texels.append(color.g)
+            texels.append(color.b)
+            texels.append(color.a)
+        # An upload targets whatever is bound, so name the ramps' unit.
+        self.gl.active_texture(GL_TEXTURE2)
+        self.gl.tex_sub_image_2d(
+            GL_TEXTURE_2D,
+            0,
+            0,
+            Int32(row),
+            Int32(RAMP_SIZE),
+            1,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            _Bytes(unsafe_from_address=Int(texels.unsafe_ptr())),
+        )
+        _ = texels^
+        return row
 
     def _sampler_unit(mut self, name: String, unit: Int32) raises:
         """Point one sampler uniform at a texture unit, for good."""
@@ -655,22 +770,29 @@ struct GLRenderer(Movable):
         scale: Float64,
     ) raises:
         """Emit one command's geometry. The blend state is already set."""
+        # A fill gradient's ramp row is looked up before its command emits
+        # anything: claiming a row can flush the batch.
         if c.kind == CMD_CLEAR:
             self._clear(c.style.fill_color, width, height)
         elif c.kind == CMD_RECT:
-            emit_rect(self.vertices, c, scale)
+            var row = self._ramp_row(c)
+            emit_rect(self.vertices, c, scale, row)
         elif c.kind == CMD_CIRCLE:
-            emit_circle(self.vertices, c, scale)
+            var row = self._ramp_row(c)
+            emit_circle(self.vertices, c, scale, row)
         elif c.kind == CMD_LINE:
             emit_line(self.vertices, c, scale)
         elif c.kind == CMD_BEZIER:
             emit_bezier(self.vertices, c, scale)
         elif c.kind == CMD_SECTOR:
-            emit_sector(self.vertices, c, scale)
+            var row = self._ramp_row(c)
+            emit_sector(self.vertices, c, scale, row)
         elif c.kind == CMD_POLYGON:
-            emit_polygon(self.vertices, c, scale)
+            var row = self._ramp_row(c)
+            emit_polygon(self.vertices, c, scale, row)
         elif c.kind == CMD_TRIANGLE:
-            emit_triangle(self.vertices, c, scale)
+            var row = self._ramp_row(c)
+            emit_triangle(self.vertices, c, scale, row)
         elif c.kind == CMD_SPRITE:
             self._sprite(c, images, scale)
         elif c.kind == CMD_TEXT:

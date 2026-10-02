@@ -29,7 +29,7 @@ from std.math import abs, ceil, cos, max, min, sin, sqrt, pi
 from create.math.matrix import Matrix, inverse, apply as mat_apply
 from create.math.point2d import Point2D
 
-from ._command import RenderCommand
+from ._command import RenderCommand, _fill_box
 from ._curve import bezier_device_points, stroke_quads
 from ._sector import sector_quads
 from ._polygon import polygon_quads
@@ -77,6 +77,12 @@ parameters with no ring, the coverage inverted."""
 comptime MODE_INSET_EDGES: Float32 = 7.0
 """Inset shadow of a triangle: `MODE_SHADOW_EDGES`'s parameters with no ring,
 the coverage inverted."""
+
+comptime MODE_GRADIENT: Float32 = 8.0
+"""Gradient fill: `uv` is the gradient's device mapping at the vertex (the
+parameter itself, or for a radial gradient the position whose length it
+is), `s0` is 1 for radial and 0 for linear, and `s1` the ramp texture row.
+The colour is unread."""
 
 comptime _HARD_SHADOW_SHARPNESS = 64.0
 """The inverse sigma, per device pixel, standing in for a blur of 0 in the
@@ -363,15 +369,52 @@ def _rounded_rect_ring(
     _corner_ring_fan(vb, m, x0 + r, y1 - r, r, inner_r, pi / 2.0, n, color)
 
 
-def emit_rect(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
+def _shade_fill(
+    mut vb: VertexBuffer, first: Int, c: RenderCommand, ramp_row: Int
+):
+    """Turn the fill vertices `c` emitted from `first` on into gradient ones,
+    when `c` fills with a gradient and `ramp_row` holds its ramp.
+
+    The fill emitters leave every vertex in device pixels, where the
+    gradient's device mapping is affine, so each vertex takes the mapping's
+    value at its own position and interpolation does the rest exactly —
+    the same pass `emit_inset_shadow` makes for its silhouette.
+    """
+    if ramp_row < 0 or not c.style.fill_gradient:
+        return
+    ref gradient = c.style.fill_gradient.value()
+    var box = _fill_box(c)
+    var mapping = gradient._device_mapping(inverse(c.transform), box[0], box[1])
+    for i in range(first, vb.count()):
+        var at = i * _VERTEX_FLOATS
+        var x = Float64(vb.data[at])
+        var y = Float64(vb.data[at + 1])
+        vb.data[at + 2] = Float32(
+            mapping.u[0] * x + mapping.u[1] * y + mapping.u[2]
+        )
+        vb.data[at + 3] = Float32(
+            mapping.v[0] * x + mapping.v[1] * y + mapping.v[2]
+        )
+        vb.data[at + 8] = MODE_GRADIENT
+        vb.data[at + 9] = 1.0 if mapping.radial else 0.0
+        vb.data[at + 10] = Float32(ramp_row)
+
+
+def emit_rect(
+    mut vb: VertexBuffer, c: RenderCommand, scale: Float64, ramp_row: Int = -1
+):
     """Fill quad plus, when outlined, a four-quad ring inset from the edge.
 
     Rounded corners need no uniform/non-uniform split like
     `_backend.mojo::_rect` does: every vertex here is already mapped
     individually, so a sheared rounded corner comes out as the ellipse arc
     it should be for free, exactly as `emit_circle` already relies on.
+
+    `ramp_row` is where the renderer holds the fill gradient's ramp, if the
+    fill has one; see `_shade_fill`. Every fill emitter takes it.
     """
     var m = c.transform
+    var first = vb.count()
     var lx0 = c.geom[0] - c.geom[2] / 2.0
     var ly0 = c.geom[1] - c.geom[3] / 2.0
     var lx1 = c.geom[0] + c.geom[2] / 2.0
@@ -384,6 +427,7 @@ def emit_rect(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
         if not c.style._outline_visible():
             if c.style._fill_visible():
                 _mapped_quad(vb, m, lx0, ly0, lx1, ly1, c.style.fill_color)
+                _shade_fill(vb, first, c, ramp_row)
             return
 
         # The ring is built in local units so it follows a rotated edge, but
@@ -405,6 +449,7 @@ def emit_rect(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
             # Inset, not full-size: see the module docstring on double
             # blending.
             _mapped_quad(vb, m, ix0, iy0, ix1, iy1, c.style.fill_color)
+            _shade_fill(vb, first, c, ramp_row)
         var sc = c.style.outline_color
         _mapped_quad(vb, m, lx0, ly0, lx1, iy0, sc)
         _mapped_quad(vb, m, lx0, iy1, lx1, ly1, sc)
@@ -418,6 +463,7 @@ def emit_rect(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
             _rounded_rect_fill(
                 vb, m, lx0, ly0, lx1, ly1, r, sf, c.style.fill_color
             )
+            _shade_fill(vb, first, c, ramp_row)
         return
 
     var sw = Float64(outline_thickness_px(c.style, m, scale)) / sf
@@ -442,6 +488,7 @@ def emit_rect(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
             # The inset silhouette has collapsed: a sharp inner rect, same
             # fallback `emit_rect`'s own sharp path takes at `ix0 >= ix1`.
             _mapped_quad(vb, m, ix0, iy0, ix1, iy1, c.style.fill_color)
+        _shade_fill(vb, first, c, ramp_row)
     _rounded_rect_ring(
         vb,
         m,
@@ -460,7 +507,9 @@ def emit_rect(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
     )
 
 
-def emit_circle(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
+def emit_circle(
+    mut vb: VertexBuffer, c: RenderCommand, scale: Float64, ramp_row: Int = -1
+):
     """A fan for the fill and a ring of quads for the outline.
 
     Both are generated in local space and mapped per vertex, so a non-uniform
@@ -490,20 +539,28 @@ def emit_circle(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
         fill_r = r
 
     var centre = mat_apply(m, cx, cy)
-    for i in range(n):
-        var a0 = Float64(i) * step
-        var a1 = Float64(i + 1) * step
-        var c0 = cos(a0)
-        var s0 = sin(a0)
-        var c1 = cos(a1)
-        var s1 = sin(a1)
-        if fill_on:
-            var p0 = mat_apply(m, cx + c0 * fill_r, cy + s0 * fill_r)
-            var p1 = mat_apply(m, cx + c1 * fill_r, cy + s1 * fill_r)
+    # The fan first, then the ring, so the fan's vertices are one run for
+    # `_shade_fill`.
+    var first = vb.count()
+    if fill_on:
+        for i in range(n):
+            var a0 = Float64(i) * step
+            var a1 = Float64(i + 1) * step
+            var p0 = mat_apply(m, cx + cos(a0) * fill_r, cy + sin(a0) * fill_r)
+            var p1 = mat_apply(m, cx + cos(a1) * fill_r, cy + sin(a1) * fill_r)
             vb.triangle(
                 centre[0], centre[1], p0[0], p0[1], p1[0], p1[1], fill_c
             )
-        if outlined:
+        if c.style._fill_visible():
+            _shade_fill(vb, first, c, ramp_row)
+    if outlined:
+        for i in range(n):
+            var a0 = Float64(i) * step
+            var a1 = Float64(i + 1) * step
+            var c0 = cos(a0)
+            var s0 = sin(a0)
+            var c1 = cos(a1)
+            var s1 = sin(a1)
             var o0 = mat_apply(m, cx + c0 * r, cy + s0 * r)
             var o1 = mat_apply(m, cx + c1 * r, cy + s1 * r)
             var i0 = mat_apply(m, cx + c0 * inner, cy + s0 * inner)
@@ -552,22 +609,30 @@ def emit_bezier(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
     _emit_quads(vb, corners, c.style.outline_color)
 
 
-def emit_sector(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
+def emit_sector(
+    mut vb: VertexBuffer, c: RenderCommand, scale: Float64, ramp_row: Int = -1
+):
     """`sector_quads`' tiling, the same quads the CPU fills: fill, then
     outline."""
     var quads = sector_quads(c, c.transform, scale)
     if c.style._fill_visible():
+        var first = vb.count()
         _emit_quads(vb, quads.fill, c.style.fill_color)
+        _shade_fill(vb, first, c, ramp_row)
     if c.style._outline_visible():
         _emit_quads(vb, quads.outline, c.style.outline_color)
 
 
-def emit_polygon(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
+def emit_polygon(
+    mut vb: VertexBuffer, c: RenderCommand, scale: Float64, ramp_row: Int = -1
+):
     """`polygon_quads`' tiling, the same quads the CPU fills: fill, then
     outline."""
     var quads = polygon_quads(c, c.transform, scale)
     if c.style._fill_visible():
+        var first = vb.count()
         _emit_quads(vb, quads.fill, c.style.fill_color)
+        _shade_fill(vb, first, c, ramp_row)
     if c.style._outline_visible():
         _emit_quads(vb, quads.outline, c.style.outline_color)
 
@@ -729,7 +794,9 @@ def _rounded_triangle_corner_outline(
         prev = cur
 
 
-def emit_triangle(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
+def emit_triangle(
+    mut vb: VertexBuffer, c: RenderCommand, scale: Float64, ramp_row: Int = -1
+):
     """The mapped triangle, plus a quad per edge when outlined.
 
     The outline is three edge quads rather than an inset triangle, matching the
@@ -756,9 +823,11 @@ def emit_triangle(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
         var p2 = mat_apply(m, lx2, ly2)
         var p3 = mat_apply(m, lx3, ly3)
         if c.style._fill_visible():
+            var first = vb.count()
             vb.triangle(
                 p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], c.style.fill_color
             )
+            _shade_fill(vb, first, c, ramp_row)
         if c.style._outline_visible():
             var w = Float64(outline_thickness_px(c.style, m, scale))
             var sc = c.style.outline_color
@@ -779,9 +848,11 @@ def emit_triangle(mut vb: VertexBuffer, c: RenderCommand, scale: Float64):
     var sf = pixel_scale(m, scale)
 
     if c.style._fill_visible():
+        var first = vb.count()
         _rounded_triangle_fill(
             vb, m, cx, cy, f0, f1, f2, r, sf, c.style.fill_color
         )
+        _shade_fill(vb, first, c, ramp_row)
 
     if c.style._outline_visible():
         var w = Float64(outline_thickness_px(c.style, m, scale))

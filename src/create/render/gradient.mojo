@@ -354,6 +354,30 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         v[2] -= self.center.y
         return _DeviceMapping(u, v, True)
 
+    def _stops_key(self) -> Int:
+        """A hash of the stops — all a ramp depends on — for caching one per
+        distinct ramp. Equal stops give equal keys; a collision is told apart
+        by `_same_stops`."""
+        var h = len(self._stops[])
+        for ref stop in self._stops[]:
+            var c = stop[1]
+            h = h * 1000003 ^ Int(stop[0] * 65536.0)
+            h = h * 1000003 ^ (
+                Int(c.r) << 24 | Int(c.g) << 16 | Int(c.b) << 8 | Int(c.a)
+            )
+        return h
+
+    def _same_stops(self, other: Gradient) -> Bool:
+        """Whether the two would build the same ramp."""
+        ref a = self._stops[]
+        ref b = other._stops[]
+        if len(a) != len(b):
+            return False
+        for i in range(len(a)):
+            if a[i][0] != b[i][0] or a[i][1] != b[i][1]:
+                return False
+        return True
+
     def _opaque(self) -> Bool:
         """Whether every pixel it paints is opaque: every stop is."""
         ref stops = self._stops[]

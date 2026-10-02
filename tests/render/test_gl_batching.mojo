@@ -132,6 +132,68 @@ struct RectsAround[bezier: Bool](Program):
 
 
 @fieldwise_init
+struct GradientsAmongSolids[gradients: Bool](Program):
+    """A row of rects, every other one with its own gradient fill when
+    `gradients` is set and solid otherwise."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(
+        mut context: Context,
+    ) raises -> GradientsAmongSolids[Self.gradients]:
+        return GradientsAmongSolids[Self.gradients](0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline_enabled(False)
+        for i in range(8):
+            comptime if Self.gradients:
+                if i % 2 == 1:
+                    canvas.fill(
+                        Gradient.linear(Color(UInt8(i * 30), 0, 0), Color.BLUE)
+                    )
+                else:
+                    canvas.fill(Color.RED)
+            else:
+                canvas.fill(Color.RED)
+            canvas.rectangle((Float64(i) * 12.0 - 42.0, 0.0), 10.0, 40.0)
+
+
+comptime _RAMP_CELLS_X = 20
+comptime _RAMP_CELLS_Y = 15
+
+
+def _ramp_cell_color(index: Int) -> Color:
+    return Color(UInt8(index % 256), UInt8(index // 256 * 200), 50)
+
+
+@fieldwise_init
+struct ManyGradients(Program):
+    """More distinct gradients than the ramp texture has rows, each one a
+    single colour so its pixels are known exactly."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context) raises -> ManyGradients:
+        return ManyGradients(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline_enabled(False)
+        for gy in range(_RAMP_CELLS_Y):
+            for gx in range(_RAMP_CELLS_X):
+                var c = _ramp_cell_color(gy * _RAMP_CELLS_X + gx)
+                canvas.fill(Gradient.linear(c, c))
+                canvas.rectangle(
+                    (Float64(gx) * 10.0 - 95.0, 70.0 - Float64(gy) * 10.0),
+                    8.0,
+                    8.0,
+                )
+
+
+@fieldwise_init
 struct BlendModes(Program):
     """`test_blend_mode.mojo`'s program of the same name: one square per mode
     on one background, then a `NORMAL` one after the guard exits."""
@@ -457,6 +519,27 @@ def test_gl_batching_behaviours() raises -> None:
         0,
         "blurred bezier shadow: textures leak across frames",
     )
+
+    # Case 11: gradient fills sample a ramp texture that stays bound on its
+    # own unit, so they ride in the batch with solid fills.
+    assert_equal(
+        _gpu_draw_calls[GradientsAmongSolids[True]](win),
+        _gpu_draw_calls[GradientsAmongSolids[False]](win),
+        "gradient fills: extra draw calls",
+    )
+
+    # Case 12: more distinct gradients than the ramp texture has rows. The
+    # texture starts over once full, after drawing what still reads the old
+    # rows, so every rect keeps its own colour.
+    var many_gradients = _gpu_frame[ManyGradients](win, 200, 150)
+    for index in [0, 1, 255, 256, 299]:
+        var gx = index % _RAMP_CELLS_X
+        var gy = index // _RAMP_CELLS_X
+        assert_equal(
+            many_gradients.pixel(gx * 10 + 5, gy * 10 + 5),
+            _ramp_cell_color(index),
+            String("many gradients: rect ", index),
+        )
 
     _ = win^
 
