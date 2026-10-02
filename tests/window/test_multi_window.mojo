@@ -1,6 +1,6 @@
 """Verifies two `Window`s can be alive at once. `Window` independently
 `dlopen`s `libSDL3.so` and calls `SDL_Init`/`SDL_QuitSubSystem`, relying on
-SDL's internal per-subsystem ref-count (see `SDL.quit_video`'s docstring)
+SDL's internal per-subsystem ref-count (see `SDL.quit_subsystems`'s docstring)
 rather than tracking its own live-window count -- this exercises that
 assumption instead of just asserting it in prose.
 """

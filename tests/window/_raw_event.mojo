@@ -17,6 +17,10 @@ def write_u8(mut buf: Array[UInt8, SDL_EVENT_SIZE], offset: Int, value: UInt8):
     buf.unsafe_ptr().unsafe_offset(offset).unsafe_bitcast[UInt8]()[] = value
 
 
+def write_i16(mut buf: Array[UInt8, SDL_EVENT_SIZE], offset: Int, value: Int16):
+    buf.unsafe_ptr().unsafe_offset(offset).unsafe_bitcast[Int16]()[] = value
+
+
 def write_u32(
     mut buf: Array[UInt8, SDL_EVENT_SIZE], offset: Int, value: UInt32
 ):

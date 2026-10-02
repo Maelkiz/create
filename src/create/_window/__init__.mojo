@@ -25,4 +25,9 @@ from .event import (
     MouseButtonDown,
     MouseButtonUp,
     MouseWheel,
+    GamepadAdded,
+    GamepadRemoved,
+    GamepadAxisMoved,
+    GamepadButtonDown,
+    GamepadButtonUp,
 )

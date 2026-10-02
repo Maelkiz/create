@@ -35,6 +35,7 @@ package satisfying `pixi.toml`'s `sdl3` dependency name), not against
 the minor/patch range moving."""
 
 comptime SDL_INIT_VIDEO: UInt32 = 0x00000020
+comptime SDL_INIT_GAMEPAD: UInt32 = 0x00002000
 comptime SDL_WINDOW_FULLSCREEN: UInt64 = 0x0000000000000001
 comptime SDL_WINDOW_BORDERLESS: UInt64 = 0x0000000000000010
 comptime SDL_WINDOW_RESIZABLE: UInt64 = 0x0000000000000020
@@ -62,6 +63,15 @@ comptime SDL_EVENT_MOUSE_MOTION: UInt32 = 0x400
 comptime SDL_EVENT_MOUSE_BUTTON_DOWN: UInt32 = 0x401
 comptime SDL_EVENT_MOUSE_BUTTON_UP: UInt32 = 0x402
 comptime SDL_EVENT_MOUSE_WHEEL: UInt32 = 0x403
+comptime SDL_EVENT_GAMEPAD_AXIS_MOTION: UInt32 = 0x650
+comptime SDL_EVENT_GAMEPAD_BUTTON_DOWN: UInt32 = 0x651
+comptime SDL_EVENT_GAMEPAD_BUTTON_UP: UInt32 = 0x652
+comptime SDL_EVENT_GAMEPAD_ADDED: UInt32 = 0x653
+comptime SDL_EVENT_GAMEPAD_REMOVED: UInt32 = 0x654
+
+comptime SDL_JOYSTICK_AXIS_MAX = 32767
+"""Full deflection of a gamepad axis; the stick minimum is one further,
+-32768, so a normalized value is clamped at -1."""
 
 comptime SDL_EVENT_SIZE = 128
 """Size in bytes of SDL_Event — the union is padded to this size for ABI stability."""
@@ -97,13 +107,24 @@ comptime _OFF_BUTTON_Y = 32
 comptime _OFF_WHEEL_X = 24
 comptime _OFF_WHEEL_Y = 28
 
+# SDL_GamepadDeviceEvent, SDL_GamepadAxisEvent and SDL_GamepadButtonEvent all
+# start with the joystick instance id; axis and button share the next byte.
+comptime _OFF_GAMEPAD_ID = 16
+comptime _OFF_GAMEPAD_AXIS = 20
+comptime _OFF_GAMEPAD_BUTTON = 20
+comptime _OFF_GAMEPAD_AXIS_VALUE = 24
+
 
 struct SDL:
     """Thin wrapper over the dynamically-loaded SDL3 library."""
 
     var lib: _DLHandle
+    # Whether `init_subsystems` got the gamepad subsystem, so
+    # `quit_subsystems` releases only what it took.
+    var _gamepad: Bool
 
     def __init__(out self) raises:
+        self._gamepad = False
         comptime if CompilationTarget.is_macos():
             self.lib = _DLHandle("libSDL3.dylib")
         else:
@@ -123,7 +144,7 @@ struct SDL:
     def get_version(self) raises -> Int32:
         """Linked SDL3 library version, encoded as
         `major*1000000 + minor*1000 + micro` (SDL's own `SDL_VERSIONNUM`
-        convention). Safe to call before `init_video()`.
+        convention). Safe to call before `init_subsystems()`.
         """
         return self.lib.call["SDL_GetVersion", Int32]()
 
@@ -133,23 +154,49 @@ struct SDL:
         ]()
         return String(unsafe_from_utf8_ptr=ptr)
 
-    def init_video(self) raises:
+    def init_subsystems(mut self) raises:
+        """Starts video, which must work, and gamepads, which may not.
+
+        A missing controller stack (no udev in a sandbox) is no reason to
+        stop a program that may never touch a gamepad, so a refused gamepad
+        subsystem only means no gamepad events. Once it runs, SDL announces
+        every pad already plugged in as an added event.
+        """
         if not self.lib.call["SDL_Init", Bool](SDL_INIT_VIDEO):
             raise Error("SDL_Init(SDL_INIT_VIDEO) failed: " + self.get_error())
+        self._gamepad = self.lib.call["SDL_InitSubSystem", Bool](
+            SDL_INIT_GAMEPAD
+        )
 
     def quit(self) raises:
         self.lib.call["SDL_Quit"]()
 
-    def quit_video(self) raises:
-        """Decrement the video subsystem's SDL-internal ref count.
+    def quit_subsystems(self) raises:
+        """Decrement the ref counts `init_subsystems` took.
 
         SDL_Init/SDL_InitSubSystem ref-count each subsystem internally; the
         subsystem only actually shuts down once every matching
         SDL_QuitSubSystem call has landed. `Window` relies on this instead
         of tracking its own live-window count (which this Mojo release has
-        no global mutable state to hold outside a function body).
+        no global mutable state to hold outside a function body). The last
+        gamepad release also closes any pads still open.
         """
+        if self._gamepad:
+            self.lib.call["SDL_QuitSubSystem"](SDL_INIT_GAMEPAD)
         self.lib.call["SDL_QuitSubSystem"](SDL_INIT_VIDEO)
+
+    def open_gamepad(self, id: UInt32) raises:
+        """Opens the gamepad SDL announced as `id`: SDL sends no axis or
+        button events for a pad until it is opened. A pad that unplugged
+        in between fails to open, which needs no handling — its removal
+        event follows."""
+        _ = self.lib.call["SDL_OpenGamepad", Int](id)
+
+    def close_gamepad(self, id: UInt32) raises:
+        """Closes the gamepad opened as `id`, if it still is."""
+        var gamepad = self.lib.call["SDL_GetGamepadFromID", Int](id)
+        if gamepad != 0:
+            self.lib.call["SDL_CloseGamepad"](gamepad)
 
     def create_window(
         self,
@@ -389,3 +436,19 @@ def wheel_x(buf: Pointer[UInt8, _]) -> Float32:
 
 def wheel_y(buf: Pointer[UInt8, _]) -> Float32:
     return buf.unsafe_offset(_OFF_WHEEL_Y).unsafe_bitcast[Float32]()[]
+
+
+def gamepad_id(buf: Pointer[UInt8, _]) -> UInt32:
+    return buf.unsafe_offset(_OFF_GAMEPAD_ID).unsafe_bitcast[UInt32]()[]
+
+
+def gamepad_axis(buf: Pointer[UInt8, _]) -> UInt8:
+    return buf.unsafe_offset(_OFF_GAMEPAD_AXIS).unsafe_bitcast[UInt8]()[]
+
+
+def gamepad_axis_value(buf: Pointer[UInt8, _]) -> Int16:
+    return buf.unsafe_offset(_OFF_GAMEPAD_AXIS_VALUE).unsafe_bitcast[Int16]()[]
+
+
+def gamepad_button(buf: Pointer[UInt8, _]) -> UInt8:
+    return buf.unsafe_offset(_OFF_GAMEPAD_BUTTON).unsafe_bitcast[UInt8]()[]

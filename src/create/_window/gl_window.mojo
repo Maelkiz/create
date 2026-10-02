@@ -23,7 +23,7 @@ from ._sdl import (
     window_data1,
     window_data2,
 )
-from .event import Event, Quit, Resized, translate_event
+from .event import Event, Quit, Resized, track_gamepad, translate_event
 
 
 struct GLWindow:
@@ -59,7 +59,7 @@ struct GLWindow:
         report what it actually got. `maximized` opens filling the desktop
         work area, and is subject to the same size substitution."""
         self._sdl = SDL()
-        self._sdl.init_video()
+        self._sdl.init_subsystems()
         try:
             self._sdl.gl_set_attribute(
                 SDL_GL_CONTEXT_MAJOR_VERSION, Int32(major_version)
@@ -80,7 +80,7 @@ struct GLWindow:
                     SDL_GL_MULTISAMPLESAMPLES, Int32(msaa)
                 )
         except e:
-            self._sdl.quit_video()
+            self._sdl.quit_subsystems()
             raise e
         try:
             self._handle = self._sdl.create_window(
@@ -94,13 +94,13 @@ struct GLWindow:
                 maximized=maximized,
             )
         except e:
-            self._sdl.quit_video()
+            self._sdl.quit_subsystems()
             raise e
         try:
             self._context = self._sdl.gl_create_context(self._handle)
         except e:
             self._sdl.destroy_window(self._handle)
-            self._sdl.quit_video()
+            self._sdl.quit_subsystems()
             raise e
         try:
             self._sdl.gl_make_current(self._handle, self._context)
@@ -108,7 +108,7 @@ struct GLWindow:
         except e:
             self._sdl.gl_destroy_context(self._context)
             self._sdl.destroy_window(self._handle)
-            self._sdl.quit_video()
+            self._sdl.quit_subsystems()
             raise e
         self._open = True
         # Fullscreen and maximized make SDL ignore the requested size, so the
@@ -126,14 +126,14 @@ struct GLWindow:
             except e:
                 self._sdl.gl_destroy_context(self._context)
                 self._sdl.destroy_window(self._handle)
-                self._sdl.quit_video()
+                self._sdl.quit_subsystems()
                 raise e
 
     def __deinit__(deinit self):
         try:
             self._sdl.gl_destroy_context(self._context)
             self._sdl.destroy_window(self._handle)
-            self._sdl.quit_video()
+            self._sdl.quit_subsystems()
         except:
             pass
 
@@ -231,6 +231,7 @@ struct GLWindow:
                 self._height = new_height
                 events.append(Event(Resized(new_width, new_height)))
             else:
+                track_gamepad(self._sdl, kind, ptr)
                 var translated = translate_event(kind, ptr)
                 if translated:
                     events.append(translated.value())

@@ -9,7 +9,7 @@ from ._sdl import (
     window_data1,
     window_data2,
 )
-from .event import Event, Quit, Resized, translate_event
+from .event import Event, Quit, Resized, track_gamepad, translate_event
 
 comptime _BYTES_PER_PIXEL = 4
 
@@ -35,7 +35,7 @@ struct Window:
         maximized: Bool = False,
     ) raises:
         self._sdl = SDL()
-        self._sdl.init_video()
+        self._sdl.init_subsystems()
         try:
             self._handle = self._sdl.create_window(
                 title,
@@ -47,14 +47,14 @@ struct Window:
                 maximized=maximized,
             )
         except e:
-            self._sdl.quit_video()
+            self._sdl.quit_subsystems()
             raise e
         self._open = True
         try:
             self._renderer = self._sdl.create_renderer(self._handle)
         except e:
             self._sdl.destroy_window(self._handle)
-            self._sdl.quit_video()
+            self._sdl.quit_subsystems()
             raise e
         # When fullscreen or maximized, SDL ignores the requested size and
         # uses the display or work area — query the real dimensions before
@@ -69,7 +69,7 @@ struct Window:
             except e:
                 self._sdl.destroy_renderer(self._renderer)
                 self._sdl.destroy_window(self._handle)
-                self._sdl.quit_video()
+                self._sdl.quit_subsystems()
                 raise e
         self._width = actual_width
         self._height = actual_height
@@ -82,7 +82,7 @@ struct Window:
         except e:
             self._sdl.destroy_renderer(self._renderer)
             self._sdl.destroy_window(self._handle)
-            self._sdl.quit_video()
+            self._sdl.quit_subsystems()
             raise e
         self._pixels = List[UInt8](
             length=actual_width * actual_height * _BYTES_PER_PIXEL, fill=0
@@ -93,7 +93,7 @@ struct Window:
             self._sdl.destroy_texture(self._texture)
             self._sdl.destroy_renderer(self._renderer)
             self._sdl.destroy_window(self._handle)
-            self._sdl.quit_video()
+            self._sdl.quit_subsystems()
         except:
             pass
 
@@ -168,6 +168,7 @@ struct Window:
                 self._resize(new_width, new_height)
                 events.append(Event(Resized(new_width, new_height)))
             else:
+                track_gamepad(self._sdl, kind, ptr)
                 var translated = translate_event(kind, ptr)
                 if translated:
                     events.append(translated.value())

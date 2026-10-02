@@ -14,8 +14,22 @@ from create._window import (
     MouseButtonDown,
     MouseButtonUp,
     MouseWheel,
+    GamepadAdded,
+    GamepadRemoved,
+    GamepadAxisMoved,
+    GamepadButtonDown,
+    GamepadButtonUp,
 )
 from create._window._sdl import (
+    SDL_EVENT_GAMEPAD_ADDED,
+    SDL_EVENT_GAMEPAD_REMOVED,
+    SDL_EVENT_GAMEPAD_AXIS_MOTION,
+    SDL_EVENT_GAMEPAD_BUTTON_DOWN,
+    SDL_EVENT_GAMEPAD_BUTTON_UP,
+    _OFF_GAMEPAD_ID,
+    _OFF_GAMEPAD_AXIS,
+    _OFF_GAMEPAD_AXIS_VALUE,
+    _OFF_GAMEPAD_BUTTON,
     SDL_EVENT_QUIT,
     SDL_EVENT_KEY_DOWN,
     SDL_EVENT_KEY_UP,
@@ -38,6 +52,7 @@ from create._window.event import translate_event
 from _raw_event import (
     new_event_buffer,
     write_u8,
+    write_i16,
     write_u32,
     write_f32,
     write_pointer,
@@ -129,6 +144,52 @@ def test_mouse_wheel_translates() raises -> None:
     var e = translated.value()
     assert_equal(e[MouseWheel].x, 0)
     assert_equal(e[MouseWheel].y, -1)
+
+
+def test_gamepad_added_and_removed_translate() raises -> None:
+    var added = new_event_buffer(SDL_EVENT_GAMEPAD_ADDED)
+    write_u32(added, _OFF_GAMEPAD_ID, 7)
+    var e = translate_event(SDL_EVENT_GAMEPAD_ADDED, added.unsafe_ptr()).value()
+    assert_equal(e[GamepadAdded].id, 7)
+
+    var removed = new_event_buffer(SDL_EVENT_GAMEPAD_REMOVED)
+    write_u32(removed, _OFF_GAMEPAD_ID, 7)
+    e = translate_event(SDL_EVENT_GAMEPAD_REMOVED, removed.unsafe_ptr()).value()
+    assert_equal(e[GamepadRemoved].id, 7)
+
+
+def _axis_event(axis: UInt8, value: Int16) raises -> GamepadAxisMoved:
+    var buf = new_event_buffer(SDL_EVENT_GAMEPAD_AXIS_MOTION)
+    write_u32(buf, _OFF_GAMEPAD_ID, 3)
+    write_u8(buf, _OFF_GAMEPAD_AXIS, axis)
+    write_i16(buf, _OFF_GAMEPAD_AXIS_VALUE, value)
+    var e = translate_event(SDL_EVENT_GAMEPAD_AXIS_MOTION, buf.unsafe_ptr())
+    return e.value()[GamepadAxisMoved]
+
+
+def test_gamepad_axis_translates_normalized() raises -> None:
+    var e = _axis_event(1, 32767)
+    assert_equal(e.id, 3)
+    assert_equal(e.axis, 1)
+    assert_equal(e.value, 1.0)
+    assert_equal(_axis_event(0, 0).value, 0.0)
+
+
+def test_gamepad_axis_minimum_clamps_to_minus_one() raises -> None:
+    assert_equal(_axis_event(0, -32768).value, -1.0)
+
+
+def test_gamepad_buttons_translate() raises -> None:
+    var buf = new_event_buffer(SDL_EVENT_GAMEPAD_BUTTON_DOWN)
+    write_u32(buf, _OFF_GAMEPAD_ID, 2)
+    write_u8(buf, _OFF_GAMEPAD_BUTTON, 6)
+    var e = translate_event(
+        SDL_EVENT_GAMEPAD_BUTTON_DOWN, buf.unsafe_ptr()
+    ).value()
+    assert_equal(e[GamepadButtonDown].id, 2)
+    assert_equal(e[GamepadButtonDown].button, 6)
+    e = translate_event(SDL_EVENT_GAMEPAD_BUTTON_UP, buf.unsafe_ptr()).value()
+    assert_equal(e[GamepadButtonUp].button, 6)
 
 
 def main() raises:
