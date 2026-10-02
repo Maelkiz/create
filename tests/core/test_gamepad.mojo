@@ -225,6 +225,29 @@ def test_pad_replacing_one_that_left_this_frame_keeps_both_edges() raises -> (
     assert_equal(pad.name, "New")
 
 
+def test_rumble_queues_for_a_connected_pad_only() raises -> None:
+    var context = Context()
+    context.rumble(0.5)
+    assert_equal(len(context._rumbles), 0)
+    _frame(context, [Event(GamepadAdded(9, "Pad 9"))])
+    context.rumble(0.25, low_frequency=0.5, high_frequency=0.0)
+    context.rumble(1.0, player=1)
+    assert_equal(len(context._rumbles), 1)
+    var rumble = context._rumbles[0]
+    assert_equal(rumble.id, 9)
+    assert_equal(rumble.low_frequency, 0.5)
+    assert_equal(rumble.high_frequency, 0.0)
+    assert_equal(rumble.seconds, 0.25)
+
+
+def test_rumbles_are_dropped_at_the_next_frame() raises -> None:
+    var context = Context()
+    _frame(context, [Event(GamepadAdded(9, "Pad 9"))])
+    context.rumble(0.2)
+    context._advance_frame(16)
+    assert_equal(len(context._rumbles), 0)
+
+
 def test_prints_keyword_form() raises -> None:
     assert_equal(
         String(Gamepad()),

@@ -208,6 +208,26 @@ struct SDL:
             )
         )
 
+    def rumble_gamepad(
+        self,
+        id: UInt32,
+        low_frequency: Float64,
+        high_frequency: Float64,
+        seconds: Float64,
+    ) raises:
+        """Runs the open gamepad's motors at these strengths (0..1) for
+        `seconds`, replacing whatever rumble it was running. A pad without
+        motors, or one already gone, ignores it."""
+        var gamepad = self.lib.call["SDL_GetGamepadFromID", Int](id)
+        if gamepad == 0:
+            return
+        _ = self.lib.call["SDL_RumbleGamepad", Bool](
+            gamepad,
+            _motor_strength(low_frequency),
+            _motor_strength(high_frequency),
+            UInt32(max(seconds, 0.0) * 1000.0),
+        )
+
     def create_window(
         self,
         title: String,
@@ -369,6 +389,10 @@ struct SDL:
 
     def gl_get_proc_address(self, name: String) raises -> Int:
         return self.lib.call["SDL_GL_GetProcAddress", Int](name.unsafe_ptr())
+
+
+def _motor_strength(strength: Float64) -> UInt16:
+    return UInt16(min(max(strength, 0.0), 1.0) * 65535.0)
 
 
 # --- SDL_Event field readers -------------------------------------------

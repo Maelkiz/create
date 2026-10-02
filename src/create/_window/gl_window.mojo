@@ -215,6 +215,19 @@ struct GLWindow:
         """
         self._sdl.gl_set_swap_interval(interval)
 
+    def rumble_gamepad(
+        self,
+        id: Int,
+        low_frequency: Float64,
+        high_frequency: Float64,
+        seconds: Float64,
+    ) raises:
+        """Runs gamepad `id`'s motors (strengths 0..1) for `seconds`; see
+        `SDL.rumble_gamepad`."""
+        self._sdl.rumble_gamepad(
+            UInt32(id), low_frequency, high_frequency, seconds
+        )
+
     def events(mut self) raises -> List[Event]:
         """Drains all pending SDL events for this frame as translated `Event`s.
 

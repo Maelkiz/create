@@ -99,6 +99,17 @@ def _wait_for_dimensions(
         _ = _update_dimensions(win, state, context)
 
 
+def _send_rumbles(win: GLWindow, context: Context) raises:
+    """Hand this frame's `context.rumble` calls to the pads."""
+    for rumble in context._rumbles:
+        win.rumble_gamepad(
+            rumble.id,
+            rumble.low_frequency,
+            rumble.high_frequency,
+            rumble.seconds,
+        )
+
+
 def _cap_frame_rate(
     mut win: GLWindow, context: Context, frame_start: Int
 ) raises:
@@ -137,6 +148,7 @@ def _run_loop[
         state = step(program, context, state^)
         state.backend.present_gpu(drawable[0], drawable[1], state.view.scale)
         win.swap_buffers()
+        _send_rumbles(win, context)
         _cap_frame_rate(win, context, frame_start)
     # Rule 3 from `_gl.mojo`: the context owner must outlive the last GL call,
     # and the renderer inside `state` makes them when it is destroyed.

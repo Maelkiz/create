@@ -38,6 +38,17 @@ def _process_events(
         win.close()
 
 
+def _send_rumbles(win: Window, context: Context) raises:
+    """Hand this frame's `context.rumble` calls to the pads."""
+    for rumble in context._rumbles:
+        win.rumble_gamepad(
+            rumble.id,
+            rumble.low_frequency,
+            rumble.high_frequency,
+            rumble.seconds,
+        )
+
+
 def _cap_frame_rate(mut win: Window, context: Context, frame_start: Int) raises:
     """Sleep off whatever is left of the target frame duration, if any."""
     if context._max_frame_rate <= 0:
@@ -86,6 +97,7 @@ def _run_loop[
             Surface(win.pixels(), pixel_w, pixel_h), state.view.scale
         )
         win.present()
+        _send_rumbles(win, context)
         _cap_frame_rate(win, context, frame_start)
 
 

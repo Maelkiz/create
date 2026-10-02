@@ -6,6 +6,17 @@ from .time import Time
 from .input import Input
 
 
+@fieldwise_init
+struct _Rumble(ImplicitlyCopyable, Movable):
+    """One `rumble` call, addressed to the pad by SDL's id rather than its
+    slot, so the slot it named when called is the one that rumbles."""
+
+    var id: Int
+    var low_frequency: Float64
+    var high_frequency: Float64
+    var seconds: Float64
+
+
 struct Context(Copyable, Movable):
     """The run's state: everything that outlives a frame.
 
@@ -18,8 +29,8 @@ struct Context(Copyable, Movable):
     survive the frame boundary cannot live on it. These do — the autoscale
     mode and design resolution the next frame's mapping is derived from,
     whether the next frame opens with a clear, the letterbox colour, and the
-    two the run loop reads after a frame has been released, `max_frame_rate`
-    and `quit`.
+    ones the run loop reads after a frame has been released, `max_frame_rate`,
+    `quit` and `rumble`.
 
     Handed to `Program.create` on its own, before any frame exists, and
     alongside the `Canvas` to `Program.update`. That is the whole reason it is a
@@ -34,9 +45,9 @@ struct Context(Copyable, Movable):
     each frame. So a dial turned part-way through `update` applies to the *next*
     frame, uniformly — the clear of the frame being rendered was recorded before
     `update` was called, and one frame cannot record under two mappings. Set
-    them in `create` to have them hold from frame one. `max_frame_rate` and
-    `quit` are the exception, and only because the loop reads them after the
-    frame body returns.
+    them in `create` to have them hold from frame one. `max_frame_rate`,
+    `quit` and `rumble` are the exception, and only because the loop reads
+    them after the frame body returns.
     """
 
     var time: Time
@@ -44,7 +55,7 @@ struct Context(Copyable, Movable):
     `delta` and `elapsed` here, and don't write it — the loop derives the
     next delta from it."""
     var input: Input
-    """Keyboard and mouse state. The run loop folds each frame's events into
+    """Keyboard, mouse and gamepad state. The run loop folds each frame's events into
     it before `update`, so it is settled for the whole frame. Read it, don't
     write it: the loop carries it into the next frame."""
     var _autoscale: AutoScale
@@ -56,6 +67,9 @@ struct Context(Copyable, Movable):
     var _frame_count: Int
     var _max_frame_rate: Int
     var _quit: Bool
+    # This frame's `rumble` calls, sent by the windowed loops after `update`
+    # and dropped at the next frame's start either way.
+    var _rumbles: List[_Rumble]
 
     def __init__(out self):
         self.time = Time()
@@ -69,6 +83,7 @@ struct Context(Copyable, Movable):
         self._frame_count = 0
         self._max_frame_rate = 0
         self._quit = False
+        self._rumbles = []
 
     def design_resolution(mut self, width: Int, height: Int):
         """Author this program in a fixed world size, scaled to any window.
@@ -161,7 +176,12 @@ struct Context(Copyable, Movable):
         )
 
     def _advance_frame(mut self, now: Int):
-        """Tick the clock and count the frame, before each `update`."""
+        """Tick the clock and count the frame, before each `update`.
+
+        Also drops last frame's rumbles: the windowed loops sent them already,
+        and the headless one has nowhere to send them.
+        """
+        self._rumbles.clear()
         self.time._tick(now)
         self._frame_count += 1
 
@@ -172,3 +192,26 @@ struct Context(Copyable, Movable):
         destructors run — unlike `std.sys.exit`, which aborts the process.
         """
         self._quit = True
+
+    def rumble(
+        mut self,
+        seconds: Float64,
+        low_frequency: Float64 = 1.0,
+        high_frequency: Float64 = 1.0,
+        player: Int = 0,
+    ):
+        """Shake player `player`'s gamepad for `seconds`.
+
+        Most pads have two motors: `low_frequency` is the heavy one, a thud
+        or an engine, and `high_frequency` the light buzz; each is 0 (off) to
+        1 (full). Both at full by default, so `context.rumble(0.2)` is a
+        short jolt. A new rumble replaces the one running, so
+        `context.rumble(0, 0, 0)` stops it early. Sent after `update`
+        returns, like `quit`; a pad without motors, an empty slot and a
+        headless run ignore it.
+        """
+        var pad = self.input.gamepad(player)
+        if pad.connected:
+            self._rumbles.append(
+                _Rumble(pad._id, low_frequency, high_frequency, seconds)
+            )
