@@ -1707,7 +1707,9 @@ struct Backend(Movable):
                 var fill_col = _fill_paint(c, m)
                 var outline_col = c.style.outline_color
                 for row in range(b[1], b[3]):
-                    var local0 = mat_apply(minv, Float64(b[0]), Float64(row))
+                    var local0 = mat_apply(
+                        minv, Float64(b[0]) + 0.5, Float64(row) + 0.5
+                    )
                     var A = local0[0]
                     var B = local0[1]
                     var row_off = row * W
@@ -1801,7 +1803,9 @@ struct Backend(Movable):
                 var inner_r = r_local - sw_f
                 var inner_r2 = inner_r * inner_r if inner_r > 0.0 else 0.0
                 for row in range(b[1], b[3]):
-                    var local0 = mat_apply(minv, Float64(b[0]), Float64(row))
+                    var local0 = mat_apply(
+                        minv, Float64(b[0]) + 0.5, Float64(row) + 0.5
+                    )
                     var A0 = local0[0]
                     var B0 = local0[1]
                     var row_off = row * W
