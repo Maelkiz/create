@@ -7,6 +7,7 @@ from create.color.color import Color
 from .font import _GlyphInfo
 from create.color.gradient import Gradient, _DeviceMapping
 from .surface import Surface
+from create.math.point2d import Point2D
 
 
 def _blend_lanes[
@@ -478,25 +479,85 @@ def fill_quad[
     # Rows whose centre `row + 0.5` lies in `[y_lo, y_hi)`.
     var r0 = max(Int(ceil(y_lo - 0.5)), 0)
     var r1 = min(Int(ceil(y_hi - 0.5)), s.height)
+    # Each edge from its lower end, with its slope worked out once rather
+    # than divided out per row; `fill_convex` does exactly the same, so the
+    # two agree to the bit on an edge they share.
+    var ex = Array[Float64, 4](fill=0.0)
+    var ey0 = Array[Float64, 4](fill=0.0)
+    var ey1 = Array[Float64, 4](fill=0.0)
+    var slope = Array[Float64, 4](fill=0.0)
+    for i in range(4):
+        var e = _edge(qx[i], qy[i], qx[(i + 1) % 4], qy[(i + 1) % 4])
+        ex[i] = e[0]
+        ey0[i] = e[1]
+        ey1[i] = e[2]
+        slope[i] = e[3]
     for row in range(r0, r1):
         var yc = Float64(row) + 0.5
         var lo = Float64.MAX
         var hi = -Float64.MAX
         for i in range(4):
-            var ax = qx[i]
-            var ay = qy[i]
-            var bx = qx[(i + 1) % 4]
-            var by = qy[(i + 1) % 4]
-            if by < ay:
-                swap(ax, bx)
-                swap(ay, by)
             # Half-open in y, so a vertex on the centre line counts once
             # and a level edge not at all.
-            if ay <= yc and yc < by:
-                var x = ax + (bx - ax) * (yc - ay) / (by - ay)
+            if ey0[i] <= yc and yc < ey1[i]:
+                var x = ex[i] + slope[i] * (yc - ey0[i])
                 lo = min(lo, x)
                 hi = max(hi, x)
         # Columns whose centre `col + 0.5` lies in `[lo, hi)`.
+        var c0 = max(Int(ceil(lo - 0.5)), 0)
+        var c1 = min(Int(ceil(hi - 0.5)), W)
+        if c1 > c0:
+            fill_span(s, (row * W + c0) * 4, c1 - c0, c)
+
+
+@always_inline
+def _edge(
+    ax: Float64, ay: Float64, bx: Float64, by: Float64
+) -> Tuple[Float64, Float64, Float64, Float64]:
+    """An edge as `fill_quad` and `fill_convex` walk it: its lower end's
+    x, the lower and upper y, and x per unit y (0 for a level edge, which no
+    row centre crosses)."""
+    if by < ay:
+        return (bx, by, ay, (ax - bx) / (ay - by))
+    if by == ay:
+        return (ax, ay, by, 0.0)
+    return (ax, ay, by, (bx - ax) / (by - ay))
+
+
+def fill_convex[
+    o: Origin[mut=True]
+](s: Surface[o], corners: List[Point2D], c: FillPaint):
+    """Fill the convex device polygon `corners`, in order around its edge,
+    by pixel centre: `fill_quad` for any number of corners, with the same
+    rules — each row's span at its centre line, half-open in x and y, each
+    edge interpolated from its lower end — so a polygon and a quad sharing
+    an edge compute the same crossings and composite it once.
+    """
+    var n = len(corners)
+    if n < 3:
+        return
+    var y_lo = Float64.MAX
+    var y_hi = -Float64.MAX
+    for p in corners:
+        y_lo = min(y_lo, p.y)
+        y_hi = max(y_hi, p.y)
+    var W = s.width
+    var r0 = max(Int(ceil(y_lo - 0.5)), 0)
+    var r1 = min(Int(ceil(y_hi - 0.5)), s.height)
+    var edges = List[Tuple[Float64, Float64, Float64, Float64]](capacity=n)
+    for i in range(n):
+        var a = corners[i]
+        var b = corners[(i + 1) % n]
+        edges.append(_edge(a.x, a.y, b.x, b.y))
+    for row in range(r0, r1):
+        var yc = Float64(row) + 0.5
+        var lo = Float64.MAX
+        var hi = -Float64.MAX
+        for ref e in edges:
+            if e[1] <= yc and yc < e[2]:
+                var x = e[0] + e[3] * (yc - e[1])
+                lo = min(lo, x)
+                hi = max(hi, x)
         var c0 = max(Int(ceil(lo - 0.5)), 0)
         var c1 = min(Int(ceil(hi - 0.5)), W)
         if c1 > c0:

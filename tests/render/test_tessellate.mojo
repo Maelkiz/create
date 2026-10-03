@@ -357,7 +357,11 @@ def test_an_unoutlined_bezier_emits_nothing() raises -> None:
     assert_equal(vb.count(), 0)
 
 
-def test_a_triangle_is_one_triangle_plus_three_edge_quads() raises -> None:
+def test_an_outlined_triangle_is_a_shrunk_triangle_in_a_ring_of_quads() raises -> (
+    None
+):
+    # Every corner within the miter limit, so no bevels: one ring quad per
+    # edge around the fill, the triangle shrunk by half the outline.
     var vb = VertexBuffer()
     var v = _viewport(100, 100)
     var s = _plain()

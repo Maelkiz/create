@@ -33,6 +33,7 @@ from ._command import RenderCommand, _fill_box
 from ._curve import bezier_device_points, stroke_quads
 from ._sector import sector_quads
 from ._polygon import polygon_quads
+from ._triangle import triangle_pieces
 from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
 from ._shadow import (
     SIL_RECT,
@@ -764,117 +765,43 @@ def _rounded_triangle_fill(
     )
 
 
-def _rounded_triangle_corner_outline(
-    mut vb: VertexBuffer,
-    m: Matrix[3, 3],
-    f: Tuple[
-        Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64
-    ],
-    r: Float64,
-    sf: Float64,
-    width: Float64,
-    color: Color,
-):
-    """One rounded corner's outline arc as a fan of thick segments between
-    mapped arc samples, mirroring `_backend.mojo::_render_fillet_arc_mapped`'s
-    centred device-space band exactly — not a filled sector, so it matches
-    the straight edge bands' own convention rather than the rounded rect's
-    inset ring."""
-    var cx = f[0]
-    var cy = f[1]
-    var angle_in = f[6]
-    var span = _fillet_arc_span(f)
-    var n = _arc_segments(r * sf, span)
-    var prev = mat_apply(m, cx + r * cos(angle_in), cy + r * sin(angle_in))
-    for i in range(1, n + 1):
-        var t = Float64(i) / Float64(n)
-        var ang = angle_in + span * t
-        var cur = mat_apply(m, cx + r * cos(ang), cy + r * sin(ang))
-        _segment_quad(vb, prev[0], prev[1], cur[0], cur[1], width, color)
-        prev = cur
-
-
 def emit_triangle(
     mut vb: VertexBuffer, c: RenderCommand, scale: Float64, ramp_row: Int = -1
 ):
-    """The mapped triangle, plus a quad per edge when outlined.
-
-    The outline is three edge quads rather than an inset triangle, matching the
-    CPU replay, which outlines a triangle with three `line_pixels` calls.
-
-    Rounded corners need no uniform/non-uniform split like
-    `_backend.mojo::_triangle` does: every vertex here is already mapped
-    individually, so a sheared rounded corner comes out as the ellipse arc
-    it should be for free, exactly as `emit_rect` already relies on.
-    """
+    """The mapped triangle; rounded or outlined, `triangle_pieces`' tiling,
+    the same pieces the CPU fills: fill, then outline."""
     var m = c.transform
-    var lx1 = c.geom[0]
-    var ly1 = c.geom[1]
-    var lx2 = c.geom[2]
-    var ly2 = c.geom[3]
-    var lx3 = c.geom[4]
-    var ly3 = c.geom[5]
-    var r = triangle_corner_radius(
-        Float64(c.style.corner_radius), lx1, ly1, lx2, ly2, lx3, ly3
-    )
-
-    if r <= 0.0:
-        var p1 = mat_apply(m, lx1, ly1)
-        var p2 = mat_apply(m, lx2, ly2)
-        var p3 = mat_apply(m, lx3, ly3)
-        if c.style._fill_visible():
+    var fill_visible = c.style._fill_visible()
+    var outline_visible = c.style._outline_visible()
+    if c.style.corner_radius <= 0 and not outline_visible:
+        if fill_visible:
+            var p1 = mat_apply(m, c.geom[0], c.geom[1])
+            var p2 = mat_apply(m, c.geom[2], c.geom[3])
+            var p3 = mat_apply(m, c.geom[4], c.geom[5])
             var first = vb.count()
             vb.triangle(
                 p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], c.style.fill_color
             )
             _shade_fill(vb, first, c, ramp_row)
-        if c.style._outline_visible():
-            var w = Float64(outline_thickness_px(c.style, m, scale))
-            var sc = c.style.outline_color
-            _segment_quad(vb, p1[0], p1[1], p2[0], p2[1], w, sc)
-            _segment_quad(vb, p2[0], p2[1], p3[0], p3[1], w, sc)
-            _segment_quad(vb, p3[0], p3[1], p1[0], p1[1], w, sc)
         return
-
-    # Corner `i`'s prev/next follow the winding order `p1 -> p2 -> p3 ->
-    # p1`, matching `_backend.mojo::_triangle`'s own layout exactly, so the
-    # two backends cannot disagree on which tangent point sits on which
-    # edge.
-    var f0 = corner_fillet(lx1, ly1, lx3, ly3, lx2, ly2, r)
-    var f1 = corner_fillet(lx2, ly2, lx1, ly1, lx3, ly3, r)
-    var f2 = corner_fillet(lx3, ly3, lx2, ly2, lx1, ly1, r)
-    var cx = (lx1 + lx2 + lx3) / 3.0
-    var cy = (ly1 + ly2 + ly3) / 3.0
-    var sf = pixel_scale(m, scale)
-
-    if c.style._fill_visible():
+    var pieces = triangle_pieces(c, m, scale)
+    if fill_visible and len(pieces.fill) >= 3:
+        # Convex, so a fan from its first corner.
         var first = vb.count()
-        _rounded_triangle_fill(
-            vb, m, cx, cy, f0, f1, f2, r, sf, c.style.fill_color
-        )
+        ref f = pieces.fill
+        for i in range(1, len(f) - 1):
+            vb.triangle(
+                f[0].x,
+                f[0].y,
+                f[i].x,
+                f[i].y,
+                f[i + 1].x,
+                f[i + 1].y,
+                c.style.fill_color,
+            )
         _shade_fill(vb, first, c, ramp_row)
-
-    if c.style._outline_visible():
-        var w = Float64(outline_thickness_px(c.style, m, scale))
-        var sc = c.style.outline_color
-        var t_f0_out = mat_apply(m, f0[4], f0[5])
-        var t_f1_in = mat_apply(m, f1[2], f1[3])
-        var t_f1_out = mat_apply(m, f1[4], f1[5])
-        var t_f2_in = mat_apply(m, f2[2], f2[3])
-        var t_f2_out = mat_apply(m, f2[4], f2[5])
-        var t_f0_in = mat_apply(m, f0[2], f0[3])
-        _segment_quad(
-            vb, t_f0_out[0], t_f0_out[1], t_f1_in[0], t_f1_in[1], w, sc
-        )
-        _segment_quad(
-            vb, t_f1_out[0], t_f1_out[1], t_f2_in[0], t_f2_in[1], w, sc
-        )
-        _segment_quad(
-            vb, t_f2_out[0], t_f2_out[1], t_f0_in[0], t_f0_in[1], w, sc
-        )
-        _rounded_triangle_corner_outline(vb, m, f0, r, sf, w, sc)
-        _rounded_triangle_corner_outline(vb, m, f1, r, sf, w, sc)
-        _rounded_triangle_corner_outline(vb, m, f2, r, sf, w, sc)
+    if outline_visible:
+        _emit_quads(vb, pieces.ring, c.style.outline_color)
 
 
 def emit_letterbox(
