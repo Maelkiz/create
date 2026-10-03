@@ -11,6 +11,9 @@ from ._gl import (
     GL,
     GL_CLAMP_TO_EDGE,
     GL_COLOR_ATTACHMENT0,
+    GL_DEPTH24_STENCIL8,
+    GL_DEPTH_STENCIL_ATTACHMENT,
+    GL_RENDERBUFFER,
     GL_FRAMEBUFFER,
     GL_FRAMEBUFFER_COMPLETE,
     GL_NEAREST,
@@ -39,6 +42,9 @@ struct _GLTarget(Movable):
 
     var gl: GL
     var color: UInt32
+    var stencil: UInt32
+    """Depth and stencil in one renderbuffer, as a window's default
+    framebuffer has them: `canvas.clip` needs the stencil."""
     var fbo: UInt32
     var width: Int
     var height: Int
@@ -74,6 +80,20 @@ struct _GLTarget(Movable):
         gl.framebuffer_texture_2d(
             GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color, 0
         )
+        gl.gen_renderbuffers(
+            1, _UInts(unsafe_from_address=Int(names.unsafe_ptr()))
+        )
+        var stencil = names[0]
+        gl.bind_renderbuffer(GL_RENDERBUFFER, stencil)
+        gl.renderbuffer_storage(
+            GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Int32(width), Int32(height)
+        )
+        gl.framebuffer_renderbuffer(
+            GL_FRAMEBUFFER,
+            GL_DEPTH_STENCIL_ATTACHMENT,
+            GL_RENDERBUFFER,
+            stencil,
+        )
         if (
             gl.check_framebuffer_status(GL_FRAMEBUFFER)
             != GL_FRAMEBUFFER_COMPLETE
@@ -82,6 +102,7 @@ struct _GLTarget(Movable):
 
         self.gl = gl^
         self.color = color
+        self.stencil = stencil
         self.fbo = fbo
         self.width = width
         self.height = height
@@ -89,4 +110,5 @@ struct _GLTarget(Movable):
     def __deinit__(deinit self):
         self.gl.bind_framebuffer(GL_FRAMEBUFFER, 0)
         _delete_object(self.gl.delete_framebuffers, self.fbo)
+        _delete_object(self.gl.delete_renderbuffers, self.stencil)
         _delete_object(self.gl.delete_textures, self.color)

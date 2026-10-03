@@ -90,6 +90,15 @@ comptime GL_FRAMEBUFFER: UInt32 = 0x8D40
 comptime GL_COLOR_ATTACHMENT0: UInt32 = 0x8CE0
 comptime GL_FRAMEBUFFER_COMPLETE: UInt32 = 0x8CD5
 comptime GL_PACK_ALIGNMENT: UInt32 = 0x0D05
+comptime GL_STENCIL_BUFFER_BIT: UInt32 = 0x00000400
+comptime GL_STENCIL_TEST: UInt32 = 0x0B90
+comptime GL_EQUAL: UInt32 = 0x0202
+comptime GL_KEEP: UInt32 = 0x1E00
+comptime GL_INCR: UInt32 = 0x1E02
+comptime GL_DECR: UInt32 = 0x1E03
+comptime GL_RENDERBUFFER: UInt32 = 0x8D41
+comptime GL_DEPTH24_STENCIL8: UInt32 = 0x88F0
+comptime GL_DEPTH_STENCIL_ATTACHMENT: UInt32 = 0x821A
 comptime GL_UNPACK_ALIGNMENT: UInt32 = 0x0CF5
 
 
@@ -133,6 +142,9 @@ comptime _BlendFuncSeparate = def(UInt32, UInt32, UInt32, UInt32) thin abi(
     "C"
 ) -> None
 comptime _BlendEquationSeparate = def(UInt32, UInt32) thin abi("C") -> None
+comptime _ColorMask = def(UInt8, UInt8, UInt8, UInt8) thin abi("C") -> None
+comptime _StencilFunc = def(UInt32, Int32, UInt32) thin abi("C") -> None
+comptime _StencilOp = def(UInt32, UInt32, UInt32) thin abi("C") -> None
 
 comptime _GenObjects = def(Int32, _UInts) thin abi("C") -> None
 comptime _DeleteObjects = def(Int32, _UInts) thin abi("C") -> None
@@ -187,6 +199,13 @@ comptime _FramebufferTexture2D = def(
     UInt32, UInt32, UInt32, UInt32, Int32
 ) thin abi("C") -> None
 comptime _CheckFramebufferStatus = def(UInt32) thin abi("C") -> UInt32
+comptime _BindRenderbuffer = def(UInt32, UInt32) thin abi("C") -> None
+comptime _RenderbufferStorage = def(UInt32, UInt32, Int32, Int32) thin abi(
+    "C"
+) -> None
+comptime _FramebufferRenderbuffer = def(
+    UInt32, UInt32, UInt32, UInt32
+) thin abi("C") -> None
 comptime _ReadPixels = def(
     Int32, Int32, Int32, Int32, UInt32, UInt32, _Bytes
 ) thin abi("C") -> None
@@ -259,6 +278,11 @@ struct GL(Movable):
     var blend_func: _BlendFunc
     var blend_func_separate: _BlendFuncSeparate
     var blend_equation_separate: _BlendEquationSeparate
+    var color_mask: _ColorMask
+    var stencil_func: _StencilFunc
+    var stencil_op: _StencilOp
+    """The stencil buffer holds `canvas.clip`; see
+    `GLRenderer._apply_clip`."""
 
     var gen_buffers: _GenObjects
     var bind_buffer: _BindBuffer
@@ -300,6 +324,12 @@ struct GL(Movable):
     var delete_framebuffers: _DeleteFramebuffers
     var framebuffer_texture_2d: _FramebufferTexture2D
     var check_framebuffer_status: _CheckFramebufferStatus
+    var gen_renderbuffers: _GenObjects
+    var bind_renderbuffer: _BindRenderbuffer
+    var renderbuffer_storage: _RenderbufferStorage
+    var framebuffer_renderbuffer: _FramebufferRenderbuffer
+    var delete_renderbuffers: _DeleteObjects
+    """An offscreen target's stencil, which a window has of its own."""
     var read_pixels: _ReadPixels
     """Framebuffer objects and readback. No frame uses either — they exist
     for `tests/render/test_gl_parity.mojo`, which needs to render at an exact
@@ -330,6 +360,9 @@ struct GL(Movable):
         self.blend_equation_separate = _bind[_BlendEquationSeparate](
             lib, "glBlendEquationSeparate"
         )
+        self.color_mask = _bind[_ColorMask](lib, "glColorMask")
+        self.stencil_func = _bind[_StencilFunc](lib, "glStencilFunc")
+        self.stencil_op = _bind[_StencilOp](lib, "glStencilOp")
 
         self.gen_buffers = _bind[_GenObjects](lib, "glGenBuffers")
         self.bind_buffer = _bind[_BindBuffer](lib, "glBindBuffer")
@@ -390,6 +423,19 @@ struct GL(Movable):
         )
         self.check_framebuffer_status = _bind[_CheckFramebufferStatus](
             lib, "glCheckFramebufferStatus"
+        )
+        self.gen_renderbuffers = _bind[_GenObjects](lib, "glGenRenderbuffers")
+        self.bind_renderbuffer = _bind[_BindRenderbuffer](
+            lib, "glBindRenderbuffer"
+        )
+        self.renderbuffer_storage = _bind[_RenderbufferStorage](
+            lib, "glRenderbufferStorage"
+        )
+        self.framebuffer_renderbuffer = _bind[_FramebufferRenderbuffer](
+            lib, "glFramebufferRenderbuffer"
+        )
+        self.delete_renderbuffers = _bind[_DeleteObjects](
+            lib, "glDeleteRenderbuffers"
         )
         self.read_pixels = _bind[_ReadPixels](lib, "glReadPixels")
 
