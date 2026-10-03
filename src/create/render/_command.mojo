@@ -98,6 +98,11 @@ struct RenderCommand(Copyable, Movable):
     var silhouette: Bool
     """`CMD_SPRITE` only: paint `style.fill_color` wherever the image is
     opaque, scaled by its alpha, instead of the image. A sprite's shadow."""
+    var image_alpha: UInt8
+    """`CMD_SPRITE` only: the style's opacity, which scales every texel's
+    alpha. A sprite takes none of the style's colours, so opacity cannot be
+    resolved into one of them as it is for every other kind; a silhouette
+    ignores it, since its colour already carries it."""
     var clip: Int
     """The id of the innermost `canvas.clip` this was rendered under — an
     index into `Backend.clips`, one past — or 0 for none. Stamped by
@@ -125,6 +130,7 @@ struct RenderCommand(Copyable, Movable):
         self.geom[5] = g5
         self.transform = transform
         self.style = style
+        var alpha: UInt8 = 255
         if self.style.opacity != 1.0:
             self.style.fill_color = _scaled_alpha(
                 self.style.fill_color, self.style.opacity
@@ -144,6 +150,7 @@ struct RenderCommand(Copyable, Movable):
             self.style.shadow_color = _scaled_alpha(
                 self.style.shadow_color, self.style.opacity
             )
+            alpha = _scaled_alpha(Color.WHITE, self.style.opacity).a
             self.style.opacity = 1.0
         self.text = String("")
         self.points = List[Point2D]()
@@ -151,6 +158,7 @@ struct RenderCommand(Copyable, Movable):
         self.image_w = 0
         self.image_h = 0
         self.silhouette = False
+        self.image_alpha = alpha
         self.clip = 0
 
 

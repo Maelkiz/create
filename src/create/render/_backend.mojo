@@ -2319,6 +2319,7 @@ struct Backend(Movable):
             dw,
             dh,
             Optional(c.style.fill_color) if c.silhouette else None,
+            c.image_alpha,
         )
 
     def _sprite_shadow[

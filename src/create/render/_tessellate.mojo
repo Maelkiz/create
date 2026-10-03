@@ -931,7 +931,9 @@ def emit_sprite(
     var y1 = y0 + dh + Float64(2 * pad)
     # White, so `MODE_TEXTURE`'s multiply passes the sampled pixels through;
     # a silhouette paints its own colour through the sampled alpha instead.
-    var tint = c.style.fill_color if c.silhouette else Color.WHITE
+    var tint = c.style.fill_color if c.silhouette else Color.WHITE.with_alpha(
+        c.image_alpha
+    )
     var mode = MODE_SILHOUETTE if c.silhouette else MODE_TEXTURE
     vb.push(x0, y0, 0.0, 0.0, tint, mode)
     vb.push(x1, y0, 1.0, 0.0, tint, mode)

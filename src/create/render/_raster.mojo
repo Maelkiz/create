@@ -605,6 +605,14 @@ def _silhouette(tint: Color, alpha: UInt8) -> Color:
     return Color(tint.r, tint.g, tint.b, UInt8(a))
 
 
+@always_inline
+def _faded(texel: UInt8, alpha: UInt8) -> UInt8:
+    """A texel's alpha under a sprite's opacity `alpha`."""
+    if alpha == 255:
+        return texel
+    return UInt8(Int(texel) * Int(alpha) // 255)
+
+
 def blit_sprite[
     o: Origin[mut=True], so: Origin
 ](
@@ -617,13 +625,14 @@ def blit_sprite[
     dw: Int,
     dh: Int,
     tint: Optional[Color] = None,
+    alpha: UInt8 = 255,
 ):
     """Blit the `sw` x `sh` RGBA buffer at `src` into the device rect at
     `(x0, y0)` sized `dw` x `dh`; see `_blit_sprite`."""
     if s._clip:
-        _blit_sprite[clipped=True](s, src, sw, sh, x0, y0, dw, dh, tint)
+        _blit_sprite[clipped=True](s, src, sw, sh, x0, y0, dw, dh, tint, alpha)
     else:
-        _blit_sprite[clipped=False](s, src, sw, sh, x0, y0, dw, dh, tint)
+        _blit_sprite[clipped=False](s, src, sw, sh, x0, y0, dw, dh, tint, alpha)
 
 
 def _blit_sprite[
@@ -638,13 +647,15 @@ def _blit_sprite[
     dw: Int,
     dh: Int,
     tint: Optional[Color],
+    alpha: UInt8,
 ):
     """Blit the `sw` x `sh` RGBA buffer at `src` into the device rect at
-    `(x0, y0)` sized `dw` x `dh`.
+    `(x0, y0)` sized `dw` x `dh`, every texel's alpha scaled by `alpha` (the
+    sprite's opacity).
 
     With `tint`, paint the image's silhouette instead: `tint` wherever the
     image is opaque, its alpha scaled by each texel's. That is a sprite's
-    shadow.
+    shadow; `tint` already carries any opacity, so `alpha` is ignored.
 
     Takes a bare pixel view rather than an image type, for the same reason
     `Surface` is a plain value: nothing here needs to know where the pixels
@@ -695,7 +706,7 @@ def _blit_sprite[
                         sp[unsafe_offset=src_off],
                         sp[unsafe_offset=src_off + 1],
                         sp[unsafe_offset=src_off + 2],
-                        sa,
+                        _faded(sa, alpha),
                     ),
                 )
         else:
@@ -713,7 +724,7 @@ def _blit_sprite[
                             sp[unsafe_offset=src_off],
                             sp[unsafe_offset=src_off + 1],
                             sp[unsafe_offset=src_off + 2],
-                            sa,
+                            _faded(sa, alpha),
                         ),
                     )
                 err += sw
