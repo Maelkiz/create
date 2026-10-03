@@ -1,11 +1,10 @@
-from std.time import sleep
-
 from create._window.window import Window
 from create.render.render_backend import RenderBackend
 from create.render.canvas import PersistentCanvasState
 from create.core.context import Context
 from ._events import apply_events
 from ._step import step
+from ._window_loop import _finish_frame
 from create.render.surface import Surface
 from .program import Program
 from .window_mode import WindowMode
@@ -36,28 +35,6 @@ def _process_events(
 ) raises:
     if apply_events(win.events(), state.view, context):
         win.close()
-
-
-def _send_rumbles(win: Window, context: Context) raises:
-    """Hand this frame's `context.rumble` calls to the pads."""
-    for rumble in context._rumbles:
-        win.rumble_gamepad(
-            rumble.id,
-            rumble.low_frequency,
-            rumble.high_frequency,
-            rumble.seconds,
-        )
-
-
-def _cap_frame_rate(mut win: Window, context: Context, frame_start: Int) raises:
-    """Sleep off whatever is left of the target frame duration, if any."""
-    if context._max_frame_rate <= 0:
-        return
-    var worked_ms = win.ticks() - frame_start
-    var target_ms = 1000.0 / Float64(context._max_frame_rate)
-    var remaining_ms = target_ms - Float64(worked_ms)
-    if remaining_ms > 0.0:
-        sleep(remaining_ms / 1000.0)
 
 
 def _run_loop[
@@ -97,8 +74,7 @@ def _run_loop[
             Surface(win.pixels(), pixel_w, pixel_h), state.view.scale
         )
         win.present()
-        _send_rumbles(win, context)
-        _cap_frame_rate(win, context, frame_start)
+        _finish_frame(win, context, frame_start)
 
 
 def run[

@@ -15,8 +15,6 @@ Everything else — the event arms, the clock, `step` — is shared code, so the
 two loops cannot drift in what a frame is.
 """
 
-from std.time import sleep
-
 from create._window import GLWindow
 
 from create.render.render_backend import RenderBackend
@@ -25,6 +23,7 @@ from create.core.context import Context
 
 from ._events import apply_events
 from ._step import step
+from ._window_loop import _finish_frame
 from .program import Program
 from .window_mode import WindowMode
 
@@ -99,30 +98,6 @@ def _wait_for_dimensions(
         _ = _update_dimensions(win, state, context)
 
 
-def _send_rumbles(win: GLWindow, context: Context) raises:
-    """Hand this frame's `context.rumble` calls to the pads."""
-    for rumble in context._rumbles:
-        win.rumble_gamepad(
-            rumble.id,
-            rumble.low_frequency,
-            rumble.high_frequency,
-            rumble.seconds,
-        )
-
-
-def _cap_frame_rate(
-    mut win: GLWindow, context: Context, frame_start: Int
-) raises:
-    """Sleep off whatever is left of the target frame duration, if any."""
-    if context._max_frame_rate <= 0:
-        return
-    var worked_ms = win.ticks() - frame_start
-    var target_ms = 1000.0 / Float64(context._max_frame_rate)
-    var remaining_ms = target_ms - Float64(worked_ms)
-    if remaining_ms > 0.0:
-        sleep(remaining_ms / 1000.0)
-
-
 def _run_loop[
     P: Program
 ](
@@ -136,20 +111,19 @@ def _run_loop[
         var px_per_point = _update_dimensions(win, state, context)
         if apply_events(win.events(), state.view, context, px_per_point):
             win.close()
-        var frame_start = win.ticks()
-        context._advance_frame(frame_start)
         # Re-read after events: a resize this frame changed the drawable, and
         # the bars have to reach the edge of the *new* one. The viewport is
         # re-derived from it too — the mapping taken before the events is one
         # frame stale, and rendering against it puts the whole frame in a corner
         # of the resized drawable.
         _ = _update_dimensions(win, state, context)
+        var frame_start = win.ticks()
+        context._advance_frame(frame_start)
         var drawable = win.drawable_size()
         state = step(program, context, state^)
         state.backend.present_gpu(drawable[0], drawable[1], state.view.scale)
         win.swap_buffers()
-        _send_rumbles(win, context)
-        _cap_frame_rate(win, context, frame_start)
+        _finish_frame(win, context, frame_start)
     # Rule 3 from `_gl.mojo`: the context owner must outlive the last GL call,
     # and the renderer inside `state` makes them when it is destroyed.
     _ = state^
