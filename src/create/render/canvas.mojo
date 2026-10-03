@@ -1202,11 +1202,12 @@ struct Canvas:
         self._style.font_weight = weight
 
     def opacity(mut self, value: Float64):
-        """Multiply the alpha of fill, outline and text color for whatever is
-        rendered next. `1.0` (the default) leaves colors untouched; `0.0` renders
-        nothing visible. Resolved into the color at record time, like every
-        other style setting — it cannot reach back and fade what was already
-        rendered."""
+        """Fade whatever is rendered next: fill, gradient, outline, text,
+        sprite and shadow alike, never `background`. `1.0` (the default)
+        leaves it untouched; `0.0` renders nothing visible. Each shape
+        composites once, so a translucent one is evenly translucent, outline
+        and fill included. Resolved at record time, like every other style
+        setting — it cannot reach back and fade what was already rendered."""
         self._style.opacity = value
 
     def blend_mode(mut self, mode: BlendMode):

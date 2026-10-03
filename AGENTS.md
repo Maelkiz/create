@@ -196,6 +196,10 @@ keywords.
   camera zoom and autoscale scale it. `shadow_follows_transform(True)` turns it with the shape.
 - Shadows use the command's own opacity and blend mode.
 
+**Opacity and blend modes reach every render call** (sprites included, `background()` never), and
+every shape composites once: fill and outline never overlap, so a translucent shape is evenly
+translucent.
+
 **Scope with the guards.** `canvas.transform(m)`, `canvas.style(...)`, `canvas.overlay()` and
 `canvas.clip(...)` return `with`-block guards that unwind on exit. Bare style mutators straight from `update` are fine (style,
 transform and camera reset every frame); a *helper* that sets style wraps it in `canvas.style()` so it

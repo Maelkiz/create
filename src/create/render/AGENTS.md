@@ -18,6 +18,7 @@ and the layering rules.
 | `_curve.mojo` | Bézier stroke geometry for both replays: flattening in device pixels, the mitred quad strip; the blurred shadow mask of any device quads (`quads_shadow_mask`) |
 | `_sector.mojo` | Sector fill and outline tiled into device quads for both replays (`sector_quads`), and its blurred shadow mask |
 | `_polygon.mojo` | Polygon fill and outline tiled into device quads for both replays (`polygon_quads`), and its blurred shadow mask |
+| `_triangle.mojo` | A rounded or outlined triangle as a convex fill and ring quads for both replays (`triangle_pieces`) |
 | `_clip.mojo` | `_Clip` (one `canvas.clip` level: region command, invert, parent) and `_ClipRows`, the CPU replay's per-row runs of a clip |
 | `_blur.mojo` | Three-box-blur approximation of a Gaussian over an alpha mask, for text and sprite shadows; the blurred-mask cache limit and key |
 | `_transform.mojo`, `_image.mojo`, `_fillet.mojo` | Shared by both replay paths (split out to avoid an import cycle, or so both agree on the numbers) |
@@ -224,8 +225,29 @@ See [examples/screenshot/src/main.mojo](../../../examples/screenshot/src/main.mo
 ## Outlines
 
 Outlines mean different things per shape, and `corner_radius` must preserve that: a rectangle's is
-an **inset ring** inside the fill; a triangle's is **centred device-space bands**. Spelled out in
-`emit_triangle`'s docstring in [_tessellate.mojo](_tessellate.mojo).
+an **inset ring** inside the fill; a triangle's is a **centred band**, half its width outside the
+edges and half inside.
+
+**Every kind composites once.** Fill and outline never overlap, and neither do pieces of either, so
+a translucent shape or a non-`NORMAL` blend mode is as translucent everywhere.
+`test_translucency.mojo` draws every kind at opacity 0.5 on both backends and fails on any pixel
+deeper than one layer. A new shape or path must keep this:
+- **Rectangles:** the fill is inset by the outline. The CPU's axis-aligned paths split each row into
+  outline, fill, outline: four bands when sharp, `_rounded_box_row` when rounded. Rotated and
+  stretched rectangles take the general affine path, which samples pixel **centres**, as every
+  path must (it once sampled corners and drew a 40-pixel rectangle 41 wide).
+- **Triangles:** a rounded or outlined triangle is `triangle_pieces`, the same pieces on both
+  backends.
+  - **Sharp:** the ring is one quad per edge between the outer edge (mitred, or bevelled past
+    `MITER_LIMIT`) and the inner edge, which is the triangle scaled about its incentre.
+  - **Rounded:** one quad per arc segment between concentric arcs of radius `r ± h`, and one per
+    edge. Once `h ≥ r` the inner edge is sharp, and each corner is a fan from its inner vertex.
+  - **Fill:** the inner edge as one convex polygon. The CPU fills it with `fill_convex`, which walks
+    edges exactly as `fill_quad` does (slope precomputed from the lower end), so a shared edge
+    gives bit-identical crossings. The GPU fans it.
+  - A plain unoutlined sharp triangle keeps its single-pass fill.
+  - Built in local space, with `h` the device thickness divided by the pixel scale, and mapped per
+    point, so a sheared rounded corner stays an ellipse arc.
 
 ## Shadows
 
