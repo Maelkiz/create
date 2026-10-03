@@ -2,7 +2,14 @@ from std.collections import Dict, Optional
 from std.memory import unsafe_memcpy
 from std.math import max, min, abs, sqrt, ceil, floor, cos, sin, pi
 
-from create.math.matrix import Matrix, identity, inverse, apply as mat_apply
+from create.math.matrix import (
+    Matrix,
+    identity,
+    inverse,
+    apply as mat_apply,
+    scale as mat_scale,
+    translate as mat_translate,
+)
 from create.math.point2d import Point2D
 
 from ._command import (
@@ -844,6 +851,56 @@ def _render_fillet_arc_mapped[
         prev_y = cur[1]
 
 
+def _design_pixels(width: Int, height: Int) -> Matrix[3, 3]:
+    """Screen space to the pixels of a `width` x `height` design-resolution
+    image: origin centred and y up to origin top-left and y down."""
+    return mat_translate(
+        Float64(width) / 2.0, Float64(height) / 2.0
+    ) @ mat_scale(1.0, -1.0)
+
+
+def _clear_off_screen(
+    mut mem: MemorySurface, to_target: Matrix[3, 3], width: Int, height: Int
+):
+    """Make every pixel of `mem` whose centre is off the `width` x
+    `height` screen transparent. A clear paints the whole target, and a
+    read's target may reach past the screen, where the frame has nothing."""
+    var a = mat_apply(to_target, -Float64(width) / 2.0, Float64(height) / 2.0)
+    var b = mat_apply(to_target, Float64(width) / 2.0, -Float64(height) / 2.0)
+    # Pixels whose centre `i + 0.5` lies in `[lo, hi)`.
+    var x0 = max(Int(ceil(min(a[0], b[0]) - 0.5)), 0)
+    var x1 = min(Int(ceil(max(a[0], b[0]) - 0.5)), mem.width)
+    var y0 = max(Int(ceil(min(a[1], b[1]) - 0.5)), 0)
+    var y1 = min(Int(ceil(max(a[1], b[1]) - 0.5)), mem.height)
+    if x0 == 0 and y0 == 0 and x1 == mem.width and y1 == mem.height:
+        return
+    for y in range(mem.height):
+        for x in range(mem.width):
+            if y >= y0 and y < y1 and x >= x0 and x < x1:
+                continue
+            var off = (y * mem.width + x) * 4
+            for k in range(4):
+                mem.data[off + k] = 0
+
+
+def _seed(mut mem: MemorySurface, last: MemorySurface, to_target: Matrix[3, 3]):
+    """Fill `mem` from the design-resolution frame `last`, each pixel the
+    one under its centre, so a read with the autoclear off starts from what
+    the frame itself started from."""
+    var to_last = _design_pixels(last.width, last.height) @ inverse(to_target)
+    for y in range(mem.height):
+        for x in range(mem.width):
+            var p = mat_apply(to_last, Float64(x) + 0.5, Float64(y) + 0.5)
+            var lx = Int(floor(p[0]))
+            var ly = Int(floor(p[1]))
+            if lx < 0 or ly < 0 or lx >= last.width or ly >= last.height:
+                continue
+            var src = (ly * last.width + lx) * 4
+            var dst = (y * mem.width + x) * 4
+            for k in range(4):
+                mem.data[dst + k] = last.data[src + k]
+
+
 @fieldwise_init
 struct _ImageRequest(Movable):
     """A `canvas.save_image` that has not been serviced yet.
@@ -922,6 +979,31 @@ struct Backend(Movable):
     var clip: Int
     """The clip a command recorded now is rendered under: the innermost
     open `canvas.clip`, or 0. `ClipGuard` sets it back on exit."""
+    var screen_inv: Matrix[3, 3]
+    """This frame's window-pixel-to-screen mapping, the inverse of the base
+    every command's transform starts from; set by `begin_frame`. A read
+    composes it in front of its own screen-to-target mapping, as a capture
+    does."""
+    var screen_w: Int
+    var screen_h: Int
+    """This frame's screen extent in design units, `canvas.width` and
+    `canvas.height`."""
+    var recorded: Int
+    """Records ever made, a clock for `frame_read`: a read is current while
+    nothing has been recorded since. A count of commands would not do, since
+    `record_clear` can replace one without adding any."""
+    var frame_read: Optional[MemorySurface]
+    """The frame so far at design resolution, as `canvas.pixel` last read
+    it; `frame_read_at` is the `recorded` it was read at."""
+    var frame_read_at: Int
+    var keep_frames: Bool
+    """Whether `present` keeps a copy of each finished frame in
+    `last_frame`. Switched on by the first read made with the autoclear off,
+    the one case where a frame starts from the last one's pixels rather than
+    from its own commands."""
+    var last_frame: Optional[MemorySurface]
+    """The last presented frame at design resolution, while `keep_frames`
+    is on: what a read with the autoclear off starts from."""
     var commands: List[RenderCommand]
     """The frame being recorded.
 
@@ -945,6 +1027,14 @@ struct Backend(Movable):
         self.commands = List[RenderCommand]()
         self.clips = List[_Clip]()
         self.clip = 0
+        self.screen_inv = identity[3]()
+        self.screen_w = 0
+        self.screen_h = 0
+        self.recorded = 0
+        self.frame_read = None
+        self.frame_read_at = -1
+        self.keep_frames = False
+        self.last_frame = None
         self.pending_image = Optional[_ImageRequest]()
         self.pending_screenshot = Optional[String]()
         self.gl = Optional[GLRenderer]()
@@ -955,6 +1045,7 @@ struct Backend(Movable):
         """Append one render to the frame being recorded, under the current
         clip."""
         c.clip = self.clip
+        self.recorded += 1
         self.commands.append(c^)
 
     def push_clip(mut self, var region: RenderCommand, invert: Bool) -> Int:
@@ -977,6 +1068,7 @@ struct Backend(Movable):
         its clip, so it replaces nothing.
         """
         c.clip = self.clip
+        self.recorded += 1
         if (
             c.clip == 0
             and _clear_is_opaque(c)
@@ -1059,6 +1151,87 @@ struct Backend(Movable):
         )
         mem.save(request.path, opaque=not request.transparent)
 
+    def begin_frame(mut self, screen: Matrix[3, 3], width: Int, height: Int):
+        """Note the frame's screen-to-window mapping and extent, for reads
+        and for keeping the finished frame."""
+        self.screen_inv = inverse(screen)
+        self.screen_w = width
+        self.screen_h = height
+
+    def read(
+        mut self,
+        width: Int,
+        height: Int,
+        scale: Float64,
+        to_target: Matrix[3, 3],
+        seeded: Bool,
+    ) raises -> MemorySurface:
+        """The frame so far, `width` x `height` pixels, placed by
+        `to_target` (screen space to the target's pixels) at `scale` pixels
+        per screen unit.
+
+        Replayed on the CPU from the commands recorded up to now, as
+        `save_image` is, so both backends read the same pixels and the GPU
+        is never asked. `seeded` starts from the last presented frame rather
+        than transparent — for a frame drawn with the autoclear off, which
+        is how the frame itself started. The first such read only switches
+        keeping frames on, so it starts transparent.
+        """
+        var mem = MemorySurface(width, height)
+        if seeded:
+            if self.last_frame:
+                _seed(mem, self.last_frame.value(), to_target)
+            self.keep_frames = True
+        var cmds = self.commands^
+        self.commands = List[RenderCommand]()
+        self.replay(
+            mem.surface(),
+            cmds,
+            scale,
+            pre=to_target @ self.screen_inv,
+            skip_kinds=1 << CMD_LETTERBOX,
+        )
+        self.commands = cmds^
+        _clear_off_screen(mem, to_target, self.screen_w, self.screen_h)
+        return mem^
+
+    def read_frame(mut self, seeded: Bool) raises:
+        """Bring `frame_read` up to the frame so far at design resolution,
+        reading again only if something has been recorded since the last
+        time."""
+        if not self.frame_read or self.frame_read_at != self.recorded:
+            self.frame_read = self.read(
+                self.screen_w,
+                self.screen_h,
+                1.0,
+                _design_pixels(self.screen_w, self.screen_h),
+                seeded,
+            )
+            self.frame_read_at = self.recorded
+
+    def _keep_frame[o: Origin[mut=True]](mut self, s: Surface[o]):
+        """Sample the finished frame on `s` (window pixels) down or up to
+        design resolution, nearest pixel, into `last_frame`."""
+        var mem = MemorySurface(self.screen_w, self.screen_h)
+        var to_window = inverse(self.screen_inv)
+        var from_design = to_window @ inverse(
+            _design_pixels(self.screen_w, self.screen_h)
+        )
+        for y in range(self.screen_h):
+            for x in range(self.screen_w):
+                var p = mat_apply(
+                    from_design, Float64(x) + 0.5, Float64(y) + 0.5
+                )
+                var wx = Int(floor(p[0]))
+                var wy = Int(floor(p[1]))
+                if wx < 0 or wy < 0 or wx >= s.width or wy >= s.height:
+                    continue
+                var src = s.offset(wx, wy)
+                var dst = (y * self.screen_w + x) * 4
+                for k in range(4):
+                    mem.data[dst + k] = s.px[unsafe_offset=src + k]
+        self.last_frame = mem^
+
     def present[
         o: Origin[mut=True]
     ](mut self, s: Surface[o], scale: Float64) raises:
@@ -1074,10 +1247,13 @@ struct Backend(Movable):
         self.replay(s, cmds, scale)
         self._flush_screenshot(s)
         self._flush_image(cmds)
+        if self.keep_frames:
+            self._keep_frame(s)
         cmds.clear()
         self.commands = cmds^
         self.clips.clear()
         self.clip = 0
+        self.frame_read = None
         self._expire_images()
 
     def present_gpu(mut self, width: Int, height: Int, scale: Float64) raises:
@@ -1104,6 +1280,7 @@ struct Backend(Movable):
         self.commands = cmds^
         self.clips.clear()
         self.clip = 0
+        self.frame_read = None
         self._expire_images()
 
     def intern_image[

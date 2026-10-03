@@ -1,4 +1,5 @@
 from std.collections import Optional
+from std.math import floor
 from std.utils.numerics import isnan, nan
 
 from create.color.color import Color
@@ -27,6 +28,8 @@ from create.math.matrix import (
     identity,
     inverse,
     apply as mat_apply,
+    scale as mat_scale,
+    translate as mat_translate,
 )
 from create.sprite.sprite import Sprite
 from create.sprite.animator import SpriteAnimator
@@ -264,6 +267,9 @@ struct Canvas:
     """This frame's bar colour, snapshotted from `Context` at construction —
     the frame is rendered under one set of dials, whatever `update` does to them
     for the next."""
+    var _autoclear: Bool
+    """Whether this frame opened with a clear, so whether a read starts
+    from transparent or from the last frame's pixels."""
     var _state: PersistentCanvasState
     # Style is per-frame, not carried in `_state`: `Canvas` is only reachable
     # from `update`, so nothing can seed a style outside a frame and carrying
@@ -305,6 +311,7 @@ struct Canvas:
         self.height = state.view.height
         self.scale = state.view.scale
         self._letterbox_color = letterbox_color
+        self._autoclear = autoclear
         self._state = state^
         self._style = Style()
         self._base = self._view.base_matrix()
@@ -317,6 +324,7 @@ struct Canvas:
         self._transform = self._base
         self._transform_inv = self._base_inv
         self._transform_stack = List[Matrix[3, 3]]()
+        self._state.backend.begin_frame(self._base, self.width, self.height)
         # Recorded here rather than by the loop so both loops get it from one
         # place, and so a program's own `background()` can coalesce with it.
         if autoclear:
@@ -799,6 +807,85 @@ struct Canvas:
                 transparent,
             )
         )
+
+    def pixel(mut self, position: Point2D) raises -> Color:
+        """The colour at `position` in what this frame has drawn so far.
+
+        `position` is in screen space, whatever the camera or transform —
+        a read is of the screen, not the scene — so
+        `canvas.pixel(context.input.mouse)` picks under the mouse as it is.
+        Outside the screen it is `Color.TRANSPARENT`.
+
+        Reads what is drawn *so far*: a render call after this one does not
+        change what it returned. The pixels are those `save_image` would
+        write at scale 1, on either backend, without the letterbox. Reading
+        replays the frame on the CPU once, and again only after something
+        more is drawn, so many reads in a row cost one replay.
+
+        With `context.autoclear(False)`, a read starts from the last frame's
+        pixels, as the frame did — from the second frame that reads on; the
+        first sees only what it drew itself. That needs the CPU backend,
+        which is also the only one that accumulates.
+        """
+        var x = Int(floor(position.x + Float64(self.width) / 2.0))
+        var y = Int(floor(Float64(self.height) / 2.0 - position.y))
+        if x < 0 or y < 0 or x >= self.width or y >= self.height:
+            return Color.TRANSPARENT
+        self._state.backend.read_frame(seeded=not self._autoclear)
+        return self._state.backend.frame_read.value().pixel(x, y)
+
+    def snapshot(mut self, scale: Float64 = 1.0) raises -> Sprite:
+        """What this frame has drawn so far, as a `Sprite` of the whole
+        screen: `width * scale` by `height * scale` pixels.
+
+        Drawn back with `canvas.sprite(shot, (0, 0), canvas.width,
+        canvas.height)` it lines up with the frame exactly — a feedback
+        effect is a snapshot kept as a field and drawn under the next frame.
+        `scale=canvas.scale` gives the window's own resolution instead.
+        Everything `pixel` says about what is read applies.
+        """
+        return self.snapshot(
+            Rectangle(
+                Point2D(0.0, 0.0), Float64(self.width), Float64(self.height)
+            ),
+            scale,
+        )
+
+    def snapshot(
+        mut self, region: Rectangle, scale: Float64 = 1.0
+    ) raises -> Sprite:
+        """What this frame has drawn so far inside `region`, as a `Sprite`
+        of `region.w * scale` by `region.h * scale` pixels.
+
+        `region` is in screen space, like `pixel`'s position, so it is always
+        upright; outside the screen the sprite is transparent.
+        """
+        if scale <= 0.0:
+            raise Error("snapshot needs a positive scale, got " + String(scale))
+        var pw = Int(region.w * scale + 0.5)
+        var ph = Int(region.h * scale + 0.5)
+        if pw <= 0 or ph <= 0:
+            raise Error(
+                "snapshot needs a region of at least one pixel, got "
+                + String(region)
+            )
+        ref backend = self._state.backend
+        if (
+            scale == 1.0
+            and pw == self.width
+            and ph == self.height
+            and region.position == Point2D(0.0, 0.0)
+        ):
+            # The whole screen at design resolution is what `pixel` reads,
+            # so the two share one replay.
+            backend.read_frame(seeded=not self._autoclear)
+            return Sprite.from_rgba(pw, ph, backend.frame_read.value().data)
+        var to_target = mat_translate(
+            (region.w / 2.0 - region.position.x) * scale,
+            (region.h / 2.0 + region.position.y) * scale,
+        ) @ mat_scale(scale, -scale)
+        var mem = backend.read(pw, ph, scale, to_target, not self._autoclear)
+        return Sprite.from_rgba(pw, ph, mem.data)
 
     def save_screenshot(mut self, path: String) raises:
         """Save this frame as a PNG at the framebuffer's own resolution.
