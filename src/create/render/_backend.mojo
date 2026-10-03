@@ -68,7 +68,7 @@ from ._png import write_png
 from .surface import MemorySurface, Surface, _force_opaque
 from ._text import TextRenderer
 from .render_backend import RenderBackend
-from .color import Color
+from create.color.color import Color
 
 
 def device_bounds(

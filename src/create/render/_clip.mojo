@@ -11,7 +11,7 @@ mode, the GPU through the fill emitters into the stencil buffer. A clip and a
 from std.math import max, min
 
 from ._command import RenderCommand
-from .color import Color
+from create.color.color import Color
 from .style import Style
 
 

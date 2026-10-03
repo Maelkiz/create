@@ -1,5 +1,5 @@
-from .color import Color, _scaled_alpha
-from .gradient import Gradient
+from create.color.color import Color, _scaled_alpha
+from create.color.gradient import Gradient
 from .style import Style
 from create.math.bezier import Bezier
 from create.math.matrix import Matrix, identity

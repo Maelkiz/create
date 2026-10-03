@@ -12,7 +12,7 @@ from create.math.matrix import (
     translate,
 )
 from create.math.point2d import Point2D
-from create.render.color import Color
+from create.color.color import Color
 from create.render.style import Style
 from create.render.surface import MemorySurface
 from create.render._command import CMD_SECTOR, sector_command

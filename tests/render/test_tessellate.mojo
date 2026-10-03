@@ -44,7 +44,7 @@ from create.render._tessellate import (
 )
 from create.math.matrix import rotate
 from create.render.autoscale import AutoScale
-from create.render.color import Color
+from create.color.color import Color
 from create.render._viewport import Viewport
 from create.render._curve import bezier_device_points, stroke_quads
 from create.render._sector import sector_quads

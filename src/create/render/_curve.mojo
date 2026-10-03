@@ -22,7 +22,7 @@ from ._blur import BlurredMask, blur_alpha
 from ._command import RenderCommand
 from ._raster import fill_quad
 from ._transform import outline_thickness_px
-from .color import Color
+from create.color.color import Color
 from .surface import MemorySurface
 
 comptime FLATTEN_TOLERANCE_PX = 0.25

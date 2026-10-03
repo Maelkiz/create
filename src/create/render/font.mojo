@@ -3,7 +3,7 @@ from std.math import abs
 from std.reflection import source_location
 
 from create._bytes import cstr, le_uint, sign_extend_32
-from .color import Color
+from create.color.color import Color
 
 # The two packaged faces, loaded lazily on the first text render: Noto Sans for
 # text, Noto Sans Symbols for codepoints the first face has no glyph for.

@@ -142,9 +142,9 @@ from ._shadow import (
 )
 from ._text import PlacedGlyph, TextRenderer
 from ._transform import pixel_scale
-from .blend_mode import BlendMode
-from .color import Color
-from .gradient import Gradient, RAMP_SIZE
+from create.color.blend_mode import BlendMode
+from create.color.color import Color
+from create.color.gradient import Gradient, RAMP_SIZE
 
 comptime _VERTEX_FLOATS = 13
 """Mirrors `_tessellate._VERTEX_FLOATS`, which the attribute layout below

@@ -36,7 +36,7 @@ on — so this module is a convenience, not a layer.
 exports the names it owns and nothing from a layer below — `create.core` names
 `Canvas` and `Rectangle` in its signatures but exports neither — so a single
 subpackage star is never a preamble; this module is. It re-exports everything
-public by star-importing all five, so a name added to `math/__init__.mojo`
+public by star-importing all six, so a name added to `math/__init__.mojo`
 appears here with no second edit and the two cannot drift apart.
 
 Code that wants less than the whole surface imports by name from the package
@@ -51,6 +51,7 @@ internal here exactly as they are one level down.
 
 from create.core import *
 from create.math import *
+from create.color import *
 from create.render import *
 from create.sprite import *
 from create.audio import *

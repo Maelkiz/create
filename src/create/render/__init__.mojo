@@ -1,8 +1,5 @@
 from .render_backend import RenderBackend
-from .color import Color
-from .gradient import Gradient
 from .align import Align
-from .blend_mode import BlendMode
 from .autoscale import AutoScale
 from .surface import Surface, MemorySurface
 from .font import Font, FontWeight

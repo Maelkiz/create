@@ -1,7 +1,7 @@
 from std.memory import unsafe_memcpy
 
-from .blend_mode import BlendMode
-from .color import Color
+from create.color.blend_mode import BlendMode
+from create.color.color import Color
 from ._clip import _ClipRows
 from ._png import write_png
 

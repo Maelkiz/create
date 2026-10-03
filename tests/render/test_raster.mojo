@@ -1,6 +1,6 @@
 from std.math import max, min
 from std.testing import TestSuite, assert_equal, assert_true
-from create.render.color import Color
+from create.color.color import Color
 from create.render._raster import (
     blend,
     blit_glyph,

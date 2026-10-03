@@ -2,10 +2,10 @@ from std.collections import Optional
 from std.math import max, min, abs, ceil, floor, sqrt
 from std.sys import is_big_endian
 
-from .blend_mode import BlendMode
-from .color import Color
+from create.color.blend_mode import BlendMode
+from create.color.color import Color
 from .font import _GlyphInfo
-from .gradient import Gradient, _DeviceMapping
+from create.color.gradient import Gradient, _DeviceMapping
 from .surface import Surface
 
 

@@ -44,7 +44,7 @@ from ._shadow import (
     shadow_transform,
 )
 from ._transform import pixel_scale, outline_thickness_px
-from .color import Color
+from create.color.color import Color
 
 comptime _VERTEX_FLOATS = 13
 """`x, y, u, v, r, g, b, a, mode, s0, s1, s2, s3` — one interleaved vertex.

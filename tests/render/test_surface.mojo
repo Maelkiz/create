@@ -1,6 +1,6 @@
 from std.os import remove
 from std.testing import TestSuite, assert_equal, assert_raises
-from create.render.color import Color
+from create.color.color import Color
 from create.render.surface import MemorySurface, Surface
 from create.sprite.sprite import Sprite
 

@@ -1,6 +1,6 @@
 from create.render.autoscale import AutoScale
 from create.render.canvas import Canvas, PersistentCanvasState
-from create.render.color import Color
+from create.color.color import Color
 
 from .time import Time
 from .input import Input

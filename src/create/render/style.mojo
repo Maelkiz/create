@@ -2,9 +2,9 @@ from std.collections import Optional
 from std.utils.numerics import isnan, nan
 
 from .align import Align
-from .blend_mode import BlendMode
-from .color import Color
-from .gradient import Gradient
+from create.color.blend_mode import BlendMode
+from create.color.color import Color
+from create.color.gradient import Gradient
 from .font import FontWeight
 from create.math.vector2d import Vector2D
 

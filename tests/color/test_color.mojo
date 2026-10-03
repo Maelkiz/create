@@ -5,7 +5,7 @@ from std.testing import (
     assert_almost_equal,
     assert_raises,
 )
-from create.render.color import Color
+from create.color.color import Color
 
 
 def test_rgba_constructor() raises -> None:

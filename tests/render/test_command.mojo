@@ -1,7 +1,7 @@
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
-from create.render.color import Color
-from create.render.gradient import Gradient
+from create.color.color import Color
+from create.color.gradient import Gradient
 from create.render.style import Style
 from create.render._command import (
     CMD_CLEAR,

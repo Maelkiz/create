@@ -5,8 +5,8 @@ from std.testing import (
     assert_false,
     assert_true,
 )
-from create.render.color import Color
-from create.render.gradient import Gradient
+from create.color.color import Color
+from create.color.gradient import Gradient
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 from create.math.matrix import apply, inverse, rotate, scale, translate
