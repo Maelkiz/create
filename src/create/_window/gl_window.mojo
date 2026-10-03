@@ -6,10 +6,6 @@ same native window.
 """
 
 from ._sdl import (
-    SDL,
-    SDL_EVENT_SIZE,
-    SDL_EVENT_QUIT,
-    SDL_EVENT_WINDOW_RESIZED,
     SDL_GL_CONTEXT_MAJOR_VERSION,
     SDL_GL_CONTEXT_MINOR_VERSION,
     SDL_GL_CONTEXT_PROFILE_MASK,
@@ -19,26 +15,14 @@ from ._sdl import (
     SDL_GL_STENCIL_SIZE,
     SDL_GL_MULTISAMPLEBUFFERS,
     SDL_GL_MULTISAMPLESAMPLES,
-    event_type,
-    window_data1,
-    window_data2,
 )
-from .event import (
-    Event,
-    Quit,
-    Resized,
-    translate_event,
-    translate_gamepad_device,
-)
+from ._sdl_window import NativeWindow, _SDLWindow
+from .event import Event
 
 
-struct GLWindow:
-    var _sdl: SDL
-    var _handle: Int
+struct GLWindow(NativeWindow):
+    var _native: _SDLWindow
     var _context: Int
-    var _open: Bool
-    var _width: Int
-    var _height: Int
 
     def __init__(
         out self,
@@ -64,100 +48,60 @@ struct GLWindow:
         `Window`, makes SDL ignore the requested size -- `width()`/`height()`
         report what it actually got. `maximized` opens filling the desktop
         work area, and is subject to the same size substitution."""
-        self._sdl = SDL()
-        self._sdl.init_subsystems()
-        try:
-            self._sdl.gl_set_attribute(
-                SDL_GL_CONTEXT_MAJOR_VERSION, Int32(major_version)
+        var attributes: List[Tuple[Int32, Int32]] = [
+            (SDL_GL_CONTEXT_MAJOR_VERSION, Int32(major_version)),
+            (SDL_GL_CONTEXT_MINOR_VERSION, Int32(minor_version)),
+            (SDL_GL_DOUBLEBUFFER, Int32(1)),
+            (SDL_GL_DEPTH_SIZE, Int32(24)),
+            (SDL_GL_STENCIL_SIZE, Int32(8)),
+        ]
+        if core:
+            attributes.append(
+                (SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE)
             )
-            self._sdl.gl_set_attribute(
-                SDL_GL_CONTEXT_MINOR_VERSION, Int32(minor_version)
-            )
-            if core:
-                self._sdl.gl_set_attribute(
-                    SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE
-                )
-            self._sdl.gl_set_attribute(SDL_GL_DOUBLEBUFFER, 1)
-            self._sdl.gl_set_attribute(SDL_GL_DEPTH_SIZE, 24)
-            self._sdl.gl_set_attribute(SDL_GL_STENCIL_SIZE, 8)
-            if msaa > 0:
-                self._sdl.gl_set_attribute(SDL_GL_MULTISAMPLEBUFFERS, 1)
-                self._sdl.gl_set_attribute(
-                    SDL_GL_MULTISAMPLESAMPLES, Int32(msaa)
-                )
-        except e:
-            self._sdl.quit_subsystems()
-            raise e
+        if msaa > 0:
+            attributes.append((SDL_GL_MULTISAMPLEBUFFERS, Int32(1)))
+            attributes.append((SDL_GL_MULTISAMPLESAMPLES, Int32(msaa)))
+        # A raise below destroys `_native`, and with it the window.
+        self._native = _SDLWindow(
+            title,
+            width,
+            height,
+            resizable,
+            fullscreen,
+            borderless,
+            maximized,
+            opengl=True,
+            gl_attributes=attributes^,
+        )
+        self._context = self._native.sdl.gl_create_context(self._native.handle)
         try:
-            self._handle = self._sdl.create_window(
-                title,
-                Int32(width),
-                Int32(height),
-                resizable,
-                opengl=True,
-                fullscreen=fullscreen,
-                borderless=borderless,
-                maximized=maximized,
-            )
+            self._native.sdl.gl_make_current(self._native.handle, self._context)
         except e:
-            self._sdl.quit_subsystems()
+            self._native.sdl.gl_destroy_context(self._context)
             raise e
-        try:
-            self._context = self._sdl.gl_create_context(self._handle)
-        except e:
-            self._sdl.destroy_window(self._handle)
-            self._sdl.quit_subsystems()
-            raise e
-        try:
-            self._sdl.gl_make_current(self._handle, self._context)
-            self._sdl.start_text_input(self._handle)
-        except e:
-            self._sdl.gl_destroy_context(self._context)
-            self._sdl.destroy_window(self._handle)
-            self._sdl.quit_subsystems()
-            raise e
-        self._open = True
-        # Fullscreen and maximized make SDL ignore the requested size, so the
-        # real one has to be queried -- same as `Window`, which needs it to
-        # size a texture.
-        # Here nothing is allocated from it, but `width()`/`height()` would
-        # otherwise report the request until the first resize event.
-        self._width = width
-        self._height = height
-        if fullscreen or maximized:
-            try:
-                self._width, self._height = self._sdl.get_window_size(
-                    self._handle
-                )
-            except e:
-                self._sdl.gl_destroy_context(self._context)
-                self._sdl.destroy_window(self._handle)
-                self._sdl.quit_subsystems()
-                raise e
 
     def __deinit__(deinit self):
+        # Before `_native` goes: the context belongs to its window.
         try:
-            self._sdl.gl_destroy_context(self._context)
-            self._sdl.destroy_window(self._handle)
-            self._sdl.quit_subsystems()
+            self._native.sdl.gl_destroy_context(self._context)
         except:
             pass
 
     def is_open(self) -> Bool:
-        return self._open
+        return self._native.open
 
     def close(mut self):
-        self._open = False
+        self._native.open = False
 
     def ticks(self) raises -> Int:
-        """Milliseconds since SDL library init."""
-        return Int(self._sdl.get_ticks())
+        return Int(self._native.sdl.get_ticks())
 
     def width(self) -> Int:
-        return self._width
+        return self._native.width
 
     def height(self) -> Int:
-        return self._height
+        return self._native.height
 
     def drawable_size(self) raises -> Tuple[Int, Int]:
         """Backing pixel size of the drawable, for `glViewport`.
@@ -168,7 +112,7 @@ struct GLWindow:
         events are pumped and use it for `glViewport`; using the logical
         size there clips or stretches the rendered frame on a scaled
         display."""
-        return self._sdl.get_window_size_in_pixels(self._handle)
+        return self._native.sdl.get_window_size_in_pixels(self._native.handle)
 
     def make_current(mut self) raises:
         """Re-asserts this window's GL context as the current one.
@@ -176,7 +120,7 @@ struct GLWindow:
         The constructor already makes it current; call this only if another
         context (a second `GLWindow`, or a library making its own calls) may
         have changed what's current since."""
-        self._sdl.gl_make_current(self._handle, self._context)
+        self._native.sdl.gl_make_current(self._native.handle, self._context)
 
     def get_proc_address(self, name: String) raises -> Int:
         """Address of the GL function `name`, or 0 if unavailable.
@@ -193,11 +137,11 @@ struct GLWindow:
         gl_clear(0x00004000)
         ```
         """
-        return self._sdl.gl_get_proc_address(name)
+        return self._native.sdl.gl_get_proc_address(name)
 
     def swap_buffers(mut self) raises:
         """Presents the back buffer -- call once per frame after drawing."""
-        self._sdl.gl_swap_window(self._handle)
+        self._native.sdl.gl_swap_window(self._native.handle)
 
     def set_fullscreen(mut self, enabled: Bool) raises:
         """Enter or leave fullscreen after construction.
@@ -205,7 +149,7 @@ struct GLWindow:
         The size follows asynchronously on some compositors, so read
         `drawable_size()` each frame rather than caching what this leaves
         behind."""
-        self._sdl.set_window_fullscreen(self._handle, enabled)
+        self._native.sdl.set_window_fullscreen(self._native.handle, enabled)
 
     def set_swap_interval(mut self, interval: Int) raises:
         """0 = no vsync, 1 = vsync, -1 = adaptive vsync (if supported).
@@ -213,7 +157,7 @@ struct GLWindow:
         Note this is a *global* SDL GL setting (`SDL_GL_SetSwapInterval`
         takes no window/context argument), unlike `Window.set_vsync`.
         """
-        self._sdl.gl_set_swap_interval(interval)
+        self._native.sdl.gl_set_swap_interval(interval)
 
     def rumble_gamepad(
         self,
@@ -222,37 +166,9 @@ struct GLWindow:
         high_frequency: Float64,
         seconds: Float64,
     ) raises:
-        """Runs gamepad `id`'s motors (strengths 0..1) for `seconds`; see
-        `SDL.rumble_gamepad`."""
-        self._sdl.rumble_gamepad(
-            UInt32(id), low_frequency, high_frequency, seconds
-        )
+        self._native.rumble_gamepad(id, low_frequency, high_frequency, seconds)
 
     def events(mut self) raises -> List[Event]:
-        """Drains all pending SDL events for this frame as translated `Event`s.
-
-        A quit event also flips the window to closed. A resize event
-        updates `width()`/`height()` only -- there is no pixel buffer or
-        texture to reallocate for a GL-backed window.
-        """
-        var events: List[Event] = []
-        var buf = Array[UInt8, SDL_EVENT_SIZE](fill=0)
-        var ptr = buf.unsafe_ptr()
-        while self._sdl.poll_event(ptr):
-            var kind = event_type(ptr)
-            if kind == SDL_EVENT_QUIT:
-                self._open = False
-                events.append(Event(Quit()))
-            elif kind == SDL_EVENT_WINDOW_RESIZED:
-                var new_width = Int(window_data1(ptr))
-                var new_height = Int(window_data2(ptr))
-                self._width = new_width
-                self._height = new_height
-                events.append(Event(Resized(new_width, new_height)))
-            else:
-                var translated = translate_gamepad_device(self._sdl, kind, ptr)
-                if not translated:
-                    translated = translate_event(kind, ptr)
-                if translated:
-                    events.append(translated.value())
-        return events^
+        """A resize updates `width()`/`height()` only -- there is no pixel
+        buffer or texture to reallocate for a GL-backed window."""
+        return self._native.events()

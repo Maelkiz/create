@@ -1,30 +1,15 @@
 """Public `Window` type — the Mojo-facing wrapper over an SDL3 window."""
 
-from ._sdl import (
-    SDL,
-    SDL_EVENT_SIZE,
-    SDL_EVENT_QUIT,
-    SDL_EVENT_WINDOW_RESIZED,
-    event_type,
-    window_data1,
-    window_data2,
-)
-from .event import (
-    Event,
-    Quit,
-    Resized,
-    translate_event,
-    translate_gamepad_device,
-)
+from ._sdl_window import NativeWindow, _SDLWindow
+from .event import Event
 
 comptime _BYTES_PER_PIXEL = 4
 
 
-struct Window:
-    var _sdl: SDL
-    var _handle: Int
-    var _open: Bool
+struct Window(NativeWindow):
+    var _native: _SDLWindow
     var _width: Int
+    """The pixel buffer's size. Follows `_native`'s after every `events()`."""
     var _height: Int
     var _renderer: Int
     var _texture: Int
@@ -40,78 +25,41 @@ struct Window:
         borderless: Bool = False,
         maximized: Bool = False,
     ) raises:
-        self._sdl = SDL()
-        self._sdl.init_subsystems()
+        # A raise below destroys `_native`, and with it the window.
+        self._native = _SDLWindow(
+            title, width, height, resizable, fullscreen, borderless, maximized
+        )
+        self._width = self._native.width
+        self._height = self._native.height
+        self._renderer = self._native.sdl.create_renderer(self._native.handle)
         try:
-            self._handle = self._sdl.create_window(
-                title,
-                Int32(width),
-                Int32(height),
-                resizable,
-                fullscreen=fullscreen,
-                borderless=borderless,
-                maximized=maximized,
+            self._native.sdl.set_render_vsync(self._renderer, True)
+            self._texture = self._native.sdl.create_texture(
+                self._renderer, Int32(self._width), Int32(self._height)
             )
         except e:
-            self._sdl.quit_subsystems()
-            raise e
-        self._open = True
-        try:
-            self._renderer = self._sdl.create_renderer(self._handle)
-        except e:
-            self._sdl.destroy_window(self._handle)
-            self._sdl.quit_subsystems()
-            raise e
-        # When fullscreen or maximized, SDL ignores the requested size and
-        # uses the display or work area — query the real dimensions before
-        # creating the texture.
-        var actual_width = width
-        var actual_height = height
-        if fullscreen or maximized:
-            try:
-                actual_width, actual_height = self._sdl.get_window_size(
-                    self._handle
-                )
-            except e:
-                self._sdl.destroy_renderer(self._renderer)
-                self._sdl.destroy_window(self._handle)
-                self._sdl.quit_subsystems()
-                raise e
-        self._width = actual_width
-        self._height = actual_height
-        try:
-            self._sdl.set_render_vsync(self._renderer, True)
-            self._sdl.start_text_input(self._handle)
-            self._texture = self._sdl.create_texture(
-                self._renderer, Int32(actual_width), Int32(actual_height)
-            )
-        except e:
-            self._sdl.destroy_renderer(self._renderer)
-            self._sdl.destroy_window(self._handle)
-            self._sdl.quit_subsystems()
+            self._native.sdl.destroy_renderer(self._renderer)
             raise e
         self._pixels = List[UInt8](
-            length=actual_width * actual_height * _BYTES_PER_PIXEL, fill=0
+            length=self._width * self._height * _BYTES_PER_PIXEL, fill=0
         )
 
     def __deinit__(deinit self):
+        # Before `_native` goes: the renderer belongs to its window.
         try:
-            self._sdl.destroy_texture(self._texture)
-            self._sdl.destroy_renderer(self._renderer)
-            self._sdl.destroy_window(self._handle)
-            self._sdl.quit_subsystems()
+            self._native.sdl.destroy_texture(self._texture)
+            self._native.sdl.destroy_renderer(self._renderer)
         except:
             pass
 
     def is_open(self) -> Bool:
-        return self._open
+        return self._native.open
 
     def close(mut self):
-        self._open = False
+        self._native.open = False
 
     def ticks(self) raises -> Int:
-        """Milliseconds since SDL library init."""
-        return Int(self._sdl.get_ticks())
+        return Int(self._native.sdl.get_ticks())
 
     def width(self) -> Int:
         return self._width
@@ -129,25 +77,25 @@ struct Window:
     def present(mut self) raises:
         """Uploads the framebuffer and shows it in the window."""
         var pitch = Int32(self._width * _BYTES_PER_PIXEL)
-        self._sdl.update_texture(
+        self._native.sdl.update_texture(
             self._texture, self._pixels.unsafe_ptr(), pitch
         )
-        self._sdl.render_texture(self._renderer, self._texture)
-        self._sdl.render_present(self._renderer)
+        self._native.sdl.render_texture(self._renderer, self._texture)
+        self._native.sdl.render_present(self._renderer)
 
     def set_vsync(mut self, enabled: Bool) raises:
-        self._sdl.set_render_vsync(self._renderer, enabled)
+        self._native.sdl.set_render_vsync(self._renderer, enabled)
 
     def set_fullscreen(mut self, enabled: Bool) raises:
-        self._sdl.set_window_fullscreen(self._handle, enabled)
+        self._native.sdl.set_window_fullscreen(self._native.handle, enabled)
 
     def _resize(mut self, width: Int, height: Int) raises:
         if width == self._width and height == self._height:
             return
-        var new_texture = self._sdl.create_texture(
+        var new_texture = self._native.sdl.create_texture(
             self._renderer, Int32(width), Int32(height)
         )
-        self._sdl.destroy_texture(self._texture)
+        self._native.sdl.destroy_texture(self._texture)
         self._texture = new_texture
         self._width = width
         self._height = height
@@ -162,34 +110,10 @@ struct Window:
         high_frequency: Float64,
         seconds: Float64,
     ) raises:
-        """Runs gamepad `id`'s motors (strengths 0..1) for `seconds`; see
-        `SDL.rumble_gamepad`."""
-        self._sdl.rumble_gamepad(
-            UInt32(id), low_frequency, high_frequency, seconds
-        )
+        self._native.rumble_gamepad(id, low_frequency, high_frequency, seconds)
 
     def events(mut self) raises -> List[Event]:
-        """Drains all pending SDL events for this frame as translated `Event`s.
-
-        A quit event also flips the window to closed.
-        """
-        var events: List[Event] = []
-        var buf = Array[UInt8, SDL_EVENT_SIZE](fill=0)
-        var ptr = buf.unsafe_ptr()
-        while self._sdl.poll_event(ptr):
-            var kind = event_type(ptr)
-            if kind == SDL_EVENT_QUIT:
-                self._open = False
-                events.append(Event(Quit()))
-            elif kind == SDL_EVENT_WINDOW_RESIZED:
-                var new_width = Int(window_data1(ptr))
-                var new_height = Int(window_data2(ptr))
-                self._resize(new_width, new_height)
-                events.append(Event(Resized(new_width, new_height)))
-            else:
-                var translated = translate_gamepad_device(self._sdl, kind, ptr)
-                if not translated:
-                    translated = translate_event(kind, ptr)
-                if translated:
-                    events.append(translated.value())
+        """A resize also reallocates the pixel buffer, once for the frame."""
+        var events = self._native.events()
+        self._resize(self._native.width, self._native.height)
         return events^
