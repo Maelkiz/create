@@ -192,10 +192,24 @@ keywords.
   camera zoom and autoscale scale it. `shadow_follows_transform(True)` turns it with the shape.
 - Shadows use the command's own opacity and blend mode.
 
-**Scope with the guards.** `canvas.transform(m)`, `canvas.style(...)` and `canvas.overlay()` return
-`with`-block guards that unwind on exit. Bare style mutators straight from `update` are fine (style,
+**Scope with the guards.** `canvas.transform(m)`, `canvas.style(...)`, `canvas.overlay()` and
+`canvas.clip(...)` return `with`-block guards that unwind on exit. Bare style mutators straight from `update` are fine (style,
 transform and camera reset every frame); a *helper* that sets style wraps it in `canvas.style()` so it
 can't leak into the caller's next render.
+
+### Clipping
+
+`with canvas.clip(region):` renders only inside `region` for the block; `invert=True` keeps only
+what is outside it (fog, a spotlight). `region` is a `Rectangle`, `Circle`, `Triangle`, `Sector` or
+`Polygon` — the region types of `contains`/`overlaps`. Guard-only: there is no bare clip to forget
+to undo. See [examples/clipping.mojo](examples/clipping.mojo).
+- **Frozen at the call**, like a render call: placed by the transform and camera current then. A
+  `transform` or `overlay` inside the block moves what is drawn, not the clip.
+- **Nested clips intersect.** On exit the enclosing clip is current again.
+- **Everything is clipped** — shapes, sprites, text, shadows, and `background()`, which then paints
+  only the clipped area (and never replaces the autoclear). The letterbox is not.
+- **Hard-edged**: the clip covers the pixels a fill of the same shape would, on both backends.
+  Soft masks (a gradient or a sprite's alpha) are not implemented yet.
 
 ### Coordinates, camera, autoscale
 

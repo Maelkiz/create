@@ -19,6 +19,7 @@ and the layering rules.
 | `_curve.mojo` | Bézier stroke geometry for both replays: flattening in device pixels, the mitred quad strip; the blurred shadow mask of any device quads (`quads_shadow_mask`) |
 | `_sector.mojo` | Sector fill and outline tiled into device quads for both replays (`sector_quads`), and its blurred shadow mask |
 | `_polygon.mojo` | Polygon fill and outline tiled into device quads for both replays (`polygon_quads`), and its blurred shadow mask |
+| `_clip.mojo` | `_Clip` (one `canvas.clip` level: region command, invert, parent) and `_ClipRows`, the CPU replay's per-row runs of a clip |
 | `_blur.mojo` | Three-box-blur approximation of a Gaussian over an alpha mask, for text and sprite shadows; the blurred-mask cache limit and key |
 | `_transform.mojo`, `_image.mojo`, `_fillet.mojo` | Shared by both replay paths (split out to avoid an import cycle, or so both agree on the numbers) |
 | `_gl_target.mojo` | Offscreen FBO of an exact size, for the parity test and headless GPU |
@@ -151,6 +152,43 @@ slabs × the edges spanning them, bands included: every slab runs the polygon's 
 a crossing in one corner cuts quads everywhere — ~115 µs per outlined 5-tip star, ~195 µs per
 outlined pentagram, ~2.4 ms per outlined 40-tip star.
 
+## Clips
+
+`canvas.clip(region, invert)` records no command. `ClipGuard` calls `Backend.push_clip`, which
+appends a `_Clip` to `Backend.clips` and makes it current (`Backend.clip`). The clip holds the
+region as an ordinary `RenderCommand` in `clip_style()` (an opaque white fill and nothing else),
+its parent and `invert`. `Backend.record`/`record_clear` stamp the current id on every command
+(`RenderCommand.clip`, 0 for none), so no command builder knows about clips. The guard restores the
+previous id; `clips` resets with the command buffer. A clipped clear never replaces the clear before
+it.
+
+Each replay rasterises the region **with the code that draws that shape**, so a clip and a fill of
+the same shape cover the same pixels:
+- **CPU:** before any command, `Backend._clip_rows` replays each region through `_one` onto a
+  *recording* surface (`Surface._recording_into`). There `fill_span` appends `(row, lo, hi)` and
+  writes nothing. `_ClipRows` sorts and merges those into runs per row, complements them for
+  `invert`, and intersects with the parent's. A clipped command's surface carries its rows
+  (`Surface._with_clip`). `fill_span`, `blend` and `fill_all` cut to them, and nothing else writes
+  pixels, so no rasteriser knows about clips.
+  - The clipped paths are out of line (`_fill_span_clipped`, `_shade_span_clipped`, `_clip_keeps`).
+    Keep them there: a recursive or larger `fill_span` stops inlining and cost circles ~40%.
+  - `blit_sprite`/`blit_alpha` check for a clip once and pass `blend[clipped=False]`, because the
+    per-pixel test alone cost a sprite blit ~15%.
+  - The rows live in a local `List` that the surfaces point into untracked (`MutUntrackedOrigin`),
+    built in full before the first command so it never reallocates under them.
+- **GPU:** the stencil buffer. When `c.clip` differs from what the stencil holds,
+  `GLRenderer._apply_clip` flushes, clears the stencil, and draws the chain outermost first through
+  `_one` with colour writes off. Level `d` increments the pixels at `d − 1` that its region covers.
+  An inverted level increments everything at `d − 1`, then decrements its region. Draws then test
+  `EQUAL` to the depth. `glClear` ignores the stencil, so a clipped opaque clear is a quad. The
+  window requests 8 stencil bits; `_GLTarget` attaches a depth-stencil renderbuffer.
+- Cost: on the GPU, a clip change is a flush plus one draw per level of its chain. On the CPU, each
+  clip is one rasterisation of its region per frame (per capture too), plus an index lookup per span.
+
+`test_clip.mojo` asserts samples on both backends and compares whole frames, allowing for edge
+pixels. A rotated edge differs between the two rasterisers, as it does for a plain rotated
+rectangle.
+
 ## Captures
 
 Requests filed on the `Backend` and serviced inside `present`/`present_gpu`, the only place holding
@@ -205,8 +243,8 @@ Compute each row's covered run analytically and hand `(start, count)` to `fill_s
 test every pixel in a bounding box. `fill_span` owns the opaque-store and vectorised compositing.
 `blend` is only for genuinely per-pixel alpha (glyph coverage, sprite texels).
 
-The command's `BlendMode` rides on the `Surface` (`_with_blend_mode`, set once in `Backend._one`), so
-no raster loop threads it; `blend` and `fill_span` read it and share `_blend_lanes` for every mode but
+The command's `BlendMode` rides on the `Surface` (`_with_blend_mode`, set once in `Backend._one`), as
+does its clip (see Clips), so no raster loop threads either; `blend` and `fill_span` read it and share `_blend_lanes` for every mode but
 `NORMAL`. A new mode goes there and in `GLRenderer._blend_mode` — it must be one fixed-function GL
 blend equation, which is why there is no `DIFFERENCE`.
 
@@ -229,7 +267,7 @@ only ever hold quantities affine across a triangle, so interpolation evaluates t
 | `MODE_GRADIENT` | 8 | Gradient fill: `uv` the device mapping, `s0` radial, `s1` ramp row; samples unit 2, dithers |
 
 A batch breaks only on an opaque `CMD_CLEAR`, a second distinct unit-1 texture, a `BlendMode`
-change, or frame end — glyph atlas on texture unit 0, sprites on unit 1, gradient ramps on unit 2
+change, a clip change (see Clips), or frame end — glyph atlas on texture unit 0, sprites on unit 1, gradient ramps on unit 2
 (never rebound, so gradients batch with anything; a ramp texture refill flushes once). A blurred sprite shadow's
 mask is its own unit-1 texture, so a shadowed sprite costs one extra draw call, and interleaving
 several costs one per switch; a blurred Bézier, sector or polygon shadow likewise costs one. Blurred text shadows
