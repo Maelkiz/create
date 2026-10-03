@@ -164,8 +164,8 @@ struct SpriteAnimation(Movable):
     def _cut(sheet: Sprite, x: Int, y: Int, w: Int, h: Int) raises -> Sprite:
         """Copy one w x h cell at (x, y) out of the sheet, RGBA row by row."""
         var frame = Sprite(w, h)
-        var src = sheet.pixels.unsafe_ptr()
-        var dst = frame.pixels.unsafe_ptr()
+        var src = sheet._pixels.unsafe_ptr()
+        var dst = frame._pixels.unsafe_ptr()
         for row in range(h):
             var s = ((y + row) * sheet.width + x) * 4
             var d = row * w * 4

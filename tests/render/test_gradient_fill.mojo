@@ -287,13 +287,7 @@ def test_a_transparent_capture_drops_the_background() raises -> None:
     remove(_IMG_TRANSPARENT)
 
     def px(x: Int, y: Int) {imm img} -> Color:
-        var off = (y * img.width + x) * 4
-        return Color(
-            img.pixels[off],
-            img.pixels[off + 1],
-            img.pixels[off + 2],
-            img.pixels[off + 3],
-        )
+        return img.pixel(x, y)
 
     assert_equal(px(5, 5).a, 0)
     assert_equal(px(50, 50), Color.GREEN)

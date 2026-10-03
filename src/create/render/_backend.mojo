@@ -48,7 +48,7 @@ from ._raster import (
     line_pixels,
 )
 from ._gl_backend import GLRenderer
-from ._image import _Image
+from ._image import IMAGE_KEEP_FRAMES, _Image
 from ._clip import _Clip, _ClipRows
 from .style import Style
 from ._transform import pixel_scale, outline_thickness_px, uniform
@@ -881,6 +881,14 @@ struct Backend(Movable):
     var kind: RenderBackend
     var text: TextRenderer
     var images: Dict[Int, _Image]
+    """Interned sprite copies by backend image id, the id a command
+    carries. One per sprite version rendered, dropped by `_expire_images`."""
+    var sprite_images: Dict[Int, Int]
+    """`Sprite._id` to the backend id of its most recently interned copy."""
+    var next_image: Int
+    var frame: Int
+    """Frames presented so far: the clock `_Image.last_used` is read
+    against."""
     var shadow_masks: Dict[Int, BlurredMask]
     """Blurred sprite silhouettes, keyed by `shadow_mask_key`: a sprite's
     shadow is blurred once per image, device size and blur, not per frame."""
@@ -930,6 +938,9 @@ struct Backend(Movable):
         self.kind = kind
         self.text = TextRenderer()
         self.images = Dict[Int, _Image]()
+        self.sprite_images = Dict[Int, Int]()
+        self.next_image = 1
+        self.frame = 0
         self.shadow_masks = Dict[Int, BlurredMask]()
         self.commands = List[RenderCommand]()
         self.clips = List[_Clip]()
@@ -1067,6 +1078,7 @@ struct Backend(Movable):
         self.commands = cmds^
         self.clips.clear()
         self.clip = 0
+        self._expire_images()
 
     def present_gpu(mut self, width: Int, height: Int, scale: Float64) raises:
         """The GPU counterpart of `present`, onto the current drawable.
@@ -1092,29 +1104,70 @@ struct Backend(Movable):
         self.commands = cmds^
         self.clips.clear()
         self.clip = 0
+        self._expire_images()
 
     def intern_image[
         so: Origin
     ](
-        mut self, key: Int, src: Pointer[UInt8, so], width: Int, height: Int
+        mut self,
+        sprite: Int,
+        version: Int,
+        src: Pointer[UInt8, so],
+        width: Int,
+        height: Int,
     ) -> Int:
-        """Return a backend id for the `width` x `height` RGBA buffer at `src`.
+        """Return a backend id for the `width` x `height` RGBA buffer at
+        `src`, version `version` of sprite `sprite`.
 
-        Copies on first sight and returns the cached id thereafter, so a sprite
-        rendered every frame is copied once. `key` must be stable for the life of
-        the image — a `Sprite`'s identity, not its pixel address, which could
-        be reused after a free.
+        Copies on first sight of each version and returns the cached id
+        thereafter, so a sprite rendered every frame is copied once. `sprite`
+        must be stable for the life of the image — a `Sprite`'s identity, not
+        its pixel address, which could be reused after a free. A new version
+        gets a new id, so a command recorded before an edit keeps replaying
+        the pixels it was recorded with.
 
         Called while recording rather than at replay, which is what keeps a
         borrow of caller-owned memory out of the command buffer.
         """
-        if key in self.images:
-            return key
+        try:
+            if sprite in self.sprite_images:
+                var id = self.sprite_images[sprite]
+                ref image = self.images[id]
+                if image.version == version:
+                    image.last_used = self.frame
+                    return id
+        except:
+            pass  # unreachable: `sprite_images` names only interned ids
         var buf = List[UInt8](length=width * height * 4, fill=0)
         for i in range(width * height * 4):
             buf[i] = src[unsafe_offset=i]
-        self.images[key] = _Image(buf^, width, height)
-        return key
+        var id = self.next_image
+        self.next_image += 1
+        self.images[id] = _Image(
+            buf^, width, height, sprite, version, self.frame
+        )
+        self.sprite_images[sprite] = id
+        return id
+
+    def _expire_images(mut self) raises:
+        """Advance the frame clock and drop every image no render has used
+        for `IMAGE_KEEP_FRAMES` frames, with its GL texture. Runs after the
+        frame has been replayed and captured, so nothing still refers to
+        what it drops."""
+        self.frame += 1
+        var expired = List[Int]()
+        for id in self.images:
+            if self.frame - self.images[id].last_used > IMAGE_KEEP_FRAMES:
+                expired.append(id)
+        for id in expired:
+            var image = self.images.pop(id)
+            if (
+                image.sprite in self.sprite_images
+                and self.sprite_images[image.sprite] == id
+            ):
+                _ = self.sprite_images.pop(image.sprite)
+        if self.gl and len(expired) > 0:
+            self.gl.value().forget_images(expired)
 
     def replay[
         o: Origin[mut=True]

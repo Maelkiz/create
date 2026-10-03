@@ -28,7 +28,10 @@ def _saved(path: String) raises -> Sprite:
 def _px(s: Sprite, x: Int, y: Int) -> Color:
     var off = (y * s.width + x) * 4
     return Color(
-        s.pixels[off], s.pixels[off + 1], s.pixels[off + 2], s.pixels[off + 3]
+        s._pixels[off],
+        s._pixels[off + 1],
+        s._pixels[off + 2],
+        s._pixels[off + 3],
     )
 
 
@@ -131,8 +134,8 @@ def test_gpu_save_image_matches_cpu_save_image_byte_for_byte() raises -> None:
     var gpu = _saved(_IMG_GPU)
     assert_equal(cpu.width, gpu.width)
     assert_equal(cpu.height, gpu.height)
-    var a = cpu.pixels.unsafe_ptr()
-    var b = gpu.pixels.unsafe_ptr()
+    var a = cpu._pixels.unsafe_ptr()
+    var b = gpu._pixels.unsafe_ptr()
     for i in range(cpu.width * cpu.height * 4):
         assert_equal(Int(a[unsafe_offset=i]), Int(b[unsafe_offset=i]))
 

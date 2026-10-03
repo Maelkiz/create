@@ -28,7 +28,10 @@ def _loaded(
 def _pixel(s: Sprite, x: Int, y: Int) -> Color:
     var off = (y * s.width + x) * 4
     return Color(
-        s.pixels[off], s.pixels[off + 1], s.pixels[off + 2], s.pixels[off + 3]
+        s._pixels[off],
+        s._pixels[off + 1],
+        s._pixels[off + 2],
+        s._pixels[off + 3],
     )
 
 

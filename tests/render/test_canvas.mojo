@@ -2239,7 +2239,7 @@ def test_every_animator_overload_renders_at_its_anchor() raises -> None:
 def _half_opaque() raises -> Sprite:
     """A 2x2 sprite whose left column is opaque red, its right transparent."""
     var sp = Sprite(2, 2)
-    var ptr = sp.pixels.unsafe_ptr()
+    var ptr = sp._pixels.unsafe_ptr()
     for row in range(2):
         var off = row * 2 * 4
         ptr[unsafe_offset=off] = 255
@@ -2321,7 +2321,10 @@ def _saved(path: String) raises -> Sprite:
 def _px(s: Sprite, x: Int, y: Int) -> Color:
     var off = (y * s.width + x) * 4
     return Color(
-        s.pixels[off], s.pixels[off + 1], s.pixels[off + 2], s.pixels[off + 3]
+        s._pixels[off],
+        s._pixels[off + 1],
+        s._pixels[off + 2],
+        s._pixels[off + 3],
     )
 
 

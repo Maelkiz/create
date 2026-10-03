@@ -308,7 +308,7 @@ def test_blit_sprite_one_to_one() raises -> None:
     var sp = Sprite.solid(2, 2, 255, 0, 0)
     var mem = MemorySurface(4, 4)
     blit_sprite(
-        mem.surface(), sp.pixels.unsafe_ptr(), sp.width, sp.height, 1, 1, 2, 2
+        mem.surface(), sp._pixels.unsafe_ptr(), sp.width, sp.height, 1, 1, 2, 2
     )
     assert_equal(mem.pixel(1, 1), Color(255, 0, 0, 255))
     assert_equal(mem.pixel(2, 2), Color(255, 0, 0, 255))
@@ -318,7 +318,7 @@ def test_blit_sprite_one_to_one() raises -> None:
 
 def test_blit_sprite_downscales_by_nearest_neighbour() raises -> None:
     var sp = Sprite(4, 4)
-    var ptr = sp.pixels.unsafe_ptr()
+    var ptr = sp._pixels.unsafe_ptr()
     # Left half red, right half blue — a downscale must keep both halves.
     for row in range(4):
         for col in range(4):
@@ -329,7 +329,7 @@ def test_blit_sprite_downscales_by_nearest_neighbour() raises -> None:
             ptr[unsafe_offset=off + 3] = 255
     var mem = MemorySurface(4, 4)
     blit_sprite(
-        mem.surface(), sp.pixels.unsafe_ptr(), sp.width, sp.height, 0, 0, 2, 2
+        mem.surface(), sp._pixels.unsafe_ptr(), sp.width, sp.height, 0, 0, 2, 2
     )
     assert_equal(mem.pixel(0, 0), Color(255, 0, 0, 255))
     assert_equal(mem.pixel(1, 0), Color(0, 0, 255, 255))
@@ -338,13 +338,13 @@ def test_blit_sprite_downscales_by_nearest_neighbour() raises -> None:
 
 def test_blit_sprite_skips_transparent_source_pixels() raises -> None:
     var sp = Sprite(2, 1)
-    var ptr = sp.pixels.unsafe_ptr()
+    var ptr = sp._pixels.unsafe_ptr()
     ptr[unsafe_offset=0] = 255
     ptr[unsafe_offset=3] = 255  # opaque red
     ptr[unsafe_offset=7] = 0  # fully transparent
     var mem = _filled(2, 1, Color(9, 9, 9, 255))
     blit_sprite(
-        mem.surface(), sp.pixels.unsafe_ptr(), sp.width, sp.height, 0, 0, 2, 1
+        mem.surface(), sp._pixels.unsafe_ptr(), sp.width, sp.height, 0, 0, 2, 1
     )
     assert_equal(mem.pixel(0, 0), Color(255, 0, 0, 255))
     assert_equal(mem.pixel(1, 0), Color(9, 9, 9, 255))
@@ -352,7 +352,7 @@ def test_blit_sprite_skips_transparent_source_pixels() raises -> None:
 
 def test_blit_sprite_tint_paints_the_silhouette() raises -> None:
     var sp = Sprite(3, 1)
-    var ptr = sp.pixels.unsafe_ptr()
+    var ptr = sp._pixels.unsafe_ptr()
     ptr[unsafe_offset=0] = 255
     ptr[unsafe_offset=3] = 255  # opaque red
     ptr[unsafe_offset=5] = 255
@@ -361,7 +361,7 @@ def test_blit_sprite_tint_paints_the_silhouette() raises -> None:
     var mem = _filled(3, 1, Color(0, 0, 0, 255))
     blit_sprite(
         mem.surface(),
-        sp.pixels.unsafe_ptr(),
+        sp._pixels.unsafe_ptr(),
         sp.width,
         sp.height,
         0,
@@ -383,7 +383,14 @@ def test_blit_sprite_clips_against_every_edge() raises -> None:
     var mem = MemorySurface(4, 4)
     # Anchored off the top-left: only the bottom-right quarter lands.
     blit_sprite(
-        mem.surface(), sp.pixels.unsafe_ptr(), sp.width, sp.height, -2, -2, 4, 4
+        mem.surface(),
+        sp._pixels.unsafe_ptr(),
+        sp.width,
+        sp.height,
+        -2,
+        -2,
+        4,
+        4,
     )
     assert_equal(mem.pixel(0, 0), Color.WHITE)
     assert_equal(mem.pixel(1, 1), Color.WHITE)
@@ -391,7 +398,7 @@ def test_blit_sprite_clips_against_every_edge() raises -> None:
 
     var far = MemorySurface(4, 4)
     blit_sprite(
-        far.surface(), sp.pixels.unsafe_ptr(), sp.width, sp.height, 3, 3, 4, 4
+        far.surface(), sp._pixels.unsafe_ptr(), sp.width, sp.height, 3, 3, 4, 4
     )
     assert_equal(far.pixel(3, 3), Color.WHITE)
     # A wrapped row would light up column 0.

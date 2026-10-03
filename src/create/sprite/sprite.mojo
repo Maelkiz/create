@@ -1,7 +1,9 @@
 from std.atomic import Atomic
 from std.ffi import _DLHandle, _Global
+from std.memory import unsafe_memcpy
 
 from create._bytes import le_uint, sign_extend_32
+from create.color.color import Color
 
 
 def _new_sprite_ids() -> Atomic[Int64]:
@@ -65,7 +67,8 @@ struct Sprite(Movable):
     Decoded once at load — `Sprite.load` picks a BMP, PNG or JPEG decoder by
     file extension — and blitted many times afterwards. `Sprite.solid` and
     `Sprite.from_rgba` build one without a file, and `resize` resamples in
-    place.
+    place. `pixel` reads one pixel and `set_pixel` writes one; the buffer
+    itself is private, so every edit is one a backend's cached copy can see.
 
     Deliberately not a render type: `raster.blit_sprite` takes a pixel pointer
     with a width and a height rather than this struct, so the image decoders
@@ -73,7 +76,10 @@ struct Sprite(Movable):
     but its own.
     """
 
-    var pixels: List[UInt8]
+    var _pixels: List[UInt8]
+    """RGBA, row-major from the top. Private so that every write goes
+    through `set_pixel`, which bumps `_version`: a write straight into the
+    buffer would leave a backend drawing its stale copy."""
     var width: Int
     var height: Int
     var _id: Int
@@ -87,14 +93,20 @@ struct Sprite(Movable):
     Bumped by `resize`, which replaces the pixels — so a resized sprite is a
     new image to a cache, which is exactly what it is.
     """
+    var _version: Int
+    """How many times `set_pixel` has changed this sprite. A backend's
+    cached copy is current only for the version it copied, so an edit is
+    drawn from the next render on, and a render before it keeps the old
+    pixels."""
 
     def __init__(out self, width: Int, height: Int) raises:
         """Raises only if the process-wide identity counter cannot be reached,
         which is why every construction path here raises."""
         self.width = width
         self.height = height
-        self.pixels = List[UInt8](length=width * height * 4, fill=0)
+        self._pixels = List[UInt8](length=width * height * 4, fill=0)
         self._id = _next_sprite_id()
+        self._version = 0
 
     @staticmethod
     def solid(
@@ -106,7 +118,7 @@ struct Sprite(Movable):
         a: UInt8 = 255,
     ) raises -> Sprite:
         var s = Sprite(width, height)
-        var ptr = s.pixels.unsafe_ptr()
+        var ptr = s._pixels.unsafe_ptr()
         for i in range(width * height):
             var off = i * 4
             ptr[unsafe_offset=off] = r
@@ -120,11 +132,43 @@ struct Sprite(Movable):
         """Precondition: `data` holds at least `width * height * 4` bytes — not bounds-checked.
         """
         var s = Sprite(width, height)
-        var src = data.unsafe_ptr()
-        var dst = s.pixels.unsafe_ptr()
-        for i in range(width * height * 4):
-            dst[unsafe_offset=i] = src[unsafe_offset=i]
+        unsafe_memcpy(
+            dest=s._pixels.unsafe_ptr(),
+            src=data.unsafe_ptr(),
+            count=width * height * 4,
+        )
         return s^
+
+    def pixel(self, x: Int, y: Int) -> Color:
+        """The pixel in column `x` of row `y`, counted from the top-left
+        corner — image coordinates, unlike the canvas's. Outside the image
+        it is `Color.TRANSPARENT`."""
+        if x < 0 or y < 0 or x >= self.width or y >= self.height:
+            return Color.TRANSPARENT
+        var off = (y * self.width + x) * 4
+        return Color(
+            self._pixels[off],
+            self._pixels[off + 1],
+            self._pixels[off + 2],
+            self._pixels[off + 3],
+        )
+
+    def set_pixel(mut self, x: Int, y: Int, color: Color):
+        """Replace the pixel in column `x` of row `y`, counted from the
+        top-left corner. Outside the image it does nothing.
+
+        A render call copies the sprite as it is then, so an edit shows
+        from the next render of it on. Each edited sprite is copied again
+        once per frame it is drawn in, not once per edit.
+        """
+        if x < 0 or y < 0 or x >= self.width or y >= self.height:
+            return
+        var off = (y * self.width + x) * 4
+        self._pixels[off] = color.r
+        self._pixels[off + 1] = color.g
+        self._pixels[off + 2] = color.b
+        self._pixels[off + 3] = color.a
+        self._version += 1
 
     def resize(mut self, new_w: Int, new_h: Int) raises:
         """Resize pixel buffer in place using nearest-neighbour sampling.
@@ -137,11 +181,11 @@ struct Sprite(Movable):
         if self.width == 0 or self.height == 0:
             # No source pixel to sample -- leave the zero-filled buffer as is
             # rather than computing an offset into an empty source.
-            self.pixels = dst^
+            self._pixels = dst^
             self.width = new_w
             self.height = new_h
             return
-        var src_ptr = self.pixels.unsafe_ptr()
+        var src_ptr = self._pixels.unsafe_ptr()
         var dst_ptr = dst.unsafe_ptr()
         for row in range(new_h):
             var src_row = row * self.height // new_h
@@ -153,7 +197,7 @@ struct Sprite(Movable):
                 dst_ptr[unsafe_offset=d + 1] = src_ptr[unsafe_offset=s + 1]
                 dst_ptr[unsafe_offset=d + 2] = src_ptr[unsafe_offset=s + 2]
                 dst_ptr[unsafe_offset=d + 3] = src_ptr[unsafe_offset=s + 3]
-        self.pixels = dst^
+        self._pixels = dst^
         self.width = new_w
         self.height = new_h
 
@@ -219,7 +263,7 @@ struct Sprite(Movable):
 
         var s = Sprite(w, h)
         var ok2 = lib.call["png_image_finish_read", Int](
-            img.unsafe_ptr(), Int(0), s.pixels.unsafe_ptr(), Int(0), Int(0)
+            img.unsafe_ptr(), Int(0), s._pixels.unsafe_ptr(), Int(0), Int(0)
         )
         lib.call["png_image_free"](img.unsafe_ptr())
 
@@ -243,7 +287,7 @@ struct Sprite(Movable):
             handle,
             data.unsafe_ptr(),
             len(data),
-            s.pixels.unsafe_ptr(),
+            s._pixels.unsafe_ptr(),
             Int32(w),
             Int32(0),
             Int32(h),
@@ -291,7 +335,7 @@ struct Sprite(Movable):
                 raise Error("Compressed BMP not supported: " + path)
 
             var s = Sprite(w, h)
-            var dst = s.pixels.unsafe_ptr()
+            var dst = s._pixels.unsafe_ptr()
 
             # 24- and 32-bit differ only in the source stride and where alpha
             # comes from. Rows are padded to a 4-byte boundary, which the

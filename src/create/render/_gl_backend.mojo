@@ -996,6 +996,16 @@ struct GLRenderer(Movable):
         self.textures[id] = name
         return name
 
+    def forget_images(mut self, ids: List[Int]) raises:
+        """Delete the textures of backend images the cache has dropped."""
+        for id in ids:
+            if id in self.textures:
+                var name = self.textures[id]
+                _delete_object(self.gl.delete_textures, name)
+                if name == self.bound:
+                    self.bound = 0
+                _ = self.textures.pop(id)
+
     def _sprite_shadow(
         mut self,
         c: RenderCommand,

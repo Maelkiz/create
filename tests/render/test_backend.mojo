@@ -11,6 +11,7 @@ from create.render.surface import MemorySurface
 from create.render._viewport import Viewport
 from create.render.style import Style
 from create.render._backend import Backend
+from create.render._image import IMAGE_KEEP_FRAMES
 from create.render._raster import blend
 from create.render._transform import pixel_scale, outline_thickness_px
 from create.render._shadow import box_coverage
@@ -474,8 +475,7 @@ def test_sprite_replays_from_an_interned_image() raises -> None:
     src[7] = 255
     var mem = MemorySurface(_W, _H)
     var backend = Backend()
-    var id = backend.intern_image(7, src.unsafe_ptr(), 2, 1)
-    assert_equal(id, 7)
+    var id = backend.intern_image(7, 0, src.unsafe_ptr(), 2, 1)
 
     var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
@@ -490,10 +490,38 @@ def test_sprite_replays_from_an_interned_image() raises -> None:
 def test_interning_the_same_key_twice_reuses_the_copy() raises -> None:
     var src = List[UInt8](length=4, fill=255)
     var backend = Backend()
-    var a = backend.intern_image(3, src.unsafe_ptr(), 1, 1)
-    var b = backend.intern_image(3, src.unsafe_ptr(), 1, 1)
+    var a = backend.intern_image(3, 0, src.unsafe_ptr(), 1, 1)
+    var b = backend.intern_image(3, 0, src.unsafe_ptr(), 1, 1)
     assert_equal(a, b)
     assert_equal(len(backend.images), 1)
+
+
+def test_a_new_version_is_a_new_copy_and_the_old_one_stays() raises -> None:
+    # A command recorded before an edit must keep replaying the old pixels.
+    var src = List[UInt8](length=4, fill=255)
+    var backend = Backend()
+    var before = backend.intern_image(3, 0, src.unsafe_ptr(), 1, 1)
+    src[0] = 0
+    var after = backend.intern_image(3, 1, src.unsafe_ptr(), 1, 1)
+    assert_true(before != after)
+    assert_equal(backend.images[before].pixels[0], 255)
+    assert_equal(backend.images[after].pixels[0], 0)
+    assert_equal(backend.intern_image(3, 1, src.unsafe_ptr(), 1, 1), after)
+
+
+def test_an_image_unused_for_long_enough_is_dropped() raises -> None:
+    var src = List[UInt8](length=4, fill=255)
+    var backend = Backend()
+    var kept = backend.intern_image(1, 0, src.unsafe_ptr(), 1, 1)
+    var dropped = backend.intern_image(2, 0, src.unsafe_ptr(), 1, 1)
+    var mem = MemorySurface(1, 1)
+    for _ in range(IMAGE_KEEP_FRAMES + 1):
+        _ = backend.intern_image(1, 0, src.unsafe_ptr(), 1, 1)
+        backend.present(mem.surface(), 1.0)
+    assert_true(kept in backend.images)
+    assert_true(dropped not in backend.images)
+    # Seen again, it is copied afresh rather than resurrected.
+    assert_true(backend.intern_image(2, 0, src.unsafe_ptr(), 1, 1) != dropped)
 
 
 def test_sprite_with_an_unknown_image_is_skipped() raises -> None:
@@ -857,23 +885,27 @@ def test_every_shape_kind_casts_a_blurred_shadow() raises -> None:
     assert_equal(m.pixel(80, 0), Color.BLACK)
 
 
-def _blurred_sprite_frame(mut backend: Backend, mut mem: MemorySurface) raises:
+def _blurred_sprite_frame(
+    mut backend: Backend, mut mem: MemorySurface, image: Int
+) raises:
     """A 20x20 opaque sprite at the world origin, its shadow blurred by 8
     and thrown 40 units right: sprite over columns 30..49, shadow 70..89."""
     var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
     var s = _blurred(Color.GREEN, 8.0)
     s.shadow_offset = Vector2D(40, 0)
-    cmds.append(sprite_command(_base(), s^, -10.0, 0.0, 20.0, 20.0, 3, 2, 2))
+    cmds.append(
+        sprite_command(_base(), s^, -10.0, 0.0, 20.0, 20.0, image, 2, 2)
+    )
     backend.replay(mem.surface(), cmds, 1.0)
 
 
 def test_a_blurred_sprite_shadow_softens_past_its_silhouette() raises -> None:
     var src = List[UInt8](length=16, fill=255)
     var backend = Backend()
-    _ = backend.intern_image(3, src.unsafe_ptr(), 2, 2)
+    var image = backend.intern_image(3, 0, src.unsafe_ptr(), 2, 2)
     var mem = MemorySurface(_W, _H)
-    _blurred_sprite_frame(backend, mem)
+    _blurred_sprite_frame(backend, mem, image)
     # The silhouette spans columns 70..89 on row 50 (sprite at 30..49).
     assert_true(mem.pixel(80, 50).r > 240, "the middle isn't solid")
     var edge = Int(mem.pixel(89, 50).r) + Int(mem.pixel(90, 50).r)
@@ -882,7 +914,7 @@ def test_a_blurred_sprite_shadow_softens_past_its_silhouette() raises -> None:
     assert_true(mem.pixel(94, 50).r < 128)
     # Once the frame is cached, a repeat blurs nothing new.
     assert_equal(len(backend.shadow_masks), 1)
-    _blurred_sprite_frame(backend, mem)
+    _blurred_sprite_frame(backend, mem, image)
     assert_equal(len(backend.shadow_masks), 1)
 
 
