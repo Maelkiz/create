@@ -9,7 +9,6 @@ and the layering rules.
 |---|---|
 | `canvas.mojo` | `Canvas` (records commands, touches no pixels), `PersistentCanvasState`, the guards |
 | `_command.mojo` | `RenderCommand` and its kind constants; `_fill_box`, the box a fill gradient spans |
-| `gradient.mojo` | `Gradient`; its ramp, its device mapping (`_DeviceMapping`) and the dithered sample both replays share |
 | `_backend.mojo` | `Backend` — fonts, glyph cache, interned images; replays commands via `present` (CPU) or `present_gpu` |
 | `_raster.mojo` | CPU rasteriser over a `Surface`; called only from `_backend.mojo` |
 | `_gl.mojo` | GL entry points resolved at runtime; the only file that talks to the driver |
@@ -55,7 +54,7 @@ transparent `save_image` masks it out.
 ## Gradients
 
 A fill gradient rides on the command's `Style` (`fill_gradient`); opacity scales its stops at
-record time. Everything a replay needs comes from three pieces in `gradient.mojo`, shared so the
+record time. Everything a replay needs comes from three pieces in `create/color/gradient.mojo`, shared so the
 backends agree:
 - **The ramp:** `RAMP_SIZE` (256) colours sampled from the stops at construction, behind an
   `ArcPointer` with the stops, so copying a `Gradient` (and the `Style` holding one) is a refcount.
@@ -188,6 +187,27 @@ the same shape cover the same pixels:
 `test_clip.mojo` asserts samples on both backends and compares whole frames, allowing for edge
 pixels. A rotated edge differs between the two rasterisers, as it does for a plain rotated
 rectangle.
+
+## Reads
+
+`canvas.pixel` and `canvas.snapshot` go through `Backend.read(width, height, scale, to_target,
+seeded)`. It replays the commands recorded so far onto a `MemorySurface`, skipping the letterbox,
+with `pre = to_target @ screen_inv`. `to_target` maps screen space to the read's pixels;
+`screen_inv` is the window-pixel-to-screen mapping that `Canvas.__init__` hands over through
+`begin_frame`. Like `present`, it moves the command buffer out and back. Pixels whose centre is off
+the screen are made transparent afterwards, since a clear fills the whole target.
+- `read_frame` caches the full-screen read at design resolution in `frame_read`. It stays current
+  while `recorded` (bumped by every `record` and `record_clear`) is unchanged, and resets at present.
+  `pixel` and a full-screen scale-1 `snapshot` share it.
+- `seeded` (autoclear off): the first such read sets `keep_frames`. From then on `present` samples
+  each finished CPU frame down to design resolution into `last_frame` (`_keep_frame`), and later
+  reads start from it (`_seed`), nearest pixel.
+
+**The image cache** (`Backend.images`) is keyed by a backend id per *sprite version*.
+`intern_image(sprite, version, …)` reuses the copy only while `Sprite._version` matches, so an
+edited sprite gets a new id and earlier commands keep the old copy. `_expire_images`, after each
+present, drops copies unused for `IMAGE_KEEP_FRAMES` frames and tells `GLRenderer.forget_images` to
+delete their textures.
 
 ## Captures
 

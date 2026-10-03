@@ -22,9 +22,10 @@ it makes the library better.
 
 | Module | Path | Responsibility |
 |---|---|---|
-| root | `src/create/__init__.mojo` | The preamble: star-imports all five subpackages below |
+| root | `src/create/__init__.mojo` | The preamble: star-imports all six subpackages below |
 | `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`, `Input`, `Key`, `MouseButton`, `Gamepad`, `GamepadButton`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path`, `DateTime` |
-| `render` | `src/create/render/` | `Canvas`, `Camera`, colour/gradient/font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
+| `render` | `src/create/render/` | `Canvas`, `Camera`, font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
+| `color` | `src/create/color/` | `Color`, `Gradient` (with the ramp and dither both backends share), `BlendMode` |
 | `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes (`Rectangle`, `Circle`, `Triangle`, `Sector`, `Polygon`, `Line`, `Arc`), `Bezier`, `Spline`, `Random`, `Noise`, easing and `Tween`, util functions |
 | `sprite` | `src/create/sprite/` | `Sprite` (BMP/PNG/JPEG), `SpriteAnimation`, `SpriteAnimator` |
 | `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |
@@ -116,7 +117,7 @@ public field names where it doesn't (`Time`, `Tween`). Private fields are left o
 A program writes `from create import *`. Otherwise import by name from the owning package
 (`from create.math import overlaps`); a single subpackage star is not a preamble.
 
-- The root has no names of its own — it star-imports the five subpackages. Never add a name there;
+- The root has no names of its own — it star-imports the six subpackages. Never add a name there;
   add it to the owning subpackage.
 - A subpackage exports only what it owns, never a lower layer's symbol.
 - Public surface is exactly what an `__init__.mojo` lists. A new declaration is internal unless it is
@@ -125,12 +126,15 @@ A program writes `from create import *`. Otherwise import by name from the ownin
 
 ### Layering
 
-- **`render` never imports `core`** (it would be a cycle). `render` depends only on `math`, `sprite`
-  and `_bytes`, so it works without a run loop. So `Canvas` takes `Context`'s dials as plain values;
+- **`render` never imports `core`** (it would be a cycle). `render` depends only on `math`, `color`,
+  `sprite` and `_bytes`, so it works without a run loop. So `Canvas` takes `Context`'s dials as plain values;
   `context._set_viewport(state, …)` and `context._new_canvas(state^)` in `core` pass them in.
+- **`color`** depends only on `math`; `sprite` and `render` both import it. It sits below `sprite` so
+  that `Sprite.pixel` can return a `Color` without a `render`↔`sprite` cycle.
 - **`_bytes`** is a leaf imported by `sprite` and `render`, re-exported by nothing.
 - **`_window`** imports nothing from `create`; `core` is its only consumer; nothing re-exports it.
-- **`render`→`sprite` is nominal:** only `canvas.sprite`'s overloads name `Sprite`/`SpriteAnimator`.
+- **`render`→`sprite` is nominal:** only `canvas.sprite`'s overloads and `canvas.snapshot` name
+  `Sprite`/`SpriteAnimator`.
   A `render` function that needs pixels takes a pointer plus width/height, not an image type.
 
 ### Style and clear
@@ -210,6 +214,31 @@ to undo. See [examples/clipping.mojo](examples/clipping.mojo).
   only the clipped area (and never replaces the autoclear). The letterbox is not.
 - **Hard-edged**: the clip covers the pixels a fill of the same shape would, on both backends.
   Soft masks (a gradient or a sprite's alpha) are not implemented yet.
+
+### Reading pixels
+
+`canvas.pixel(position) -> Color` and `canvas.snapshot([region], scale=1.0) -> Sprite` read what the
+frame has drawn **so far**. They are a CPU replay of the commands recorded up to the call, like
+`save_image`, so both backends read the same pixels and the GPU is never stalled. See
+[examples/pixels.mojo](examples/pixels.mojo).
+- **Screen space**, not world: the transform and camera don't apply. `canvas.pixel(context.input.mouse)`
+  picks under the mouse as it is, and a snapshot region is always upright. Off the screen reads
+  transparent.
+- **Design resolution × `scale`**, without the letterbox. `snapshot()` drawn back with
+  `canvas.sprite(shot, (0, 0), canvas.width, canvas.height)` lines up exactly;
+  `scale=canvas.scale` gives window pixels.
+- **One replay per drawing**: reads are cached until something more is recorded, so many `pixel`
+  calls in a row cost one. A full-frame replay costs about a CPU frame. Fine for picking, a
+  capture, or a feedback effect; read once rather than per object.
+- **With `context.autoclear(False)`** a read starts from the last frame's pixels, as the frame did,
+  from the frame after the first read on. The first read sees only its own frame. CPU backend
+  only, the one that accumulates.
+
+`Sprite.pixel(x, y)`/`set_pixel(x, y, color)` read and edit a sprite in **image coordinates** (top-left
+origin, y down); off the image, reads are transparent and writes do nothing. The buffer is private:
+every write goes through `set_pixel`, which versions the sprite so a render after the edit draws the
+new pixels and one before it keeps the old ones. A sprite not drawn for `IMAGE_KEEP_FRAMES` (120)
+frames is dropped from the backends' caches, so a fresh snapshot every frame costs bounded memory.
 
 ### Coordinates, camera, autoscale
 
