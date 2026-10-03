@@ -653,7 +653,7 @@ def test_a_rotated_rect_replays_identically_to_canvas() raises -> None:
     # Rotation defeats the axis-aligned fast path, so this is the per-pixel
     # inverse-mapping route — the one the command buffer most has to preserve,
     # since a pre-mapped device rect could not express it at all.
-    var want = run_headless[RotatedRect](_W, _H)
+    var want = run_headless[RotatedRect](_W, _H, antialiasing=Antialiasing.OFF)
 
     var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))

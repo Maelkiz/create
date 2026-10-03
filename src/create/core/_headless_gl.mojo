@@ -15,6 +15,7 @@ from create._window import GLWindow
 
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
+from create.render.antialiasing import Antialiasing
 from create.render.render_backend import RenderBackend
 from create.render.canvas import PersistentCanvasState
 from create.core.context import Context
@@ -24,20 +25,14 @@ from ._step import step
 from .headless import _FRAME_MILLIS
 from .program import Program
 
-comptime _HEADLESS_MSAA_SAMPLES = 4
 
-
-def _open_headless_window(msaa: Bool) raises -> GLWindow:
+def _open_headless_window() raises -> GLWindow:
     """Tiny and never rendered into — the frame lands in the `_GLTarget` FBO,
     and this exists only because a GL context needs a window to belong to.
+    So it is not multisampled either.
 
     This is what raises when there is no GL context at all.
     """
-    if msaa:
-        try:
-            return GLWindow("headless", 64, 64, msaa=_HEADLESS_MSAA_SAMPLES)
-        except:
-            pass
     return GLWindow("headless", 64, 64)
 
 
@@ -49,7 +44,7 @@ def _run_headless_gl[
     frames: Int = 1,
     pixel_width: Int = 0,
     pixel_height: Int = 0,
-    msaa: Bool = False,
+    antialiasing: Antialiasing = Antialiasing.OFF,
 ) raises -> MemorySurface:
     """Run `P` for `frames` frames through the GPU backend and return the
     last frame as a `MemorySurface`.
@@ -61,18 +56,18 @@ def _run_headless_gl[
     falls back to the CPU backend, which would let a "GPU" test pass without
     touching a driver.
 
-    `msaa` is a lever for later antialiasing work — off by default, matching
-    why the parity test also disables it — and does not yet change how the
-    `_GLTarget` itself is built.
+    The `_GLTarget` is not multisampled, so `antialiasing` reaches only the
+    CPU replays: pixel reads and `save_image`.
     """
     var pw = pixel_width if pixel_width > 0 else width
     var ph = pixel_height if pixel_height > 0 else height
 
-    var win = _open_headless_window(msaa)
+    var win = _open_headless_window()
     var target = _GLTarget(GL(), pw, ph)
 
     # After the window: its GL resources need a current context.
     var state = PersistentCanvasState(RenderBackend.GPU)
+    state.backend.antialiasing = antialiasing
     var context = Context()
     context.design_resolution(width, height)
     var program = P.create(context)

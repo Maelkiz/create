@@ -213,8 +213,9 @@ def test_gpu_clips_like_the_cpu() raises -> None:
 
 
 def test_rows_merge_invert_and_intersect() raises -> None:
-    # Row 0: two overlapping runs and one apart; row 1: nothing.
-    var runs: List[Int] = [0, 5, 9, 0, 2, 6, 0, 12, 14]
+    # Row 0: two overlapping runs and one apart; row 1: nothing. The fourth
+    # of each is the paint key, which a clip ignores.
+    var runs: List[Int] = [0, 5, 9, 0, 0, 2, 6, 0, 0, 12, 14, 0]
     var rows = _ClipRows(runs, 16, 2, invert=False)
     assert_equal(rows.starts, [0, 2, 2])
     assert_equal(rows.spans, [2, 9, 12, 14])
@@ -223,7 +224,9 @@ def test_rows_merge_invert_and_intersect() raises -> None:
     assert_equal(holes.starts, [0, 3, 4])
     assert_equal(holes.spans, [0, 2, 9, 12, 14, 16, 0, 16])
 
-    var both = rows.intersect(_ClipRows([0, 4, 13, 1, 0, 3], 16, 2, False))
+    var both = rows.intersect(
+        _ClipRows([0, 4, 13, 0, 1, 0, 3, 0], 16, 2, False)
+    )
     assert_equal(both.starts, [0, 2, 2])
     assert_equal(both.spans, [4, 9, 12, 13])
 

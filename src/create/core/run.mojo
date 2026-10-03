@@ -1,4 +1,5 @@
 from create._window.window import Window
+from create.render.antialiasing import Antialiasing
 from create.render.render_backend import RenderBackend
 from create.render.canvas import PersistentCanvasState
 from create.core.context import Context
@@ -8,7 +9,6 @@ from ._window_loop import _finish_frame
 from create.render.surface import Surface
 from .program import Program
 from .window_mode import WindowMode
-from .antialiasing import Antialiasing
 from ._run_gl import run_gl
 
 
@@ -87,7 +87,7 @@ def run[
     height: Int = 720,
     backend: RenderBackend = RenderBackend.CPU,
     resizable: Bool = True,
-    antialiasing: Antialiasing = Antialiasing.MSAA_4X,
+    antialiasing: Antialiasing = Antialiasing.MEDIUM,
 ) raises:
     """Open a window and run `P` in it until it quits.
 
@@ -122,9 +122,9 @@ def run[
     a branch rather than a value the loop holds because Mojo 1.0 has no
     dynamic trait dispatch, which is also why `Backend` switches on a `kind`.
 
-    `antialiasing` smooths edges on the GPU backend only, by multisampling
-    (`Antialiasing.MSAA_4X` by default, `OFF` for hard pixels); the CPU
-    backend ignores it. See `Antialiasing`.
+    `antialiasing` smooths the edges of shapes on either backend
+    (`Antialiasing.MEDIUM` by default, `OFF` for hard pixels). See
+    `Antialiasing`.
     """
     var fullscreen = mode == WindowMode.FULLSCREEN
     var borderless = mode == WindowMode.BORDERLESS
@@ -152,6 +152,7 @@ def run[
     # rebuilt every frame; the transform stack deliberately does not, so each
     # frame starts unrotated and untranslated.
     var state = PersistentCanvasState()
+    state.backend.antialiasing = antialiasing
     # The size the program is authored against is always what the caller asked
     # for, never what the display handed back. In fullscreen SDL ignores the
     # requested size, so seeding this from the window would make the design

@@ -73,18 +73,19 @@ struct _ClipRows(Movable):
         height: Int,
         invert: Bool,
     ):
-        """The runs a region's rasterisation recorded, as `(row, lo, hi)`
-        triples in any order, possibly overlapping: sorted, merged, and
-        complemented within `[0, width)` if `invert`."""
-        # Bucket the triples by row, counting first so one pass places them.
+        """The runs a region's rasterisation recorded, as `(row, lo, hi,
+        key)` quadruples in any order, possibly overlapping: sorted, merged,
+        and complemented within `[0, width)` if `invert`. The paint key is
+        ignored."""
+        # Bucket the runs by row, counting first so one pass places them.
         var counts = List[Int](length=height + 1, fill=0)
-        for i in range(0, len(recorded), 3):
+        for i in range(0, len(recorded), 4):
             counts[recorded[i] + 1] += 1
         for y in range(height):
             counts[y + 1] += counts[y]
-        var by_row = List[Int](length=len(recorded) // 3 * 2, fill=0)
+        var by_row = List[Int](length=len(recorded) // 4 * 2, fill=0)
         var fill_at = counts.copy()
-        for i in range(0, len(recorded), 3):
+        for i in range(0, len(recorded), 4):
             var at = fill_at[recorded[i]]
             by_row[2 * at] = recorded[i + 1]
             by_row[2 * at + 1] = recorded[i + 2]

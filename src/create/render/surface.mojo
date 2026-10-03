@@ -44,8 +44,10 @@ struct Surface[origin: Origin[mut=True]](Copyable, ImplicitlyCopyable, Movable):
     any surface carrying them is in use."""
     var _recording: Optional[Pointer[List[Int], MutUntrackedOrigin]]
     """When set, `fill_span` writes no pixels and appends each run it is
-    handed as a `(row, lo, hi)` triple instead: how the replay turns a clip
-    region into `_ClipRows` with the shape's own rasteriser."""
+    handed as a `(row, lo, hi, key)` quadruple instead, `key` naming its
+    paint (`_color_key`, or `GRADIENT_KEY`): how the replay turns a clip
+    region into `_ClipRows`, and an antialiased shape into coverage, with the
+    shape's own rasteriser."""
 
     def __init__(
         out self, px: Pointer[UInt8, Self.origin], width: Int, height: Int

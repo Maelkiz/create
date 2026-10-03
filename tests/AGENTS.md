@@ -17,7 +17,8 @@ passing file, with any `SKIP` lines it printed indented beneath. Each file is it
 namespace any scratch path under `/tmp` per file.
 
 **Rendering is tested for real.** `run_headless` returns the `MemorySurface`, and
-`MemorySurface.pixel(x, y)` reads it back — assert on pixels, don't eyeball.
+`MemorySurface.pixel(x, y)` reads it back — assert on pixels, don't eyeball. It antialiases at
+`MEDIUM` like `run`: a test pinning an edge pixel's exact colour passes `antialiasing=Antialiasing.OFF`.
 `core/test_step.mojo` scripts `context.input` and calls `step` directly for input-driven behaviour.
 
 **GPU coverage, three tiers:**

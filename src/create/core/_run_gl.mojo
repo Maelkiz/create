@@ -17,6 +17,7 @@ two loops cannot drift in what a frame is.
 
 from create._window import GLWindow
 
+from create.render.antialiasing import Antialiasing
 from create.render.render_backend import RenderBackend
 from create.render.canvas import PersistentCanvasState
 from create.core.context import Context
@@ -26,7 +27,6 @@ from ._step import step
 from ._window_loop import _finish_frame
 from .program import Program
 from .window_mode import WindowMode
-from .antialiasing import Antialiasing
 
 
 def _open_window(
@@ -43,30 +43,30 @@ def _open_window(
     Antialiasing is the framebuffer's job here, not the tessellator's:
     analytic coverage per shape would cost a second geometry path for every
     kind. `GLWindow` deliberately does not degrade silently — an unsupported
-    sample count fails context creation — so the step down is here, halving
-    the count until the driver accepts one. Only a failure with none at all
+    sample count fails context creation — so the step down is here, a level
+    at a time until the driver accepts one. Only a failure with none at all
     raises.
     """
     var fullscreen = mode == WindowMode.FULLSCREEN
     var borderless = mode == WindowMode.BORDERLESS
     var maximized = mode == WindowMode.MAXIMIZED
-    var samples = antialiasing.samples
+    var level = antialiasing
     while True:
         try:
             return GLWindow(
                 title,
                 width,
                 height,
-                msaa=samples,
+                msaa=level._gpu_samples(),
                 fullscreen=fullscreen,
                 resizable=resizable,
                 borderless=borderless,
                 maximized=maximized,
             )
         except e:
-            if samples <= 0:
+            if level == Antialiasing.OFF:
                 raise e
-            samples = samples // 2 if samples > 2 else 0
+            level = level._lower()
 
 
 def _update_dimensions(
@@ -135,7 +135,7 @@ def run_gl[
     height: Int = 720,
     vsync: Bool = True,
     resizable: Bool = True,
-    antialiasing: Antialiasing = Antialiasing.MSAA_4X,
+    antialiasing: Antialiasing = Antialiasing.MEDIUM,
 ) raises:
     """Open a GL window and run `P` on the GPU backend until it quits.
 
@@ -144,8 +144,9 @@ def run_gl[
     in the same space either way and the viewport scales it to whatever the
     display turns out to be.
 
-    `antialiasing` is the multisample count, stepped down if the driver
-    refuses it — see `Antialiasing`.
+    `antialiasing` is the multisampling level, stepped down if the driver
+    refuses it; pixel reads replay at the same level on the CPU. See
+    `Antialiasing`.
 
     `vsync=False` is for benchmarking only: without it every frame waits for
     the display and the measurement is the refresh rate rather than the
@@ -161,6 +162,7 @@ def run_gl[
     # the state now carries the viewport too, so it has to exist before
     # `_wait_for_dimensions` rather than inside the loop.
     var state = PersistentCanvasState(RenderBackend.GPU)
+    state.backend.antialiasing = antialiasing
     var context = Context()
     context.design_resolution(width, height)
     var program = P.create(context)

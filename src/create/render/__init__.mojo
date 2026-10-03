@@ -1,4 +1,5 @@
 from .render_backend import RenderBackend
+from .antialiasing import Antialiasing
 from .align import Align
 from .autoscale import AutoScale
 from .surface import Surface, MemorySurface

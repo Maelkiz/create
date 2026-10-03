@@ -266,7 +266,10 @@ def _text_bench(
 
 
 def _frame_bench(
-    m: Matrix[3, 3], mut be: Backend, mut mem: MemorySurface
+    m: Matrix[3, 3],
+    mut be: Backend,
+    mut mem: MemorySurface,
+    label: String = "gpu frame (record+present)",
 ) raises:
     """One `gpu`-shaped frame: a clear plus 2000 mixed shapes."""
     var st = _shape_style(True)
@@ -299,7 +302,40 @@ def _frame_bench(
         var s = mem.surface()
         be.present(s, 1.0)
     var t1 = perf_counter_ns()
-    _report("gpu frame (record+present)", t0, t1)
+    _report(label, t0, t1)
+
+
+def _antialiasing_bench(
+    m: Matrix[3, 3], mut be: Backend, mut mem: MemorySurface
+) raises:
+    """The `gpu`-shaped frame and a few large outlined circles at every
+    antialiasing level: many small shapes are all edge, large ones mostly
+    interior."""
+    var outlined = _shape_style(True)
+    outlined.outline_enabled = True
+    outlined.outline_color = Color(240, 240, 240)
+    var levels: List[Antialiasing] = [
+        Antialiasing.OFF,
+        Antialiasing.LOW,
+        Antialiasing.MEDIUM,
+        Antialiasing.HIGH,
+    ]
+    for level in levels:
+        be.antialiasing = level
+        var name = String(level)
+        _frame_bench(m, be, mem, "frame, " + name + "  ")
+        var t0 = perf_counter_ns()
+        for _ in range(_REPS):
+            var rng = Random(1234)
+            for _i in range(20):
+                var x = rng.float(-700.0, 700.0)
+                var y = rng.float(-300.0, 300.0)
+                be.record(circle_command(m, outlined, x, y, 200.0))
+            var s = mem.surface()
+            be.present(s, 1.0)
+        var t1 = perf_counter_ns()
+        _report("20 circles r200, " + name + "  ", t0, t1)
+    be.antialiasing = Antialiasing.OFF
 
 
 def main() raises:
@@ -317,3 +353,4 @@ def main() raises:
     _line_bench()
     _text_bench(m, be, mem)
     _frame_bench(m, be, mem)
+    _antialiasing_bench(m, be, mem)

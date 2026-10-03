@@ -23,8 +23,8 @@ it makes the library better.
 | Module | Path | Responsibility |
 |---|---|---|
 | root | `src/create/__init__.mojo` | The preamble: star-imports all six subpackages below |
-| `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`, `Input`, `Key`, `MouseButton`, `Gamepad`, `GamepadButton`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `Antialiasing`, `source_path`, `DateTime` |
-| `render` | `src/create/render/` | `Canvas`, `Camera`, font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
+| `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`, `Input`, `Key`, `MouseButton`, `Gamepad`, `GamepadButton`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path`, `DateTime` |
+| `render` | `src/create/render/` | `Canvas`, `Camera`, `Antialiasing`, font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
 | `color` | `src/create/color/` | `Color`, `Gradient` (with the ramp and dither both backends share), `BlendMode` |
 | `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes (`Rectangle`, `Circle`, `Triangle`, `Sector`, `Polygon`, `Line`, `Arc`), `Bezier`, `Spline`, `Random`, `Noise`, easing and `Tween`, util functions |
 | `sprite` | `src/create/sprite/` | `Sprite` (BMP/PNG/JPEG), `SpriteAnimation`, `SpriteAnimator` |
@@ -205,6 +205,16 @@ translucent.
 transform and camera reset every frame); a *helper* that sets style wraps it in `canvas.style()` so it
 can't leak into the caller's next render.
 
+### Antialiasing
+
+`run(..., antialiasing=Antialiasing.MEDIUM)` is the default; `OFF`, `LOW` and `HIGH` are the
+others. One setting for both backends, each reaching it its own way: the GPU multisamples its
+window, the CPU samples each shape on a finer grid (`LOW` 2x2, `MEDIUM` 4x4, `HIGH` 8x8 per pixel).
+Shapes only — text and sprites are smooth already, clips stay hard. A shape's fill and outline
+composite together, so no seam shows between them; two separate shapes meeting inside a pixel can
+show a faint one. `run_headless` defaults to `MEDIUM` too, so a test asserting an edge pixel's exact
+colour passes `antialiasing=Antialiasing.OFF`.
+
 ### Clipping
 
 `with canvas.clip(region):` renders only inside `region` for the block; `invert=True` keeps only
@@ -216,7 +226,8 @@ to undo. See [examples/clipping.mojo](examples/clipping.mojo).
 - **Nested clips intersect.** On exit the enclosing clip is current again.
 - **Everything is clipped** — shapes, sprites, text, shadows, and `background()`, which then paints
   only the clipped area (and never replaces the autoclear). The letterbox is not.
-- **Hard-edged**: the clip covers the pixels a fill of the same shape would, on both backends.
+- **Hard-edged**, whatever the antialiasing: the clip covers the pixels a fill of the same shape
+  would without it, on both backends.
   Soft masks (a gradient or a sprite's alpha) are not implemented yet.
 
 ### Reading pixels

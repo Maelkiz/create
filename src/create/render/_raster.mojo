@@ -199,11 +199,7 @@ def _fill_span_clipped[
     var row = index // s.width
     var x0 = index - row * s.width
     if s._recording:
-        if count > 0:
-            ref runs = s._recording.value()[]
-            runs.append(row)
-            runs.append(x0)
-            runs.append(x0 + count)
+        _record_run(s, row, x0, count, _color_key(c))
         return
     ref rows = s._clip.value()[]
     for k in range(rows.starts[row], rows.starts[row + 1]):
@@ -211,6 +207,37 @@ def _fill_span_clipped[
         var hi = min(x0 + count, rows.spans[2 * k + 1])
         if hi > lo:
             _fill_run(s, (row * s.width + lo) * 4, hi - lo, c)
+
+
+comptime GRADIENT_KEY = -1
+"""The paint key a recording surface notes for a gradient fill's runs; a
+solid colour's is `_color_key` of it, never negative."""
+
+
+def _color_key(c: Color) -> Int:
+    """`c` as a recorded run's paint key, which `_key_color` reverses."""
+    return (Int(c.r) << 24) | (Int(c.g) << 16) | (Int(c.b) << 8) | Int(c.a)
+
+
+def _key_color(key: Int) -> Color:
+    return Color(
+        UInt8((key >> 24) & 255),
+        UInt8((key >> 16) & 255),
+        UInt8((key >> 8) & 255),
+        UInt8(key & 255),
+    )
+
+
+def _record_run[
+    o: Origin[mut=True]
+](s: Surface[o], row: Int, x0: Int, count: Int, key: Int):
+    """Note the run on a recording surface as `(row, lo, hi, key)`."""
+    if count > 0:
+        ref runs = s._recording.value()[]
+        runs.append(row)
+        runs.append(x0)
+        runs.append(x0 + count)
+        runs.append(key)
 
 
 def _fill_run[
@@ -350,6 +377,12 @@ def fill_span[
 ](s: Surface[o], off: Int, count: Int, paint: FillPaint):
     """`fill_span` for a `FillPaint`: the colour's own loop, or the
     gradient's."""
+    if paint.shader and s._recording:
+        if paint.shader.value().gradient._visible():
+            var index = off // 4
+            var row = index // s.width
+            _record_run(s, row, index - row * s.width, count, GRADIENT_KEY)
+        return
     if paint.shader and s._clip:
         _shade_span_clipped(s, off, count, paint)
         return

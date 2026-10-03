@@ -119,11 +119,5 @@ def test_window_mode_writes_its_constant_name() raises -> None:
     assert_equal(String(WindowMode(99)), "WindowMode(99)")
 
 
-def test_antialiasing_writes_its_constant_name() raises -> None:
-    assert_equal(String(Antialiasing.OFF), "Antialiasing.OFF")
-    assert_equal(String(Antialiasing.MSAA_8X), "Antialiasing.MSAA_8X")
-    assert_equal(String(Antialiasing(16)), "Antialiasing(16)")
-
-
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

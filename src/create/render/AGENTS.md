@@ -19,6 +19,7 @@ and the layering rules.
 | `_sector.mojo` | Sector fill and outline tiled into device quads for both replays (`sector_quads`), and its blurred shadow mask |
 | `_polygon.mojo` | Polygon fill and outline tiled into device quads for both replays (`polygon_quads`), and its blurred shadow mask |
 | `_triangle.mojo` | A rounded or outlined triangle as a convex fill and ring quads for both replays (`triangle_pieces`) |
+| `_coverage.mojo` | CPU antialiasing: `composite_coverage` turns a shape's runs recorded on a finer grid into per-pixel coverage, composited once |
 | `_clip.mojo` | `_Clip` (one `canvas.clip` level: region command, invert, parent) and `_ClipRows`, the CPU replay's per-row runs of a clip |
 | `_blur.mojo` | Three-box-blur approximation of a Gaussian over an alpha mask, for text and sprite shadows; the blurred-mask cache limit and key |
 | `_transform.mojo`, `_image.mojo`, `_fillet.mojo` | Shared by both replay paths (split out to avoid an import cycle, or so both agree on the numbers) |
@@ -165,8 +166,8 @@ it.
 Each replay rasterises the region **with the code that draws that shape**, so a clip and a fill of
 the same shape cover the same pixels:
 - **CPU:** before any command, `Backend._clip_rows` replays each region through `_one` onto a
-  *recording* surface (`Surface._recording_into`). There `fill_span` appends `(row, lo, hi)` and
-  writes nothing. `_ClipRows` sorts and merges those into runs per row, complements them for
+  *recording* surface (`Surface._recording_into`). There `fill_span` appends `(row, lo, hi, key)`
+  and writes nothing; `key` names the run's paint, which a clip ignores. `_ClipRows` sorts and merges those into runs per row, complements them for
   `invert`, and intersects with the parent's. A clipped command's surface carries its rows
   (`Surface._with_clip`). `fill_span`, `blend` and `fill_all` cut to them, and nothing else writes
   pixels, so no rasteriser knows about clips.
@@ -189,10 +190,38 @@ the same shape cover the same pixels:
 pixels. A rotated edge differs between the two rasterisers, as it does for a plain rotated
 rectangle.
 
+## Antialiasing
+
+`Backend.antialiasing` (an `Antialiasing`, set by the run loops) applies to the CPU replay of the
+shape kinds — rect, circle, line, Bézier, sector, polygon, triangle — through `Backend._shape`.
+Clear, text, sprites, letterbox and blurred or inset shadows are untouched; a hard shadow is a
+shape command, so it is antialiased like one.
+
+- **Record at `grid`×.** `_shape` replays the command through the kind's own rasteriser
+  (`_shape_pixels`) onto a recording surface `grid` times wider and taller, with `mat_scale(grid)`
+  in front of the device matrix and `scale × grid` as the fallback pixel scale. So every rasteriser
+  samples at sample centres instead of pixel centres, outline thickness and curve flattening
+  refine with it, and no rasteriser knows. Each run is `(row, lo, hi, key)`, the key
+  `_color_key(color)` or `GRADIENT_KEY`, so fill and outline stay apart.
+- **Composite once** (`composite_coverage`): runs are bucketed by pixel row; each adds its coverage
+  changes (partial samples at either end, `grid` between) to a difference array per paint and
+  notes the columns it touches. The sorted touched columns split the row into stretches of constant
+  coverage: full ones go to `fill_span` as one run, partial ones mix their paints premultiplied by
+  sample share and blend once — so fill and outline crossing one pixel leave no seam, and a
+  translucent shape stays one layer deep. A gradient's partial stretch samples per pixel.
+- **Clip regions stay hard:** `_shape` skips the path on a recording surface, so `_clip_rows`
+  rasterises regions as before.
+- Hot loops index through pointers into `CoverageScratch` buffers kept on the `Backend`: checked
+  `List` access cost as much as the compositing did.
+
+Cost (`pixi run benchmark raster`, 1920×1080): 2000 small alpha shapes ~4.8 ms off, ~11 ms `LOW`,
+~16 ms `MEDIUM`, ~23 ms `HIGH`; 20 outlined circles of radius 200 ~3.2 / 6 / 8 / 11.5 ms. Small
+shapes are nearly all edge, so they pay most. The GPU's MSAA costs it little; it is unaffected.
+
 ## Reads
 
 `canvas.pixel` and `canvas.snapshot` go through `Backend.read(width, height, scale, to_target,
-seeded)`. It replays the commands recorded so far onto a `MemorySurface`, skipping the letterbox,
+seeded)`, antialiased as the frame is. It replays the commands recorded so far onto a `MemorySurface`, skipping the letterbox,
 with `pre = to_target @ screen_inv`. `to_target` maps screen space to the read's pixels;
 `screen_inv` is the window-pixel-to-screen mapping that `Canvas.__init__` hands over through
 `begin_frame`. Like `present`, it moves the command buffer out and back. Pixels whose centre is off

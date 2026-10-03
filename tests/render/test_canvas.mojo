@@ -437,7 +437,7 @@ struct SharpTriangle(Program):
 def test_corner_radius_zero_matches_sharp_triangle() raises -> None:
     # The right-angle vertex maps to device pixel (30, 70). corner_radius(0)
     # must leave it square, same as the untouched sharp path.
-    var m = run_headless[SharpTriangle](100, 100)
+    var m = run_headless[SharpTriangle](100, 100, antialiasing=Antialiasing.OFF)
     assert_equal(m.pixel(30, 70), Color.RED)
     assert_equal(m.pixel(37, 63), Color.RED)
 
@@ -1077,7 +1077,7 @@ struct ZoomedBezier(Program):
 
 
 def test_bezier_stays_smooth_under_camera_zoom() raises -> None:
-    var m = run_headless[ZoomedBezier](100, 100)
+    var m = run_headless[ZoomedBezier](100, 100, antialiasing=Antialiasing.OFF)
     # The stroke is 8 px wide, so a pixel centre within 4 px of the true
     # curve is inked. Flattened at world size, the chords would stray from
     # it at this zoom; flattened in device pixels they stay within a
@@ -1416,7 +1416,9 @@ struct TranslucentPacMan(Program):
 
 
 def test_a_translucent_sector_composites_once() raises -> None:
-    var m = run_headless[TranslucentPacMan](100, 100)
+    var m = run_headless[TranslucentPacMan](
+        100, 100, antialiasing=Antialiasing.OFF
+    )
     var once = m.pixel(30, 50)
     assert_true(once != Color.BLACK)
     for y in range(100):
@@ -1521,7 +1523,9 @@ struct TranslucentStar(Program):
 
 
 def test_a_translucent_polygon_composites_once() raises -> None:
-    var m = run_headless[TranslucentStar](100, 100)
+    var m = run_headless[TranslucentStar](
+        100, 100, antialiasing=Antialiasing.OFF
+    )
     var once = m.pixel(50, 50)
     assert_true(once != Color.BLACK)
     assert_equal(m.pixel(80, 80), once)
@@ -1960,7 +1964,7 @@ struct MeasuredText(Program):
 def test_text_width_matches_the_rendered_ink() raises -> None:
     # Left-aligned at the buffer centre (100, 100), the ink ends within a
     # glyph's side bearing of the measured width, marked in red below it.
-    var m = run_headless[MeasuredText](200, 200)
+    var m = run_headless[MeasuredText](200, 200, antialiasing=Antialiasing.OFF)
     var red_x = -1
     for x in range(200):
         if m.pixel(x, 140) == Color.RED:

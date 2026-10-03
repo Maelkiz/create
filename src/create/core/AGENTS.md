@@ -55,6 +55,7 @@ the display's. The loop re-reads dimensions every frame.
 
 `run_gl` creates its `GLWindow` before constructing `GL()`, which needs a current context.
 
-**Antialiasing is the GL window's multisampling**, chosen at context creation: `_open_window` halves
-the requested `Antialiasing` sample count until the driver accepts one, down to none. The CPU loop
-ignores it, and the headless GPU loop renders into a single-sampled `_GLTarget`, so no test sees it.
+**Antialiasing is a `Backend` field the loops set** from `run`'s argument (`state.backend.antialiasing`);
+the CPU replay and every pixel read use it. The GL loop also asks its window for that level's
+multisampling: `_open_window` steps down a level at a time until the driver accepts one, down to
+none. The headless GPU loop renders into a single-sampled `_GLTarget`, so there it reaches only reads.

@@ -77,6 +77,8 @@ from ._png import write_png
 from .surface import MemorySurface, Surface, _force_opaque
 from ._text import TextRenderer
 from .render_backend import RenderBackend
+from .antialiasing import Antialiasing
+from ._coverage import CoverageScratch, composite_coverage
 from create.color.color import Color
 
 
@@ -741,6 +743,13 @@ struct Backend(Movable):
     """
 
     var kind: RenderBackend
+    var antialiasing: Antialiasing
+    """How the CPU replay smooths shapes' edges, live or for a read; the GPU
+    multisamples its own framebuffer, chosen with its window."""
+    var _coverage_runs: List[Int]
+    var _coverage: CoverageScratch
+    """`_shape`'s working memory, kept so a frame of antialiased shapes
+    allocates once."""
     var text: TextRenderer
     var images: Dict[Int, _Image]
     """Interned sprite copies by backend image id, the id a command
@@ -823,6 +832,9 @@ struct Backend(Movable):
         is a precondition of `RenderBackend.GPU` — the GL run loop opens its window
         first for exactly that reason."""
         self.kind = kind
+        self.antialiasing = Antialiasing.OFF
+        self._coverage_runs = List[Int]()
+        self._coverage = CoverageScratch()
         self.text = TextRenderer()
         self.images = Dict[Int, _Image]()
         self.sprite_images = Dict[Int, Int]()
@@ -1284,20 +1296,16 @@ struct Backend(Movable):
                     fill_span(t, row * t.width * 4, t.width, paint)
             else:
                 fill_all(t, c.style.fill_color)
-        elif c.kind == CMD_RECT:
-            self._rect(t, c, scale, m)
-        elif c.kind == CMD_CIRCLE:
-            self._circle(t, c, scale, m)
-        elif c.kind == CMD_LINE:
-            self._line(t, c, scale, m)
-        elif c.kind == CMD_BEZIER:
-            self._bezier(t, c, scale, m)
-        elif c.kind == CMD_SECTOR:
-            self._sector(t, c, scale, m)
-        elif c.kind == CMD_POLYGON:
-            self._polygon(t, c, scale, m)
-        elif c.kind == CMD_TRIANGLE:
-            self._triangle(t, c, scale, m)
+        elif (
+            c.kind == CMD_RECT
+            or c.kind == CMD_CIRCLE
+            or c.kind == CMD_LINE
+            or c.kind == CMD_BEZIER
+            or c.kind == CMD_SECTOR
+            or c.kind == CMD_POLYGON
+            or c.kind == CMD_TRIANGLE
+        ):
+            self._shape(t, c, scale, m)
         elif c.kind == CMD_SPRITE:
             self._sprite(t, c, scale, m)
         elif c.kind == CMD_TEXT:
@@ -1309,6 +1317,67 @@ struct Backend(Movable):
             var sm = pre @ shadow_transform(c, scale)
             var blur = Int(c.style.shadow_blur * pixel_scale(sm, scale) + 0.5)
             _inset_shadow(t, c, scale, m, sm, blur)
+
+    def _shape[
+        o: Origin[mut=True]
+    ](
+        mut self,
+        s: Surface[o],
+        c: RenderCommand,
+        scale: Float64,
+        m: Matrix[3, 3],
+    ) raises:
+        """Draw the shape `c`, antialiased at `antialiasing`.
+
+        Antialiased, the shape is drawn by its own rasteriser onto a
+        recording surface `grid` times finer, its device mapping and pixel
+        scale both multiplied by `grid`, and the runs it records composited
+        as coverage (`_coverage.mojo`). A recording surface — a clip region
+        being rasterised — keeps hard pixels, since a clip is hard-edged.
+        """
+        var grid = self.antialiasing._cpu_grid()
+        if grid == 1 or s._recording:
+            self._shape_pixels(s, c, scale, m)
+            return
+        var runs = self._coverage_runs^
+        self._coverage_runs = List[Int]()
+        runs.clear()
+        var recorder = Pointer(to=runs).unsafe_origin_cast[MutUntrackedOrigin]()
+        var fine = Surface[o](
+            s.px, s.width * grid, s.height * grid
+        )._recording_into(recorder)
+        var g = Float64(grid)
+        self._shape_pixels(fine, c, scale * g, mat_scale(g) @ m)
+        var scratch = self._coverage^
+        self._coverage = CoverageScratch()
+        composite_coverage(s, runs, grid, _fill_paint(c, m), scratch)
+        self._coverage = scratch^
+        self._coverage_runs = runs^
+
+    def _shape_pixels[
+        o: Origin[mut=True]
+    ](
+        mut self,
+        s: Surface[o],
+        c: RenderCommand,
+        scale: Float64,
+        m: Matrix[3, 3],
+    ) raises:
+        """Draw the shape `c` by pixel centres, its kind's own rasteriser."""
+        if c.kind == CMD_RECT:
+            self._rect(s, c, scale, m)
+        elif c.kind == CMD_CIRCLE:
+            self._circle(s, c, scale, m)
+        elif c.kind == CMD_LINE:
+            self._line(s, c, scale, m)
+        elif c.kind == CMD_BEZIER:
+            self._bezier(s, c, scale, m)
+        elif c.kind == CMD_SECTOR:
+            self._sector(s, c, scale, m)
+        elif c.kind == CMD_POLYGON:
+            self._polygon(s, c, scale, m)
+        elif c.kind == CMD_TRIANGLE:
+            self._triangle(s, c, scale, m)
 
     def _rect[
         o: Origin[mut=True]
