@@ -56,16 +56,25 @@ def _blend_pixel[
     px.unsafe_store[width=4](offset=off, val=out.cast[DType.uint8]())
 
 
-def blend[o: Origin[mut=True]](s: Surface[o], off: Int, c: Color):
+def blend[
+    o: Origin[mut=True], //, clipped: Bool = True
+](s: Surface[o], off: Int, c: Color):
     """Composite one color into the framebuffer at `off`, by the surface's
-    blend mode.
+    blend mode, if the surface's clip keeps it.
 
     Under `NORMAL`, fully opaque and fully transparent colors skip the
     read-back, so the common case costs no more than a raw store;
     `Color.over` owns the mixing. Any other mode goes through `_blend_lanes`.
+
+    `clipped=False` skips the clip test, for a per-pixel loop that has
+    checked once that `s` has no clip — the test alone cost a sprite blit
+    ~15%.
     """
     if c.a == 0:
         return
+    comptime if clipped:
+        if s._clip and not _clip_keeps(s, off):
+            return
     if s._blend_mode != BlendMode.NORMAL:
         _blend_pixel(s, off, c, s._blend_mode)
         return
@@ -88,6 +97,21 @@ def blend[o: Origin[mut=True]](s: Surface[o], off: Int, c: Color):
     px[unsafe_offset=off + 1] = out.g
     px[unsafe_offset=off + 2] = out.b
     px[unsafe_offset=off + 3] = out.a
+
+
+@no_inline
+def _clip_keeps[o: Origin[mut=True]](s: Surface[o], off: Int) -> Bool:
+    """Whether the pixel at byte offset `off` lies inside `s`'s clip."""
+    var index = off // 4
+    var row = index // s.width
+    var x = index - row * s.width
+    ref rows = s._clip.value()[]
+    for k in range(rows.starts[row], rows.starts[row + 1]):
+        if x < rows.spans[2 * k]:
+            return False
+        if x < rows.spans[2 * k + 1]:
+            return True
+    return False
 
 
 def _packed(c: Color) -> UInt32:
@@ -125,6 +149,7 @@ def _word_aligned[o: Origin[mut=True]](s: Surface[o]) -> Bool:
     return Int(s.px) % 4 == 0
 
 
+@always_inline
 def fill_span[
     o: Origin[mut=True]
 ](s: Surface[o], off: Int, count: Int, c: Color):
@@ -149,9 +174,48 @@ def fill_span[
     A surface blend mode other than `NORMAL` takes neither branch: it has no
     opaque shortcut, and runs the same four-pixel `SIMD` loop through
     `_blend_lanes`.
+
+    A clipped surface cuts the run into its pieces inside the clip first,
+    and a recording one paints nothing and notes the run instead; see
+    `Surface._clip`. The run must lie within one row.
     """
     if c.a == 0:
         return
+    if s._clip or s._recording:
+        _fill_span_clipped(s, off, count, c)
+        return
+    _fill_run(s, off, count, c)
+
+
+@no_inline
+def _fill_span_clipped[
+    o: Origin[mut=True]
+](s: Surface[o], off: Int, count: Int, c: Color):
+    """`fill_span` on a clipped or recording surface. Out of line and
+    calling `_fill_run` rather than `fill_span`, so the unclipped path stays
+    small and non-recursive enough to inline into every raster loop."""
+    var index = off // 4
+    var row = index // s.width
+    var x0 = index - row * s.width
+    if s._recording:
+        if count > 0:
+            ref runs = s._recording.value()[]
+            runs.append(row)
+            runs.append(x0)
+            runs.append(x0 + count)
+        return
+    ref rows = s._clip.value()[]
+    for k in range(rows.starts[row], rows.starts[row + 1]):
+        var lo = max(x0, rows.spans[2 * k])
+        var hi = min(x0 + count, rows.spans[2 * k + 1])
+        if hi > lo:
+            _fill_run(s, (row * s.width + lo) * 4, hi - lo, c)
+
+
+def _fill_run[
+    o: Origin[mut=True]
+](s: Surface[o], off: Int, count: Int, c: Color):
+    """`fill_span`'s loops, for a run already inside the clip."""
     var px = s.px
     var mode = s._blend_mode
     if mode != BlendMode.NORMAL:
@@ -285,6 +349,9 @@ def fill_span[
 ](s: Surface[o], off: Int, count: Int, paint: FillPaint):
     """`fill_span` for a `FillPaint`: the colour's own loop, or the
     gradient's."""
+    if paint.shader and s._clip:
+        _shade_span_clipped(s, off, count, paint)
+        return
     if paint.shader:
         ref shader = paint.shader.value()
         _shade_span(s, off, count, shader.gradient, shader.mapping)
@@ -292,8 +359,37 @@ def fill_span[
         fill_span(s, off, count, paint.color)
 
 
+@no_inline
+def _shade_span_clipped[
+    o: Origin[mut=True]
+](s: Surface[o], off: Int, count: Int, paint: FillPaint):
+    """A gradient `fill_span` on a clipped surface, cut once here so
+    `_shade_span`'s per-pixel `blend` need not test."""
+    var u = s._with_clip(None)
+    var index = off // 4
+    var row = index // s.width
+    var x0 = index - row * s.width
+    ref rows = s._clip.value()[]
+    ref shader = paint.shader.value()
+    for k in range(rows.starts[row], rows.starts[row + 1]):
+        var lo = max(x0, rows.spans[2 * k])
+        var hi = min(x0 + count, rows.spans[2 * k + 1])
+        if hi > lo:
+            _shade_span(
+                u,
+                (row * s.width + lo) * 4,
+                hi - lo,
+                shader.gradient,
+                shader.mapping,
+            )
+
+
 def fill_all[o: Origin[mut=True]](s: Surface[o], c: Color):
-    """Composite `c` over every pixel — the whole frame, no clipping needed."""
+    """Composite `c` over every pixel the surface's clip keeps."""
+    if s._clip:
+        for row in range(s.height):
+            fill_span(s, row * s.width * 4, s.width, c)
+        return
     fill_span(s, 0, s.width * s.height, c)
 
 
@@ -523,6 +619,27 @@ def blit_sprite[
     tint: Optional[Color] = None,
 ):
     """Blit the `sw` x `sh` RGBA buffer at `src` into the device rect at
+    `(x0, y0)` sized `dw` x `dh`; see `_blit_sprite`."""
+    if s._clip:
+        _blit_sprite[clipped=True](s, src, sw, sh, x0, y0, dw, dh, tint)
+    else:
+        _blit_sprite[clipped=False](s, src, sw, sh, x0, y0, dw, dh, tint)
+
+
+def _blit_sprite[
+    o: Origin[mut=True], so: Origin, //, clipped: Bool
+](
+    s: Surface[o],
+    src: Pointer[UInt8, so],
+    sw: Int,
+    sh: Int,
+    x0: Int,
+    y0: Int,
+    dw: Int,
+    dh: Int,
+    tint: Optional[Color],
+):
+    """Blit the `sw` x `sh` RGBA buffer at `src` into the device rect at
     `(x0, y0)` sized `dw` x `dh`.
 
     With `tint`, paint the image's silhouette instead: `tint` wherever the
@@ -571,7 +688,7 @@ def blit_sprite[
                 var sa = sp[unsafe_offset=src_off + 3]
                 if sa == 0:
                     continue
-                blend(
+                blend[clipped=clipped](
                     s,
                     dst_row_off + (x0 + col) * 4,
                     _silhouette(t, sa) if silhouette else Color(
@@ -589,7 +706,7 @@ def blit_sprite[
                 var src_off = src_row_off + src_col * 4
                 var sa = sp[unsafe_offset=src_off + 3]
                 if sa != 0:
-                    blend(
+                    blend[clipped=clipped](
                         s,
                         dst_row_off + (x0 + col) * 4,
                         _silhouette(t, sa) if silhouette else Color(
@@ -614,6 +731,25 @@ def blit_glyph[
 
 def blit_alpha[
     o: Origin[mut=True], so: Origin
+](
+    s: Surface[o],
+    src: Pointer[UInt8, so],
+    width: Int,
+    height: Int,
+    x0: Int,
+    y0: Int,
+    c: Color,
+):
+    """Composite the `width` x `height` 8-bit coverage mask at `src` at
+    `(x0, y0)` in `c`; see `_blit_alpha`."""
+    if s._clip:
+        _blit_alpha[clipped=True](s, src, width, height, x0, y0, c)
+    else:
+        _blit_alpha[clipped=False](s, src, width, height, x0, y0, c)
+
+
+def _blit_alpha[
+    o: Origin[mut=True], so: Origin, //, clipped: Bool
 ](
     s: Surface[o],
     src: Pointer[UInt8, so],
@@ -653,7 +789,7 @@ def blit_alpha[
             var cov = Int(gp[unsafe_offset=src_row_off + col])
             if cov == 0:
                 continue
-            blend(
+            blend[clipped=clipped](
                 s,
                 dst_row_off + (x0 + col) * 4,
                 Color(c.r, c.g, c.b, UInt8(cov * ca // 255)),

@@ -19,6 +19,13 @@ transform per vertex rather than passing it as a uniform: a per-command
 uniform would force a draw call per command and there would be no batching to
 speak of.
 
+**A clip is the stencil buffer.** Each command carries the id of the
+innermost `canvas.clip` it was rendered under; when that changes, the batch
+flushes and `_apply_clip` redraws the stencil from the clip's chain of
+regions, each through the same fill emitters a render call of that shape
+uses. A clip change therefore costs a flush plus one draw call per level
+of its chain — a few per frame for a typical program, never per command.
+
 **Clearing follows the CPU replay rather than the obvious GL call.**
 `_raster.fill_all` *composites* — a `background` with `a < 255` blends over
 what was already rendered — so only an opaque clear becomes `glClear`. A
@@ -52,13 +59,17 @@ from ._gl import (
     GL_CLAMP_TO_EDGE,
     GL_COLOR_BUFFER_BIT,
     GL_COMPILE_STATUS,
+    GL_DECR,
     GL_DST_COLOR,
+    GL_EQUAL,
     GL_FALSE,
     GL_FLOAT,
     GL_FRAGMENT_SHADER,
     GL_FUNC_ADD,
     GL_FUNC_REVERSE_SUBTRACT,
+    GL_INCR,
     GL_INFO_LOG_LENGTH,
+    GL_KEEP,
     GL_LINEAR,
     GL_LINK_STATUS,
     GL_MULTISAMPLE,
@@ -72,7 +83,10 @@ from ._gl import (
     GL_RGBA8,
     GL_RED,
     GL_SRC_ALPHA,
+    GL_STENCIL_BUFFER_BIT,
+    GL_STENCIL_TEST,
     GL_STREAM_DRAW,
+    GL_TRUE,
     GL_TEXTURE0,
     GL_TEXTURE1,
     GL_TEXTURE2,
@@ -97,6 +111,7 @@ from ._blur import (
     blur_sprite_alpha,
     shadow_mask_key,
 )
+from ._clip import _Clip
 from ._curve import PlacedMask, bezier_shadow_mask
 from ._sector import sector_shadow_mask
 from ._polygon import polygon_shadow_mask
@@ -475,6 +490,10 @@ struct GLRenderer(Movable):
     `glDrawArrays`, so replacing it has to flush first; the atlas on unit 0 is
     never replaced and so never forces one."""
     var vertices: VertexBuffer
+    var clip: Int
+    """The clip id the stencil holds and tests now, or 0 with the test
+    off. Reset to 0 at the end of every `render`, since the next frame's
+    ids name different clips."""
     var draw_calls: Int
     """Batches flushed by the last `render`. Read by the bench example and the
     Phase 8 performance work; it costs one increment a batch."""
@@ -486,6 +505,7 @@ struct GLRenderer(Movable):
         self.vbo = _gen_object(self.gl.gen_buffers)
         self.viewport_w = 0
         self.viewport_h = 0
+        self.clip = 0
         self.atlas = _gen_object(self.gl.gen_textures)
         self.glyphs = Dict[Int, _AtlasRect]()
         self.shelf_x = _ATLAS_PAD
@@ -690,6 +710,7 @@ struct GLRenderer(Movable):
     def render(
         mut self,
         cmds: List[RenderCommand],
+        clips: List[_Clip],
         images: Dict[Int, _Image],
         mut text: TextRenderer,
         width: Int,
@@ -713,6 +734,10 @@ struct GLRenderer(Movable):
         self.vertices.clear()
         self.draw_calls = 0
         for ref c in cmds:
+            if c.clip != self.clip:
+                self._apply_clip(
+                    c.clip, clips, images, text, width, height, scale
+                )
             # An opaque clear draws nothing, so its mode (always `NORMAL`)
             # must not force a flush; a translucent one sets it in `_clear`.
             if c.kind != CMD_CLEAR:
@@ -754,6 +779,7 @@ struct GLRenderer(Movable):
             # geometry, so it batches with anything.
             if casts_inset_shadow(c):
                 emit_inset_shadow(self.vertices, c, scale)
+        self._apply_clip(0, clips, images, text, width, height, scale)
         self._flush()
         for name in self.frame_textures:
             _delete_object(self.gl.delete_textures, name)
@@ -778,7 +804,7 @@ struct GLRenderer(Movable):
                 var row = self._ramp_row(c)
                 self._clear_gradient(c, row, width, height)
             else:
-                self._clear(c.style.fill_color, width, height)
+                self._clear(c.style.fill_color, width, height, c.clip != 0)
         elif c.kind == CMD_RECT:
             var row = self._ramp_row(c)
             emit_rect(self.vertices, c, scale, row)
@@ -1075,11 +1101,16 @@ struct GLRenderer(Movable):
         )
         return name
 
-    def _clear(mut self, color: Color, width: Int, height: Int) raises:
-        """`CMD_CLEAR`, composited the way the CPU replay composites it."""
+    def _clear(
+        mut self, color: Color, width: Int, height: Int, clipped: Bool
+    ) raises:
+        """`CMD_CLEAR`, composited the way the CPU replay composites it.
+
+        `glClear` ignores the stencil test, so a clipped clear is always a
+        quad, opaque or not."""
         if color.a == 0:
             return
-        if color.a == 255:
+        if color.a == 255 and not clipped:
             # Opaque: the cheap path, but it wipes the framebuffer, so
             # anything already batched has to land first.
             self._flush()
@@ -1109,6 +1140,56 @@ struct GLRenderer(Movable):
         var first = self.vertices.count()
         self.vertices.quad(0.0, 0.0, w, 0.0, w, h, 0.0, h, Color.TRANSPARENT)
         _shade_fill(self.vertices, first, c, row)
+
+    def _apply_clip(
+        mut self,
+        id: Int,
+        clips: List[_Clip],
+        images: Dict[Int, _Image],
+        mut text: TextRenderer,
+        width: Int,
+        height: Int,
+        scale: Float64,
+    ) raises:
+        """Make the stencil hold clip `id` and test every later draw
+        against it, flushing first — the test applies to a whole draw call.
+
+        The stencil counts levels: the chain is drawn outermost first, level
+        `d` incrementing exactly the pixels at `d - 1` its region covers, so
+        a pixel ends at the chain's depth only if every level kept it. An
+        inverted level increments everything at `d - 1`, then takes its
+        region back down. Colour writes are off throughout; each region is
+        drawn by `_one`, so its pixels are the ones the shape would paint.
+        """
+        self._flush()
+        self.clip = id
+        if id == 0:
+            self.gl.disable(GL_STENCIL_TEST)
+            return
+        var chain = List[Int]()
+        var at = id
+        while at != 0:
+            chain.append(at)
+            at = clips[at - 1].parent
+        self.gl.enable(GL_STENCIL_TEST)
+        self.gl.clear(GL_STENCIL_BUFFER_BIT)
+        self.gl.color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE)
+        for depth in range(1, len(chain) + 1):
+            ref level = clips[chain[len(chain) - depth] - 1]
+            self.gl.stencil_func(GL_EQUAL, Int32(depth - 1), 0xFF)
+            self.gl.stencil_op(GL_KEEP, GL_KEEP, GL_INCR)
+            if level.invert:
+                var w = Float64(width)
+                var h = Float64(height)
+                self.vertices.quad(0.0, 0.0, w, 0.0, w, h, 0.0, h, Color.WHITE)
+                self._flush()
+                self.gl.stencil_func(GL_EQUAL, Int32(depth), 0xFF)
+                self.gl.stencil_op(GL_KEEP, GL_KEEP, GL_DECR)
+            self._one(level.region, images, text, width, height, scale)
+            self._flush()
+        self.gl.color_mask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
+        self.gl.stencil_func(GL_EQUAL, Int32(len(chain)), 0xFF)
+        self.gl.stencil_op(GL_KEEP, GL_KEEP, GL_KEEP)
 
     def _blend_mode(mut self, mode: BlendMode) raises:
         """Set the GL blend state for `mode`, flushing first if that changes

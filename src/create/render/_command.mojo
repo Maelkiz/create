@@ -98,6 +98,10 @@ struct RenderCommand(Copyable, Movable):
     var silhouette: Bool
     """`CMD_SPRITE` only: paint `style.fill_color` wherever the image is
     opaque, scaled by its alpha, instead of the image. A sprite's shadow."""
+    var clip: Int
+    """The id of the innermost `canvas.clip` this was rendered under — an
+    index into `Backend.clips`, one past — or 0 for none. Stamped by
+    `Backend.record`, so no builder below has to know about clips."""
 
     def __init__(
         out self,
@@ -147,6 +151,7 @@ struct RenderCommand(Copyable, Movable):
         self.image_w = 0
         self.image_h = 0
         self.silhouette = False
+        self.clip = 0
 
 
 def _fill_box(c: RenderCommand) -> Tuple[Point2D, Vector2D]:

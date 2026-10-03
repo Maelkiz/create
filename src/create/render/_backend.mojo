@@ -49,6 +49,7 @@ from ._raster import (
 )
 from ._gl_backend import GLRenderer
 from ._image import _Image
+from ._clip import _Clip, _ClipRows
 from .style import Style
 from ._transform import pixel_scale, outline_thickness_px, uniform
 from ._shadow import (
@@ -905,6 +906,14 @@ struct Backend(Movable):
     sensible reading of two saves of the same frame to two paths being asked
     for by accident.
     """
+    var clips: List[_Clip]
+    """This frame's `canvas.clip` levels, in the order they were opened;
+    a command's `clip` is an index into it, one past. Both replays build their
+    own form of each — rows on the CPU, the stencil on the GPU — and it is
+    reset with the command buffer."""
+    var clip: Int
+    """The clip a command recorded now is rendered under: the innermost
+    open `canvas.clip`, or 0. `ClipGuard` sets it back on exit."""
     var commands: List[RenderCommand]
     """The frame being recorded.
 
@@ -923,6 +932,8 @@ struct Backend(Movable):
         self.images = Dict[Int, _Image]()
         self.shadow_masks = Dict[Int, BlurredMask]()
         self.commands = List[RenderCommand]()
+        self.clips = List[_Clip]()
+        self.clip = 0
         self.pending_image = Optional[_ImageRequest]()
         self.pending_screenshot = Optional[String]()
         self.gl = Optional[GLRenderer]()
@@ -930,8 +941,18 @@ struct Backend(Movable):
             self.gl = Optional(GLRenderer())
 
     def record(mut self, var c: RenderCommand):
-        """Append one render to the frame being recorded."""
+        """Append one render to the frame being recorded, under the current
+        clip."""
+        c.clip = self.clip
         self.commands.append(c^)
+
+    def push_clip(mut self, var region: RenderCommand, invert: Bool) -> Int:
+        """Open a clip nested in the current one and make it current.
+        Returns the clip it replaced, for the guard to restore."""
+        var previous = self.clip
+        self.clips.append(_Clip(region^, invert, previous))
+        self.clip = len(self.clips)
+        return previous
 
     def record_clear(mut self, var c: RenderCommand):
         """Append a clear, replacing an adjacent one it would erase anyway.
@@ -941,10 +962,13 @@ struct Backend(Movable):
         nothing. Dropping it here rather than at replay keeps both backends
         and both captures agreeing, and costs the common case nothing: a
         program that keeps `context.autoclear` on and also opens `update` with
-        `background()` records one clear, not two.
+        `background()` records one clear, not two. A clipped clear covers only
+        its clip, so it replaces nothing.
         """
+        c.clip = self.clip
         if (
-            _clear_is_opaque(c)
+            c.clip == 0
+            and _clear_is_opaque(c)
             and len(self.commands) > 0
             and self.commands[len(self.commands) - 1].kind == CMD_CLEAR
         ):
@@ -1041,6 +1065,8 @@ struct Backend(Movable):
         self._flush_image(cmds)
         cmds.clear()
         self.commands = cmds^
+        self.clips.clear()
+        self.clip = 0
 
     def present_gpu(mut self, width: Int, height: Int, scale: Float64) raises:
         """The GPU counterpart of `present`, onto the current drawable.
@@ -1058,12 +1084,14 @@ struct Backend(Movable):
         var cmds = self.commands^
         self.commands = List[RenderCommand]()
         self.gl.value().render(
-            cmds, self.images, self.text, width, height, scale
+            cmds, self.clips, self.images, self.text, width, height, scale
         )
         self._flush_screenshot_gpu(width, height)
         self._flush_image(cmds)
         cmds.clear()
         self.commands = cmds^
+        self.clips.clear()
+        self.clip = 0
 
     def intern_image[
         so: Origin
@@ -1115,10 +1143,54 @@ struct Backend(Movable):
         capture that is bar-free by contract, plus `1 << CMD_CLEAR` for one
         with a transparent background. A mask rather than a single kind
         because a transparent capture drops both, and `0` drops nothing.
+
+        Each of the frame's clips becomes rows first, all of them before any
+        command, so no row table moves while a surface points into it.
         """
+        var rows = self._clip_rows(s, scale, pre)
         for ref c in cmds:
             if skip_kinds & (1 << c.kind) == 0:
-                self._one(s, c, scale, pre)
+                if c.clip == 0:
+                    self._one(s, c, scale, pre)
+                else:
+                    var clip = Pointer(to=rows[c.clip - 1])
+                    self._one(
+                        s._with_clip(
+                            clip.unsafe_origin_cast[MutUntrackedOrigin]()
+                        ),
+                        c,
+                        scale,
+                        pre,
+                    )
+        _ = rows^
+
+    def _clip_rows[
+        o: Origin[mut=True]
+    ](
+        mut self, s: Surface[o], scale: Float64, pre: Matrix[3, 3]
+    ) raises -> List[_ClipRows]:
+        """Every clip of the frame as the rows of `s` it keeps, in id order.
+
+        Each region is replayed through `_one` onto a recording surface, so
+        its rows are exactly the pixels the same shape would paint, and then
+        intersected with its parent's, which comes earlier.
+        """
+        var out = List[_ClipRows](capacity=len(self.clips))
+        for i in range(len(self.clips)):
+            var runs = List[Int]()
+            var recorder = Pointer(to=runs).unsafe_origin_cast[
+                MutUntrackedOrigin
+            ]()
+            var region = self.clips[i].region.copy()
+            self._one(s._recording_into(recorder), region, scale, pre)
+            var own = _ClipRows(runs, s.width, s.height, self.clips[i].invert)
+            _ = runs^
+            var parent = self.clips[i].parent
+            if parent == 0:
+                out.append(own^)
+            else:
+                out.append(own.intersect(out[parent - 1]))
+        return out^
 
     def _one[
         o: Origin[mut=True]

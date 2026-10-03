@@ -14,4 +14,5 @@ from .canvas import (
     StyleGuard as StyleGuard,
     TransformGuard as TransformGuard,
     OverlayGuard as OverlayGuard,
+    ClipGuard as ClipGuard,
 )

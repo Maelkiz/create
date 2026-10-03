@@ -2,6 +2,7 @@ from std.memory import unsafe_memcpy
 
 from .blend_mode import BlendMode
 from .color import Color
+from ._clip import _ClipRows
 from ._png import write_png
 
 
@@ -29,13 +30,22 @@ struct Surface[origin: Origin[mut=True]](Copyable, ImplicitlyCopyable, Movable):
 
     It also carries the `BlendMode` the raster loops composite with, so the
     replay sets it once per command and no loop between there and `blend` or
-    `fill_span` has to thread it through.
+    `fill_span` has to thread it through — and the command's clip, for the
+    same reason.
     """
 
     var px: Pointer[UInt8, Self.origin]
     var width: Int
     var height: Int
     var _blend_mode: BlendMode
+    var _clip: Optional[Pointer[_ClipRows, MutUntrackedOrigin]]
+    """The runs `blend` and `fill_span` may write, or none for the whole
+    surface. Untracked: the replay owns the rows and keeps them alive while
+    any surface carrying them is in use."""
+    var _recording: Optional[Pointer[List[Int], MutUntrackedOrigin]]
+    """When set, `fill_span` writes no pixels and appends each run it is
+    handed as a `(row, lo, hi)` triple instead: how the replay turns a clip
+    region into `_ClipRows` with the shape's own rasteriser."""
 
     def __init__(
         out self, px: Pointer[UInt8, Self.origin], width: Int, height: Int
@@ -44,11 +54,31 @@ struct Surface[origin: Origin[mut=True]](Copyable, ImplicitlyCopyable, Movable):
         self.width = width
         self.height = height
         self._blend_mode = BlendMode.NORMAL
+        self._clip = None
+        self._recording = None
 
     def _with_blend_mode(self, mode: BlendMode) -> Self:
         """The same pixels, composited with `mode`."""
         var out = self
         out._blend_mode = mode
+        return out
+
+    def _with_clip(
+        self, clip: Optional[Pointer[_ClipRows, MutUntrackedOrigin]]
+    ) -> Self:
+        """The same pixels, written only inside `clip`'s runs."""
+        var out = self
+        out._clip = clip
+        return out
+
+    def _recording_into(
+        self, runs: Pointer[List[Int], MutUntrackedOrigin]
+    ) -> Self:
+        """A surface of the same size whose `fill_span` records into `runs`
+        rather than painting."""
+        var out = self
+        out._clip = None
+        out._recording = runs
         return out
 
     def offset(self, x: Int, y: Int) -> Int:

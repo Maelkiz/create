@@ -47,6 +47,8 @@ from ._command import (
     triangle_command,
 )
 from .style import Style, _KEEP
+from ._clip import clip_style
+from ._command import RenderCommand
 from ._transform import pixel_scale
 
 
@@ -180,6 +182,32 @@ struct StyleGuard[origin: Origin[mut=True]](Movable):
 
     def __exit__(mut self):
         self._canvas[]._style = self._saved
+
+
+struct ClipGuard[origin: Origin[mut=True]](Movable):
+    """Closes the clip `canvas.clip` opened, on scope exit.
+
+    Holds the clip that was current before it rather than popping a stack, so
+    nesting works the way `StyleGuard`'s does.
+    """
+
+    var _canvas: Pointer[Canvas, Self.origin]
+    var _saved: Int
+
+    def __init__(
+        out self,
+        ref[Self.origin] canvas: Canvas,
+        var region: RenderCommand,
+        invert: Bool,
+    ):
+        self._saved = canvas._state.backend.push_clip(region^, invert)
+        self._canvas = Pointer(to=canvas)
+
+    def __enter__(mut self):
+        pass
+
+    def __exit__(mut self):
+        self._canvas[]._state.backend.clip = self._saved
 
 
 struct Canvas:
@@ -496,6 +524,104 @@ struct Canvas:
         """Map a point from the current transform's frame into world space."""
         var p = mat_apply(self._user, local.x, local.y)
         return Point2D(p[0], p[1])
+
+    def clip(
+        mut self, r: Rectangle, invert: Bool = False
+    ) -> ClipGuard[origin_of(self)]:
+        """Render only inside `r` for a `with` block — or, with `invert`, only
+        outside it.
+
+        ```mojo
+        with canvas.clip(Rectangle((0, 0), 200, 120)):
+            canvas.sprite(self.photo, (0, 0))
+        ```
+
+        `r` is placed by the transform and camera current here, and stays
+        there for the block: a `transform` or `overlay` inside it moves what
+        is rendered, not the clip. A clip inside another keeps only what both
+        keep. Every render call is clipped, its shadow and `background()`
+        included; the letterbox is not. The clip's edge is the edge a
+        `canvas.rectangle(r)` would have.
+
+        Closes on exit, including on an early return or a raise.
+        """
+        return ClipGuard[origin_of(self)](
+            self,
+            rect_command(
+                self._transform,
+                clip_style(),
+                r.position.x,
+                r.position.y,
+                r.w,
+                r.h,
+            ),
+            invert,
+        )
+
+    def clip(
+        mut self, c: Circle, invert: Bool = False
+    ) -> ClipGuard[origin_of(self)]:
+        """Render only inside `c` for a `with` block, or only outside it
+        with `invert`; see `clip(Rectangle)`."""
+        var center = c.center()
+        return ClipGuard[origin_of(self)](
+            self,
+            circle_command(
+                self._transform, clip_style(), center.x, center.y, c.r
+            ),
+            invert,
+        )
+
+    def clip(
+        mut self, t: Triangle, invert: Bool = False
+    ) -> ClipGuard[origin_of(self)]:
+        """Render only inside `t` for a `with` block, or only outside it
+        with `invert`; see `clip(Rectangle)`."""
+        return ClipGuard[origin_of(self)](
+            self,
+            triangle_command(
+                self._transform,
+                clip_style(),
+                t.a.x,
+                t.a.y,
+                t.b.x,
+                t.b.y,
+                t.c.x,
+                t.c.y,
+            ),
+            invert,
+        )
+
+    def clip(
+        mut self, s: Sector, invert: Bool = False
+    ) -> ClipGuard[origin_of(self)]:
+        """Render only inside `s` for a `with` block, or only outside it
+        with `invert`; see `clip(Rectangle)`."""
+        return ClipGuard[origin_of(self)](
+            self,
+            sector_command(
+                self._transform,
+                clip_style(),
+                s.position.x,
+                s.position.y,
+                s.r,
+                s.start_angle,
+                s.sweep_angle,
+            ),
+            invert,
+        )
+
+    def clip(
+        mut self, p: Polygon, invert: Bool = False
+    ) -> ClipGuard[origin_of(self)]:
+        """Render only inside `p` for a `with` block, or only outside it
+        with `invert`; see `clip(Rectangle)`. Inside is by the nonzero rule,
+        as for `canvas.polygon`."""
+        return ClipGuard[origin_of(self)](
+            self,
+            polygon_command(self._transform, clip_style(), p.vertices.copy()),
+            invert,
+        )
 
     def to_local(self, world: Point2D) -> Point2D:
         """Map a world-space point — a mouse position already converted
