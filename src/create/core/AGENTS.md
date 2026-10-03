@@ -54,3 +54,7 @@ which `_wait_for_dimensions` pumps past; on Wayland frame 1 reports the requeste
 the display's. The loop re-reads dimensions every frame.
 
 `run_gl` creates its `GLWindow` before constructing `GL()`, which needs a current context.
+
+**Antialiasing is the GL window's multisampling**, chosen at context creation: `_open_window` halves
+the requested `Antialiasing` sample count until the driver accepts one, down to none. The CPU loop
+ignores it, and the headless GPU loop renders into a single-sampled `_GLTarget`, so no test sees it.

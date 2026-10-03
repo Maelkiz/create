@@ -26,12 +26,7 @@ from ._step import step
 from ._window_loop import _finish_frame
 from .program import Program
 from .window_mode import WindowMode
-
-comptime _MSAA_SAMPLES = 4
-"""Antialiasing is the framebuffer's job here, not the tessellator's: the CPU
-path antialiases nothing, and analytic coverage per shape would cost a second
-geometry path for every kind. A driver that refuses the request fails context
-creation outright, so the caller retries once without it."""
+from .antialiasing import Antialiasing
 
 
 def _open_window(
@@ -40,37 +35,38 @@ def _open_window(
     width: Int,
     height: Int,
     resizable: Bool,
+    antialiasing: Antialiasing,
 ) raises -> GLWindow:
-    """A multisampled GL window, falling back to none if the driver refuses.
+    """A GL window multisampled as asked, or as near below it as the driver
+    allows.
 
-    `GLWindow` deliberately does not degrade silently — an unsupported sample
-    count fails context creation — so the retry is here, where a missing
-    antialias is a better outcome than a program that will not start.
+    Antialiasing is the framebuffer's job here, not the tessellator's:
+    analytic coverage per shape would cost a second geometry path for every
+    kind. `GLWindow` deliberately does not degrade silently — an unsupported
+    sample count fails context creation — so the step down is here, halving
+    the count until the driver accepts one. Only a failure with none at all
+    raises.
     """
     var fullscreen = mode == WindowMode.FULLSCREEN
     var borderless = mode == WindowMode.BORDERLESS
     var maximized = mode == WindowMode.MAXIMIZED
-    try:
-        return GLWindow(
-            title,
-            width,
-            height,
-            msaa=_MSAA_SAMPLES,
-            fullscreen=fullscreen,
-            resizable=resizable,
-            borderless=borderless,
-            maximized=maximized,
-        )
-    except:
-        return GLWindow(
-            title,
-            width,
-            height,
-            fullscreen=fullscreen,
-            resizable=resizable,
-            borderless=borderless,
-            maximized=maximized,
-        )
+    var samples = antialiasing.samples
+    while True:
+        try:
+            return GLWindow(
+                title,
+                width,
+                height,
+                msaa=samples,
+                fullscreen=fullscreen,
+                resizable=resizable,
+                borderless=borderless,
+                maximized=maximized,
+            )
+        except e:
+            if samples <= 0:
+                raise e
+            samples = samples // 2 if samples > 2 else 0
 
 
 def _update_dimensions(
@@ -139,6 +135,7 @@ def run_gl[
     height: Int = 720,
     vsync: Bool = True,
     resizable: Bool = True,
+    antialiasing: Antialiasing = Antialiasing.MSAA_4X,
 ) raises:
     """Open a GL window and run `P` on the GPU backend until it quits.
 
@@ -146,6 +143,9 @@ def run_gl[
     design resolution is still `width`/`height`, so the program is authored
     in the same space either way and the viewport scales it to whatever the
     display turns out to be.
+
+    `antialiasing` is the multisample count, stepped down if the driver
+    refuses it — see `Antialiasing`.
 
     `vsync=False` is for benchmarking only: without it every frame waits for
     the display and the measurement is the refresh rate rather than the
@@ -155,7 +155,7 @@ def run_gl[
     both the window size and the space the program is authored in, scaled to
     the window by `AutoScale.FIT` unless `create` says otherwise.
     """
-    var win = _open_window(title, mode, width, height, resizable)
+    var win = _open_window(title, mode, width, height, resizable, antialiasing)
     win.set_swap_interval(1 if vsync else 0)
     # Built after the window because its GL resources need a current context;
     # the state now carries the viewport too, so it has to exist before

@@ -8,6 +8,7 @@ from ._window_loop import _finish_frame
 from create.render.surface import Surface
 from .program import Program
 from .window_mode import WindowMode
+from .antialiasing import Antialiasing
 from ._run_gl import run_gl
 
 
@@ -86,6 +87,7 @@ def run[
     height: Int = 720,
     backend: RenderBackend = RenderBackend.CPU,
     resizable: Bool = True,
+    antialiasing: Antialiasing = Antialiasing.MSAA_4X,
 ) raises:
     """Open a window and run `P` in it until it quits.
 
@@ -119,6 +121,10 @@ def run[
     instead — a different window, a different loop, and the same frame. It is
     a branch rather than a value the loop holds because Mojo 1.0 has no
     dynamic trait dispatch, which is also why `Backend` switches on a `kind`.
+
+    `antialiasing` smooths edges on the GPU backend only, by multisampling
+    (`Antialiasing.MSAA_4X` by default, `OFF` for hard pixels); the CPU
+    backend ignores it. See `Antialiasing`.
     """
     var fullscreen = mode == WindowMode.FULLSCREEN
     var borderless = mode == WindowMode.BORDERLESS
@@ -130,6 +136,7 @@ def run[
             width,
             height,
             resizable=resizable,
+            antialiasing=antialiasing,
         )
         return
     var win = Window(

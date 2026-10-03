@@ -39,6 +39,8 @@ Rendering runs on the CPU by default. `backend=RenderBackend.GPU` runs the same 
 run[MyApp]("Example Sketch", backend=RenderBackend.GPU)
 ```
 
+The GPU backend smooths edges with 4× multisampling. `antialiasing=` picks another level (`Antialiasing.OFF`, `MSAA_2X`, `MSAA_8X`); a driver that refuses one gets the next level down. The CPU backend does not antialias.
+
 The example programs in this repository can be run with the `example` pixi task, which takes a name rather than a path. 
 The name must correspond to a file or folder under `examples/`. For folders it will find an run their `src/main.mojo`.
 

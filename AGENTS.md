@@ -23,7 +23,7 @@ it makes the library better.
 | Module | Path | Responsibility |
 |---|---|---|
 | root | `src/create/__init__.mojo` | The preamble: star-imports all six subpackages below |
-| `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`, `Input`, `Key`, `MouseButton`, `Gamepad`, `GamepadButton`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path`, `DateTime` |
+| `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`, `Input`, `Key`, `MouseButton`, `Gamepad`, `GamepadButton`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `Antialiasing`, `source_path`, `DateTime` |
 | `render` | `src/create/render/` | `Canvas`, `Camera`, font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
 | `color` | `src/create/color/` | `Color`, `Gradient` (with the ramp and dither both backends share), `BlendMode` |
 | `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes (`Rectangle`, `Circle`, `Triangle`, `Sector`, `Polygon`, `Line`, `Arc`), `Bezier`, `Spline`, `Random`, `Noise`, easing and `Tween`, util functions |
