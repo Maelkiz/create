@@ -470,6 +470,38 @@ def _fillet_disc_row_span(
     return _ellipse_row_span(a, bcoef, c0, inv_2a, col0, col_lo, col_hi)
 
 
+def _rounded_box_row(
+    x: Float64,
+    y: Float64,
+    w: Float64,
+    h: Float64,
+    radius: Float64,
+    yc: Float64,
+    width: Int,
+) -> Tuple[Int, Int]:
+    """The columns `[lo, hi)` whose centres lie in the device box `[x, x+w)`
+    x `[y, y+h)` with corners of `radius`, on the row whose centre is at
+    `yc`, clamped to `[0, width)`; `hi <= lo` when it misses the row."""
+    if w <= 0.0 or h <= 0.0 or yc < y or yc >= y + h:
+        return (0, 0)
+    var left = x
+    var right = x + w
+    var r = min(radius, min(w, h) / 2.0)
+    var dy = 0.0
+    if yc < y + r:
+        dy = y + r - yc
+    elif yc > y + h - r:
+        dy = yc - (y + h - r)
+    if dy > 0.0:
+        var chord = sqrt(max(r * r - dy * dy, 0.0))
+        left = x + r - chord
+        right = x + w - r + chord
+    return (
+        max(Int(ceil(left - 0.5)), 0),
+        min(Int(ceil(right - 0.5)), width),
+    )
+
+
 def _rounded_rect_row_span(
     A0: Float64,
     B0: Float64,
@@ -1526,157 +1558,107 @@ struct Backend(Movable):
             Float64(c.style.corner_radius), c.geom[2], c.geom[3]
         )
 
-        if uniform(m):
-            # Axis-aligned: map the two opposite corners and order them, since
-            # the y flip in the base mapping sends the smaller world y to the
-            # larger pixel row.
+        if uniform(m) and r_local <= 0.0:
+            # Axis-aligned and sharp: map the two opposite corners and order
+            # them, since the y flip in the base mapping sends the smaller
+            # world y to the larger pixel row. Rounded corners take the
+            # general path below, which splits each row into fill and outline
+            # so a translucent rectangle composites once.
             var p0 = mat_apply(m, lx0, ly0)
             var p1 = mat_apply(m, lx1, ly1)
             var x0 = Int(min(p0[0], p1[0]))
             var y0 = Int(min(p0[1], p1[1]))
             var iw = Int(abs(p1[0] - p0[0]))
             var ih = Int(abs(p1[1] - p0[1]))
-            if r_local <= 0.0:
-                if c.style._fill_visible():
-                    fill_pixels(s, x0, y0, x0 + iw, y0 + ih, _fill_paint(c, m))
-                if c.style._outline_visible():
-                    var sw = outline_thickness_px(c.style, m, scale)
-                    var sc = c.style.outline_color
-                    fill_pixels(s, x0, y0, x0 + iw, y0 + sw, sc)
-                    fill_pixels(s, x0, y0 + ih - sw, x0 + iw, y0 + ih, sc)
-                    fill_pixels(s, x0, y0 + sw, x0 + sw, y0 + ih - sw, sc)
-                    fill_pixels(
-                        s, x0 + iw - sw, y0 + sw, x0 + iw, y0 + ih - sw, sc
-                    )
-            else:
-                # Cross decomposition, same shape as the sharp path above but
-                # shortened by the clamped device-space radius `pr`: a
-                # full-height centre band, two full-width middle bands, and
-                # four corner quarter-discs through `_circle_arc_row` — the
-                # same helper `_circle` uses, so a corner too thick for its
-                # outline degenerates exactly like a circle does (a solid
-                # disc in *fill* colour, not outline).
-                var pr = r_local * pixel_scale(m, scale)
-                var pr_i = Int(pr)
-                var fill_enabled = c.style._fill_visible()
-                var outline_enabled = c.style._outline_visible()
-                var fill_col = _fill_paint(c, m)
-                var outline_col = c.style.outline_color
-                var sw = outline_thickness_px(
-                    c.style, m, scale
-                ) if outline_enabled else 0
-                if fill_enabled:
-                    fill_pixels(
-                        s, x0 + pr_i, y0, x0 + iw - pr_i, y0 + ih, fill_col
-                    )
-                    fill_pixels(
-                        s, x0, y0 + pr_i, x0 + pr_i, y0 + ih - pr_i, fill_col
-                    )
-                    fill_pixels(
-                        s,
-                        x0 + iw - pr_i,
-                        y0 + pr_i,
-                        x0 + iw,
-                        y0 + ih - pr_i,
-                        fill_col,
-                    )
-                if outline_enabled:
-                    fill_pixels(
-                        s, x0 + pr_i, y0, x0 + iw - pr_i, y0 + sw, outline_col
-                    )
-                    fill_pixels(
-                        s,
-                        x0 + pr_i,
-                        y0 + ih - sw,
-                        x0 + iw - pr_i,
-                        y0 + ih,
-                        outline_col,
-                    )
-                    fill_pixels(
-                        s, x0, y0 + pr_i, x0 + sw, y0 + ih - pr_i, outline_col
-                    )
-                    fill_pixels(
-                        s,
-                        x0 + iw - sw,
-                        y0 + pr_i,
-                        x0 + iw,
-                        y0 + ih - pr_i,
-                        outline_col,
-                    )
-                var pr2 = pr * pr
-                var pr_inner = pr - Float64(sw)
-                var pr_inner2 = pr_inner * pr_inner
-                var full_fill = fill_enabled and (
-                    not outline_enabled or pr_inner <= 0.0
+            # The outline is an inset ring, so the fill stops where it starts.
+            var sw = 0
+            if c.style._outline_visible():
+                sw = outline_thickness_px(c.style, m, scale)
+            if c.style._fill_visible():
+                fill_pixels(
+                    s,
+                    x0 + sw,
+                    y0 + sw,
+                    x0 + iw - sw,
+                    y0 + ih - sw,
+                    _fill_paint(c, m),
                 )
-                var tl_cx = Float64(x0) + pr
-                var tl_cy = Float64(y0) + pr
-                var tr_cx = Float64(x0 + iw) - pr
-                var bl_cy = Float64(y0 + ih) - pr
-                for row in range(y0, y0 + pr_i):
-                    var row_off = row * W
-                    var dy = Float64(row) - tl_cy
-                    _circle_arc_row(
+            if sw > 0:
+                var sc = c.style.outline_color
+                fill_pixels(s, x0, y0, x0 + iw, y0 + sw, sc)
+                fill_pixels(s, x0, y0 + ih - sw, x0 + iw, y0 + ih, sc)
+                fill_pixels(s, x0, y0 + sw, x0 + sw, y0 + ih - sw, sc)
+                fill_pixels(s, x0 + iw - sw, y0 + sw, x0 + iw, y0 + ih - sw, sc)
+        elif uniform(m):
+            # Axis-aligned and rounded: per row, the outer rounded span and
+            # the inner one (inset by the outline, its corners `sw` smaller
+            # and sharp once the outline is wider than they are); outline
+            # either side of the inner span, fill inside it, so a
+            # translucent rectangle composites once.
+            var p0 = mat_apply(m, lx0, ly0)
+            var p1 = mat_apply(m, lx1, ly1)
+            var x0 = Float64(Int(min(p0[0], p1[0])))
+            var y0 = Float64(Int(min(p0[1], p1[1])))
+            var iw = Float64(Int(abs(p1[0] - p0[0])))
+            var ih = Float64(Int(abs(p1[1] - p0[1])))
+            var pr = r_local * pixel_scale(m, scale)
+            var fill_visible = c.style._fill_visible()
+            var sw = 0.0
+            if c.style._outline_visible():
+                sw = Float64(outline_thickness_px(c.style, m, scale))
+            var fill_col = _fill_paint(c, m)
+            var outline_col = c.style.outline_color
+            for row in range(max(Int(y0), 0), min(Int(y0 + ih), s.height)):
+                var yc = Float64(row) + 0.5
+                var outer = _rounded_box_row(x0, y0, iw, ih, pr, yc, W)
+                if outer[1] <= outer[0]:
+                    continue
+                var row_off = row * W
+                if sw == 0.0:
+                    if fill_visible:
+                        fill_span(
+                            s,
+                            (row_off + outer[0]) * 4,
+                            outer[1] - outer[0],
+                            fill_col,
+                        )
+                    continue
+                var inner = _rounded_box_row(
+                    x0 + sw,
+                    y0 + sw,
+                    iw - 2.0 * sw,
+                    ih - 2.0 * sw,
+                    max(pr - sw, 0.0),
+                    yc,
+                    W,
+                )
+                if inner[1] <= inner[0]:
+                    fill_span(
                         s,
-                        row_off,
-                        tl_cx,
-                        dy,
-                        pr2,
-                        pr_inner2,
-                        x0,
-                        x0 + pr_i,
-                        full_fill,
-                        outline_enabled,
-                        fill_enabled,
-                        fill_col,
+                        (row_off + outer[0]) * 4,
+                        outer[1] - outer[0],
                         outline_col,
                     )
-                    _circle_arc_row(
+                    continue
+                if inner[0] > outer[0]:
+                    fill_span(
                         s,
-                        row_off,
-                        tr_cx,
-                        dy,
-                        pr2,
-                        pr_inner2,
-                        x0 + iw - pr_i,
-                        x0 + iw,
-                        full_fill,
-                        outline_enabled,
-                        fill_enabled,
-                        fill_col,
+                        (row_off + outer[0]) * 4,
+                        inner[0] - outer[0],
                         outline_col,
                     )
-                for row in range(y0 + ih - pr_i, y0 + ih):
-                    var row_off = row * W
-                    var dy = Float64(row) - bl_cy
-                    _circle_arc_row(
+                if fill_visible:
+                    fill_span(
                         s,
-                        row_off,
-                        tl_cx,
-                        dy,
-                        pr2,
-                        pr_inner2,
-                        x0,
-                        x0 + pr_i,
-                        full_fill,
-                        outline_enabled,
-                        fill_enabled,
+                        (row_off + inner[0]) * 4,
+                        inner[1] - inner[0],
                         fill_col,
-                        outline_col,
                     )
-                    _circle_arc_row(
+                if outer[1] > inner[1]:
+                    fill_span(
                         s,
-                        row_off,
-                        tr_cx,
-                        dy,
-                        pr2,
-                        pr_inner2,
-                        x0 + iw - pr_i,
-                        x0 + iw,
-                        full_fill,
-                        outline_enabled,
-                        fill_enabled,
-                        fill_col,
+                        (row_off + inner[1]) * 4,
+                        outer[1] - inner[1],
                         outline_col,
                     )
         else:
