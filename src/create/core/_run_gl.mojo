@@ -18,6 +18,7 @@ two loops cannot drift in what a frame is.
 from create._window import GLWindow
 
 from create.render.antialiasing import Antialiasing
+from create.render.autoscale import AutoScale
 from create.render.render_backend import RenderBackend
 from create.render.canvas import PersistentCanvasState
 from create.core.context import Context
@@ -136,6 +137,7 @@ def run_gl[
     vsync: Bool = True,
     resizable: Bool = True,
     antialiasing: Antialiasing = Antialiasing.MEDIUM,
+    autoscale: AutoScale = AutoScale.FIT,
 ) raises:
     """Open a GL window and run `P` on the GPU backend until it quits.
 
@@ -154,7 +156,7 @@ def run_gl[
 
     The design-size contract is `run`'s, unchanged: `width`/`height` are
     both the window size and the space the program is authored in, scaled to
-    the window by `AutoScale.FIT` unless `create` says otherwise.
+    the window by `autoscale`.
     """
     var win = _open_window(title, mode, width, height, resizable, antialiasing)
     win.set_swap_interval(1 if vsync else 0)
@@ -165,6 +167,7 @@ def run_gl[
     state.backend.antialiasing = antialiasing
     var context = Context()
     context.design_size(width, height)
+    context.autoscale(autoscale)
     var program = P.create(context)
     # The mapping is derived once create() has had its say about the design
     # size and the mode.

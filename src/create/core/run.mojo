@@ -1,5 +1,6 @@
 from create._window.window import Window
 from create.render.antialiasing import Antialiasing
+from create.render.autoscale import AutoScale
 from create.render.render_backend import RenderBackend
 from create.render.canvas import PersistentCanvasState
 from create.core.context import Context
@@ -88,6 +89,7 @@ def run[
     backend: RenderBackend = RenderBackend.CPU,
     resizable: Bool = True,
     antialiasing: Antialiasing = Antialiasing.MEDIUM,
+    autoscale: AutoScale = AutoScale.FIT,
 ) raises:
     """Open a window and run `P` in it until it quits.
 
@@ -99,8 +101,8 @@ def run[
     its work area and the design is scaled onto it. `mode=FULLSCREEN` with a
     size therefore means *author at that size, present fullscreen*.
 
-    The scaling is `AutoScale.FIT` unless `create` calls `context.autoscale`, so
-    a program keeps its layout on any display:
+    The scaling is `autoscale`, `AutoScale.FIT` by default, so a program keeps
+    its layout on any display:
 
     | call                                          | FIT / EXTEND             | OFF            |
     |-----------------------------------------------|--------------------------|----------------|
@@ -111,7 +113,8 @@ def run[
     `AutoScale.OFF` is the opt-out, and the only way the size here stops
     meaning anything: the design size goes unused and coordinates become
     the window's own pixels, which is how a program authors against the
-    display rather than against a fixed space.
+    display rather than against a fixed space. `context.autoscale(mode)`
+    switches it later in the run.
 
     `context.design_size(w, h)` pins the same space from inside `create`, which
     is where a program with an opinion of its own states it. The size here is
@@ -137,6 +140,7 @@ def run[
             height,
             resizable=resizable,
             antialiasing=antialiasing,
+            autoscale=autoscale,
         )
         return
     var win = Window(
@@ -160,10 +164,11 @@ def run[
     #
     # Scaling that design to the window is the default because the alternative
     # punishes the obvious way to write a program: laid-out coordinates that
-    # break on a display the author never had. `create` can opt back out with
-    # `context.autoscale(AutoScale.OFF)`.
+    # break on a display the author never had. `autoscale=AutoScale.OFF` opts
+    # back out.
     var context = Context()
     context.design_size(width, height)
+    context.autoscale(autoscale)
     var program = P.create(context)
     # create() may have changed the mode or pinned its own design size, so the
     # mapping is derived from `context` only once it has returned.

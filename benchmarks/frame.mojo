@@ -45,7 +45,6 @@ struct Bench(Program):
 
     @staticmethod
     def create(mut context: Context) raises -> Bench:
-        context.autoscale(AutoScale.OFF)
         return Bench(
             0.0,
             Image.load(source_path("../assets/logo/png/logo-cutout.png")),
@@ -128,6 +127,14 @@ def main() raises:
         if argv()[i] == "cpu":
             cpu = True
     if cpu:
-        run[Bench]("Bench (CPU)", width=1920, height=1080)
+        run[Bench](
+            "Bench (CPU)", width=1920, height=1080, autoscale=AutoScale.OFF
+        )
     else:
-        run_gl[Bench]("Bench (GPU)", width=1920, height=1080, vsync=False)
+        run_gl[Bench](
+            "Bench (GPU)",
+            width=1920,
+            height=1080,
+            vsync=False,
+            autoscale=AutoScale.OFF,
+        )

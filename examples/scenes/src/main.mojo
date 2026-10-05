@@ -25,7 +25,6 @@ struct App(Program):
 
     @staticmethod
     def create(mut context: Context) raises -> App:
-        context.autoscale(AutoScale.FIT)
         # The painting scene accumulates ink across frames, so the per-frame
         # clear is off for the whole program: `Menu` paints its own background
         # every frame, and `Paint` clears once on entry.

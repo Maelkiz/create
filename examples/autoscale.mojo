@@ -26,7 +26,6 @@ struct App(Program):
         #           the scene stays put while the space around it grows
         # The origin is the middle of the design area and y grows upward, so
         # the labels below centre sit at negative y.
-        context.autoscale(AutoScale.FIT)
         return App(100.0, 1.0, AutoScale.FIT)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

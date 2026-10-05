@@ -26,7 +26,6 @@ struct App(Program):
 
     @staticmethod
     def create(mut context: Context) raises -> App:
-        context.autoscale(AutoScale.EXTEND)
         # Built once: a gradient keeps its stops and ramp for as long as it
         # lives, so the GPU uploads it once.
         var sky = Gradient.linear(
@@ -126,6 +125,13 @@ def main() raises:
         if argv()[i] == "gpu":
             gpu = True
     if gpu:
-        run_gl[App]("Gradients (GPU)", width=1280, height=720)
+        run_gl[App](
+            "Gradients (GPU)",
+            width=1280,
+            height=720,
+            autoscale=AutoScale.EXTEND,
+        )
     else:
-        run[App]("Gradients", width=1280, height=720)
+        run[App](
+            "Gradients", width=1280, height=720, autoscale=AutoScale.EXTEND
+        )

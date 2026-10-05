@@ -1,6 +1,7 @@
 from create.render.canvas import PersistentCanvasState
 from create.core.context import Context
 from create.render.antialiasing import Antialiasing
+from create.render.autoscale import AutoScale
 from create.render.render_backend import RenderBackend
 from ._step import step
 from ._headless_gl import _run_headless_gl
@@ -23,6 +24,7 @@ def run_headless[
     pixel_height: Int = 0,
     backend: RenderBackend = RenderBackend.CPU,
     antialiasing: Antialiasing = Antialiasing.MEDIUM,
+    autoscale: AutoScale = AutoScale.FIT,
 ) raises -> MemorySurface:
     """Run `P` for `frames` frames over an owned buffer and return it.
 
@@ -45,10 +47,18 @@ def run_headless[
     `antialiasing` is `run`'s, with the same default. The GPU's offscreen
     framebuffer is not multisampled, so there it reaches only pixel reads
     and `save_image`, which replay on the CPU.
+
+    `autoscale` is `run`'s too: how the design maps onto the framebuffer.
     """
     if backend == RenderBackend.GPU:
         return _run_headless_gl[P](
-            width, height, frames, pixel_width, pixel_height, antialiasing
+            width,
+            height,
+            frames,
+            pixel_width,
+            pixel_height,
+            antialiasing,
+            autoscale,
         )
     var pw = pixel_width if pixel_width > 0 else width
     var ph = pixel_height if pixel_height > 0 else height
@@ -57,6 +67,7 @@ def run_headless[
     state.backend.antialiasing = antialiasing
     var context = Context()
     context.design_size(width, height)
+    context.autoscale(autoscale)
     var program = P.create(context)
     # After create(), which may have pinned its own design size or mode.
     context._set_viewport(state, pw, ph)
