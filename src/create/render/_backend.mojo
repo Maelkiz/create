@@ -822,6 +822,10 @@ struct Backend(Movable):
     """Whether the frame's first command is still the clear the frame opened
     with, so `set_autoclear` can take it back out. Cleared when a
     `background()` replaces it, which then stays."""
+    var target: Optional[MemorySurface]
+    """The pixels of an offscreen canvas, present exactly when this backend
+    records for one. Such a canvas has no frames to present, so `bake`
+    replays onto this instead, and its reads come from it."""
     var commands: List[RenderCommand]
     """The frame being recorded.
 
@@ -857,6 +861,7 @@ struct Backend(Movable):
         self.frame_read_at = -1
         self.keep_frames = False
         self.last_frame = None
+        self.target = None
         self.pending_image = Optional[_ImageRequest]()
         self.pending_screenshot = Optional[String]()
         self.gl = Optional[GLRenderer]()
@@ -1113,6 +1118,30 @@ struct Backend(Movable):
         self.clips.clear()
         self.clip = 0
         self.frame_read = None
+        self._expire_images()
+
+    def bake(mut self, scale: Float64) raises:
+        """Replay what has been recorded onto `target` and drop it: an
+        offscreen canvas's `present`, run by each read.
+
+        Its pixels are where the next replay starts, so a canvas kept as a
+        field and drawn into every frame holds its pixels, not every command
+        it was ever given. The clips go with the commands only while none is
+        open: a command recorded inside an open `canvas.clip` after this
+        still names its level by index.
+        """
+        if len(self.commands) == 0:
+            return
+        var cmds = self.commands^
+        self.commands = List[RenderCommand]()
+        var mem = self.target.take()
+        self.replay(mem.surface(), cmds, scale, skip_kinds=1 << CMD_LETTERBOX)
+        self.target = mem^
+        cmds.clear()
+        self.commands = cmds^
+        if self.clip == 0:
+            self.clips.clear()
+        self.recorded += 1
         self._expire_images()
 
     def present_gpu(mut self, width: Int, height: Int, scale: Float64) raises:

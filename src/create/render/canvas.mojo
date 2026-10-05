@@ -9,6 +9,7 @@ from create.color.blend_mode import BlendMode
 from .antialiasing import Antialiasing
 from .autoscale import AutoScale
 from .font import Font
+from .surface import MemorySurface
 from ._viewport import Viewport
 from .camera import Camera
 from create.math.bezier import Bezier
@@ -224,7 +225,7 @@ struct ClipGuard[origin: Origin[mut=True]](Movable):
         self._canvas[]._state.backend.clip = self._saved
 
 
-struct Canvas:
+struct Canvas(Movable):
     """One frame: the geometry and the rendering API.
 
     This is the object a program is handed to render a frame with. `width`/`height`
@@ -240,9 +241,16 @@ struct Canvas:
     `Context`, handed to `update` beside it. A `Canvas` that carried a dial would be offering to
     change something it is not around to see the effect of.
 
-    Built fresh each frame and dropped before the frame is presented. The
-    machinery that must survive the frame goes in and out through
-    `PersistentCanvasState`.
+    The canvas the loop hands to `create` and `update` is built fresh each
+    frame and dropped before the frame is presented. The machinery that must
+    survive the frame goes in and out through `PersistentCanvasState`.
+
+    `Canvas(width, height)` builds an *offscreen* canvas instead: a program's
+    own, drawn into with the same calls and read back with `pixel` and
+    `snapshot`, which may be kept as a field across frames. It starts
+    transparent, and has no frames to present: each read replays what has
+    been drawn since the last one onto its own pixels, so drawing after a
+    read lands on what is already there.
 
     **It takes no parameters, and holds no `Surface`.** It used to need one
     origin parameter for the framebuffer it borrowed, which constrained the
@@ -319,6 +327,47 @@ struct Canvas:
         # place, and so a program's own `background()` can coalesce with it.
         if self._state.autoclear:
             self._state.backend.open_with_clear(clear_command(_AUTOCLEAR_COLOR))
+
+    def __init__(
+        out self,
+        width: Int,
+        height: Int,
+        *,
+        scale: Float64 = 1.0,
+        antialiasing: Antialiasing = Antialiasing.MEDIUM,
+    ) raises:
+        """An offscreen canvas of `width` by `height` screen units, with
+        `scale` pixels to the unit — `scale=canvas.scale` matches the
+        window's density.
+
+        Screen space as on the frame canvas: origin centred, y up. Always
+        rasterised on the CPU, whatever backend the program runs on; what
+        comes out of it is an `Image`, which any canvas can draw.
+        """
+        if width <= 0 or height <= 0:
+            raise Error(
+                "an offscreen canvas needs a size of at least one unit, got "
+                + String(width)
+                + " x "
+                + String(height)
+            )
+        if scale <= 0.0:
+            raise Error(
+                "an offscreen canvas needs a positive scale, got "
+                + String(scale)
+            )
+        var pixel_w = Int(Float64(width) * scale + 0.5)
+        var pixel_h = Int(Float64(height) * scale + 0.5)
+        var state = PersistentCanvasState(RenderBackend.CPU)
+        state.autoclear = False
+        state.backend.antialiasing = antialiasing
+        state._set_viewport(AutoScale.FIT, width, height, pixel_w, pixel_h)
+        state.backend.target = MemorySurface(pixel_w, pixel_h)
+        self = Canvas(state^)
+
+    def _offscreen(self) -> Bool:
+        """Whether this is a program's own canvas rather than a frame's."""
+        return Bool(self._state.backend.target)
 
     def _release(deinit self) -> PersistentCanvasState:
         """Hand back the state the next frame's `Canvas` should start from.
@@ -817,7 +866,19 @@ struct Canvas:
         pixels, as the frame did — from the second frame that reads on; the
         first sees only what it drew itself. That needs the CPU backend,
         which is also the only one that accumulates.
+
+        On an offscreen canvas a read replays what was drawn since the last
+        one onto the canvas's own pixels, at its own `scale`.
         """
+        if self._offscreen():
+            self._state.backend.bake(self.scale)
+            var p = mat_apply(self._base, position.x, position.y)
+            ref target = self._state.backend.target.value()
+            var px = Int(floor(p[0]))
+            var py = Int(floor(p[1]))
+            if px < 0 or py < 0 or px >= target.width or py >= target.height:
+                return Color.TRANSPARENT
+            return target.pixel(px, py)
         var x = Int(floor(position.x + Float64(self.width) / 2.0))
         var y = Int(floor(Float64(self.height) / 2.0 - position.y))
         if x < 0 or y < 0 or x >= self.width or y >= self.height:
