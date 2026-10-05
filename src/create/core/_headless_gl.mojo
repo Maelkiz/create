@@ -58,8 +58,8 @@ def _run_headless_gl[
     falls back to the CPU backend, which would let a "GPU" test pass without
     touching a driver.
 
-    The `_GLTarget` is not multisampled, so `antialiasing` reaches only the
-    CPU replays: pixel reads and `save_image`.
+    `antialiasing` multisamples as in a window: the renderer draws into its
+    own multisampled framebuffer and resolves into the `_GLTarget`.
     """
     var pw = pixel_width if pixel_width > 0 else width
     var ph = pixel_height if pixel_height > 0 else height

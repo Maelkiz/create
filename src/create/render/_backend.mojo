@@ -1131,7 +1131,14 @@ struct Backend(Movable):
         var cmds = self.commands^
         self.commands = List[RenderCommand]()
         self.gl.value().render(
-            cmds, self.clips, self.images, self.text, width, height, scale
+            cmds,
+            self.clips,
+            self.images,
+            self.text,
+            width,
+            height,
+            scale,
+            self.antialiasing._gpu_samples(),
         )
         self._flush_screenshot_gpu(width, height)
         self._flush_image(cmds)

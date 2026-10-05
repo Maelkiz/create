@@ -207,5 +207,48 @@ def test_the_gpu_backend_renders_text_with_fill_disabled() raises -> None:
     assert_true(inked > 0, "no glyph pixels")
 
 
+@fieldwise_init
+struct GPUCircle(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context, mut canvas: Canvas) raises -> GPUCircle:
+        return GPUCircle(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline_enabled(False)
+        canvas.fill(Color.WHITE)
+        canvas.circle((0.0, 0.0), 20.0)
+
+
+def _partly_covered(m: MemorySurface) -> Int:
+    """Pixels neither black nor white: a white circle's edge on black."""
+    var count = 0
+    for y in range(m.height):
+        for x in range(m.width):
+            var c = m.pixel(x, y)
+            if c != Color.BLACK and c != Color.WHITE:
+                count += 1
+    return count
+
+
+def test_the_gpu_backend_multisamples_headless() raises -> None:
+    var hard: MemorySurface
+    var smooth: MemorySurface
+    try:
+        hard = run_headless[GPUCircle](
+            64, 64, backend=RenderBackend.GPU, antialiasing=Antialiasing.OFF
+        )
+        smooth = run_headless[GPUCircle](
+            64, 64, backend=RenderBackend.GPU, antialiasing=Antialiasing.MEDIUM
+        )
+    except e:
+        print("SKIP — no GL context:", e)
+        return
+    assert_equal(_partly_covered(hard), 0, "OFF draws hard pixels")
+    assert_true(_partly_covered(smooth) > 0, "MEDIUM blends the edge")
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

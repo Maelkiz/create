@@ -41,38 +41,20 @@ def _open_window(
     width: Int,
     height: Int,
     resizable: Bool,
-    antialiasing: Antialiasing,
 ) raises -> GLWindow:
-    """A GL window multisampled as asked, or as near below it as the driver
-    allows.
-
-    Antialiasing is the framebuffer's job here, not the tessellator's:
-    analytic coverage per shape would cost a second geometry path for every
-    kind. `GLWindow` deliberately does not degrade silently — an unsupported
-    sample count fails context creation — so the step down is here, a level
-    at a time until the driver accepts one. Only a failure with none at all
-    raises.
-    """
-    var fullscreen = mode == WindowMode.FULLSCREEN
-    var borderless = mode == WindowMode.BORDERLESS
-    var maximized = mode == WindowMode.MAXIMIZED
-    var level = antialiasing
-    while True:
-        try:
-            return GLWindow(
-                title,
-                width,
-                height,
-                msaa=level._gpu_samples(),
-                fullscreen=fullscreen,
-                resizable=resizable,
-                borderless=borderless,
-                maximized=maximized,
-            )
-        except e:
-            if level == Antialiasing.OFF:
-                raise e
-            level = level._lower()
+    """A GL window, single-sampled: antialiasing is the renderer's, drawn
+    into an offscreen multisampled framebuffer and resolved into this one,
+    so it can change at runtime without recreating the window and its
+    context."""
+    return GLWindow(
+        title,
+        width,
+        height,
+        fullscreen=mode == WindowMode.FULLSCREEN,
+        resizable=resizable,
+        borderless=mode == WindowMode.BORDERLESS,
+        maximized=mode == WindowMode.MAXIMIZED,
+    )
 
 
 def _update_dimensions(
@@ -158,8 +140,8 @@ def run_gl[
     in the same space either way and the viewport scales it to whatever the
     display turns out to be.
 
-    `antialiasing` is the multisampling level, stepped down if the driver
-    refuses it; pixel reads replay at the same level on the CPU. See
+    `antialiasing` is the multisampling level, capped at the driver's
+    maximum; pixel reads replay at the same level on the CPU. See
     `Antialiasing`.
 
     `vsync=False` is for benchmarking only: without it every frame waits for
@@ -170,7 +152,7 @@ def run_gl[
     both the window size and the space the program is authored in, scaled to
     the window by `autoscale`.
     """
-    var win = _open_window(title, mode, width, height, resizable, antialiasing)
+    var win = _open_window(title, mode, width, height, resizable)
     win.set_swap_interval(1 if vsync else 0)
     # Built after the window because its GL resources need a current context;
     # the state now carries the viewport too, so it has to exist before

@@ -46,9 +46,8 @@ def run_headless[
     `_headless_gl.mojo`. It raises if no GL context can be created; it never
     falls back to the CPU backend.
 
-    `antialiasing` is `run`'s, with the same default. The GPU's offscreen
-    framebuffer is not multisampled, so there it reaches only pixel reads
-    and `save_image`, which replay on the CPU.
+    `antialiasing` is `run`'s, with the same default, and reaches both
+    backends as it does in a window.
 
     `autoscale` is `run`'s too: how the design maps onto the framebuffer.
     """

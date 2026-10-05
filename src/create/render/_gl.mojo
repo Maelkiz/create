@@ -87,6 +87,10 @@ comptime GL_LINEAR: Int32 = 0x2601
 comptime GL_NEAREST: Int32 = 0x2600
 comptime GL_CLAMP_TO_EDGE: Int32 = 0x812F
 comptime GL_FRAMEBUFFER: UInt32 = 0x8D40
+comptime GL_READ_FRAMEBUFFER: UInt32 = 0x8CA8
+comptime GL_DRAW_FRAMEBUFFER: UInt32 = 0x8CA9
+comptime GL_DRAW_FRAMEBUFFER_BINDING: UInt32 = 0x8CA6
+comptime GL_MAX_SAMPLES: UInt32 = 0x8D57
 comptime GL_COLOR_ATTACHMENT0: UInt32 = 0x8CE0
 comptime GL_FRAMEBUFFER_COMPLETE: UInt32 = 0x8CD5
 comptime GL_PACK_ALIGNMENT: UInt32 = 0x0D05
@@ -203,6 +207,12 @@ comptime _BindRenderbuffer = def(UInt32, UInt32) thin abi("C") -> None
 comptime _RenderbufferStorage = def(UInt32, UInt32, Int32, Int32) thin abi(
     "C"
 ) -> None
+comptime _RenderbufferStorageMultisample = def(
+    UInt32, Int32, UInt32, Int32, Int32
+) thin abi("C") -> None
+comptime _BlitFramebuffer = def(
+    Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, UInt32, UInt32
+) thin abi("C") -> None
 comptime _FramebufferRenderbuffer = def(
     UInt32, UInt32, UInt32, UInt32
 ) thin abi("C") -> None
@@ -328,6 +338,10 @@ struct GL(Movable):
     var bind_renderbuffer: _BindRenderbuffer
     var renderbuffer_storage: _RenderbufferStorage
     var framebuffer_renderbuffer: _FramebufferRenderbuffer
+    var renderbuffer_storage_multisample: _RenderbufferStorageMultisample
+    var blit_framebuffer: _BlitFramebuffer
+    """The multisampled frame the GPU backend draws into and resolves from,
+    so antialiasing can change without recreating the window."""
     var delete_renderbuffers: _DeleteObjects
     """An offscreen target's stencil, which a window has of its own."""
     var read_pixels: _ReadPixels
@@ -430,6 +444,12 @@ struct GL(Movable):
         )
         self.renderbuffer_storage = _bind[_RenderbufferStorage](
             lib, "glRenderbufferStorage"
+        )
+        self.renderbuffer_storage_multisample = _bind[
+            _RenderbufferStorageMultisample
+        ](lib, "glRenderbufferStorageMultisample")
+        self.blit_framebuffer = _bind[_BlitFramebuffer](
+            lib, "glBlitFramebuffer"
         )
         self.framebuffer_renderbuffer = _bind[_FramebufferRenderbuffer](
             lib, "glFramebufferRenderbuffer"

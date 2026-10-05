@@ -174,6 +174,32 @@ def _all[backend: RenderBackend]() raises -> List[MemorySurface]:
     return out^
 
 
+def _same_rgb(a: MemorySurface, b: MemorySurface, x: Int, y: Int) -> Bool:
+    var i = (y * _W + x) * 4
+    for k in range(3):
+        if a.data[i + k] != b.data[i + k]:
+            return False
+    return True
+
+
+def _flat(m: MemorySurface, x: Int, y: Int) -> Bool:
+    """Whether `(x, y)` and its eight neighbours are all one colour."""
+    for dy in range(-1, 2):
+        for dx in range(-1, 2):
+            if not _rgb_equal(m, x, y, x + dx, y + dy):
+                return False
+    return True
+
+
+def _rgb_equal(m: MemorySurface, x0: Int, y0: Int, x1: Int, y1: Int) -> Bool:
+    var i = (y0 * _W + x0) * 4
+    var j = (y1 * _W + x1) * 4
+    for k in range(3):
+        if m.data[i + k] != m.data[j + k]:
+            return False
+    return True
+
+
 def test_cpu_clips() raises -> None:
     var frames = _all[RenderBackend.CPU]()
     for scene in range(_SCENES):
@@ -194,16 +220,18 @@ def test_gpu_clips_like_the_cpu() raises -> None:
             # Glyph coverage and gradient dither differ within a level
             # inside; `_check` has already seen every pixel outside.
             continue
-        # Interiors must agree; edges may not. A rotated edge is where the
-        # two rasterisers already part for a plain rotated rectangle (see
-        # `test_gl_parity.mojo`), and the clip's edge is that edge: the
-        # diamond's ~160 px rim measured 57 apart.
+        # Interiors must agree; edges may not. The GPU multisamples a clip's
+        # edge like a shape's, where the CPU keeps it hard, so only pixels
+        # whose CPU neighbourhood is one colour — away from every edge — are
+        # compared. The allowance is for the shapes' own edges, where the two
+        # rasterisers already part (see `test_gl_parity.mojo`).
         var differing = 0
-        for i in range(0, len(cpu[scene].data), 4):
-            for k in range(3):
-                if cpu[scene].data[i + k] != gpu[scene].data[i + k]:
+        for y in range(1, _H - 1):
+            for x in range(1, _W - 1):
+                if not _flat(cpu[scene], x, y):
+                    continue
+                if not _same_rgb(cpu[scene], gpu[scene], x, y):
                     differing += 1
-                    break
         assert_true(
             differing <= 80,
             "scene "

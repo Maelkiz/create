@@ -57,8 +57,18 @@ from ._gl import (
     GL_ARRAY_BUFFER,
     GL_BLEND,
     GL_CLAMP_TO_EDGE,
+    GL_COLOR_ATTACHMENT0,
     GL_COLOR_BUFFER_BIT,
     GL_COMPILE_STATUS,
+    GL_DEPTH24_STENCIL8,
+    GL_DEPTH_STENCIL_ATTACHMENT,
+    GL_DRAW_FRAMEBUFFER,
+    GL_DRAW_FRAMEBUFFER_BINDING,
+    GL_FRAMEBUFFER,
+    GL_FRAMEBUFFER_COMPLETE,
+    GL_MAX_SAMPLES,
+    GL_READ_FRAMEBUFFER,
+    GL_RENDERBUFFER,
     GL_DECR,
     GL_DST_COLOR,
     GL_EQUAL,
@@ -323,6 +333,70 @@ def _delete_object(
     _ = buf^
 
 
+struct _MultisampleTarget(Copyable, Movable):
+    """A multisampled framebuffer the frame is drawn into and then resolved
+    from: colour and depth-stencil renderbuffers (`canvas.clip` needs the
+    stencil) at one size and sample count.
+
+    Owned by `GLRenderer`, which deletes it through its own `GL` — this holds
+    names only, so it needs no `GL` of its own.
+    """
+
+    var fbo: UInt32
+    var color: UInt32
+    var stencil: UInt32
+    var width: Int
+    var height: Int
+    var samples: Int
+
+    def __init__(
+        out self, gl: GL, width: Int, height: Int, samples: Int
+    ) raises:
+        self.width = width
+        self.height = height
+        self.samples = samples
+        self.fbo = _gen_object(gl.gen_framebuffers)
+        gl.bind_framebuffer(GL_FRAMEBUFFER, self.fbo)
+        self.color = _gen_object(gl.gen_renderbuffers)
+        gl.bind_renderbuffer(GL_RENDERBUFFER, self.color)
+        gl.renderbuffer_storage_multisample(
+            GL_RENDERBUFFER,
+            Int32(samples),
+            UInt32(GL_RGBA8),
+            Int32(width),
+            Int32(height),
+        )
+        gl.framebuffer_renderbuffer(
+            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, self.color
+        )
+        self.stencil = _gen_object(gl.gen_renderbuffers)
+        gl.bind_renderbuffer(GL_RENDERBUFFER, self.stencil)
+        gl.renderbuffer_storage_multisample(
+            GL_RENDERBUFFER,
+            Int32(samples),
+            GL_DEPTH24_STENCIL8,
+            Int32(width),
+            Int32(height),
+        )
+        gl.framebuffer_renderbuffer(
+            GL_FRAMEBUFFER,
+            GL_DEPTH_STENCIL_ATTACHMENT,
+            GL_RENDERBUFFER,
+            self.stencil,
+        )
+        if (
+            gl.check_framebuffer_status(GL_FRAMEBUFFER)
+            != GL_FRAMEBUFFER_COMPLETE
+        ):
+            self.delete(gl)
+            raise Error("the multisampled framebuffer is incomplete")
+
+    def delete(self, gl: GL):
+        _delete_object(gl.delete_framebuffers, self.fbo)
+        _delete_object(gl.delete_renderbuffers, self.color)
+        _delete_object(gl.delete_renderbuffers, self.stencil)
+
+
 def _info_log(
     length: Int,
     get: def(UInt32, Int32, _Address, _Bytes) thin abi("C") -> None,
@@ -497,6 +571,12 @@ struct GLRenderer(Movable):
     var draw_calls: Int
     """Batches flushed by the last `render`. Read by the bench example and the
     Phase 8 performance work; it costs one increment a batch."""
+    var msaa: Optional[_MultisampleTarget]
+    """Where a multisampled frame is drawn before it is resolved into the
+    destination, sized to the drawable and the antialiasing level of the
+    last frame that asked for one."""
+    var max_samples: Int
+    """The driver's `GL_MAX_SAMPLES`, which caps the sample count."""
 
     def __init__(out self) raises:
         self.gl = GL()
@@ -521,6 +601,8 @@ struct GLRenderer(Movable):
         self.bound = 0
         self.vertices = VertexBuffer()
         self.draw_calls = 0
+        self.msaa = None
+        self.max_samples = self.gl.read_int(GL_MAX_SAMPLES)
 
         var name = String("u_viewport")
         self.u_viewport = self.gl.get_uniform_location(
@@ -554,6 +636,8 @@ struct GLRenderer(Movable):
         self.gl.check("initialising the GL renderer")
 
     def __deinit__(deinit self):
+        if self.msaa:
+            self.msaa.value().delete(self.gl)
         self.gl.delete_program(self.program)
         _delete_object(self.gl.delete_buffers, self.vbo)
         _delete_object(self.gl.delete_vertex_arrays, self.vao)
@@ -716,13 +800,72 @@ struct GLRenderer(Movable):
         width: Int,
         height: Int,
         scale: Float64,
+        samples: Int = 0,
     ) raises:
-        """Replay `cmds` onto the current drawable, `width` x `height` pixels.
+        """Replay `cmds` onto the current drawable, `width` x `height` pixels,
+        multisampled `samples` times per pixel.
 
         `width`/`height` are the *drawable's*, not the viewport's — under
         display scaling the two differ, and the letterbox bars have to reach
         the real edge of the frame.
+
+        Multisampling is the renderer's own, not the window's: the frame is
+        drawn into an offscreen multisampled target and resolved into the
+        drawable, so the level can change from one frame to the next
+        without recreating the window — and a headless run's framebuffer
+        object gets it too. The count is capped at the driver's maximum; at
+        0 (or a driver without multisampling) the frame is drawn straight
+        into the drawable.
         """
+        var count = min(samples, self.max_samples)
+        if count < 2:
+            if self.msaa:
+                self.msaa.value().delete(self.gl)
+                self.msaa = None
+            self._render(cmds, clips, images, text, width, height, scale)
+            return
+        var destination = UInt32(self.gl.read_int(GL_DRAW_FRAMEBUFFER_BINDING))
+        if self.msaa:
+            ref target = self.msaa.value()
+            if (
+                target.width != width
+                or target.height != height
+                or target.samples != count
+            ):
+                target.delete(self.gl)
+                self.msaa = None
+        if not self.msaa:
+            self.msaa = _MultisampleTarget(self.gl, width, height, count)
+        var fbo = self.msaa.value().fbo
+        self.gl.bind_framebuffer(GL_FRAMEBUFFER, fbo)
+        self._render(cmds, clips, images, text, width, height, scale)
+        self.gl.bind_framebuffer(GL_READ_FRAMEBUFFER, fbo)
+        self.gl.bind_framebuffer(GL_DRAW_FRAMEBUFFER, destination)
+        self.gl.blit_framebuffer(
+            0,
+            0,
+            Int32(width),
+            Int32(height),
+            0,
+            0,
+            Int32(width),
+            Int32(height),
+            GL_COLOR_BUFFER_BIT,
+            UInt32(GL_NEAREST),
+        )
+        self.gl.bind_framebuffer(GL_FRAMEBUFFER, destination)
+
+    def _render(
+        mut self,
+        cmds: List[RenderCommand],
+        clips: List[_Clip],
+        images: Dict[Int, _InternedImage],
+        mut text: TextRenderer,
+        width: Int,
+        height: Int,
+        scale: Float64,
+    ) raises:
+        """`render`'s replay, onto whatever framebuffer is bound."""
         if width != self.viewport_w or height != self.viewport_h:
             # A resize, so once in a while — everything else the render needs is
             # already set from construction.

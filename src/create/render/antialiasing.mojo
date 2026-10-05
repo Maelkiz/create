@@ -14,17 +14,14 @@ its own way:
 | `MEDIUM` | 4 | 4 x 4 |
 | `HIGH` | 8 | 8 x 8 |
 
-The GPU multisamples its framebuffer, fixed when the GL context is created,
-so the level is a `run` argument rather than a `Context` dial. The CPU
-replays each shape through its own rasteriser on a grid that much finer and
-composites the coverage once, fill and outline together, so a shape's edge
-has no seam between the two. Shapes only: text and images are smooth
-already, and a clip stays hard-edged. Pixel reads and `save_image` replay on
-the CPU at the same level, under either backend.
-
-A driver that refuses a level's sample count gets the next level down, and
-finally none: a missing antialias is a better outcome than a program that
-will not start.
+The GPU draws the frame into an offscreen multisampled framebuffer and
+resolves it into the window (or a headless target), capped at the driver's
+maximum sample count. The CPU replays each shape through its own rasteriser
+on a grid that much finer and composites the coverage once, fill and outline
+together, so a shape's edge has no seam between the two. Shapes only: text
+and images are smooth already. A clip is hard-edged on the CPU; on the GPU
+its edge is multisampled like a shape's. Pixel reads and `save_image` replay
+on the CPU at the same level, under either backend.
 """
 
 from std.math import max, min
