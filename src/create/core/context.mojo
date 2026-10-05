@@ -2,6 +2,7 @@ from create.render.autoscale import AutoScale
 from create.render.canvas import Canvas, PersistentCanvasState
 
 from .time import Time
+from .window_mode import WindowMode
 from .input import Input
 
 
@@ -57,6 +58,7 @@ struct Context(Copyable, Movable):
     var _quit_on_escape: Bool
     var _title: String
     var _resizable: Bool
+    var _window_mode: WindowMode
     var _design_w: Int
     var _design_h: Int
     var _frame_count: Int
@@ -73,6 +75,7 @@ struct Context(Copyable, Movable):
         self._quit_on_escape = True
         self._title = ""
         self._resizable = True
+        self._window_mode = WindowMode.WINDOWED
         self._design_w = 0
         self._design_h = 0
         self._frame_count = 0
@@ -142,6 +145,21 @@ struct Context(Copyable, Movable):
         ignores it.
         """
         self._resizable = enabled
+
+    def window_mode(self) -> WindowMode:
+        """How the window presents itself: `run`'s `mode` unless set."""
+        return self._window_mode
+
+    def window_mode(mut self, mode: WindowMode):
+        """Switch between windowed, fullscreen, borderless and maximized.
+
+        Applies from the next frame, like `autoscale`: the frame being drawn
+        was laid out for the window as it is, so the loop switches after
+        presenting it, and the next frame is drawn at the new size. Some
+        compositors take a frame or two longer to report it (Gotcha 3). A
+        window manager may refuse to maximize; a headless run ignores it.
+        """
+        self._window_mode = mode
 
     def frame_count(self) -> Int:
         """Frames rendered so far: 1 in `create`, which draws the first, and

@@ -28,6 +28,7 @@ from ._step import first_step, step
 from ._window_loop import (
     _AppliedWindow,
     _apply_window_dials,
+    _apply_window_mode,
     _finish_frame,
 )
 from .program import Program
@@ -130,6 +131,7 @@ def _run_loop[
         state = step(program, context, state^)
         _apply_window_dials(win, applied, context)
         _present(win, state)
+        _apply_window_mode(win, applied, context)
         _finish_frame(win, context, frame_start)
     # Rule 3 from `_gl.mojo`: the context owner must outlive the last GL call,
     # and the renderer inside `state` makes them when it is destroyed.
@@ -180,10 +182,12 @@ def run_gl[
     context.autoscale(autoscale)
     context.title(title)
     context.resizable(resizable)
+    context.window_mode(mode)
     # Before create(), from `run`'s arguments, as in the CPU loop.
     _wait_for_dimensions(win, state, context)
     var applied = _AppliedWindow(context)
     var program = first_step[P](context, state)
     _apply_window_dials(win, applied, context)
     _present(win, state)
+    _apply_window_mode(win, applied, context)
     _run_loop(program, win, state^, context, applied^)

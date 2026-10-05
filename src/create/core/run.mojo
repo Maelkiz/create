@@ -9,6 +9,7 @@ from ._step import first_step, step
 from ._window_loop import (
     _AppliedWindow,
     _apply_window_dials,
+    _apply_window_mode,
     _finish_frame,
 )
 from create.render.surface import Surface
@@ -86,6 +87,7 @@ def _run_loop[
         state = step(program, context, state^)
         _apply_window_dials(win, applied, context)
         _present(win, state)
+        _apply_window_mode(win, applied, context)
         _finish_frame(win, context, frame_start)
 
 
@@ -181,6 +183,7 @@ def run[
     context.autoscale(autoscale)
     context.title(title)
     context.resizable(resizable)
+    context.window_mode(mode)
     # The mapping comes from `run`'s arguments and is in place before
     # create(), so a dial create() turns applies from the next frame, as it
     # does from `update`.
@@ -189,4 +192,5 @@ def run[
     var program = first_step[P](context, state)
     _apply_window_dials(win, applied, context)
     _present(win, state)
+    _apply_window_mode(win, applied, context)
     _run_loop(program, win, state^, context, applied^)

@@ -10,8 +10,8 @@ from std.testing import (
     assert_true,
 )
 
-from create.color import Color
 from create.core.context import Context
+from create.core.window_mode import WindowMode
 from create.render import AutoScale
 
 
@@ -87,6 +87,9 @@ def test_window_dials_read_back_what_was_set() raises -> None:
     context.resizable(False)
     assert_equal(context.title(), "Score: 3")
     assert_true(not context.resizable())
+    assert_true(context.window_mode() == WindowMode.WINDOWED)
+    context.window_mode(WindowMode.BORDERLESS)
+    assert_true(context.window_mode() == WindowMode.BORDERLESS)
 
 
 def main() raises:

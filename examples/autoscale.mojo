@@ -18,7 +18,7 @@ struct App(Program):
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> App:
         # Everything below is authored against the 1280x720 passed to run().
-        # Space cycles the three modes:
+        # F11 toggles fullscreen. Space cycles the three modes:
         #   FIT     resize and the whole scene scales, letterboxed
         #   EXTEND  same scale, no bars — the leftover becomes extra world, so
         #           the circle turns at the new window edge
@@ -29,6 +29,11 @@ struct App(Program):
         return App(100.0, 1.0, AutoScale.FIT)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        if context.input.key_pressed("f11"):
+            if context.window_mode() == WindowMode.FULLSCREEN:
+                context.window_mode(WindowMode.WINDOWED)
+            else:
+                context.window_mode(WindowMode.FULLSCREEN)
         if context.input.key_pressed("space"):
             if self.mode == AutoScale.FIT:
                 self.mode = AutoScale.EXTEND
@@ -60,7 +65,7 @@ struct App(Program):
         canvas.text_align(Align.TOP)
         canvas.text("Autoscale Mode: " + _mode_name(self.mode), (0, -140))
         canvas.font_size(20)
-        canvas.text("(space to cycle)", (0, -180))
+        canvas.text("(space to cycle, F11 for fullscreen)", (0, -180))
         canvas.font_size(28)
         canvas.text("Current scale: " + String(canvas.scale), (0, -220))
 

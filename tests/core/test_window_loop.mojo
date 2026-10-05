@@ -6,7 +6,11 @@ from std.testing import TestSuite, assert_equal
 from create import *
 from create._window import NativeWindow
 from create._window.event import Event
-from create.core._window_loop import _AppliedWindow, _apply_window_dials
+from create.core._window_loop import (
+    _AppliedWindow,
+    _apply_window_dials,
+    _apply_window_mode,
+)
 
 
 struct CountingWindow(NativeWindow):
@@ -16,12 +20,16 @@ struct CountingWindow(NativeWindow):
     var resizes: Int
     var title: String
     var resizable: Bool
+    var modes: Int
+    var fullscreen: Bool
 
     def __init__(out self):
         self.titles = 0
         self.resizes = 0
         self.title = ""
         self.resizable = True
+        self.modes = 0
+        self.fullscreen = False
 
     def is_open(self) -> Bool:
         return True
@@ -55,7 +63,8 @@ struct CountingWindow(NativeWindow):
     def set_mode(
         mut self, fullscreen: Bool, borderless: Bool, maximized: Bool
     ) raises:
-        pass
+        self.modes += 1
+        self.fullscreen = fullscreen
 
 
 def test_an_unchanged_dial_is_not_sent() raises -> None:
@@ -83,6 +92,19 @@ def test_a_changed_dial_is_sent_once() raises -> None:
     assert_equal(win.title, "Game — level 2")
     assert_equal(win.resizes, 1)
     assert_equal(win.resizable, False)
+
+
+def test_a_mode_change_is_sent_once_and_only_by_the_mode_step() raises -> None:
+    var context = Context()
+    var applied = _AppliedWindow(context)
+    var win = CountingWindow()
+    context.window_mode(WindowMode.FULLSCREEN)
+    _apply_window_dials(win, applied, context)
+    assert_equal(win.modes, 0, "not before presenting")
+    _apply_window_mode(win, applied, context)
+    _apply_window_mode(win, applied, context)
+    assert_equal(win.modes, 1)
+    assert_equal(win.fullscreen, True)
 
 
 def main() raises:

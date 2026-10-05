@@ -6,6 +6,7 @@ from std.time import sleep
 
 from create._window import NativeWindow
 from create.core.context import Context
+from create.core.window_mode import WindowMode
 
 
 struct _AppliedWindow(Movable):
@@ -14,12 +15,14 @@ struct _AppliedWindow(Movable):
 
     var title: String
     var resizable: Bool
+    var mode: WindowMode
 
     def __init__(out self, context: Context):
         """Seeded from the dials as `run` set them, which the window was
         opened with."""
         self.title = context._title
         self.resizable = context._resizable
+        self.mode = context._window_mode
 
 
 def _apply_window_dials[
@@ -34,6 +37,23 @@ def _apply_window_dials[
     if context._resizable != applied.resizable:
         win.set_resizable(context._resizable)
         applied.resizable = context._resizable
+
+
+def _apply_window_mode[
+    W: NativeWindow
+](mut win: W, mut applied: _AppliedWindow, context: Context) raises:
+    """Switch the window's mode if the program changed it. Called after
+    presenting: the frame just shown was drawn for the old size, and the
+    loop reads the new one at the top of the next."""
+    var mode = context._window_mode
+    if mode == applied.mode:
+        return
+    win.set_mode(
+        fullscreen=mode == WindowMode.FULLSCREEN,
+        borderless=mode == WindowMode.BORDERLESS,
+        maximized=mode == WindowMode.MAXIMIZED,
+    )
+    applied.mode = mode
 
 
 def _finish_frame[
