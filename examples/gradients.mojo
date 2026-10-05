@@ -25,7 +25,7 @@ struct App(Program):
     var angle: Float64
 
     @staticmethod
-    def create(mut context: Context) raises -> App:
+    def create(mut context: Context, mut canvas: Canvas) raises -> App:
         # Built once: a gradient keeps its stops and ramp for as long as it
         # lives, so the GPU uploads it once.
         var sky = Gradient.linear(

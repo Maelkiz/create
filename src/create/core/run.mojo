@@ -5,7 +5,7 @@ from create.render.render_backend import RenderBackend
 from create.render.canvas import PersistentCanvasState
 from create.core.context import Context
 from ._events import apply_events
-from ._step import step
+from ._step import first_step, step
 from ._window_loop import _finish_frame
 from create.render.surface import Surface
 from .program import Program
@@ -39,6 +39,15 @@ def _process_events(
         win.close()
 
 
+def _present(mut win: Window, mut state: PersistentCanvasState) raises:
+    var pixel_w = win.width()
+    var pixel_h = win.height()
+    state.backend.present(
+        Surface(win.pixels(), pixel_w, pixel_h), state.view.scale
+    )
+    win.present()
+
+
 def _run_loop[
     P: Program
 ](
@@ -69,13 +78,8 @@ def _run_loop[
         # viewport for the same reason — the viewport was measured before the
         # resize, and a stale width would run the raster loops off the new
         # buffer.
-        var pixel_w = win.width()
-        var pixel_h = win.height()
         state = step(program, context, state^)
-        state.backend.present(
-            Surface(win.pixels(), pixel_w, pixel_h), state.view.scale
-        )
-        win.present()
+        _present(win, state)
         _finish_frame(win, context, frame_start)
 
 
@@ -173,5 +177,6 @@ def run[
     # create(), so a dial create() turns applies from the next frame, as it
     # does from `update`.
     _wait_for_dimensions(win, state, context)
-    var program = P.create(context)
+    var program = first_step[P](context, state)
+    _present(win, state)
     _run_loop(program, win, state^, context)

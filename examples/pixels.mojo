@@ -11,7 +11,7 @@ struct Pixels(Program):
     var last: Optional[Image]
 
     @staticmethod
-    def create(mut context: Context) raises -> Pixels:
+    def create(mut context: Context, mut canvas: Canvas) raises -> Pixels:
         return Pixels(None)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

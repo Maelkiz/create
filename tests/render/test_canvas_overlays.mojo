@@ -15,7 +15,9 @@ struct OverflowingRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> OverflowingRect:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> OverflowingRect:
         return OverflowingRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -46,7 +48,7 @@ struct ScaledImage(Program):
         self.image = image^
 
     @staticmethod
-    def create(mut context: Context) raises -> ScaledImage:
+    def create(mut context: Context, mut canvas: Canvas) raises -> ScaledImage:
         return ScaledImage(Image.load("tests/fixtures/test_2x2.bmp"))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

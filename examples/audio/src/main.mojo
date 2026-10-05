@@ -12,7 +12,7 @@ struct AudioDemo(Program):
     var looping: Bool
 
     @staticmethod
-    def create(mut context: Context) raises -> AudioDemo:
+    def create(mut context: Context, mut canvas: Canvas) raises -> AudioDemo:
         context.quit_on_escape(True)
         var audio = Audio()
         var chime = ArcPointer(Sound.load(source_path("../assets/chime.wav")))

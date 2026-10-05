@@ -201,7 +201,9 @@ struct DrawsASnapshotBack(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> DrawsASnapshotBack:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> DrawsASnapshotBack:
         return DrawsASnapshotBack(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

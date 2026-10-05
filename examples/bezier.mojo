@@ -20,7 +20,7 @@ struct App(Program):
     """How far along the curve the dot is."""
 
     @staticmethod
-    def create(mut context: Context) raises -> App:
+    def create(mut context: Context, mut canvas: Canvas) raises -> App:
         # Authored against the 1280x800 passed to run(): the origin is the
         # centre of the window and y grows upward.
         return App(

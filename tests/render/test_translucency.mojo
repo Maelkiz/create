@@ -103,7 +103,9 @@ struct HalfRed[kind: Int](Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> HalfRed[Self.kind]:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> HalfRed[Self.kind]:
         return HalfRed[Self.kind](0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -158,7 +160,7 @@ struct WideRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> WideRect:
+    def create(mut context: Context, mut canvas: Canvas) raises -> WideRect:
         return WideRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -188,7 +190,9 @@ struct FadedImageShadow(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> FadedImageShadow:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> FadedImageShadow:
         return FadedImageShadow(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

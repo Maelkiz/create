@@ -16,7 +16,7 @@ struct App(Program):
     var mode: AutoScale
 
     @staticmethod
-    def create(mut context: Context) raises -> App:
+    def create(mut context: Context, mut canvas: Canvas) raises -> App:
         # Everything below is authored against the 1280x720 passed to run().
         # Space cycles the three modes:
         #   FIT     resize and the whole scene scales, letterboxed

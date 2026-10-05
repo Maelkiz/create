@@ -44,7 +44,7 @@ struct App(Program):
     """From the mouse to the pentagram's first vertex, while dragging."""
 
     @staticmethod
-    def create(mut context: Context) raises -> App:
+    def create(mut context: Context, mut canvas: Canvas) raises -> App:
         return App(
             inner_ratio=0.45,
             pentagram=_pentagram(_PENTAGRAM_HOME, 55),

@@ -22,7 +22,7 @@ from create.render.canvas import PersistentCanvasState
 from create.core.context import Context
 from create.render.surface import MemorySurface
 
-from ._step import step
+from ._step import first_step, step
 from .headless import _FRAME_MILLIS
 from .program import Program
 
@@ -48,8 +48,8 @@ def _run_headless_gl[
     antialiasing: Antialiasing = Antialiasing.OFF,
     autoscale: AutoScale = AutoScale.FIT,
 ) raises -> MemorySurface:
-    """Run `P` for `frames` frames through the GPU backend and return the
-    last frame as a `MemorySurface`.
+    """Run `P` through the GPU backend — `create`'s frame, then `frames`
+    calls to `update` — and return the last frame as a `MemorySurface`.
 
     Same contract as `run_headless`, down to which frame `step` sees — the
     only difference is where the pixels come from: a `_GLTarget` framebuffer
@@ -75,7 +75,8 @@ def _run_headless_gl[
     context.autoscale(autoscale)
     # Before create(), from the arguments, as in the windowed loops.
     context._set_viewport(state, pw, ph)
-    var program = P.create(context)
+    var program = first_step[P](context, state)
+    state.backend.present_gpu(pw, ph, state.view.scale)
     var now = 0
     context.time._start(now)
     for _ in range(frames):

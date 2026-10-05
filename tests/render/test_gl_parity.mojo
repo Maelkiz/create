@@ -341,7 +341,7 @@ struct _Parity(Program):
     var shape: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> _Parity:
+    def create(mut context: Context, mut canvas: Canvas) raises -> _Parity:
         return _Parity.create(context, _SHAPE_RECT)
 
     @staticmethod
@@ -1068,8 +1068,7 @@ def _create(
 def _cpu_frame(shape: Int) raises -> MemorySurface:
     """One shape's frame through the CPU backend, onto an owned buffer.
 
-    Not `run_headless`: that drives `Program.create`'s single-argument
-    trait method, and `_Parity` needs the extra `shape` argument to pick
+    Not `run_headless`: that drives `Program.create`'s trait method, and `_Parity` needs the extra `shape` argument to pick
     which command it records this frame. Otherwise identical to it.
     """
     var mem = MemorySurface(_PIXEL_W, _PIXEL_H)

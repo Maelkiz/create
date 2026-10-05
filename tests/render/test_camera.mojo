@@ -13,7 +13,9 @@ struct IdentityCameraRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> IdentityCameraRect:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> IdentityCameraRect:
         return IdentityCameraRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -39,7 +41,9 @@ struct PannedCameraRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> PannedCameraRect:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> PannedCameraRect:
         return PannedCameraRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -63,7 +67,9 @@ struct ZoomedCameraRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ZoomedCameraRect:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> ZoomedCameraRect:
         return ZoomedCameraRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -87,7 +93,9 @@ struct OverlayIgnoresCamera(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> OverlayIgnoresCamera:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> OverlayIgnoresCamera:
         return OverlayIgnoresCamera(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -112,7 +120,9 @@ struct OverlayRestoresCamera(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> OverlayRestoresCamera:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> OverlayRestoresCamera:
         return OverlayRestoresCamera(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

@@ -14,7 +14,7 @@ struct Clipping(Program):
     var window: Polygon
 
     @staticmethod
-    def create(mut context: Context) raises -> Clipping:
+    def create(mut context: Context, mut canvas: Canvas) raises -> Clipping:
         return Clipping(
             Rectangle((-200, 0), 260, 360),
             Polygon.star((200, 0), 170, 75, 5),

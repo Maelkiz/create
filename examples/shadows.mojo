@@ -22,7 +22,7 @@ struct App(Program):
     var soft: Bool
 
     @staticmethod
-    def create(mut context: Context) raises -> App:
+    def create(mut context: Context, mut canvas: Canvas) raises -> App:
         return App(
             Image.load(source_path("../assets/logo/png/logo-cutout.png")),
             0.9,

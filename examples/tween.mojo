@@ -52,7 +52,7 @@ struct App(Program):
     var pick: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> App:
+    def create(mut context: Context, mut canvas: Canvas) raises -> App:
         # Authored against the 1280x800 passed to run(): x runs -640..640 and
         # y runs -400..400, with y growing *upward*, so the gallery counts
         # down from +170.

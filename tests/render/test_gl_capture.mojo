@@ -50,7 +50,9 @@ struct GPUScreenshot(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> GPUScreenshot:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> GPUScreenshot:
         return GPUScreenshot(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -88,7 +90,9 @@ struct CaptureImageCPU(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> CaptureImageCPU:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> CaptureImageCPU:
         return CaptureImageCPU(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -101,7 +105,9 @@ struct CaptureImageGPU(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> CaptureImageGPU:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> CaptureImageGPU:
         return CaptureImageGPU(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

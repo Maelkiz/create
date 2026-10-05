@@ -14,7 +14,7 @@ struct App(Program):
     """Walks both rings from empty to full."""
 
     @staticmethod
-    def create(mut context: Context) raises -> App:
+    def create(mut context: Context, mut canvas: Canvas) raises -> App:
         var progress = Tween(3.0, Easing.IN_OUT_CUBIC)
         progress.loop()
         return App(progress=progress)

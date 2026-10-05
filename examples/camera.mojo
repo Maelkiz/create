@@ -7,7 +7,7 @@ struct CameraDemo(Program):
     var elapsed: Float64
 
     @staticmethod
-    def create(mut context: Context) raises -> CameraDemo:
+    def create(mut context: Context, mut canvas: Canvas) raises -> CameraDemo:
         return CameraDemo(Camera(), 0.0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

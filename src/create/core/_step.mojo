@@ -3,6 +3,32 @@ from create.core.context import Context
 from .program import Program
 
 
+def first_step[
+    P: Program
+](mut context: Context, mut state: PersistentCanvasState) raises -> P:
+    """Build `P` with `create`, which draws frame 1, and hand its recorded
+    state back through `state`.
+
+    `step`'s twin for the frame that has no program yet: the same canvas, the
+    same letterbox, so frame 1 is a frame like any other. The clock is not
+    ticked — `create` runs at time zero and the loop starts the clock once
+    this frame is presented, so a slow `create` (loading fonts, decoding
+    audio) does not land in the first `update`'s delta.
+    """
+    context._count_frame()
+    var canvas = context._new_canvas(state^)
+    try:
+        var program = P.create(context, canvas)
+        canvas._render_letterbox()
+        state = canvas^._release()
+        return program^
+    except e:
+        # `state` was moved into the canvas; a raising `create` must still
+        # hand it back, as the caller's `state` outlives this call.
+        state = canvas^._release()
+        raise e^
+
+
 def step[
     P: Program
 ](

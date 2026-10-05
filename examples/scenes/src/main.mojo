@@ -24,7 +24,7 @@ struct App(Program):
     var paint: Paint
 
     @staticmethod
-    def create(mut context: Context) raises -> App:
+    def create(mut context: Context, mut canvas: Canvas) raises -> App:
         # The painting scene accumulates ink across frames, so the per-frame
         # clear is off for the whole program: `Menu` paints its own background
         # every frame, and `Paint` clears once on entry.

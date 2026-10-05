@@ -26,7 +26,7 @@ struct Game(Program):
     var spinning: Bool
 
     @staticmethod
-    def create(mut context: Context) raises -> Game:
+    def create(mut context: Context, mut canvas: Canvas) raises -> Game:
         var sheet = Image.load(source_path("../assets/character.png"))
 
         # Row-major: the first four cells are the idle cycle, the next four

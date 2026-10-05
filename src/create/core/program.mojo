@@ -3,8 +3,8 @@ from create.core.context import Context
 
 
 trait Program(Deinitable, Movable):
-    """What `run` and `run_headless` drive: `create`, then `update` once per
-    frame.
+    """What `run` and `run_headless` drive: `create`, which draws the first
+    frame, then `update` once per frame after it.
 
     One per-frame method, not two. A separate `render` would have to be handed
     a canvas it may not write to and no input at all, which is what forced a
@@ -20,21 +20,23 @@ trait Program(Deinitable, Movable):
     """
 
     @staticmethod
-    def create(mut context: Context) raises -> Self:
-        """Build the program, before the first frame.
+    def create(mut context: Context, mut canvas: Canvas) raises -> Self:
+        """Build the program and draw frame 1, as Processing's `setup` does.
 
         Where resources the program drives on its own schedule are
-        constructed — images, fonts, sounds, an `Audio` device. The design
-        size and autoscale mode are `run`'s arguments and already in place;
-        `context.design_size` or `context.autoscale` called here applies
-        from the first frame on, like any dial.
+        constructed — images, fonts, sounds, an `Audio` device — and where
+        canvas settings that outlive the frame, such as `canvas.font`, are
+        set once.
 
-        No `Canvas`: there is no frame yet, and one handed over here could only
-        be a frame nothing presents. So the dials are all `create` is given,
-        and a render call it cannot make is a render call that cannot silently go
-        nowhere. Geometry is not readable here either, which is deliberate —
-        a window does not report its real size until it has been shown (see
-        Gotcha 3), so a layout measured here would be measured against a lie.
+        `canvas` is a real frame, presented like every later one: what is
+        drawn here shows, and geometry is as valid as on any first frame (see
+        Gotcha 3). The design size and autoscale mode are `run`'s arguments,
+        already in place; `context.design_size` or `context.autoscale`
+        called here applies from the next frame, like any dial. `context.time`
+        is zero and `context.input` is empty; `context.frame_count()` is 1.
+
+        Drawing that needs the program's own fields builds `Self` into a
+        local first, draws, then returns it.
         """
         ...
 
@@ -46,6 +48,7 @@ trait Program(Deinitable, Movable):
         `context.time`, `context.input` — and takes the dials for the *next*
         one — the autoscale mode, the clear, `quit()`. `canvas` is where this
         frame is drawn: it is built fresh, rendered on, and dropped before
-        presentation, so it must not be stored anywhere.
+        presentation, so it must not be stored anywhere. The first `update`
+        draws frame 2; `create` drew frame 1.
         """
         ...

@@ -24,7 +24,7 @@ struct App(Program):
     var saved: String
 
     @staticmethod
-    def create(mut context: Context) raises -> App:
+    def create(mut context: Context, mut canvas: Canvas) raises -> App:
         return App(0.0, "")
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

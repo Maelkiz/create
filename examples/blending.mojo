@@ -20,7 +20,7 @@ struct App(Program):
     var mode: BlendMode
 
     @staticmethod
-    def create(mut context: Context) raises -> App:
+    def create(mut context: Context, mut canvas: Canvas) raises -> App:
         # Space cycles the modes. Each is easiest to read against a range of
         # brightness, so the circles cross bars from black to white:
         #   ADD       light: brightens, saturating to white over the light bars

@@ -6,7 +6,7 @@ from create import *
 @fieldwise_init
 struct MyApp(Program):
     @staticmethod
-    def create(mut context: Context) -> MyApp:
+    def create(mut context: Context, mut canvas: Canvas) -> MyApp:
         # Set initial application state here
         return MyApp()
 

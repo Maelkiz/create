@@ -20,7 +20,7 @@ struct App(Program):
     two."""
 
     @staticmethod
-    def create(mut context: Context) raises -> App:
+    def create(mut context: Context, mut canvas: Canvas) raises -> App:
         return App(
             terrain=Noise(7, feature_size=150),
             wobble=Noise(3, feature_size=2),

@@ -4,7 +4,7 @@ from create import *
 @fieldwise_init
 struct Sketch(Program):
     @staticmethod
-    def create(mut context: Context) raises -> Sketch:
+    def create(mut context: Context, mut canvas: Canvas) raises -> Sketch:
         return Sketch()
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

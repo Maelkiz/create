@@ -13,7 +13,7 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     ```mojo
     @staticmethod
-    def create(mut context: Context) raises -> Self:
+    def create(mut context: Context, mut canvas: Canvas) raises -> Self:
         return Self(Tween(0.0, 1.0, 0.4, Easing.OUT_CUBIC))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

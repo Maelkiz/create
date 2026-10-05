@@ -38,7 +38,9 @@ struct Clipped[scene: Int](Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> Clipped[Self.scene]:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> Clipped[Self.scene]:
         return Clipped[Self.scene](0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

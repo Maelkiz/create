@@ -49,7 +49,7 @@ struct App(Program):
     """How many times the mouth has shut."""
 
     @staticmethod
-    def create(mut context: Context) raises -> App:
+    def create(mut context: Context, mut canvas: Canvas) raises -> App:
         return App(
             ball=Circle(_BALL_HOME, 40),
             respawn_in=0.0,

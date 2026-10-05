@@ -24,7 +24,7 @@ from create.render.canvas import PersistentCanvasState
 from create.core.context import Context
 
 from ._events import apply_events
-from ._step import step
+from ._step import first_step, step
 from ._window_loop import _finish_frame
 from .program import Program
 from .window_mode import WindowMode
@@ -95,6 +95,12 @@ def _wait_for_dimensions(
         _ = _update_dimensions(win, state, context)
 
 
+def _present(mut win: GLWindow, mut state: PersistentCanvasState) raises:
+    var drawable = win.drawable_size()
+    state.backend.present_gpu(drawable[0], drawable[1], state.view.scale)
+    win.swap_buffers()
+
+
 def _run_loop[
     P: Program
 ](
@@ -116,10 +122,8 @@ def _run_loop[
         _ = _update_dimensions(win, state, context)
         var frame_start = win.ticks()
         context._advance_frame(frame_start)
-        var drawable = win.drawable_size()
         state = step(program, context, state^)
-        state.backend.present_gpu(drawable[0], drawable[1], state.view.scale)
-        win.swap_buffers()
+        _present(win, state)
         _finish_frame(win, context, frame_start)
     # Rule 3 from `_gl.mojo`: the context owner must outlive the last GL call,
     # and the renderer inside `state` makes them when it is destroyed.
@@ -170,5 +174,6 @@ def run_gl[
     context.autoscale(autoscale)
     # Before create(), from `run`'s arguments, as in the CPU loop.
     _wait_for_dimensions(win, state, context)
-    var program = P.create(context)
+    var program = first_step[P](context, state)
+    _present(win, state)
     _run_loop(program, win, state^, context)

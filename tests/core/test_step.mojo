@@ -17,7 +17,7 @@ struct Painter(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> Painter:
+    def create(mut context: Context, mut canvas: Canvas) raises -> Painter:
         return Painter(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -79,7 +79,7 @@ struct ClickPainter(Program):
     var clicked: Bool
 
     @staticmethod
-    def create(mut context: Context) raises -> ClickPainter:
+    def create(mut context: Context, mut canvas: Canvas) raises -> ClickPainter:
         return ClickPainter(False)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

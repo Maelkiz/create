@@ -18,7 +18,7 @@ struct Gamepads(Program):
     var message_until: Float64
 
     @staticmethod
-    def create(mut context: Context) raises -> Gamepads:
+    def create(mut context: Context, mut canvas: Canvas) raises -> Gamepads:
         var positions = List[Point2D]()
         var colors = List[Int]()
         for i in range(PLAYERS):

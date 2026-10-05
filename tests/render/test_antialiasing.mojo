@@ -20,7 +20,9 @@ struct OffGrid[gradient: Bool](Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> OffGrid[Self.gradient]:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> OffGrid[Self.gradient]:
         return OffGrid[Self.gradient](0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -60,7 +62,7 @@ struct OnGrid(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> OnGrid:
+    def create(mut context: Context, mut canvas: Canvas) raises -> OnGrid:
         return OnGrid(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -87,7 +89,9 @@ struct SameColorRing(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> SameColorRing:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> SameColorRing:
         return SameColorRing(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

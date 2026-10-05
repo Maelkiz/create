@@ -8,7 +8,7 @@ struct Game(Program):
     var y: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> Game:
+    def create(mut context: Context, mut canvas: Canvas) raises -> Game:
         var image = Image.load(source_path("../assets/image.jpeg"), 120, 120)
         return Game(image^, 0, 0)
 

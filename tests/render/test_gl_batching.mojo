@@ -10,7 +10,7 @@
 from create._window import GLWindow
 
 from create import *
-from create.core._step import step
+from create.core._step import first_step, step
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.autoscale import AutoScale
@@ -39,7 +39,9 @@ struct ClearMidFrame(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ClearMidFrame:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> ClearMidFrame:
         return ClearMidFrame(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -59,7 +61,7 @@ struct TwoImages(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> TwoImages:
+    def create(mut context: Context, mut canvas: Canvas) raises -> TwoImages:
         return TwoImages(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -75,7 +77,7 @@ struct TextAndImage(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> TextAndImage:
+    def create(mut context: Context, mut canvas: Canvas) raises -> TextAndImage:
         return TextAndImage(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -93,7 +95,7 @@ struct ManyShapes(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ManyShapes:
+    def create(mut context: Context, mut canvas: Canvas) raises -> ManyShapes:
         return ManyShapes(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -119,7 +121,9 @@ struct RectsAround[bezier: Bool](Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> RectsAround[Self.bezier]:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> RectsAround[Self.bezier]:
         return RectsAround[Self.bezier](0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -140,7 +144,7 @@ struct GradientsAmongSolids[gradients: Bool](Program):
 
     @staticmethod
     def create(
-        mut context: Context,
+        mut context: Context, mut canvas: Canvas
     ) raises -> GradientsAmongSolids[Self.gradients]:
         return GradientsAmongSolids[Self.gradients](0)
 
@@ -176,7 +180,9 @@ struct ManyGradients(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ManyGradients:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> ManyGradients:
         return ManyGradients(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -201,7 +207,7 @@ struct BlendModes(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> BlendModes:
+    def create(mut context: Context, mut canvas: Canvas) raises -> BlendModes:
         return BlendModes(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -236,7 +242,9 @@ struct BlurredShapes[shadows: Bool](Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> BlurredShapes[Self.shadows]:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> BlurredShapes[Self.shadows]:
         return BlurredShapes[Self.shadows](0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -258,7 +266,9 @@ struct BlurredText[shadows: Bool](Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> BlurredText[Self.shadows]:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> BlurredText[Self.shadows]:
         return BlurredText[Self.shadows](0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -277,7 +287,9 @@ struct BlurredImage[shadows: Bool](Program):
     var image: Image
 
     @staticmethod
-    def create(mut context: Context) raises -> BlurredImage[Self.shadows]:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> BlurredImage[Self.shadows]:
         return BlurredImage[Self.shadows](Image.solid(20, 20, 255, 0, 0))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -296,7 +308,9 @@ struct BlurredBezier[shadows: Bool](Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> BlurredBezier[Self.shadows]:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> BlurredBezier[Self.shadows]:
         return BlurredBezier[Self.shadows](0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -328,8 +342,9 @@ def _texture_growth[P: Program](mut win: GLWindow, frames: Int) raises -> Int:
     var state = PersistentCanvasState(RenderBackend.GPU)
     var context = Context()
     context.design_size(100, 100)
-    var program = P.create(context)
     context._set_viewport(state, 100, 100)
+    var program = first_step[P](context, state)
+    state.backend.present_gpu(100, 100, state.view.scale)
     var now = 0
     context.time._start(now)
     var first = 0
@@ -363,8 +378,9 @@ def _gpu_frame[
     var state = PersistentCanvasState(RenderBackend.GPU)
     var context = Context()
     context.design_size(width, height)
-    var program = P.create(context)
     context._set_viewport(state, width, height)
+    var program = first_step[P](context, state)
+    state.backend.present_gpu(width, height, state.view.scale)
     var now = 0
     context.time._start(now)
     for _ in range(frames):
@@ -390,8 +406,9 @@ def _gpu_draw_calls[P: Program](mut win: GLWindow) raises -> Int:
     var state = PersistentCanvasState(RenderBackend.GPU)
     var context = Context()
     context.design_size(100, 100)
-    var program = P.create(context)
     context._set_viewport(state, 100, 100)
+    var program = first_step[P](context, state)
+    state.backend.present_gpu(100, 100, state.view.scale)
     context.time._start(0)
     context.time._tick(16)
     state = step(program, context, state^)

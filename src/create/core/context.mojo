@@ -34,12 +34,8 @@ struct Context(Copyable, Movable):
     ones the run loop reads after a frame has been released, `max_frame_rate`,
     `quit` and `rumble`.
 
-    Handed to `Program.create` on its own, before any frame exists, and
-    alongside the `Canvas` to `Program.update`. That is the whole reason it is a
-    separate object rather than fields on `Canvas`: `create` has dials to turn
-    and nothing to render on, so it is given exactly that — a program cannot
-    record a command that will never be presented, and there is no discarded
-    frame to explain.
+    Handed alongside the `Canvas` to `Program.create`, which draws frame 1,
+    and to every `Program.update` after it.
 
     **Read at frame construction.** `Canvas` takes its copy of `autoclear`
     and `letterbox_color` when it is built, and the loop
@@ -47,7 +43,7 @@ struct Context(Copyable, Movable):
     each frame. So a dial turned part-way through `update` applies to the *next*
     frame, uniformly — the clear of the frame being rendered was recorded before
     `update` was called, and one frame cannot record under two mappings. Set
-    them in `create` to have them hold from frame one. `max_frame_rate`,
+    them in `create` to have them hold from frame two. `max_frame_rate`,
     `quit` and `rumble` are the exception, and only because the loop reads
     them after the frame body returns. A dial read back after such a change
     reports the new value, not the one the frame in hand was built with.
@@ -102,8 +98,8 @@ struct Context(Copyable, Movable):
 
         Takes effect on the next frame, like every dial here: the frame being
         rendered keeps the mapping it was built with, since one frame cannot
-        record under two of them. From `create` there is no frame yet, so it
-        applies to frame one.
+        record under two of them. `run`'s `width`/`height` are the size
+        frame 1 is drawn at.
         """
         self._design_w = width
         self._design_h = height
@@ -200,13 +196,18 @@ struct Context(Copyable, Movable):
         )
 
     def _advance_frame(mut self, now: Int):
-        """Tick the clock and count the frame, before each `update`.
+        """Tick the clock and count the frame, before each `update`."""
+        self._count_frame()
+        self.time._tick(now)
+
+    def _count_frame(mut self):
+        """Count a frame without ticking the clock — on its own, the first
+        frame's, which `create` draws before the clock has started.
 
         Also drops last frame's rumbles: the windowed loops sent them already,
         and the headless one has nowhere to send them.
         """
         self._rumbles.clear()
-        self.time._tick(now)
         self._frame_count += 1
 
     def quit(mut self):

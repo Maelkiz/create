@@ -15,7 +15,7 @@ struct GPURect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> GPURect:
+    def create(mut context: Context, mut canvas: Canvas) raises -> GPURect:
         return GPURect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -42,7 +42,7 @@ struct GPUMover(Program):
     var x: Float64
 
     @staticmethod
-    def create(mut context: Context) raises -> GPUMover:
+    def create(mut context: Context, mut canvas: Canvas) raises -> GPUMover:
         return GPUMover(-20.0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -96,7 +96,9 @@ struct GPURoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> GPURoundedRect:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> GPURoundedRect:
         return GPURoundedRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -133,7 +135,9 @@ struct GPURoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> GPURoundedTriangle:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> GPURoundedTriangle:
         return GPURoundedTriangle(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -172,7 +176,9 @@ struct GPUTextWithoutFill(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> GPUTextWithoutFill:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> GPUTextWithoutFill:
         return GPUTextWithoutFill(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

@@ -21,7 +21,7 @@ struct TypingTest(Program):
     var result: String
 
     @staticmethod
-    def create(mut context: Context) raises -> TypingTest:
+    def create(mut context: Context, mut canvas: Canvas) raises -> TypingTest:
         return TypingTest(
             phrases=[
                 "the quick brown fox jumps over the lazy dog",

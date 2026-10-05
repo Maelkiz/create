@@ -3,7 +3,7 @@ from create.core.context import Context
 from create.render.antialiasing import Antialiasing
 from create.render.autoscale import AutoScale
 from create.render.render_backend import RenderBackend
-from ._step import step
+from ._step import first_step, step
 from ._headless_gl import _run_headless_gl
 from .program import Program
 from create.render.surface import MemorySurface
@@ -26,10 +26,12 @@ def run_headless[
     antialiasing: Antialiasing = Antialiasing.MEDIUM,
     autoscale: AutoScale = AutoScale.FIT,
 ) raises -> MemorySurface:
-    """Run `P` for `frames` frames over an owned buffer and return it.
+    """Run `P` over an owned buffer — `create`'s frame, then `frames` calls
+    to `update` — and return the buffer.
 
-    The same sequence as `run`, minus the window: `create`, then `update`
-    per frame, with the letterbox painted after each one. `width`
+    The same sequence as `run`, minus the window: `create` draws frame 1,
+    then `update` draws one frame per call, with the letterbox painted after
+    each. `frames=0` returns `create`'s frame alone. `width`
     and `height` are the design size; `pixel_width`/`pixel_height` are
     the framebuffer, defaulting to the same size — pass a different shape to
     exercise autoscale, since a design that matches the framebuffer maps 1:1
@@ -70,7 +72,8 @@ def run_headless[
     context.autoscale(autoscale)
     # Before create(), from the arguments, as in the windowed loops.
     context._set_viewport(state, pw, ph)
-    var program = P.create(context)
+    var program = first_step[P](context, state)
+    state.backend.present(mem.surface(), state.view.scale)
     var now = 0
     context.time._start(now)
     for _ in range(frames):

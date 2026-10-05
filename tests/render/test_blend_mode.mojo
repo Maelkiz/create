@@ -83,7 +83,7 @@ struct BlendModes(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> BlendModes:
+    def create(mut context: Context, mut canvas: Canvas) raises -> BlendModes:
         return BlendModes(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -117,7 +117,9 @@ struct BackgroundUnderAdd(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> BackgroundUnderAdd:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> BackgroundUnderAdd:
         return BackgroundUnderAdd(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

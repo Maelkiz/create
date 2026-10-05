@@ -38,7 +38,7 @@ struct Scene[n: Int](Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> Self:
+    def create(mut context: Context, mut canvas: Canvas) raises -> Self:
         return Self(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -111,7 +111,7 @@ struct LaidOut[extend: Bool](Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> Self:
+    def create(mut context: Context, mut canvas: Canvas) raises -> Self:
         comptime if Self.extend:
             context.autoscale(AutoScale.EXTEND)
         return Self(0)
@@ -130,7 +130,9 @@ struct TransparentCapture(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> TransparentCapture:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> TransparentCapture:
         return TransparentCapture(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

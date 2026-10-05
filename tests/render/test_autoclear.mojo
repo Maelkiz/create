@@ -18,7 +18,9 @@ struct RendersNothing(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> RendersNothing:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> RendersNothing:
         return RendersNothing(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -30,8 +32,10 @@ struct NoAutoclear(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> NoAutoclear:
+    def create(mut context: Context, mut canvas: Canvas) raises -> NoAutoclear:
+        # Frame 1 is cleared already; the switch reaches the frames after it.
         context.autoclear(False)
+        canvas.background(Color.BLUE)
         return NoAutoclear(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -43,17 +47,17 @@ struct InkOnFirstFrameOnly(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> InkOnFirstFrameOnly:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> InkOnFirstFrameOnly:
         context.autoclear(False)
-        return InkOnFirstFrameOnly(0)
-
-    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        # `_tick` runs before `update`, so the first frame is count 1.
-        if context.frame_count() > 1:
-            return
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
         canvas.rectangle((0, 0), 40, 40)
+        return InkOnFirstFrameOnly(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        pass
 
 
 @fieldwise_init
@@ -61,7 +65,9 @@ struct OwnBackground(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> OwnBackground:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> OwnBackground:
         return OwnBackground(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -73,13 +79,14 @@ def test_a_frame_starts_cleared_to_the_default_gray() raises -> None:
     assert_equal(m.pixel(100, 50), Color(200))
 
 
-def test_autoclear_off_leaves_the_buffer_untouched() raises -> None:
+def test_autoclear_off_leaves_the_last_frame_untouched() raises -> None:
     var m = run_headless[NoAutoclear](200, 100)
-    assert_equal(m.pixel(100, 50), Color.TRANSPARENT)
+    assert_equal(m.pixel(100, 50), Color.BLUE)
 
 
 def test_autoclear_off_lets_ink_survive_later_frames() raises -> None:
-    # Rendered on frame 1 only; with no clear it is still there four frames on.
+    # Rendered by `create` only; with no clear it is still there five frames
+    # on.
     var m = run_headless[InkOnFirstFrameOnly](200, 100, frames=5)
     assert_equal(m.pixel(100, 50), Color.RED)
 

@@ -13,7 +13,7 @@ struct Game(Program):
     var cam: Camera
 
     @staticmethod
-    def create(mut context: Context) raises -> Game:
+    def create(mut context: Context, mut canvas: Canvas) raises -> Game:
         var w: Float64 = 60
         var h: Float64 = 80
         return Game(Player(0.0, 0.0, w, h, 0.0, False, 2), Camera())

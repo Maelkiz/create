@@ -6,7 +6,7 @@ struct Transforms(Program):
     var elapsed: Float64
 
     @staticmethod
-    def create(mut context: Context) raises -> Transforms:
+    def create(mut context: Context, mut canvas: Canvas) raises -> Transforms:
         return Transforms(elapsed=0.0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

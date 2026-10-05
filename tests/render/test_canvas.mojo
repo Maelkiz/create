@@ -35,7 +35,7 @@ struct Background(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> Background:
+    def create(mut context: Context, mut canvas: Canvas) raises -> Background:
         return Background(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -57,7 +57,7 @@ struct CentredRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> CentredRect:
+    def create(mut context: Context, mut canvas: Canvas) raises -> CentredRect:
         return CentredRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -85,7 +85,7 @@ struct HighRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> HighRect:
+    def create(mut context: Context, mut canvas: Canvas) raises -> HighRect:
         return HighRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -109,7 +109,9 @@ struct CentredCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> CentredCircle:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> CentredCircle:
         return CentredCircle(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -138,7 +140,9 @@ struct UprightTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> UprightTriangle:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> UprightTriangle:
         return UprightTriangle(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -166,7 +170,7 @@ struct AlphaOverRed(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> AlphaOverRed:
+    def create(mut context: Context, mut canvas: Canvas) raises -> AlphaOverRed:
         return AlphaOverRed(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -187,7 +191,7 @@ struct ThickLine(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ThickLine:
+    def create(mut context: Context, mut canvas: Canvas) raises -> ThickLine:
         return ThickLine(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -211,7 +215,7 @@ struct FitBars(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> FitBars:
+    def create(mut context: Context, mut canvas: Canvas) raises -> FitBars:
         return FitBars(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -223,7 +227,7 @@ struct ExtendNoBars(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ExtendNoBars:
+    def create(mut context: Context, mut canvas: Canvas) raises -> ExtendNoBars:
         return ExtendNoBars(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -253,7 +257,7 @@ struct RotatedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> RotatedRect:
+    def create(mut context: Context, mut canvas: Canvas) raises -> RotatedRect:
         return RotatedRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -280,7 +284,7 @@ struct SharpRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> SharpRect:
+    def create(mut context: Context, mut canvas: Canvas) raises -> SharpRect:
         return SharpRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -304,7 +308,7 @@ struct RoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> RoundedRect:
+    def create(mut context: Context, mut canvas: Canvas) raises -> RoundedRect:
         return RoundedRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -330,7 +334,9 @@ struct RoundedRectOutlined(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> RoundedRectOutlined:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> RoundedRectOutlined:
         return RoundedRectOutlined(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -369,7 +375,9 @@ struct ScaledRoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ScaledRoundedRect:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> ScaledRoundedRect:
         return ScaledRoundedRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -394,7 +402,9 @@ struct RotatedRoundedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> RotatedRoundedRect:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> RotatedRoundedRect:
         return RotatedRoundedRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -423,7 +433,9 @@ struct SharpTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> SharpTriangle:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> SharpTriangle:
         return SharpTriangle(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -448,7 +460,9 @@ struct RoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> RoundedTriangle:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> RoundedTriangle:
         return RoundedTriangle(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -483,7 +497,9 @@ struct RoundedTriangleOutlined(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> RoundedTriangleOutlined:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> RoundedTriangleOutlined:
         return RoundedTriangleOutlined(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -519,7 +535,9 @@ struct ThinRoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ThinRoundedTriangle:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> ThinRoundedTriangle:
         return ThinRoundedTriangle(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -549,7 +567,9 @@ struct RotatedRoundedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> RotatedRoundedTriangle:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> RotatedRoundedTriangle:
         return RotatedRoundedTriangle(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -582,7 +602,7 @@ struct ImageBlit(Program):
         self.image = image^
 
     @staticmethod
-    def create(mut context: Context) raises -> ImageBlit:
+    def create(mut context: Context, mut canvas: Canvas) raises -> ImageBlit:
         return ImageBlit(Image.load("tests/fixtures/test_2x2.bmp"))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -608,7 +628,7 @@ struct PngImageBlit(Program):
         self.image = image^
 
     @staticmethod
-    def create(mut context: Context) raises -> PngImageBlit:
+    def create(mut context: Context, mut canvas: Canvas) raises -> PngImageBlit:
         return PngImageBlit(Image.load("tests/fixtures/test_2x2.png"))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -634,7 +654,9 @@ struct StyleAcrossFrames(Program):
     var frame: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> StyleAcrossFrames:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> StyleAcrossFrames:
         return StyleAcrossFrames(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -661,7 +683,7 @@ struct GuardedStyle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> GuardedStyle:
+    def create(mut context: Context, mut canvas: Canvas) raises -> GuardedStyle:
         return GuardedStyle(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -685,7 +707,7 @@ struct KeywordStyle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> KeywordStyle:
+    def create(mut context: Context, mut canvas: Canvas) raises -> KeywordStyle:
         return KeywordStyle(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -711,7 +733,9 @@ struct KeywordSwitches(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> KeywordSwitches:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> KeywordSwitches:
         return KeywordSwitches(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -738,7 +762,7 @@ struct AppliedStyle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> AppliedStyle:
+    def create(mut context: Context, mut canvas: Canvas) raises -> AppliedStyle:
         return AppliedStyle(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -765,7 +789,7 @@ struct NestedStyles(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> NestedStyles:
+    def create(mut context: Context, mut canvas: Canvas) raises -> NestedStyles:
         return NestedStyles(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -792,7 +816,9 @@ struct BareStyleCall(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> BareStyleCall:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> BareStyleCall:
         return BareStyleCall(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -818,7 +844,9 @@ struct ShadowSetters(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ShadowSetters:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> ShadowSetters:
         return ShadowSetters(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -846,7 +874,7 @@ struct ShadowParts(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ShadowParts:
+    def create(mut context: Context, mut canvas: Canvas) raises -> ShadowParts:
         return ShadowParts(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -869,7 +897,9 @@ struct ShadowKeywords(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ShadowKeywords:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> ShadowKeywords:
         return ShadowKeywords(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -906,7 +936,9 @@ struct ShadowFollowsTransform(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ShadowFollowsTransform:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> ShadowFollowsTransform:
         return ShadowFollowsTransform(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -934,7 +966,7 @@ struct InsetKeyword(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> InsetKeyword:
+    def create(mut context: Context, mut canvas: Canvas) raises -> InsetKeyword:
         return InsetKeyword(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -960,7 +992,7 @@ struct StrokedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> StrokedRect:
+    def create(mut context: Context, mut canvas: Canvas) raises -> StrokedRect:
         return StrokedRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -986,7 +1018,9 @@ struct StrokedCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> StrokedCircle:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> StrokedCircle:
         return StrokedCircle(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1009,7 +1043,9 @@ struct StrokedTriangle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> StrokedTriangle:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> StrokedTriangle:
         return StrokedTriangle(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1034,7 +1070,9 @@ struct BezierBothWays(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> BezierBothWays:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> BezierBothWays:
         return BezierBothWays(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1067,7 +1105,7 @@ struct ZoomedBezier(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ZoomedBezier:
+    def create(mut context: Context, mut canvas: Canvas) raises -> ZoomedBezier:
         return ZoomedBezier(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1115,7 +1153,9 @@ struct UnoutlinedBezier(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> UnoutlinedBezier:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> UnoutlinedBezier:
         return UnoutlinedBezier(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1144,7 +1184,7 @@ struct ClosedSpline(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ClosedSpline:
+    def create(mut context: Context, mut canvas: Canvas) raises -> ClosedSpline:
         return ClosedSpline(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1161,7 +1201,7 @@ struct OpenSpline(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> OpenSpline:
+    def create(mut context: Context, mut canvas: Canvas) raises -> OpenSpline:
         return OpenSpline(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1199,7 +1239,9 @@ struct UnrecordedSpline(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> UnrecordedSpline:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> UnrecordedSpline:
         return UnrecordedSpline(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1225,7 +1267,7 @@ struct ArcEveryWay(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ArcEveryWay:
+    def create(mut context: Context, mut canvas: Canvas) raises -> ArcEveryWay:
         return ArcEveryWay(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1259,7 +1301,7 @@ struct ArcRing(Program):
     var sweep: Float64
 
     @staticmethod
-    def create(mut context: Context) raises -> ArcRing:
+    def create(mut context: Context, mut canvas: Canvas) raises -> ArcRing:
         return ArcRing(tau)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1274,7 +1316,7 @@ struct ArcGap(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ArcGap:
+    def create(mut context: Context, mut canvas: Canvas) raises -> ArcGap:
         return ArcGap(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1298,7 +1340,9 @@ struct UnrecordedArc(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> UnrecordedArc:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> UnrecordedArc:
         return UnrecordedArc(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1324,7 +1368,9 @@ struct SectorEveryWay(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> SectorEveryWay:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> SectorEveryWay:
         return SectorEveryWay(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1362,7 +1408,9 @@ struct OutlinedSector(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> OutlinedSector:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> OutlinedSector:
         return OutlinedSector(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1374,7 +1422,9 @@ struct OutlineOnlySector(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> OutlineOnlySector:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> OutlineOnlySector:
         return OutlineOnlySector(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1406,7 +1456,9 @@ struct TranslucentPacMan(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> TranslucentPacMan:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> TranslucentPacMan:
         return TranslucentPacMan(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1440,7 +1492,9 @@ struct PolygonEveryWay(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> PolygonEveryWay:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> PolygonEveryWay:
         return PolygonEveryWay(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1479,7 +1533,9 @@ struct OutlinedSquare(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> OutlinedSquare:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> OutlinedSquare:
         return OutlinedSquare(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1508,7 +1564,9 @@ struct TranslucentStar(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> TranslucentStar:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> TranslucentStar:
         return TranslucentStar(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1544,7 +1602,9 @@ struct RotatedSectorUnderCamera(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> RotatedSectorUnderCamera:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> RotatedSectorUnderCamera:
         return RotatedSectorUnderCamera(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1570,7 +1630,7 @@ struct NoFillRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> NoFillRect:
+    def create(mut context: Context, mut canvas: Canvas) raises -> NoFillRect:
         return NoFillRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1591,7 +1651,7 @@ struct NoFillCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> NoFillCircle:
+    def create(mut context: Context, mut canvas: Canvas) raises -> NoFillCircle:
         return NoFillCircle(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1612,7 +1672,9 @@ struct FillSwitching(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> FillSwitching:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> FillSwitching:
         return FillSwitching(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1640,7 +1702,7 @@ struct DefaultFill(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> DefaultFill:
+    def create(mut context: Context, mut canvas: Canvas) raises -> DefaultFill:
         return DefaultFill(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1662,7 +1724,9 @@ struct OutlineSwitching(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> OutlineSwitching:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> OutlineSwitching:
         return OutlineSwitching(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1690,7 +1754,9 @@ struct RotatedCircle(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> RotatedCircle:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> RotatedCircle:
         return RotatedCircle(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1721,7 +1787,9 @@ struct QuarterTurnRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> QuarterTurnRect:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> QuarterTurnRect:
         return QuarterTurnRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1737,7 +1805,7 @@ struct SwappedRect(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> SwappedRect:
+    def create(mut context: Context, mut canvas: Canvas) raises -> SwappedRect:
         return SwappedRect(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1767,7 +1835,9 @@ struct GeometryOverloads(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> GeometryOverloads:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> GeometryOverloads:
         return GeometryOverloads(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1824,7 +1894,9 @@ struct ToWorldRoundTrip(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ToWorldRoundTrip:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> ToWorldRoundTrip:
         return ToWorldRoundTrip(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1855,7 +1927,9 @@ struct ThickLineUnderNonUniformScale(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> ThickLineUnderNonUniformScale:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> ThickLineUnderNonUniformScale:
         return ThickLineUnderNonUniformScale(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1910,7 +1984,9 @@ struct TextThroughCanvas(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> TextThroughCanvas:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> TextThroughCanvas:
         return TextThroughCanvas(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1938,7 +2014,7 @@ struct MeasuredText(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> MeasuredText:
+    def create(mut context: Context, mut canvas: Canvas) raises -> MeasuredText:
         return MeasuredText(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -1985,7 +2061,9 @@ struct TransparentText(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> TransparentText:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> TransparentText:
         return TransparentText(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -2004,7 +2082,9 @@ struct TextBesideShape(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> TextBesideShape:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> TextBesideShape:
         return TextBesideShape(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -2039,7 +2119,7 @@ struct SmallText(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> SmallText:
+    def create(mut context: Context, mut canvas: Canvas) raises -> SmallText:
         return SmallText(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -2055,7 +2135,7 @@ struct BigText(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> BigText:
+    def create(mut context: Context, mut canvas: Canvas) raises -> BigText:
         return BigText(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -2084,7 +2164,9 @@ struct QuitOnFrameTwo(Program):
         self.frame = 0
 
     @staticmethod
-    def create(mut context: Context) raises -> QuitOnFrameTwo:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> QuitOnFrameTwo:
         return QuitOnFrameTwo()
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -2133,7 +2215,7 @@ struct AnimatorBlit(Program):
         self.animator = animator^
 
     @staticmethod
-    def create(mut context: Context) raises -> AnimatorBlit:
+    def create(mut context: Context, mut canvas: Canvas) raises -> AnimatorBlit:
         var frames = List[Image]()
         for i in range(8):
             frames.append(Image.solid(2, 2, UInt8(i * 20), 0, 0))
@@ -2171,7 +2253,9 @@ struct AnimatorSized(Program):
         self.animator = animator^
 
     @staticmethod
-    def create(mut context: Context) raises -> AnimatorSized:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> AnimatorSized:
         var frames = List[Image]()
         frames.append(Image.solid(2, 2, 255, 0, 0))
         return AnimatorSized(Animator(ArcPointer(Animation(frames^))))
@@ -2206,7 +2290,9 @@ struct AnimatorEveryOverload(Program):
         self.animator = animator^
 
     @staticmethod
-    def create(mut context: Context) raises -> AnimatorEveryOverload:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> AnimatorEveryOverload:
         var frames = List[Image]()
         frames.append(Image.solid(2, 2, 255, 0, 0))
         return AnimatorEveryOverload(Animator(ArcPointer(Animation(frames^))))
@@ -2261,7 +2347,9 @@ struct ShadowedImageEveryOverload(Program):
         self.animator = animator^
 
     @staticmethod
-    def create(mut context: Context) raises -> ShadowedImageEveryOverload:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> ShadowedImageEveryOverload:
         var frames = List[Image]()
         frames.append(_half_opaque())
         return ShadowedImageEveryOverload(
@@ -2346,7 +2434,7 @@ struct SaveImage(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> SaveImage:
+    def create(mut context: Context, mut canvas: Canvas) raises -> SaveImage:
         return SaveImage(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -2359,7 +2447,7 @@ struct SaveImage2x(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> SaveImage2x:
+    def create(mut context: Context, mut canvas: Canvas) raises -> SaveImage2x:
         return SaveImage2x(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -2372,7 +2460,9 @@ struct SaveImageTransparent(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> SaveImageTransparent:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> SaveImageTransparent:
         return SaveImageTransparent(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -2441,7 +2531,9 @@ struct SaveScreenshot(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> SaveScreenshot:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> SaveScreenshot:
         return SaveScreenshot(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -2454,7 +2546,7 @@ struct SaveBoth(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> SaveBoth:
+    def create(mut context: Context, mut canvas: Canvas) raises -> SaveBoth:
         return SaveBoth(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -2541,7 +2633,9 @@ struct GradientFills(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> GradientFills:
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> GradientFills:
         return GradientFills(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

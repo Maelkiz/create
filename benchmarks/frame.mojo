@@ -44,7 +44,7 @@ struct Bench(Program):
     var worst: Float64
 
     @staticmethod
-    def create(mut context: Context) raises -> Bench:
+    def create(mut context: Context, mut canvas: Canvas) raises -> Bench:
         return Bench(
             0.0,
             Image.load(source_path("../assets/logo/png/logo-cutout.png")),

@@ -26,7 +26,7 @@ struct App(Program):
     var fps: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> App:
+    def create(mut context: Context, mut canvas: Canvas) raises -> App:
         # Twice, below, from one interned image and so one GL upload.
         var logo = Image.load(source_path("../assets/logo/png/logo.png"))
         return App(0.0, logo^, 0)

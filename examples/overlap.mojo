@@ -7,7 +7,7 @@ struct App(Program):
     var mouse: Circle
 
     @staticmethod
-    def create(mut context: Context) raises -> App:
+    def create(mut context: Context, mut canvas: Canvas) raises -> App:
         return App(
             center=Circle((0, 0), 100),
             mouse=Circle((0, 0), 100),
