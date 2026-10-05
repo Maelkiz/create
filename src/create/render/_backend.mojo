@@ -1132,6 +1132,20 @@ struct Backend(Movable):
         self.frame_read = None
         self._expire_images()
 
+    def discard(mut self):
+        """Drop everything recorded so far, and an offscreen canvas's
+        pixels with it. The clips stay while one is open, as in `bake`."""
+        self.commands.clear()
+        if self.clip == 0:
+            self.clips.clear()
+        self.autoclear_head = False
+        self.recorded += 1
+        if self.target:
+            ref target = self.target.value()
+            target.data = List[UInt8](
+                length=target.width * target.height * 4, fill=0
+            )
+
     def bake(mut self, scale: Float64) raises:
         """Replay what has been recorded onto `target` and drop it: an
         offscreen canvas's `present`, run by each read.

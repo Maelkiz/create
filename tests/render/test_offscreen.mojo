@@ -182,6 +182,29 @@ def test_autoclear_and_letterbox_have_no_effect() raises -> None:
     assert_equal(canvas.pixel((-45, 25)), Color.TRANSPARENT)
 
 
+def test_clear_makes_it_transparent_again() raises -> None:
+    var canvas = _canvas()
+    _square(canvas, (-20, 0), Color.BLUE)
+    assert_equal(canvas.pixel((-20, 0)), Color.BLUE)
+    _square(canvas, (20, 0), Color.RED)
+    canvas.clear()
+    assert_equal(canvas.pixel((-20, 0)), Color.TRANSPARENT, "baked, then gone")
+    assert_equal(canvas.pixel((20, 0)), Color.TRANSPARENT, "never baked")
+    _square(canvas, (20, 0), Color.GREEN)
+    assert_equal(canvas.pixel((20, 0)), Color.GREEN)
+    assert_equal(canvas.pixel((-20, 0)), Color.TRANSPARENT)
+
+
+def test_clear_inside_a_clip_keeps_the_clip() raises -> None:
+    var canvas = _canvas()
+    with canvas.clip(Rectangle(Point2D(-20, 0), 20, 20)):
+        _square(canvas, (-20, 0), Color.BLUE)
+        canvas.clear()
+        _square(canvas, (20, 0), Color.RED)
+    assert_equal(canvas.pixel((-20, 0)), Color.TRANSPARENT)
+    assert_equal(canvas.pixel((20, 0)), Color.TRANSPARENT, "still clipped")
+
+
 @fieldwise_init
 struct DrawsABadge(Program):
     var badge: Image

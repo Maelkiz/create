@@ -171,6 +171,32 @@ def test_with_the_autoclear_on_reads_start_clear() raises -> None:
     assert_equal(canvas.pixel((0, 0)), _GRAY)
 
 
+def test_clear_starts_the_frame_over() raises -> None:
+    var context = Context()
+    var canvas = _canvas(context)
+    canvas.background(Color.RED)
+    _square(canvas, (0, 0), Color.BLUE)
+    canvas.clear()
+    assert_equal(canvas.pixel((0, 0)), _GRAY, "the autoclear again")
+    _square(canvas, (50, 0), Color.BLUE)
+    assert_equal(canvas.pixel((50, 0)), Color.BLUE)
+
+
+def test_with_the_autoclear_off_clear_returns_to_the_last_frame() raises -> (
+    None
+):
+    var context = Context()
+    var mem = MemorySurface(200, 100)
+    var canvas = _canvas(context)
+    canvas.autoclear(False)
+    canvas.background(Color.RED)
+    canvas = _present(context, canvas^, mem)
+    _square(canvas, (0, 0), Color.BLUE)
+    canvas.clear()
+    canvas = _present(context, canvas^, mem)
+    assert_equal(mem.pixel(100, 50), Color.RED)
+
+
 def test_image_pixels_read_and_write_in_image_coordinates() raises -> None:
     var s = Image(3, 2)
     s.set_pixel(2, 1, Color.RED)

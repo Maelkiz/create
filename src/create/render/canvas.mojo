@@ -762,6 +762,21 @@ struct Canvas(Movable):
         `outline(...)` switches it on too."""
         self._style.outline_enabled = enabled
 
+    def clear(mut self):
+        """Discard everything drawn so far, back to how the canvas started.
+
+        An offscreen canvas is transparent again. The frame canvas starts
+        the frame over: opened with the clear to gray 200 while the
+        autoclear is on, or from the last frame's pixels while it is off.
+        Style, transform, camera and settings are untouched — this undoes
+        drawing, not state — and inside a `clip` block the clip still
+        applies to what is drawn next. To paint over what is there instead,
+        use `background()`.
+        """
+        self._state.backend.discard()
+        if self._state.autoclear and not self._offscreen():
+            self._state.backend.open_with_clear(clear_command(_AUTOCLEAR_COLOR))
+
     def background(mut self, color: Color):
         """Paint the whole framebuffer — the usual first call in `update`.
 
