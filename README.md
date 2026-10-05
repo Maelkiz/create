@@ -21,11 +21,11 @@ from create import *
 struct MyApp(Program):
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) -> MyApp:
-        # Set initial application state here; this also draws the first frame
+        # Called once: set initial application state and draw the first frame
         return MyApp()
 
     def update(mut self, mut context: Context, mut canvas: Canvas):
-        # Called once per frame: handle context.input, advance state, and render to the screen
+        # Called once per frame: handle input, modify state, and draw to the screen
         canvas.text("Hello World!", (0, 0))
 
 
