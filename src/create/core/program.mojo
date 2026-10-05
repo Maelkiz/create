@@ -24,9 +24,10 @@ trait Program(Deinitable, Movable):
         """Build the program, before the first frame.
 
         Where resources the program drives on its own schedule are
-        constructed — images, fonts, sounds, an `Audio` device — and where
-        `context.design_size` or `context.autoscale` is called if the
-        defaults don't suit.
+        constructed — images, fonts, sounds, an `Audio` device. The design
+        size and autoscale mode are `run`'s arguments and already in place;
+        `context.design_size` or `context.autoscale` called here applies
+        from the first frame on, like any dial.
 
         No `Canvas`: there is no frame yet, and one handed over here could only
         be a frame nothing presents. So the dials are all `create` is given,

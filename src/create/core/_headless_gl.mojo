@@ -73,14 +73,17 @@ def _run_headless_gl[
     var context = Context()
     context.design_size(width, height)
     context.autoscale(autoscale)
-    var program = P.create(context)
-    # After create(), which may have pinned its own design size or mode.
+    # Before create(), from the arguments, as in the windowed loops.
     context._set_viewport(state, pw, ph)
+    var program = P.create(context)
     var now = 0
     context.time._start(now)
     for _ in range(frames):
         if context._quit:
             break
+        # Re-derived every frame, as the windowed loops do, so a dial turned
+        # in create() or a previous update() reaches this one.
+        context._set_viewport(state, pw, ph)
         now += _FRAME_MILLIS
         context._advance_frame(now)
         state = step(program, context, state^)

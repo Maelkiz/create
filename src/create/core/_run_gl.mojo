@@ -168,8 +168,7 @@ def run_gl[
     var context = Context()
     context.design_size(width, height)
     context.autoscale(autoscale)
-    var program = P.create(context)
-    # The mapping is derived once create() has had its say about the design
-    # size and the mode.
+    # Before create(), from `run`'s arguments, as in the CPU loop.
     _wait_for_dimensions(win, state, context)
+    var program = P.create(context)
     _run_loop(program, win, state^, context)

@@ -27,9 +27,6 @@ struct App(Program):
 
     @staticmethod
     def create(mut context: Context) raises -> App:
-        # A 4:3 design in a 16:9 window, so the letterbox bars are on screen
-        # from the first frame.
-        context.design_size(800, 600)
         # Twice, below, from one interned image and so one GL upload.
         var logo = Image.load(source_path("../assets/logo/png/logo.png"))
         return App(0.0, logo^, 0)
@@ -136,7 +133,9 @@ def main() raises:
     run[App](
         "GL Shapes",
         WindowMode.FULLSCREEN,
-        width=1280,
-        height=720,
+        # A 4:3 design on a 16:9 display, so the letterbox bars are on screen
+        # from the first frame.
+        width=800,
+        height=600,
         backend=RenderBackend.GPU,
     )

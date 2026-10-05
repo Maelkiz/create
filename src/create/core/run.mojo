@@ -169,8 +169,9 @@ def run[
     var context = Context()
     context.design_size(width, height)
     context.autoscale(autoscale)
-    var program = P.create(context)
-    # create() may have changed the mode or pinned its own design size, so the
-    # mapping is derived from `context` only once it has returned.
+    # The mapping comes from `run`'s arguments and is in place before
+    # create(), so a dial create() turns applies from the next frame, as it
+    # does from `update`.
     _wait_for_dimensions(win, state, context)
+    var program = P.create(context)
     _run_loop(program, win, state^, context)
