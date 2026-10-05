@@ -260,6 +260,17 @@ the screen are made transparent afterwards, since a clear fills the whole target
   each finished CPU frame down to design size into `last_frame` (`_keep_frame`), and later
   reads start from it (`_seed`), nearest pixel.
 
+**Offscreen canvas.** `Canvas(width, height, …)` builds its own CPU `Backend` with `target`, a
+`MemorySurface` of `width*scale` × `height*scale`, set; `_offscreen()` is whether it is. It never
+presents: `pixel`, `snapshot`, `save_image` and `save_screenshot` call `bake(scale)`, which replays
+the pending commands onto `target` (letterbox skipped), drops them and runs `_expire_images` — its
+`present`. Reads then come from `target`: `_read_offscreen` copies it for the whole canvas at its own
+density and otherwise resamples through `_seed`, which takes the source's screen-to-pixel mapping
+(`_base` here, `_design_pixels` for `last_frame`). `bake` and `discard` (`canvas.clear`) clear
+`clips` only when no clip is open: a command recorded inside an open `canvas.clip` names its level by
+index, which must stay valid. `autoclear` stays off on it — `set_autoclear` would insert a gray clear
+that the next bake paints in.
+
 **The image cache** (`Backend.images`) is keyed by a backend id per *image version*.
 `intern_image(source, version, …)` reuses the copy only while `Image._version` matches, so an
 edited image gets a new id and earlier commands keep the old copy. `_expire_images`, after each

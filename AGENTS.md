@@ -80,8 +80,9 @@ every later one, so drawing there shows and geometry is as valid as on any first
 `context.frame_count()` is 1 there and 2 in the first `update`; `context.time` is zero and
 `context.input` empty. Drawing that needs the program's fields builds `Self` into a local first.
 `run_headless(frames=N)` runs `create`'s frame and then N `update`s, so `frames=0` returns
-`create`'s frame alone. Input arrives as `context.input`; there are no event callbacks. A `Canvas`
-is built fresh each frame; nothing may hold one across frames.
+`create`'s frame alone. Input arrives as `context.input`; there are no event callbacks. The frame
+`Canvas` the loop hands over is built fresh each frame; nothing may hold it across frames. An
+offscreen `Canvas(w, h)` (see Reading pixels) is the program's own and may be kept as a field.
 
 **Multiple screens:** a root `Program` holds each screen as a plain field (not implementing
 `Program`) and switches with an int field and `if`/`elif`. A scene's `update` takes only what it uses
@@ -94,7 +95,7 @@ signature on every scene, and those must vary. See [examples/scenes/src/main.moj
 **Parameter vs. field:** what the loop hands `create` and every `update` (`Context`, `Canvas`) is a
 parameter: `Context` is the run's state and outlives the frame, `Canvas` is where this frame is
 drawn. What the program drives on its own schedule (`Image`, `Font`, `Sound`, `Audio`,
-`Animator`, `Camera`, `Tween`, `Noise`) is a field it constructs in `create` — so adding one touches
+`Animator`, `Camera`, `Tween`, `Noise`, an offscreen `Canvas`) is a field it constructs in `create` — so adding one touches
 neither `Program` nor the run loop. `Time` and `Input` live on `Context`: the loop ticks
 `context.time` and folds events into `context.input` before `update`. Read them, don't write them —
 the loop carries both into the next frame.
@@ -267,6 +268,28 @@ frame has drawn **so far**. They are a CPU replay of the commands recorded up to
 - **With `canvas.autoclear(False)`** a read starts from the last frame's pixels, as the frame did,
   from the frame after the first read on. The first read sees only its own frame. CPU backend
   only, the one that accumulates.
+
+**Offscreen canvas:** `Canvas(width, height, scale=1.0, antialiasing=Antialiasing.MEDIUM)` builds a
+canvas of the program's own, drawn into with every render call and guard and read back with
+`pixel`/`snapshot` — the way to draw into an image. Build it anywhere, `create` included; keep it as a
+field to draw into across frames. See [examples/offscreen.mojo](examples/offscreen.mojo).
+- **Starts transparent**, no autoclear; screen space as usual (origin centred, y up). Always
+  rasterised on the CPU, whatever the program's backend; the `Image` it gives draws on either.
+- **Bakes on read:** each read replays what was drawn since the last one onto the canvas's own
+  pixels and drops those commands, so a long-lived canvas stays bounded and drawing after a read
+  lands on what is there. Read when something changed, not every frame regardless.
+- **Density is fixed by `scale`** (pixels per unit). `snapshot(scale=canvas.scale)` reads the
+  pixels as they are; any other scale resamples them, nearest pixel. Don't take `scale` from the
+  frame canvas in `create` (Gotcha 3) — pick a fixed density.
+- `save_image` and `save_screenshot` write **at once**, having no frame to defer to.
+  `save_screenshot` writes the pixels at their own density with alpha; `save_image` keeps alpha
+  with `transparent=True`. `autoclear` and `letterbox_color` have no effect.
+- Each has its own font, glyph cache and image cache: a few long-lived ones are cheap, one per
+  entity per frame is not.
+
+`canvas.clear()` discards everything drawn so far, back to how the canvas started: an offscreen
+canvas to transparent, the frame canvas to its opening clear (or, with the autoclear off, the last
+frame's pixels). Style, transform and settings are untouched; `background()` paints over instead.
 
 `Image.pixel(x, y)`/`set_pixel(x, y, color)` read and edit an image in **image coordinates** (top-left
 origin, y down); off the image, reads are transparent and writes do nothing. The buffer is private:
