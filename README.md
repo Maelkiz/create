@@ -20,8 +20,8 @@ from create import *
 @fieldwise_init
 struct MyApp(Program):
     @staticmethod
-    def create(mut context: Context) -> MyApp:
-        # Set initial application state here
+    def create(mut context: Context, mut canvas: Canvas) -> MyApp:
+        # Set initial application state here; this also draws the first frame
         return MyApp()
 
     def update(mut self, mut context: Context, mut canvas: Canvas):
@@ -39,7 +39,7 @@ Rendering runs on the CPU by default. `backend=RenderBackend.GPU` runs the same 
 run[MyApp]("Example Sketch", backend=RenderBackend.GPU)
 ```
 
-Both backends smooth the edges of shapes. `antialiasing=` picks the level: `Antialiasing.OFF`, `LOW`, `MEDIUM` (the default) or `HIGH`. Higher levels cost more, mostly on the CPU backend.
+Both backends smooth the edges of shapes. `antialiasing=` picks the starting level: `Antialiasing.OFF`, `LOW`, `MEDIUM` (the default) or `HIGH`, and `canvas.antialiasing(level)` changes it while the program runs. Higher levels cost more, mostly on the CPU backend.
 
 The example programs in this repository can be run with the `example` pixi task, which takes a name rather than a path. 
 The name must correspond to a file or folder under `examples/`. For folders it will find an run their `src/main.mojo`.

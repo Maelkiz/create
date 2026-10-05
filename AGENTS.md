@@ -71,13 +71,17 @@ reserved (not usable as a name), and `;` statement separators don't parse.
 
 ### Programs
 
-Implement `Program` (`create(mut context)` + `update(mut self, mut context, mut canvas)`) and pass it
-to `run[T]`. Minimum: [tests/core/test_smoke.mojo](tests/core/test_smoke.mojo); full shape:
+Implement `Program` (`create(mut context, mut canvas)` + `update(mut self, mut context, mut canvas)`)
+and pass it to `run[T]`. Minimum: [tests/core/test_smoke.mojo](tests/core/test_smoke.mojo); full shape:
 [examples/sidescroller/src/main.mojo](examples/sidescroller/src/main.mojo).
 
-`create` gets no `Canvas` — none exists before the loop — so rendering or reading geometry there is a
-compile error. Input arrives as `context.input`; there are no event callbacks. A `Canvas` is built
-fresh each frame; nothing may hold one across frames.
+**`create` draws frame 1**, like Processing's `setup`: its `canvas` is a real frame, presented like
+every later one, so drawing there shows and geometry is as valid as on any first frame (Gotcha 3).
+`context.frame_count()` is 1 there and 2 in the first `update`; `context.time` is zero and
+`context.input` empty. Drawing that needs the program's fields builds `Self` into a local first.
+`run_headless(frames=N)` runs `create`'s frame and then N `update`s, so `frames=0` returns
+`create`'s frame alone. Input arrives as `context.input`; there are no event callbacks. A `Canvas`
+is built fresh each frame; nothing may hold one across frames.
 
 **Multiple screens:** a root `Program` holds each screen as a plain field (not implementing
 `Program`) and switches with an int field and `if`/`elif`. A scene's `update` takes only what it uses
@@ -87,7 +91,7 @@ signature on every scene, and those must vary. See [examples/scenes/src/main.moj
 (Mojo 1.1 has no dynamic trait dispatch; heterogeneous storage is `Variant` from `std.utils`, with
 `isa[T]()` to dispatch.)
 
-**Parameter vs. field:** what the loop hands the program every frame (`Context`, `Canvas`) is a
+**Parameter vs. field:** what the loop hands `create` and every `update` (`Context`, `Canvas`) is a
 parameter: `Context` is the run's state and outlives the frame, `Canvas` is where this frame is
 drawn. What the program drives on its own schedule (`Image`, `Font`, `Sound`, `Audio`,
 `Animator`, `Camera`, `Tween`, `Noise`) is a field it constructs in `create` — so adding one touches
@@ -127,8 +131,10 @@ A program writes `from create import *`. Otherwise import by name from the ownin
 ### Layering
 
 - **`render` never imports `core`** (it would be a cycle). `render` depends only on `math`, `color`,
-  `image` and `_bytes`, so it works without a run loop. So `Canvas` takes `Context`'s dials as plain values;
-  `context._set_viewport(state, …)` and `context._new_canvas(state^)` in `core` pass them in.
+  `image` and `_bytes`, so it works without a run loop. So the mapping dials reach `render` as
+  plain values: `context._set_viewport(state, …)` in `core` passes the design size and autoscale
+  in, and `context._new_canvas(state^)` builds the frame. Frame-wide drawing settings live on
+  `PersistentCanvasState` itself.
 - **`color`** depends only on `math`; `image` and `render` both import it. It sits below `image` so
   that `Image.pixel` can return a `Color` without a `render`↔`image` cycle.
 - **`_bytes`** is a leaf imported by `image` and `render`, re-exported by nothing.
@@ -144,8 +150,16 @@ text. Every frame opens with a clear to gray 200 so those defaults are visible;
 `canvas.background()` is the only way to choose the colour.
 - An opaque `canvas.background()` replaces that clear rather than painting a second time; a
   translucent one blends over it.
-- `context.autoclear(enabled)` is read at frame construction, so call it in `create`. Off lets ink
-  accumulate (CPU backend only — GPU swaps buffers).
+- `canvas.autoclear(enabled)` switches that clear off or back on for the whole current frame —
+  off takes the frame's opening clear back out, on puts it back; an opaque `background()` already
+  drawn stays — and lasts until changed, so set it once in `create`. Off lets ink accumulate (CPU
+  backend only — GPU swaps buffers).
+
+**Canvas settings that outlive the frame**, unlike style, transform, camera and clip, live on
+`PersistentCanvasState` and last until changed — set them once in `create`: `font`, and the
+frame-wide `autoclear`, `letterbox_color` (the bars outside the design under `FIT`, black by
+default) and `antialiasing`. A frame-wide setting applies to the whole frame it is set in, since
+nothing is rasterised until present, and reads back with no arguments.
 
 `fill`, `outline` and `text_color` set three independent colours; `fill_enabled(False)` does not
 hide text. Text is hidden by a zero-alpha `text_color`. `fill_enabled`/`outline_enabled` switch
@@ -163,7 +177,7 @@ no arguments keep every part, so `fill()` alone paints the default white.
 `Style(...)` takes the setters' names as keywords and, like them, naming any part of the fill,
 outline or shadow switches it on unless its `*_enabled` keyword says otherwise. A reusable style is
 a field built in `create`.
-The font is not part of a style: it lives on `PersistentCanvasState` and outlives the frame.
+The font is not part of a style: it outlives the frame (above).
 
 **Gradients** fill regions and backgrounds: `canvas.fill(gradient)` and `canvas.background(gradient)`
 are overloads beside the colour ones, and the `Style`/`canvas.style` keyword is `fill_gradient=`,
@@ -207,11 +221,14 @@ can't leak into the caller's next render.
 
 ### Antialiasing
 
-`run(..., antialiasing=Antialiasing.MEDIUM)` is the default; `OFF`, `LOW` and `HIGH` are the
-others. One setting for both backends, each reaching it its own way: the GPU multisamples its
-window, the CPU samples each shape on a finer grid (`LOW` 2x2, `MEDIUM` 4x4, `HIGH` 8x8 per pixel).
-Shapes only — text and images are smooth already, clips stay hard. A shape's fill and outline
-composite together, so no seam shows between them; two separate shapes meeting inside a pixel can
+`run(..., antialiasing=Antialiasing.MEDIUM)` is the starting level; `OFF`, `LOW` and `HIGH` are the
+others, and `canvas.antialiasing(level)` changes it for the whole frame it is called in (both
+backends rasterise at present) and every later one. One setting for both backends, each reaching
+it its own way: the GPU draws into an offscreen multisampled framebuffer and resolves it into the
+window or headless target (capped at the driver's maximum), the CPU samples each shape on a finer
+grid (`LOW` 2x2, `MEDIUM` 4x4, `HIGH` 8x8 per pixel). Shapes only — text and images are smooth
+already; clips are hard on the CPU and multisampled on the GPU (see Clipping). A shape's fill and
+outline composite together, so no seam shows between them; two separate shapes meeting inside a pixel can
 show a faint one. `run_headless` defaults to `MEDIUM` too, so a test asserting an edge pixel's exact
 colour passes `antialiasing=Antialiasing.OFF`.
 
@@ -226,8 +243,9 @@ to undo. See [examples/clipping.mojo](examples/clipping.mojo).
 - **Nested clips intersect.** On exit the enclosing clip is current again.
 - **Everything is clipped** — shapes, images, text, shadows, and `background()`, which then paints
   only the clipped area (and never replaces the autoclear). The letterbox is not.
-- **Hard-edged**, whatever the antialiasing: the clip covers the pixels a fill of the same shape
-  would without it, on both backends.
+- **Edges:** on the CPU a clip is hard-edged, whatever the antialiasing — it covers the pixels a
+  fill of the same shape would without it. On the GPU its edge is multisampled like a shape's, so
+  the two backends agree inside a clip and may differ along its rim.
   Soft masks (a gradient or an image's alpha) are not implemented yet.
 
 ### Reading pixels
@@ -245,7 +263,7 @@ frame has drawn **so far**. They are a CPU replay of the commands recorded up to
 - **One replay per drawing**: reads are cached until something more is recorded, so many `pixel`
   calls in a row cost one. A full-frame replay costs about a CPU frame. Fine for picking, a
   capture, or a feedback effect; read once rather than per object.
-- **With `context.autoclear(False)`** a read starts from the last frame's pixels, as the frame did,
+- **With `canvas.autoclear(False)`** a read starts from the last frame's pixels, as the frame did,
   from the frame after the first read on. The first read sees only its own frame. CPU backend
   only, the one that accumulates.
 
@@ -273,18 +291,26 @@ with canvas.overlay():
     canvas.text("Score: " + String(self.score), (0, canvas.top() - 20))  # screen space
 ```
 
-**Design size** is the `width`/`height` passed to `run` (or `context.design_size()` from
-`create`): the space the program is authored in, not a window size. Fullscreen/maximized scale the
-design onto the display. `context.autoscale(mode)` takes `FIT` (default), `EXTEND` or `OFF`; `OFF` makes
-coordinates the window's own pixels. Under `EXTEND` the reported size grows with the window, so
-anchor layout to the edges. Font size, outline thickness and image size scale by `canvas.scale`. See
-[examples/autoscale.mojo](examples/autoscale.mojo).
+**Design size** is the `width`/`height` passed to `run` (or `context.design_size(w, h)` later): the
+space the program is authored in, not a window size. Fullscreen/maximized scale the design onto the
+display. `run(..., autoscale=)` (or `context.autoscale(mode)` later) takes `FIT` (default),
+`EXTEND` or `OFF`; `OFF` makes coordinates the window's own pixels. Both decide frame 1's mapping
+only as `run` arguments: the viewport is derived before `create`. Under `EXTEND` the reported size
+grows with the window, so anchor layout to the edges. Font size, outline thickness and image size
+scale by `canvas.scale`. See [examples/autoscale.mojo](examples/autoscale.mojo).
 
-`Context` dials are methods (`context.autoclear(False)`, like the canvas style setters), each read
-back with no arguments (`context.autoclear()`); its only fields are the readings `time` and
-`input`. Dials are read at frame construction, so a change mid-`update` applies next frame — except
-`max_frame_rate()`, `quit()` and `rumble()`, read after `update` returns. A getter reports the value
-as set, so after such a change it is already next frame's.
+`Context` dials are the run's, not the drawing's: `design_size`, `autoscale`, `title`,
+`window_mode`, `resizable`, `quit_on_escape`, `max_frame_rate`. They are methods
+(`context.autoscale(AutoScale.EXTEND)`, like the canvas setters), each read back with no arguments;
+`Context`'s only fields are the readings `time` and `input`. Every `run` argument but `backend`
+has a setter — a dial here, or `canvas.antialiasing` — and the argument is only the starting value.
+
+**When a change applies:** a frame-wide setting applies to the frame it is set in — the canvas
+ones above, and `title`/`resizable`, which the windowed loops send before presenting. What
+decides the frame's geometry waits for the next frame: `design_size`, `autoscale` and
+`window_mode` (switched after presenting; some compositors report the new size a frame later). A
+getter reports the value as set. `max_frame_rate()`, `quit()` and `rumble()` are read after the
+frame body returns. Headless runs ignore the window dials, like `rumble`.
 
 ## Critical Gotchas
 
@@ -332,8 +358,8 @@ as set, so after such a change it is already next frame's.
 
 - Use `@fieldwise_init` on program structs.
 - Run only the tests a change can reach (`pixi run test render`); pre-push runs the whole suite.
-- Make `canvas.background(...)` the first render call in `update`. With `context.autoclear` off,
-  call it on the first frame only.
+- Make `canvas.background(...)` the first render call in `update`. With the autoclear off, call
+  `canvas.autoclear(False)` and `canvas.background(...)` once, in `create`.
 - Use `Point2D` for new locations, `Vector2D` for displacements and scalars for extents;
   `canvas.rectangle(position: Point2D, w: Float64, h: Float64)` is the shape to copy.
 

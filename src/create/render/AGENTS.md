@@ -40,9 +40,16 @@ use `RenderCommand.points` instead, a `List` that stays empty (and unallocated) 
 
 `Canvas` holds no `Surface` and takes its geometry from the `Viewport` alone — don't add a `Surface`
 field or parameter, and don't import `_window` from `canvas.mojo`. What survives the frame boundary:
-`PersistentCanvasState` (the `Backend` and `Viewport` — moved in and back out by `_release`) and
-`Context` (in `core`, owned by the loop, and home to `time` and `input`; its dials reach `Canvas` as
-plain values). The transform stack, style and camera deliberately don't.
+`PersistentCanvasState` (the `Backend` and `Viewport` — moved in and back out by `_release` — and
+the frame-wide settings a program sets on the canvas: `autoclear`, `letterbox_color`, and through
+the backend the font and `antialiasing`) and `Context` (in `core`, owned by the loop, home to
+`time` and `input`; its mapping dials reach `Canvas` as plain values through `_set_viewport`). The
+transform stack, style and camera deliberately don't.
+
+A frame-wide setting applies to the whole frame it is set in, because nothing is rasterised until
+present: `_render_letterbox` reads `letterbox_color` at the end of the frame, and both replays read
+`antialiasing` when they run. `canvas.antialiasing` bumps `Backend.recorded` so a cached read
+replays at the new level.
 
 The camera is folded into `RenderCommand.transform`; nothing below `Canvas` knows it exists.
 
@@ -51,7 +58,11 @@ a field rather than a trait because Mojo has no dynamic dispatch.
 
 The autoclear is a recorded `CMD_CLEAR`, so every path handles it: the GPU turns it into `glClear`,
 an opaque `canvas.background()` replaces it via `Backend.record_clear` (`_clear_is_opaque`), and a
-transparent `save_image` masks it out.
+transparent `save_image` masks it out. `Canvas`'s constructor records it through
+`Backend.open_with_clear`, which sets `autoclear_head`: the frame's first command is still that
+clear. `canvas.autoclear(...)` calls `Backend.set_autoclear`, which takes it back out (only while
+`autoclear_head` holds — a `background()` that replaced it stays) or inserts it at index 0, and
+bumps `recorded` either way.
 
 ## Gradients
 
@@ -182,17 +193,29 @@ the same shape cover the same pixels:
   `_one` with colour writes off. Level `d` increments the pixels at `d − 1` that its region covers.
   An inverted level increments everything at `d − 1`, then decrements its region. Draws then test
   `EQUAL` to the depth. `glClear` ignores the stencil, so a clipped opaque clear is a quad. The
-  window requests 8 stencil bits; `_GLTarget` attaches a depth-stencil renderbuffer.
+  window requests 8 stencil bits; `_GLTarget` and the multisampled target attach a depth-stencil
+  renderbuffer. Under multisampling the stencil is per sample, so a GPU clip's edge is antialiased
+  like a shape's, where the CPU's stays hard. Disabling `GL_MULTISAMPLE` while writing the stencil
+  would make it hard by the spec, but Mesa's llvmpipe then leaves part of each interior pixel's
+  samples unmarked — don't retry it without checking on that driver.
 - Cost: on the GPU, a clip change is a flush plus one draw per level of its chain. On the CPU, each
   clip is one rasterisation of its region per frame (per capture too), plus an index lookup per span.
 
-`test_clip.mojo` asserts samples on both backends and compares whole frames, allowing for edge
-pixels. A rotated edge differs between the two rasterisers, as it does for a plain rotated
-rectangle.
+`test_clip.mojo` asserts samples on both backends and compares frames only where the CPU frame is
+flat (a pixel and its eight neighbours one colour), with an allowance for shapes' own edges: a
+rotated edge differs between the two rasterisers, as it does for a plain rotated rectangle, and a
+GPU clip's rim is multisampled.
 
 ## Antialiasing
 
-`Backend.antialiasing` (an `Antialiasing`, set by the run loops) applies to the CPU replay of the
+**GPU:** `GLRenderer.render(..., samples)` draws into a `_MultisampleTarget` (colour and
+depth-stencil renderbuffers) and blits it into the framebuffer that was bound — the window's, or a
+headless `_GLTarget` — then rebinds that. The target is reallocated when the drawable size or the
+sample count changes, and freed at `OFF`; the count is capped at `GL_MAX_SAMPLES`. Windows open
+single-sampled, so the level can change without recreating the GL context.
+
+**CPU:** `Backend.antialiasing` (an `Antialiasing`, seeded by the run loops and set by
+`canvas.antialiasing`) applies to the CPU replay of the
 shape kinds — rect, circle, line, Bézier, sector, polygon, triangle — through `Backend._shape`.
 Clear, text, images, letterbox and blurred or inset shadows are untouched; a hard shadow is a
 shape command, so it is antialiased like one.
