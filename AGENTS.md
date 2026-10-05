@@ -280,9 +280,11 @@ coordinates the window's own pixels. Under `EXTEND` the reported size grows with
 anchor layout to the edges. Font size, outline thickness and sprite size scale by `canvas.scale`. See
 [examples/autoscale.mojo](examples/autoscale.mojo).
 
-`Context` dials are methods (`context.autoclear(False)`, like the canvas style setters); its only
-fields are the readings `time` and `input`. Dials are read at frame construction, so a change
-mid-`update` applies next frame — except `max_frame_rate()`, `quit()` and `rumble()`, read after `update` returns.
+`Context` dials are methods (`context.autoclear(False)`, like the canvas style setters), each read
+back with no arguments (`context.autoclear()`); its only fields are the readings `time` and
+`input`. Dials are read at frame construction, so a change mid-`update` applies next frame — except
+`max_frame_rate()`, `quit()` and `rumble()`, read after `update` returns. A getter reports the value
+as set, so after such a change it is already next frame's.
 
 ## Critical Gotchas
 

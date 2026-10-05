@@ -23,7 +23,9 @@ struct Context(Copyable, Movable):
     Two directions share it. The loop writes `time` and `input` before each
     `update`, for the program to read; the program sets the dials, for the
     loop to read. Every dial is a method, like the `Canvas` style setters:
-    `context.autoclear(False)`, `context.max_frame_rate(30)`.
+    `context.autoclear(False)`, `context.max_frame_rate(30)`. Called with no
+    arguments, each reads back the value as set, for a debug overlay or a
+    settings screen to show.
 
     A `Canvas` is built and dropped inside one frame, so a setting that has to
     survive the frame boundary cannot live on it. These do — the autoscale
@@ -47,7 +49,8 @@ struct Context(Copyable, Movable):
     `update` was called, and one frame cannot record under two mappings. Set
     them in `create` to have them hold from frame one. `max_frame_rate`,
     `quit` and `rumble` are the exception, and only because the loop reads
-    them after the frame body returns.
+    them after the frame body returns. A dial read back after such a change
+    reports the new value, not the one the frame in hand was built with.
     """
 
     var time: Time
@@ -85,6 +88,11 @@ struct Context(Copyable, Movable):
         self._quit = False
         self._rumbles = []
 
+    def design_resolution(self) -> Tuple[Int, Int]:
+        """The width and height the program is authored in: the size passed
+        to `run` unless set."""
+        return (self._design_w, self._design_h)
+
     def design_resolution(mut self, width: Int, height: Int):
         """Author this program in a fixed world size, scaled to any window.
 
@@ -109,6 +117,10 @@ struct Context(Copyable, Movable):
         `AutoScale`."""
         self._autoscale = mode
 
+    def autoclear(self) -> Bool:
+        """Whether each frame opens with a clear. `True` unless set."""
+        return self._autoclear
+
     def autoclear(mut self, enabled: Bool):
         """Switch the clear each frame opens with off or back on.
 
@@ -118,12 +130,20 @@ struct Context(Copyable, Movable):
         """
         self._autoclear = enabled
 
+    def letterbox_color(self) -> Color:
+        """The colour of the bars under `AutoScale.FIT`. Black unless set."""
+        return self._letterbox_color
+
     def letterbox_color(mut self, color: Color):
         """Colour the bars outside the design area under `AutoScale.FIT`.
 
         Black by default.
         """
         self._letterbox_color = color
+
+    def quit_on_escape(self) -> Bool:
+        """Whether Escape stops the run loop. `True` unless set."""
+        return self._quit_on_escape
 
     def quit_on_escape(mut self, enabled: Bool):
         """Whether Escape stops the run loop. On by default."""
@@ -142,6 +162,10 @@ struct Context(Copyable, Movable):
         if self.time.delta == 0.0:
             return 0.0
         return 1.0 / self.time.delta
+
+    def max_frame_rate(self) -> Int:
+        """The frame-rate cap. `0` unless set, meaning uncapped."""
+        return self._max_frame_rate
 
     def max_frame_rate(mut self, fps: Int) raises:
         """Limit the loop to at most `fps` frames per second.

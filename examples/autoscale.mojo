@@ -13,6 +13,7 @@ def _mode_name(mode: AutoScale) -> String:
 struct App(Program):
     var x: Float64
     var dir: Float64
+    var mode: AutoScale
 
     @staticmethod
     def create(mut context: Context) raises -> App:
@@ -26,16 +27,17 @@ struct App(Program):
         # The origin is the middle of the design area and y grows upward, so
         # the labels below centre sit at negative y.
         context.autoscale(AutoScale.FIT)
-        return App(100.0, 1.0)
+        return App(100.0, 1.0, AutoScale.FIT)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         if context.input.key_pressed("space"):
-            if context.autoscale() == AutoScale.FIT:
-                context.autoscale(AutoScale.EXTEND)
-            elif context.autoscale() == AutoScale.EXTEND:
-                context.autoscale(AutoScale.OFF)
+            if self.mode == AutoScale.FIT:
+                self.mode = AutoScale.EXTEND
+            elif self.mode == AutoScale.EXTEND:
+                self.mode = AutoScale.OFF
             else:
-                context.autoscale(AutoScale.FIT)
+                self.mode = AutoScale.FIT
+            context.autoscale(self.mode)
         self.x += self.dir * 200.0 * context.time.delta
         # Set the sign rather than flip it: under EXTEND/OFF a shrinking
         # window can move canvas.right()/left() past the ball between frames,
@@ -57,9 +59,7 @@ struct App(Program):
         canvas.text_color(Color.BLACK)
         canvas.font_size(28)
         canvas.text_align(Align.TOP)
-        canvas.text(
-            "Autoscale Mode: " + _mode_name(context.autoscale()), (0, -140)
-        )
+        canvas.text("Autoscale Mode: " + _mode_name(self.mode), (0, -140))
         canvas.font_size(20)
         canvas.text("(space to cycle)", (0, -180))
         canvas.font_size(28)

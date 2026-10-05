@@ -1,5 +1,6 @@
 """`Context`'s own bookkeeping: the frame count, the frame rate derived from
-the clock, and the dials the loop reads after `update` returns."""
+the clock, the dials the loop reads after `update` returns, and reading every
+dial back."""
 
 from std.testing import (
     TestSuite,
@@ -9,7 +10,9 @@ from std.testing import (
     assert_true,
 )
 
+from create.color import Color
 from create.core.context import Context
+from create.render import AutoScale
 
 
 def test_frame_count_is_zero_before_the_first_frame() raises -> None:
@@ -40,7 +43,7 @@ def test_frame_rate_is_the_inverse_of_delta() raises -> None:
 def test_max_frame_rate_is_recorded_on_the_context() raises -> None:
     var context = Context()
     context.max_frame_rate(30)
-    assert_equal(context._max_frame_rate, 30)
+    assert_equal(context.max_frame_rate(), 30)
 
 
 def test_max_frame_rate_rejects_non_positive_fps() raises -> None:
@@ -55,6 +58,31 @@ def test_quit_is_recorded_on_the_context() raises -> None:
     var context = Context()
     context.quit()
     assert_true(context._quit)
+
+
+def test_dials_read_back_their_defaults() raises -> None:
+    var context = Context()
+    assert_true(context.autoscale() == AutoScale.FIT)
+    assert_true(context.autoclear())
+    assert_equal(context.letterbox_color(), Color.BLACK)
+    assert_true(context.quit_on_escape())
+    assert_equal(context.max_frame_rate(), 0)
+
+
+def test_dials_read_back_what_was_set() raises -> None:
+    var context = Context()
+    context.design_resolution(800, 600)
+    context.autoscale(AutoScale.EXTEND)
+    context.autoclear(False)
+    context.letterbox_color(Color.RED)
+    context.quit_on_escape(False)
+    var size = context.design_resolution()
+    assert_equal(size[0], 800)
+    assert_equal(size[1], 600)
+    assert_true(context.autoscale() == AutoScale.EXTEND)
+    assert_true(not context.autoclear())
+    assert_equal(context.letterbox_color(), Color.RED)
+    assert_true(not context.quit_on_escape())
 
 
 def main() raises:
