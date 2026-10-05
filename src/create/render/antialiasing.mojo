@@ -22,6 +22,9 @@ together, so a shape's edge has no seam between the two. Shapes only: text
 and images are smooth already. A clip is hard-edged on the CPU; on the GPU
 its edge is multisampled like a shape's. Pixel reads and `save_image` replay
 on the CPU at the same level, under either backend.
+
+`run`'s `antialiasing` argument is the starting level; `canvas.antialiasing`
+changes it for the whole frame it is called in and every later one.
 """
 
 from std.math import max, min

@@ -6,6 +6,7 @@ from create.color.color import Color
 from create.color.gradient import Gradient
 from .align import Align
 from create.color.blend_mode import BlendMode
+from .antialiasing import Antialiasing
 from .autoscale import AutoScale
 from .font import Font
 from ._viewport import Viewport
@@ -1289,6 +1290,23 @@ struct Canvas:
         not typographic baselines.
         """
         self._style.text_align = align
+
+    def antialiasing(self) -> Antialiasing:
+        """How smooth shape edges are: `run`'s `antialiasing` unless set."""
+        return self._state.backend.antialiasing
+
+    def antialiasing(mut self, level: Antialiasing):
+        """Smooth shape edges at `level` — `OFF` for hard pixels.
+
+        A frame-wide setting: both backends rasterise the frame when it is
+        presented, so the level covers every shape in this frame, including
+        those drawn before the call, and lasts until changed. `run`'s
+        `antialiasing` argument is the starting level; set it here, in
+        `create` or any frame, to change it. See `Antialiasing`.
+        """
+        self._state.backend.antialiasing = level
+        # A read cached under the old level is stale now.
+        self._state.backend.recorded += 1
 
     def autoclear(self) -> Bool:
         """Whether frames open with the clear to gray 200. On unless set."""

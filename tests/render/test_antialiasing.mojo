@@ -129,5 +129,73 @@ def test_antialiasing_writes_its_constant_name() raises -> None:
     assert_equal(String(Antialiasing(9)), "Antialiasing(9)")
 
 
+@fieldwise_init
+struct SwitchedOffLate[backend: Int](Program):
+    """`OffGrid`'s square, then antialiasing switched off after drawing it."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context, mut canvas: Canvas) raises -> Self:
+        return Self(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline_enabled(False)
+        canvas.fill(Color.RED)
+        canvas.rectangle((0.25, 0.0), 20.0, 20.0)
+        comptime if Self.backend == 0:
+            # Column 40, a quarter uncovered: read at MEDIUM, then again.
+            assert_equal(canvas.pixel((-9.6, 0.0)), Color(191, 0, 0, 255))
+        canvas.antialiasing(Antialiasing.OFF)
+        assert_true(canvas.antialiasing() == Antialiasing.OFF)
+        comptime if Self.backend == 0:
+            assert_equal(canvas.pixel((-9.6, 0.0)), Color.RED, "read again")
+
+
+def test_switching_off_late_covers_the_whole_frame() raises -> None:
+    var m = run_headless[SwitchedOffLate[0]](100, 100)
+    assert_equal(m.pixel(40, 50), Color.RED)
+
+
+def test_switching_off_late_covers_the_whole_gpu_frame() raises -> None:
+    var m: MemorySurface
+    try:
+        m = run_headless[SwitchedOffLate[1]](
+            100, 100, backend=RenderBackend.GPU
+        )
+    except e:
+        print("SKIP — no GL context:", e)
+        return
+    for y in range(40, 60):
+        var c = m.pixel(40, y)
+        assert_true(
+            c == Color.RED or c == Color.BLACK, "hard at row " + String(y)
+        )
+
+
+@fieldwise_init
+struct OffFromCreate(Program):
+    """Antialiasing switched off once, in `create`."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context, mut canvas: Canvas) raises -> Self:
+        canvas.antialiasing(Antialiasing.OFF)
+        return Self(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.outline_enabled(False)
+        canvas.fill(Color.RED)
+        canvas.rectangle((0.25, 0.0), 20.0, 20.0)
+
+
+def test_a_level_set_in_create_lasts() raises -> None:
+    var m = run_headless[OffFromCreate](100, 100, 3)
+    assert_equal(m.pixel(40, 50), Color.RED)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

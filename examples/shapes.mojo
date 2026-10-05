@@ -13,7 +13,8 @@ letterbox bar under `FIT`.
 
 `WindowMode.FULLSCREEN` covers the display without changing the design
 size, so the letterbox bars stay in the frame and just get wider — the
-GPU backend takes the mode exactly as the CPU one does. Escape quits.
+GPU backend takes the mode exactly as the CPU one does. A cycles the
+antialiasing level, to compare the edges at each. Escape quits.
 """
 
 from create import *
@@ -34,6 +35,12 @@ struct App(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         self.angle += context.time.delta
         self.fps = Int(context.frame_rate())
+        if context.input.key_pressed("a"):
+            # The level is the canvas's: it lasts until changed, and covers
+            # this whole frame.
+            canvas.antialiasing(
+                Antialiasing((canvas.antialiasing().value + 1) % 4)
+            )
 
         canvas.background(Color(0x20, 0x24, 0x2C))
 
@@ -126,6 +133,10 @@ struct App(Program):
             canvas.text(
                 "fps: " + String(self.fps),
                 (canvas.right() - 12, canvas.top() - 12),
+            )
+            canvas.text(
+                String(canvas.antialiasing()) + " (A to cycle)",
+                (canvas.right() - 12, canvas.top() - 40),
             )
 
 
