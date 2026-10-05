@@ -61,7 +61,7 @@ def blend[
     o: Origin[mut=True], //, clipped: Bool = True
 ](s: Surface[o], off: Int, c: Color):
     """Composite one color into the framebuffer at `off`, by the surface's
-    blend mode, if the surface's clip keeps it.
+    blend mode, as much as the surface's clip keeps of it.
 
     Under `NORMAL`, fully opaque and fully transparent colors skip the
     read-back, so the common case costs no more than a raw store;
@@ -74,7 +74,8 @@ def blend[
     if c.a == 0:
         return
     comptime if clipped:
-        if s._clip and not _clip_keeps(s, off):
+        if s._clip:
+            _blend_clipped(s, off, c)
             return
     if s._blend_mode != BlendMode.NORMAL:
         _blend_pixel(s, off, c, s._blend_mode)
@@ -101,18 +102,27 @@ def blend[
 
 
 @no_inline
-def _clip_keeps[o: Origin[mut=True]](s: Surface[o], off: Int) -> Bool:
-    """Whether the pixel at byte offset `off` lies inside `s`'s clip."""
+def _blend_clipped[o: Origin[mut=True]](s: Surface[o], off: Int, c: Color):
+    """`blend` on a clipped surface: `c` faded by how much of the pixel at
+    byte offset `off` the clip keeps."""
     var index = off // 4
     var row = index // s.width
     var x = index - row * s.width
     ref rows = s._clip.value()[]
     for k in range(rows.starts[row], rows.starts[row + 1]):
         if x < rows.spans[2 * k]:
-            return False
+            return
         if x < rows.spans[2 * k + 1]:
-            return True
-    return False
+            blend[clipped=False](s, off, _kept(c, rows.covers[k]))
+            return
+
+
+@always_inline
+def _kept(c: Color, cover: Int) -> Color:
+    """`c` with its alpha scaled by a clip's `cover`, 255 keeping it all."""
+    if cover >= 255:
+        return c
+    return Color(c.r, c.g, c.b, UInt8(Int(c.a) * cover // 255))
 
 
 def _packed(c: Color) -> UInt32:
@@ -205,8 +215,9 @@ def _fill_span_clipped[
     for k in range(rows.starts[row], rows.starts[row + 1]):
         var lo = max(x0, rows.spans[2 * k])
         var hi = min(x0 + count, rows.spans[2 * k + 1])
-        if hi > lo:
-            _fill_run(s, (row * s.width + lo) * 4, hi - lo, c)
+        var kept = _kept(c, rows.covers[k])
+        if hi > lo and kept.a > 0:
+            _fill_run(s, (row * s.width + lo) * 4, hi - lo, kept)
 
 
 comptime GRADIENT_KEY = -1
@@ -352,11 +363,18 @@ struct FillPaint(Copyable, ImplicitlyCopyable, Movable):
 
 def _shade_span[
     o: Origin[mut=True]
-](s: Surface[o], off: Int, count: Int, gradient: Gradient, m: _DeviceMapping):
+](
+    s: Surface[o],
+    off: Int,
+    count: Int,
+    gradient: Gradient,
+    m: _DeviceMapping,
+    cover: Int = 255,
+):
     """`fill_span` for a gradient: each pixel's colour from its centre's
-    parameter, composited one at a time through `blend`. The parameter's
-    inputs step by a constant per pixel along the row, so only a radial
-    gradient pays a `sqrt` per pixel."""
+    parameter, composited one at a time through `blend`, its alpha scaled by
+    a clip's `cover`. The parameter's inputs step by a constant per pixel
+    along the row, so only a radial gradient pays a `sqrt` per pixel."""
     var index = off // 4
     var y = index // s.width
     var x0 = index - y * s.width
@@ -366,7 +384,7 @@ def _shade_span[
     var v = m.v[0] * xc + m.v[1] * yc + m.v[2]
     for i in range(count):
         var t = sqrt(u * u + v * v) if m.radial else u
-        blend(s, off + i * 4, gradient._sample(t, x0 + i, y))
+        blend(s, off + i * 4, _kept(gradient._sample(t, x0 + i, y), cover))
         u += m.u[0]
         v += m.v[0]
 
@@ -415,6 +433,7 @@ def _shade_span_clipped[
                 hi - lo,
                 shader.gradient,
                 shader.mapping,
+                rows.covers[k],
             )
 
 

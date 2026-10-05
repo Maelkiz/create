@@ -1267,19 +1267,27 @@ struct Backend(Movable):
     ) raises -> List[_ClipRows]:
         """Every clip of the frame as the rows of `s` it keeps, in id order.
 
-        Each region is replayed through `_one` onto a recording surface, so
-        its rows are exactly the pixels the same shape would paint, and then
+        Each region is replayed through `_one` onto a recording surface
+        `grid` times finer, as `_shape` antialiases a shape, so its rows keep
+        exactly the coverage the same shape would paint, and then
         intersected with its parent's, which comes earlier.
         """
+        var grid = self.antialiasing._cpu_grid()
+        var g = Float64(grid)
         var out = List[_ClipRows](capacity=len(self.clips))
         for i in range(len(self.clips)):
             var runs = List[Int]()
             var recorder = Pointer(to=runs).unsafe_origin_cast[
                 MutUntrackedOrigin
             ]()
+            var fine = Surface[o](
+                s.px, s.width * grid, s.height * grid
+            )._recording_into(recorder)
             var region = self.clips[i].region.copy()
-            self._one(s._recording_into(recorder), region, scale, pre)
-            var own = _ClipRows(runs, s.width, s.height, self.clips[i].invert)
+            self._one(fine, region, scale * g, mat_scale(g) @ pre)
+            var own = _ClipRows(
+                runs, s.width, s.height, self.clips[i].invert, grid
+            )
             _ = runs^
             var parent = self.clips[i].parent
             if parent == 0:
@@ -1381,8 +1389,9 @@ struct Backend(Movable):
         Antialiased, the shape is drawn by its own rasteriser onto a
         recording surface `grid` times finer, its device mapping and pixel
         scale both multiplied by `grid`, and the runs it records composited
-        as coverage (`_coverage.mojo`). A recording surface — a clip region
-        being rasterised — keeps hard pixels, since a clip is hard-edged.
+        as coverage (`_coverage.mojo`). A recording surface is a clip region
+        being rasterised, already on the grid by `_clip_rows`, so it records
+        the shape's runs as they are.
         """
         var grid = self.antialiasing._cpu_grid()
         if grid == 1 or s._recording:

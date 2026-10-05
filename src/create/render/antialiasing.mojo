@@ -19,8 +19,8 @@ resolves it into the window (or a headless target), capped at the driver's
 maximum sample count. The CPU replays each shape through its own rasteriser
 on a grid that much finer and composites the coverage once, fill and outline
 together, so a shape's edge has no seam between the two. Shapes only: text
-and images are smooth already. A clip is hard-edged on the CPU; on the GPU
-its edge is multisampled like a shape's. Pixel reads and `save_image` replay
+and images are smooth already. A clip's edge is antialiased like a shape's
+on both. Pixel reads and `save_image` replay
 on the CPU at the same level, under either backend.
 
 `run`'s `antialiasing` argument is the starting level; `canvas.antialiasing`

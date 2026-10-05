@@ -98,6 +98,30 @@ struct Clipped[scene: Int](Program):
         canvas.rectangle((90, 40), 10, 10)
 
 
+@fieldwise_init
+struct EdgeOf[clipped: Bool](Program):
+    """A red disc off the pixel grid, as a clip over a red background or as
+    a fill of the same circle."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> EdgeOf[Self.clipped]:
+        return EdgeOf[Self.clipped](0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        var disc = Circle((3.3, 1.7), 20.4)
+        comptime if Self.clipped:
+            with canvas.clip(disc):
+                canvas.background(Color.RED)
+        else:
+            canvas.outline_enabled(False)
+            canvas.fill(Color.RED)
+            canvas.circle(disc.position, disc.r)
+
+
 def _at(m: MemorySurface, x: Int, y: Int) -> Color:
     """The pixel under screen point `(x, y)`."""
     return m.pixel(_W // 2 + x, _H // 2 - y)
@@ -220,9 +244,9 @@ def test_gpu_clips_like_the_cpu() raises -> None:
             # Glyph coverage and gradient dither differ within a level
             # inside; `_check` has already seen every pixel outside.
             continue
-        # Interiors must agree; edges may not. The GPU multisamples a clip's
-        # edge like a shape's, where the CPU keeps it hard, so only pixels
-        # whose CPU neighbourhood is one colour — away from every edge — are
+        # Interiors must agree; edges may not. Both backends antialias a
+        # clip's edge like a shape's, each its own way, so only pixels whose
+        # CPU neighbourhood is one colour — away from every edge — are
         # compared. The allowance is for the shapes' own edges, where the two
         # rasterisers already part (see `test_gl_parity.mojo`).
         var differing = 0
@@ -242,6 +266,46 @@ def test_gpu_clips_like_the_cpu() raises -> None:
         )
 
 
+def test_a_cpu_clip_edge_is_antialiased_like_a_fill() raises -> None:
+    var clipped = run_headless[EdgeOf[True]](_W, _H)
+    var filled = run_headless[EdgeOf[False]](_W, _H)
+    var partial = 0
+    for y in range(_H):
+        for x in range(_W):
+            var c = clipped.pixel(x, y)
+            assert_equal(
+                c,
+                filled.pixel(x, y),
+                "at " + String(x) + ", " + String(y),
+            )
+            if c != _GRAY and c != Color.RED:
+                partial += 1
+    assert_true(partial > 40, "the rim is soft")
+
+    var hard = run_headless[EdgeOf[True]](_W, _H, antialiasing=Antialiasing.OFF)
+    for y in range(_H):
+        for x in range(_W):
+            var c = hard.pixel(x, y)
+            assert_true(c == _GRAY or c == Color.RED, "off stays hard")
+
+
+def test_rows_keep_part_of_an_edge_pixel() raises -> None:
+    # On a 4x grid, sub-rows 0..3 of pixel row 0 each cover sub-columns
+    # 2..8: pixel 0 is half kept, pixel 1 whole, pixel 2 a quarter.
+    var runs = List[Int]()
+    for sub in range(4):
+        runs.extend([sub, 2, 9, 0])
+    var rows = _ClipRows(runs, 4, 1, invert=False, grid=4)
+    assert_equal(rows.spans, [0, 1, 1, 2, 2, 3])
+    assert_equal(rows.covers, [127, 255, 63])
+    var holes = _ClipRows(runs, 4, 1, invert=True, grid=4)
+    assert_equal(holes.spans, [0, 1, 2, 3, 3, 4])
+    assert_equal(holes.covers, [128, 255 - 63, 255])
+    var both = rows.intersect(holes)
+    assert_equal(both.spans, [0, 1, 2, 3])
+    assert_equal(both.covers, [64, 47])
+
+
 def test_rows_merge_invert_and_intersect() raises -> None:
     # Row 0: two overlapping runs and one apart; row 1: nothing. The fourth
     # of each is the paint key, which a clip ignores.
@@ -249,6 +313,7 @@ def test_rows_merge_invert_and_intersect() raises -> None:
     var rows = _ClipRows(runs, 16, 2, invert=False)
     assert_equal(rows.starts, [0, 2, 2])
     assert_equal(rows.spans, [2, 9, 12, 14])
+    assert_equal(rows.covers, [255, 255])
 
     var holes = _ClipRows(runs, 16, 2, invert=True)
     assert_equal(holes.starts, [0, 3, 4])

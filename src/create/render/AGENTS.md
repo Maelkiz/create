@@ -20,7 +20,7 @@ and the layering rules.
 | `_polygon.mojo` | Polygon fill and outline tiled into device quads for both replays (`polygon_quads`), and its blurred shadow mask |
 | `_triangle.mojo` | A rounded or outlined triangle as a convex fill and ring quads for both replays (`triangle_pieces`) |
 | `_coverage.mojo` | CPU antialiasing: `composite_coverage` turns a shape's runs recorded on a finer grid into per-pixel coverage, composited once |
-| `_clip.mojo` | `_Clip` (one `canvas.clip` level: region command, invert, parent) and `_ClipRows`, the CPU replay's per-row runs of a clip |
+| `_clip.mojo` | `_Clip` (one `canvas.clip` level: region command, invert, parent) and `_ClipRows`, the CPU replay's per-row runs of a clip, each with its coverage |
 | `_blur.mojo` | Three-box-blur approximation of a Gaussian over an alpha mask, for text and image shadows; the blurred-mask cache limit and key |
 | `_transform.mojo`, `_image.mojo`, `_fillet.mojo` | Shared by both replay paths (split out to avoid an import cycle, or so both agree on the numbers) |
 | `_gl_target.mojo` | Offscreen FBO of an exact size, for the parity test and headless GPU |
@@ -177,12 +177,16 @@ it.
 Each replay rasterises the region **with the code that draws that shape**, so a clip and a fill of
 the same shape cover the same pixels:
 - **CPU:** before any command, `Backend._clip_rows` replays each region through `_one` onto a
-  *recording* surface (`Surface._recording_into`). There `fill_span` appends `(row, lo, hi, key)`
-  and writes nothing; `key` names the run's paint, which a clip ignores. `_ClipRows` sorts and merges those into runs per row, complements them for
-  `invert`, and intersects with the parent's. A clipped command's surface carries its rows
-  (`Surface._with_clip`). `fill_span`, `blend` and `fill_all` cut to them, and nothing else writes
-  pixels, so no rasteriser knows about clips.
-  - The clipped paths are out of line (`_fill_span_clipped`, `_shade_span_clipped`, `_clip_keeps`).
+  *recording* surface (`Surface._recording_into`) `grid` times finer, as `_shape` antialiases a
+  shape. There `fill_span` appends `(row, lo, hi, key)` and writes nothing; `key` names the run's
+  paint, which a clip ignores. `_ClipRows` merges those per sub-row, then counts each pixel's
+  covered samples into runs of constant `cover` (0–255, floored like `_mixed`, so a clip edge
+  matches a fill of the same shape exactly), complements them for `invert` (`255 − cover`), and
+  intersects with the parent's (covers multiply). A clipped command's surface carries its rows
+  (`Surface._with_clip`). `fill_span`, `blend` and `fill_all` cut to them and scale a partly kept
+  run's alpha by its cover (`_kept`), and nothing else writes pixels, so no rasteriser knows about
+  clips. With antialiasing off the grid is 1 and every cover is 255.
+  - The clipped paths are out of line (`_fill_span_clipped`, `_shade_span_clipped`, `_blend_clipped`).
     Keep them there: a recursive or larger `fill_span` stops inlining and cost circles ~40%.
   - `blit_image`/`blit_alpha` check for a clip once and pass `blend[clipped=False]`, because the
     per-pixel test alone cost an image blit ~15%.
@@ -195,7 +199,7 @@ the same shape cover the same pixels:
   `EQUAL` to the depth. `glClear` ignores the stencil, so a clipped opaque clear is a quad. The
   window requests 8 stencil bits; `_GLTarget` and the multisampled target attach a depth-stencil
   renderbuffer. Under multisampling the stencil is per sample, so a GPU clip's edge is antialiased
-  like a shape's, where the CPU's stays hard. Disabling `GL_MULTISAMPLE` while writing the stencil
+  like a shape's, as the CPU's is by coverage. Disabling `GL_MULTISAMPLE` while writing the stencil
   would make it hard by the spec, but Mesa's llvmpipe then leaves part of each interior pixel's
   samples unmarked — don't retry it without checking on that driver.
 - Cost: on the GPU, a clip change is a flush plus one draw per level of its chain. On the CPU, each
@@ -232,8 +236,8 @@ shape command, so it is antialiased like one.
   coverage: full ones go to `fill_span` as one run, partial ones mix their paints premultiplied by
   sample share and blend once — so fill and outline crossing one pixel leave no seam, and a
   translucent shape stays one layer deep. A gradient's partial stretch samples per pixel.
-- **Clip regions stay hard:** `_shape` skips the path on a recording surface, so `_clip_rows`
-  rasterises regions as before.
+- **Clip regions** take the same grid, recorded by `_clip_rows` itself (see Clips); `_shape`
+  passes a recording surface straight to `_shape_pixels`.
 - Hot loops index through pointers into `CoverageScratch` buffers kept on the `Backend`: checked
   `List` access cost as much as the compositing did.
 

@@ -227,7 +227,7 @@ backends rasterise at present) and every later one. One setting for both backend
 it its own way: the GPU draws into an offscreen multisampled framebuffer and resolves it into the
 window or headless target (capped at the driver's maximum), the CPU samples each shape on a finer
 grid (`LOW` 2x2, `MEDIUM` 4x4, `HIGH` 8x8 per pixel). Shapes only — text and images are smooth
-already; clips are hard on the CPU and multisampled on the GPU (see Clipping). A shape's fill and
+already; a clip's edge is antialiased like a shape's (see Clipping). A shape's fill and
 outline composite together, so no seam shows between them; two separate shapes meeting inside a pixel can
 show a faint one. `run_headless` defaults to `MEDIUM` too, so a test asserting an edge pixel's exact
 colour passes `antialiasing=Antialiasing.OFF`.
@@ -243,9 +243,10 @@ to undo. See [examples/clipping.mojo](examples/clipping.mojo).
 - **Nested clips intersect.** On exit the enclosing clip is current again.
 - **Everything is clipped** — shapes, images, text, shadows, and `background()`, which then paints
   only the clipped area (and never replaces the autoclear). The letterbox is not.
-- **Edges:** on the CPU a clip is hard-edged, whatever the antialiasing — it covers the pixels a
-  fill of the same shape would without it. On the GPU its edge is multisampled like a shape's, so
-  the two backends agree inside a clip and may differ along its rim.
+- **Edges** are antialiased at the frame's level, like a shape's: on the CPU a clip keeps exactly
+  the coverage a fill of the same shape paints, on the GPU its stencil is multisampled. So the two
+  backends agree inside a clip and may differ slightly along its rim. With `Antialiasing.OFF` a
+  clip is hard-edged. Nested clips multiply their edges' coverage.
   Soft masks (a gradient or an image's alpha) are not implemented yet.
 
 ### Reading pixels
