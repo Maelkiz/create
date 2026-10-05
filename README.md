@@ -39,8 +39,6 @@ Rendering runs on the CPU by default. `backend=RenderBackend.GPU` runs the same 
 run[MyApp]("Example Sketch", backend=RenderBackend.GPU)
 ```
 
-Both backends smooth the edges of shapes. `antialiasing=` picks the starting level: `Antialiasing.OFF`, `LOW`, `MEDIUM` (the default) or `HIGH`, and `canvas.antialiasing(level)` changes it while the program runs. Higher levels cost more, mostly on the CPU backend.
-
 The example programs in this repository can be run with the `example` pixi task, which takes a name rather than a path. 
 The name must correspond to a file or folder under `examples/`. For folders it will find an run their `src/main.mojo`.
 
