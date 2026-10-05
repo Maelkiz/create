@@ -2383,7 +2383,7 @@ struct SaveImageTransparent(Program):
         canvas.save_image(_IMG_ALPHA, transparent=True)
 
 
-def test_save_image_writes_the_design_resolution() raises -> None:
+def test_save_image_writes_the_design_size() raises -> None:
     var m = run_headless[SaveImage](200, 100, 1, 640, 480)
     # The framebuffer it was captured from is neither that size nor bar-free.
     assert_equal(m.width, 640)

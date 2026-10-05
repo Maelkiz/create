@@ -12,7 +12,7 @@ letterbox bar under `FIT`.
     mojo build -I src examples/gl_shapes.mojo -o build/gl_shapes && ./build/gl_shapes
 
 `WindowMode.FULLSCREEN` covers the display without changing the design
-resolution, so the letterbox bars stay in the frame and just get wider — the
+size, so the letterbox bars stay in the frame and just get wider — the
 GPU backend takes the mode exactly as the CPU one does. Escape quits.
 """
 
@@ -30,7 +30,7 @@ struct App(Program):
         # FIT with a 4:3 design in a 16:9 window, so the letterbox bars are
         # on screen from the first frame.
         context.autoscale(AutoScale.FIT)
-        context.design_resolution(800, 600)
+        context.design_size(800, 600)
         # Twice, below, from one interned image and so one GL upload.
         var logo = Sprite.load(source_path("../assets/logo/png/logo.png"))
         return App(0.0, logo^, 0)

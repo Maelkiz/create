@@ -239,7 +239,7 @@ frame has drawn **so far**. They are a CPU replay of the commands recorded up to
 - **Screen space**, not world: the transform and camera don't apply. `canvas.pixel(context.input.mouse)`
   picks under the mouse as it is, and a snapshot region is always upright. Off the screen reads
   transparent.
-- **Design resolution × `scale`**, without the letterbox. `snapshot()` drawn back with
+- **Design size × `scale`**, without the letterbox. `snapshot()` drawn back with
   `canvas.sprite(shot, (0, 0), canvas.width, canvas.height)` lines up exactly;
   `scale=canvas.scale` gives window pixels.
 - **One replay per drawing**: reads are cached until something more is recorded, so many `pixel`
@@ -273,7 +273,7 @@ with canvas.overlay():
     canvas.text("Score: " + String(self.score), (0, canvas.top() - 20))  # screen space
 ```
 
-**Design resolution** is the `width`/`height` passed to `run` (or `context.design_resolution()` from
+**Design size** is the `width`/`height` passed to `run` (or `context.design_size()` from
 `create`): the space the program is authored in, not a window size. Fullscreen/maximized scale the
 design onto the display. `context.autoscale(mode)` takes `FIT` (default), `EXTEND` or `OFF`; `OFF` makes
 coordinates the window's own pixels. Under `EXTEND` the reported size grows with the window, so

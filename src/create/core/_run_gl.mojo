@@ -140,7 +140,7 @@ def run_gl[
     """Open a GL window and run `P` on the GPU backend until it quits.
 
     `mode` covers the display (`WindowMode.FULLSCREEN`/`BORDERLESS`); the
-    design resolution is still `width`/`height`, so the program is authored
+    design size is still `width`/`height`, so the program is authored
     in the same space either way and the viewport scales it to whatever the
     display turns out to be.
 
@@ -152,7 +152,7 @@ def run_gl[
     the display and the measurement is the refresh rate rather than the
     renderer.
 
-    The design-resolution contract is `run`'s, unchanged: `width`/`height` are
+    The design-size contract is `run`'s, unchanged: `width`/`height` are
     both the window size and the space the program is authored in, scaled to
     the window by `AutoScale.FIT` unless `create` says otherwise.
     """
@@ -164,7 +164,7 @@ def run_gl[
     var state = PersistentCanvasState(RenderBackend.GPU)
     state.backend.antialiasing = antialiasing
     var context = Context()
-    context.design_resolution(width, height)
+    context.design_size(width, height)
     var program = P.create(context)
     # The mapping is derived once create() has had its say about the design
     # size and the mode.

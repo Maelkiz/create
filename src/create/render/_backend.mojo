@@ -659,7 +659,7 @@ def _rounded_rect_row_span(
 
 
 def _design_pixels(width: Int, height: Int) -> Matrix[3, 3]:
-    """Screen space to the pixels of a `width` x `height` design-resolution
+    """Screen space to the pixels of a `width` x `height` design-size
     image: origin centred and y up to origin top-left and y down."""
     return mat_translate(
         Float64(width) / 2.0, Float64(height) / 2.0
@@ -691,7 +691,7 @@ def _clear_off_screen(
 
 
 def _seed(mut mem: MemorySurface, last: MemorySurface, to_target: Matrix[3, 3]):
-    """Fill `mem` from the design-resolution frame `last`, each pixel the
+    """Fill `mem` from the design-size frame `last`, each pixel the
     one under its centre, so a read with the autoclear off starts from what
     the frame itself started from."""
     var to_last = _design_pixels(last.width, last.height) @ inverse(to_target)
@@ -807,7 +807,7 @@ struct Backend(Movable):
     nothing has been recorded since. A count of commands would not do, since
     `record_clear` can replace one without adding any."""
     var frame_read: Optional[MemorySurface]
-    """The frame so far at design resolution, as `canvas.pixel` last read
+    """The frame so far at design size, as `canvas.pixel` last read
     it; `frame_read_at` is the `recorded` it was read at."""
     var frame_read_at: Int
     var keep_frames: Bool
@@ -816,7 +816,7 @@ struct Backend(Movable):
     the one case where a frame starts from the last one's pixels rather than
     from its own commands."""
     var last_frame: Optional[MemorySurface]
-    """The last presented frame at design resolution, while `keep_frames`
+    """The last presented frame at design size, while `keep_frames`
     is on: what a read with the autoclear off starts from."""
     var commands: List[RenderCommand]
     """The frame being recorded.
@@ -897,7 +897,7 @@ struct Backend(Movable):
         self.commands.append(c^)
 
     def request_image(mut self, var request: _ImageRequest):
-        """File a design-resolution capture of the frame being recorded."""
+        """File a design-size capture of the frame being recorded."""
         self.pending_image = Optional(request^)
 
     def request_screenshot(mut self, path: String):
@@ -1013,7 +1013,7 @@ struct Backend(Movable):
         return mem^
 
     def read_frame(mut self, seeded: Bool) raises:
-        """Bring `frame_read` up to the frame so far at design resolution,
+        """Bring `frame_read` up to the frame so far at design size,
         reading again only if something has been recorded since the last
         time."""
         if not self.frame_read or self.frame_read_at != self.recorded:
@@ -1028,7 +1028,7 @@ struct Backend(Movable):
 
     def _keep_frame[o: Origin[mut=True]](mut self, s: Surface[o]):
         """Sample the finished frame on `s` (window pixels) down or up to
-        design resolution, nearest pixel, into `last_frame`."""
+        design size, nearest pixel, into `last_frame`."""
         var mem = MemorySurface(self.screen_w, self.screen_h)
         var to_window = inverse(self.screen_inv)
         var from_design = to_window @ inverse(

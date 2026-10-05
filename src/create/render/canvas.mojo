@@ -762,7 +762,7 @@ struct Canvas:
         scale: Float64 = 1.0,
         transparent: Bool = False,
     ) raises:
-        """Save this frame as a PNG at the design resolution, times `scale`.
+        """Save this frame as a PNG at the design size, times `scale`.
 
         Window-independent by construction: the size of the file is the space
         the program renders in, never the size of the window, and the letterbox
@@ -876,7 +876,7 @@ struct Canvas:
             and ph == self.height
             and region.position == Point2D(0.0, 0.0)
         ):
-            # The whole screen at design resolution is what `pixel` reads,
+            # The whole screen at design size is what `pixel` reads,
             # so the two share one replay.
             backend.read_frame(seeded=not self._autoclear)
             return Sprite.from_rgba(pw, ph, backend.frame_read.value().data)

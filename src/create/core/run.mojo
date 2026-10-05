@@ -91,9 +91,9 @@ def run[
 ) raises:
     """Open a window and run `P` in it until it quits.
 
-    `width`/`height` are the resolution the program is **authored** in — the
-    space `canvas.width`/`height`, the canvas edges and `context.input.mouse` are
-    reported in. They are not a window size that happens to double as one: a
+    `width`/`height` are the design size: the space the program is
+    **authored** in, and the one `canvas.width`/`height`, the canvas edges and
+    `context.input.mouse` are reported in. They are not a window size that happens to double as one: a
     `WINDOWED` or `BORDERLESS` launch opens a window of that size because the
     two coincide there, while `FULLSCREEN` and `MAXIMIZED` take the display or
     its work area and the design is scaled onto it. `mode=FULLSCREEN` with a
@@ -109,11 +109,11 @@ def run[
     | `run("T", WindowMode.FULLSCREEN)`             | design 1280x720, scaled  | world = monitor|
 
     `AutoScale.OFF` is the opt-out, and the only way the size here stops
-    meaning anything: the design resolution goes unused and coordinates become
+    meaning anything: the design size goes unused and coordinates become
     the window's own pixels, which is how a program authors against the
     display rather than against a fixed space.
 
-    `context.design_resolution(w, h)` pins the same space from inside `create`, which
+    `context.design_size(w, h)` pins the same space from inside `create`, which
     is where a program with an opinion of its own states it. The size here is
     the shorthand for the common case where the window and the design agree.
 
@@ -163,7 +163,7 @@ def run[
     # break on a display the author never had. `create` can opt back out with
     # `context.autoscale(AutoScale.OFF)`.
     var context = Context()
-    context.design_resolution(width, height)
+    context.design_size(width, height)
     var program = P.create(context)
     # create() may have changed the mode or pinned its own design size, so the
     # mapping is derived from `context` only once it has returned.

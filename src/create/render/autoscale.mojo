@@ -1,8 +1,8 @@
 struct AutoScale(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
-    """How the program's design resolution maps onto the window.
+    """How the program's design size maps onto the window.
 
-    The design resolution is the coordinate space a program is authored in --
-    the size passed to `run`, or pinned by `context.design_resolution`. It is a property of
+    The design size is the coordinate space a program is authored in --
+    the size passed to `run`, or pinned by `context.design_size`. It is a property of
     the program, not of the display, and a resize or a fullscreen toggle never
     changes it. What changes is how it lands on the window:
 
@@ -17,7 +17,7 @@ struct AutoScale(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
       `canvas.left()`/`right()`/`bottom()`/`top()`, since design coordinates no
       longer describe the edges.
     - `OFF` does not scale at all -- `canvas.width`/`height` are window pixels
-      and the design resolution goes unused, so layout has to survive any
+      and the design size goes unused, so layout has to survive any
       window size on its own.
 
     `run` starts programs in `FIT`, because `OFF` punishes the obvious way to

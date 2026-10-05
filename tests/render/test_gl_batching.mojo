@@ -327,7 +327,7 @@ def _texture_growth[P: Program](mut win: GLWindow, frames: Int) raises -> Int:
     var target = _GLTarget(GL(), 100, 100)
     var state = PersistentCanvasState(RenderBackend.GPU)
     var context = Context()
-    context.design_resolution(100, 100)
+    context.design_size(100, 100)
     var program = P.create(context)
     context._set_viewport(state, 100, 100)
     var now = 0
@@ -362,7 +362,7 @@ def _gpu_frame[
 
     var state = PersistentCanvasState(RenderBackend.GPU)
     var context = Context()
-    context.design_resolution(width, height)
+    context.design_size(width, height)
     var program = P.create(context)
     context._set_viewport(state, width, height)
     var now = 0
@@ -389,7 +389,7 @@ def _gpu_draw_calls[P: Program](mut win: GLWindow) raises -> Int:
     var target = _GLTarget(GL(), 100, 100)
     var state = PersistentCanvasState(RenderBackend.GPU)
     var context = Context()
-    context.design_resolution(100, 100)
+    context.design_size(100, 100)
     var program = P.create(context)
     context._set_viewport(state, 100, 100)
     context.time._start(0)

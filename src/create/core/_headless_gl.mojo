@@ -69,7 +69,7 @@ def _run_headless_gl[
     var state = PersistentCanvasState(RenderBackend.GPU)
     state.backend.antialiasing = antialiasing
     var context = Context()
-    context.design_resolution(width, height)
+    context.design_size(width, height)
     var program = P.create(context)
     # After create(), which may have pinned its own design size or mode.
     context._set_viewport(state, pw, ph)

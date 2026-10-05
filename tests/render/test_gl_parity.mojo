@@ -346,7 +346,7 @@ struct _Parity(Program):
 
     @staticmethod
     def create(mut context: Context, shape: Int) raises -> _Parity:
-        context.design_resolution(_DESIGN_W, _DESIGN_H)
+        context.design_size(_DESIGN_W, _DESIGN_H)
         return _Parity(
             Sprite.load("tests/fixtures/test_2x2.png"),
             Sprite.solid(30, 30, 0xE0, 0x90, 0x40),
@@ -1058,7 +1058,7 @@ def _create(
     Hand-rolled rather than the trait's own `create` because this one needs
     `shape` to pick which command it records. The viewport is derived after
     it returns, exactly as the loops do it — `create` is where the design
-    resolution is pinned.
+    size is pinned.
     """
     var program = _Parity.create(context, shape)
     context._set_viewport(state, _PIXEL_W, _PIXEL_H)

@@ -25,7 +25,7 @@ trait Program(Deinitable, Movable):
 
         Where resources the program drives on its own schedule are
         constructed — sprites, fonts, sounds, an `Audio` device — and where
-        `context.design_resolution` or `context.autoscale` is called if the
+        `context.design_size` or `context.autoscale` is called if the
         defaults don't suit.
 
         No `Canvas`: there is no frame yet, and one handed over here could only

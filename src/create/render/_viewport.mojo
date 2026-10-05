@@ -40,7 +40,7 @@ struct Viewport(Copyable, ImplicitlyCopyable, Movable):
         self._design_h = 0
 
     def set_design(mut self, width: Int, height: Int):
-        """Set the resolution the program is authored against.
+        """Set the design size, the space the program is authored in.
 
         Stores only — the caller recomputes the mapping with `set_size`, so a
         design change and a resize go through the same path.
@@ -51,8 +51,8 @@ struct Viewport(Copyable, ImplicitlyCopyable, Movable):
     def set_size(mut self, pixel_w: Int, pixel_h: Int):
         """Recompute the design-space mapping for a framebuffer of this size.
 
-        With autoscale on, the program keeps the resolution it was authored
-        against and the content is scaled to fit inside the window — so a
+        With autoscale on, the program keeps the size it was authored
+        in and the content is scaled to fit inside the window — so a
         sketch built for 1280x720 looks the same on any screen. Both modes
         derive the same uniform factor and differ only in what happens to the
         window area the design does not cover: `FIT` centres the design and

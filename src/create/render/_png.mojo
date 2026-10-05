@@ -4,7 +4,7 @@ The encoder half of what `Sprite._load_png` already does for decoding:
 libpng's *simplified* API, reached through `_DLHandle`, with the 104-byte
 `png_image` control struct laid out by hand. Nothing here knows what the
 pixels mean — it takes a buffer, its extent and a path, which is what keeps it
-usable both by the design-resolution capture and by a raw framebuffer
+usable both by the design-size capture and by a raw framebuffer
 screenshot whose bytes were never a `MemorySurface`.
 
 Its own module rather than a member of `surface.mojo` because a file format is

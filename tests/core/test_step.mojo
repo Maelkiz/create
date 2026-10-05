@@ -35,7 +35,7 @@ def _mismatched() raises -> MemorySurface:
     """
     var start = PersistentCanvasState()
     var context = Context()
-    context.design_resolution(64, 64)
+    context.design_size(64, 64)
     context._set_viewport(start, 64, 64)
     var program = Painter(0)
     var mem = MemorySurface(200, 200)
@@ -92,7 +92,7 @@ def test_scripted_click_drives_rendering() raises -> None:
     var mem = MemorySurface(32, 32)
 
     var idle_context = Context()
-    idle_context.design_resolution(32, 32)
+    idle_context.design_size(32, 32)
     var idle_start = PersistentCanvasState()
     idle_context._set_viewport(idle_start, 32, 32)
     var idle_program = ClickPainter(False)
@@ -102,7 +102,7 @@ def test_scripted_click_drives_rendering() raises -> None:
     _ = idle_state^
 
     var clicked_context = Context()
-    clicked_context.design_resolution(32, 32)
+    clicked_context.design_size(32, 32)
     var clicked_start = PersistentCanvasState()
     clicked_context._set_viewport(clicked_start, 32, 32)
     var clicked_program = ClickPainter(False)

@@ -226,11 +226,11 @@ with `pre = to_target @ screen_inv`. `to_target` maps screen space to the read's
 `screen_inv` is the window-pixel-to-screen mapping that `Canvas.__init__` hands over through
 `begin_frame`. Like `present`, it moves the command buffer out and back. Pixels whose centre is off
 the screen are made transparent afterwards, since a clear fills the whole target.
-- `read_frame` caches the full-screen read at design resolution in `frame_read`. It stays current
+- `read_frame` caches the full-screen read at design size in `frame_read`. It stays current
   while `recorded` (bumped by every `record` and `record_clear`) is unchanged, and resets at present.
   `pixel` and a full-screen scale-1 `snapshot` share it.
 - `seeded` (autoclear off): the first such read sets `keep_frames`. From then on `present` samples
-  each finished CPU frame down to design resolution into `last_frame` (`_keep_frame`), and later
+  each finished CPU frame down to design size into `last_frame` (`_keep_frame`), and later
   reads start from it (`_seed`), nearest pixel.
 
 **The image cache** (`Backend.images`) is keyed by a backend id per *sprite version*.
@@ -243,7 +243,7 @@ delete their textures.
 
 Requests filed on the `Backend` and serviced inside `present`/`present_gpu`, the only place holding
 both the finished framebuffer and the unconsumed command buffer; a failed write raises from there.
-- `canvas.save_image(path, scale, transparent)` — what the program drew: design resolution × `scale`,
+- `canvas.save_image(path, scale, transparent)` — what the program drew: design size × `scale`,
   no letterbox, CPU-replayed from the commands under **both** backends (glyph cache and images live
   on `Backend`, not `GLRenderer`). Reproducible across machines.
 - `canvas.save_screenshot(path)` — what the user saw: drawable resolution, bars included. On GPU this

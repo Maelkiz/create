@@ -39,13 +39,13 @@ def test_release_does_not_write_the_viewport_back() raises -> None:
 
 
 def test_design_takes_effect_on_the_next_frame() raises -> None:
-    # `design_resolution` writes to the context, so the frame already built
+    # `design_size` writes to the context, so the frame already built
     # keeps reporting the size it was built with; the loop's next
     # `_set_viewport` is what publishes the new mapping.
     var context = Context()
     var state = _state(context, 1600, 1200)
     var canvas = context._new_canvas(state^)
-    context.design_resolution(800, 600)
+    context.design_size(800, 600)
     assert_equal(canvas.width, 1600)
     state = canvas^._release()
     context._set_viewport(state, 1600, 1200)
@@ -59,8 +59,8 @@ def test_design_takes_effect_on_the_next_frame() raises -> None:
 def test_design_overrides_an_earlier_design() raises -> None:
     var context = Context()
     var state = _state(context, 2000, 1000)
-    context.design_resolution(800, 600)
-    context.design_resolution(1000, 500)
+    context.design_size(800, 600)
+    context.design_size(1000, 500)
     context.autoscale(AutoScale.EXTEND)
     context._set_viewport(state, 2000, 1000)
     var next = context._new_canvas(state^)

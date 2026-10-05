@@ -71,12 +71,12 @@ def test_dials_read_back_their_defaults() raises -> None:
 
 def test_dials_read_back_what_was_set() raises -> None:
     var context = Context()
-    context.design_resolution(800, 600)
+    context.design_size(800, 600)
     context.autoscale(AutoScale.EXTEND)
     context.autoclear(False)
     context.letterbox_color(Color.RED)
     context.quit_on_escape(False)
-    var size = context.design_resolution()
+    var size = context.design_size()
     assert_equal(size[0], 800)
     assert_equal(size[1], 600)
     assert_true(context.autoscale() == AutoScale.EXTEND)

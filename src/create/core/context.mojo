@@ -29,7 +29,7 @@ struct Context(Copyable, Movable):
 
     A `Canvas` is built and dropped inside one frame, so a setting that has to
     survive the frame boundary cannot live on it. These do — the autoscale
-    mode and design resolution the next frame's mapping is derived from,
+    mode and design size the next frame's mapping is derived from,
     whether the next frame opens with a clear, the letterbox colour, and the
     ones the run loop reads after a frame has been released, `max_frame_rate`,
     `quit` and `rumble`.
@@ -88,12 +88,12 @@ struct Context(Copyable, Movable):
         self._quit = False
         self._rumbles = []
 
-    def design_resolution(self) -> Tuple[Int, Int]:
+    def design_size(self) -> Tuple[Int, Int]:
         """The width and height the program is authored in: the size passed
         to `run` unless set."""
         return (self._design_w, self._design_h)
 
-    def design_resolution(mut self, width: Int, height: Int):
+    def design_size(mut self, width: Int, height: Int):
         """Author this program in a fixed world size, scaled to any window.
 
         Overrides the size passed to `run`, so a program can pin its own
@@ -109,11 +109,11 @@ struct Context(Copyable, Movable):
         self._design_h = height
 
     def autoscale(self) -> AutoScale:
-        """How the design resolution maps onto the window. `FIT` unless set."""
+        """How the design size maps onto the window. `FIT` unless set."""
         return self._autoscale
 
     def autoscale(mut self, mode: AutoScale):
-        """Choose how the design resolution maps onto the window — see
+        """Choose how the design size maps onto the window — see
         `AutoScale`."""
         self._autoscale = mode
 
@@ -186,7 +186,7 @@ struct Context(Copyable, Movable):
         self, mut state: PersistentCanvasState, pixel_w: Int, pixel_h: Int
     ):
         """Remap `state` onto a framebuffer of this size under the design
-        resolution and autoscale dials, at the top of a frame."""
+        size and autoscale dials, at the top of a frame."""
         state._set_viewport(
             self._autoscale, self._design_w, self._design_h, pixel_w, pixel_h
         )

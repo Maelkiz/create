@@ -26,7 +26,7 @@ struct App(Program):
     @staticmethod
     def create(mut context: Context) raises -> App:
         context.autoscale(AutoScale.FIT)
-        context.design_resolution(_DESIGN_W, _DESIGN_H)
+        context.design_size(_DESIGN_W, _DESIGN_H)
         return App(0.0, "")
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

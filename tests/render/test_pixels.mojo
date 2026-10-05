@@ -20,7 +20,7 @@ def _canvas(
     mut context: Context, pixel_w: Int = 200, pixel_h: Int = 100
 ) raises -> Canvas:
     var state = PersistentCanvasState()
-    context.design_resolution(200, 100)
+    context.design_size(200, 100)
     context._set_viewport(state, pixel_w, pixel_h)
     return context._new_canvas(state^)
 
@@ -63,7 +63,7 @@ def test_pixel_is_in_screen_space_and_transparent_off_it() raises -> None:
     assert_equal(canvas.pixel((0, -60)), Color.TRANSPARENT)
 
 
-def test_a_read_is_at_design_resolution_on_a_bigger_window() raises -> None:
+def test_a_read_is_at_design_size_on_a_bigger_window() raises -> None:
     var context = Context()
     var canvas = _canvas(context, 400, 200)
     canvas.background(Color.RED)
