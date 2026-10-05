@@ -690,11 +690,17 @@ def _clear_off_screen(
                 mem.data[off + k] = 0
 
 
-def _seed(mut mem: MemorySurface, last: MemorySurface, to_target: Matrix[3, 3]):
-    """Fill `mem` from the design-size frame `last`, each pixel the
-    one under its centre, so a read with the autoclear off starts from what
-    the frame itself started from."""
-    var to_last = _design_pixels(last.width, last.height) @ inverse(to_target)
+def _seed(
+    mut mem: MemorySurface,
+    last: MemorySurface,
+    last_from_screen: Matrix[3, 3],
+    to_target: Matrix[3, 3],
+):
+    """Fill `mem` from the pixels `last`, placed by `last_from_screen`
+    (screen space to `last`'s pixels), each pixel the one under its centre:
+    so a read with the autoclear off starts from what the frame itself
+    started from, and an offscreen canvas is read at any scale."""
+    var to_last = last_from_screen @ inverse(to_target)
     for y in range(mem.height):
         for x in range(mem.width):
             var p = mat_apply(to_last, Float64(x) + 0.5, Float64(y) + 0.5)
@@ -1044,7 +1050,13 @@ struct Backend(Movable):
         var mem = MemorySurface(width, height)
         if seeded:
             if self.last_frame:
-                _seed(mem, self.last_frame.value(), to_target)
+                ref last = self.last_frame.value()
+                _seed(
+                    mem,
+                    last,
+                    _design_pixels(last.width, last.height),
+                    to_target,
+                )
             self.keep_frames = True
         var cmds = self.commands^
         self.commands = List[RenderCommand]()

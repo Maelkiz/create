@@ -35,7 +35,7 @@ from create.math.matrix import (
 )
 from create.image.image import Image
 from create.image.animator import Animator
-from ._backend import Backend, _ImageRequest
+from ._backend import Backend, _ImageRequest, _seed
 from .render_backend import RenderBackend
 from ._command import (
     bezier_chain_command,
@@ -821,11 +821,23 @@ struct Canvas(Movable):
         presented, so it holds the whole frame however early in `update` this
         was called. A failure to write raises there, from `present`, rather
         than here.
+
+        An offscreen canvas has no frame to present, so it writes at once,
+        what it has drawn so far. Its pixels are already rasterised, so a
+        `scale` other than its own resamples them, and `transparent` keeps
+        their alpha rather than dropping a `background` it has painted.
         """
         if scale <= 0.0:
             raise Error(
                 "save_image needs a positive scale, got " + String(scale)
             )
+        if self._offscreen():
+            var whole = Rectangle(
+                Point2D(0.0, 0.0), Float64(self.width), Float64(self.height)
+            )
+            var mem = self._read_offscreen(whole, scale)
+            mem.save(path, opaque=not transparent)
+            return
         var capture = Viewport()
         # The design size, not the window's: under `EXTEND` that is the
         # extended space, which is exactly the area the program drew into.
@@ -911,6 +923,9 @@ struct Canvas(Movable):
 
         `region` is in screen space, like `pixel`'s position, so it is always
         upright; outside the screen the image is transparent.
+
+        On an offscreen canvas `scale=canvas.scale` reads its pixels as they
+        are; any other scale resamples them, nearest pixel.
         """
         if scale <= 0.0:
             raise Error("snapshot needs a positive scale, got " + String(scale))
@@ -921,6 +936,9 @@ struct Canvas(Movable):
                 "snapshot needs a region of at least one pixel, got "
                 + String(region)
             )
+        if self._offscreen():
+            var mem = self._read_offscreen(region, scale)
+            return Image.from_rgba(pw, ph, mem.data)
         ref backend = self._state.backend
         if (
             scale == 1.0
@@ -941,6 +959,32 @@ struct Canvas(Movable):
         )
         return Image.from_rgba(pw, ph, mem.data)
 
+    def _read_offscreen(
+        mut self, region: Rectangle, scale: Float64
+    ) raises -> MemorySurface:
+        """An offscreen canvas's pixels inside `region`, `scale` pixels to
+        the unit, once what was drawn since the last read is baked in."""
+        ref backend = self._state.backend
+        backend.bake(self.scale)
+        ref target = backend.target.value()
+        var pw = Int(region.w * scale + 0.5)
+        var ph = Int(region.h * scale + 0.5)
+        var mem = MemorySurface(pw, ph)
+        if (
+            pw == target.width
+            and ph == target.height
+            and region.position == Point2D(0.0, 0.0)
+        ):
+            # The whole canvas at its own density: the pixels as they are.
+            mem.data = target.data.copy()
+            return mem^
+        var to_target = mat_translate(
+            (region.w / 2.0 - region.position.x) * scale,
+            (region.h / 2.0 + region.position.y) * scale,
+        ) @ mat_scale(scale, -scale)
+        _seed(mem, target, self._base, to_target)
+        return mem^
+
     def save_screenshot(mut self, path: String) raises:
         """Save this frame as a PNG at the framebuffer's own resolution.
 
@@ -954,7 +998,14 @@ struct Canvas(Movable):
 
         Deferred and raising in the same way as `save_image`: the file is
         written when the frame is presented, and a failure raises from there.
+
+        An offscreen canvas writes at once: its own pixels, at its own
+        density, alpha kept — it has no window to have been seen in.
         """
+        if self._offscreen():
+            self._state.backend.bake(self.scale)
+            self._state.backend.target.value().save(path, opaque=False)
+            return
         self._state.backend.request_screenshot(path)
 
     def rectangle(mut self, position: Point2D, w: Float64, h: Float64):
@@ -1384,8 +1435,13 @@ struct Canvas(Movable):
         it is called — off takes this frame's opening clear back out, on puts
         it back — and lasts until changed, so set it once in `create`. An
         opaque `background()` already drawn this frame stays either way.
+
+        No effect on an offscreen canvas, which has no frames to open and
+        starts transparent; it is only read back.
         """
         self._state.autoclear = enabled
+        if self._offscreen():
+            return
         self._state.backend.set_autoclear(
             enabled, clear_command(_AUTOCLEAR_COLOR)
         )
@@ -1400,7 +1456,7 @@ struct Canvas(Movable):
         A frame-wide setting: the bars are painted after the frame is drawn,
         so this frame's bars take it wherever in the frame it is called, and
         it lasts until changed — set it once in `create`. Not part of a
-        style.
+        style. No effect on an offscreen canvas, which has no window to bar.
         """
         self._state.letterbox_color = color
 
