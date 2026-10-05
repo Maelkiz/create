@@ -89,6 +89,17 @@ struct Window(NativeWindow):
     def set_fullscreen(mut self, enabled: Bool) raises:
         self._native.sdl.set_window_fullscreen(self._native.handle, enabled)
 
+    def set_title(mut self, title: String) raises:
+        self._native.set_title(title)
+
+    def set_resizable(mut self, enabled: Bool) raises:
+        self._native.set_resizable(enabled)
+
+    def set_mode(
+        mut self, fullscreen: Bool, borderless: Bool, maximized: Bool
+    ) raises:
+        self._native.set_mode(fullscreen, borderless, maximized)
+
     def _resize(mut self, width: Int, height: Int) raises:
         if width == self._width and height == self._height:
             return

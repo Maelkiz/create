@@ -362,6 +362,29 @@ struct SDL:
         if not self.lib.call["SDL_SetWindowFullscreen", Bool](window, enabled):
             raise Error("SDL_SetWindowFullscreen failed: " + self.get_error())
 
+    def set_window_title(self, window: Int, title: String) raises:
+        if not self.lib.call["SDL_SetWindowTitle", Bool](
+            window, title.unsafe_ptr()
+        ):
+            raise Error("SDL_SetWindowTitle failed: " + self.get_error())
+
+    def set_window_resizable(self, window: Int, enabled: Bool) raises:
+        if not self.lib.call["SDL_SetWindowResizable", Bool](window, enabled):
+            raise Error("SDL_SetWindowResizable failed: " + self.get_error())
+
+    def set_window_bordered(self, window: Int, enabled: Bool) raises:
+        if not self.lib.call["SDL_SetWindowBordered", Bool](window, enabled):
+            raise Error("SDL_SetWindowBordered failed: " + self.get_error())
+
+    def maximize_window(self, window: Int) -> Bool:
+        """A request the window manager may ignore, and some video drivers
+        do not support at all — so it reports rather than raises."""
+        return self.lib.call["SDL_MaximizeWindow", Bool](window)
+
+    def restore_window(self, window: Int) -> Bool:
+        """A request, like `maximize_window`."""
+        return self.lib.call["SDL_RestoreWindow", Bool](window)
+
     def gl_set_attribute(self, attr: Int32, value: Int32) raises:
         if not self.lib.call["SDL_GL_SetAttribute", Bool](attr, value):
             raise Error("SDL_GL_SetAttribute failed: " + self.get_error())

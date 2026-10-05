@@ -31,6 +31,19 @@ def test_maximized_opens_and_reports_a_size() raises -> None:
     assert_true(w.height() > 0)
 
 
+def test_title_resizability_and_mode_change_after_opening() raises -> None:
+    var w = Window("t", 64, 64)
+    w.set_title("renamed")
+    w.set_resizable(False)
+    w.set_resizable(True)
+    # Every mode from every other, ending windowed.
+    w.set_mode(True, False, False)
+    w.set_mode(False, True, False)
+    w.set_mode(False, False, True)
+    w.set_mode(False, False, False)
+    assert_true(w.is_open())
+
+
 def test_ticks_monotonic() raises -> None:
     var w = Window("t", 64, 64)
     var a = w.ticks()

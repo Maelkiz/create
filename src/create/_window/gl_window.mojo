@@ -151,6 +151,17 @@ struct GLWindow(NativeWindow):
         behind."""
         self._native.sdl.set_window_fullscreen(self._native.handle, enabled)
 
+    def set_title(mut self, title: String) raises:
+        self._native.set_title(title)
+
+    def set_resizable(mut self, enabled: Bool) raises:
+        self._native.set_resizable(enabled)
+
+    def set_mode(
+        mut self, fullscreen: Bool, borderless: Bool, maximized: Bool
+    ) raises:
+        self._native.set_mode(fullscreen, borderless, maximized)
+
     def set_swap_interval(mut self, interval: Int) raises:
         """0 = no vsync, 1 = vsync, -1 = adaptive vsync (if supported).
 

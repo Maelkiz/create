@@ -49,6 +49,22 @@ trait NativeWindow:
         `Event`s. A quit event also flips the window to closed."""
         ...
 
+    def set_title(mut self, title: String) raises:
+        ...
+
+    def set_resizable(mut self, enabled: Bool) raises:
+        """Whether the user can drag the window's edges to resize it."""
+        ...
+
+    def set_mode(
+        mut self, fullscreen: Bool, borderless: Bool, maximized: Bool
+    ) raises:
+        """Switch how the window presents itself — at most one flag set,
+        none for an ordinary decorated window. The size follows
+        asynchronously on some compositors, so read it each frame rather
+        than caching what this leaves behind."""
+        ...
+
 
 struct _SDLWindow:
     var sdl: SDL
@@ -110,6 +126,32 @@ struct _SDLWindow:
             self.sdl.quit_subsystems()
         except:
             pass
+
+    def set_title(mut self, title: String) raises:
+        self.sdl.set_window_title(self.handle, title)
+
+    def set_resizable(mut self, enabled: Bool) raises:
+        self.sdl.set_window_resizable(self.handle, enabled)
+
+    def set_mode(
+        mut self, fullscreen: Bool, borderless: Bool, maximized: Bool
+    ) raises:
+        """Leave whatever mode the window is in — windowed, bordered and
+        restored — then enter the one asked for, so any mode can follow any
+        other.
+
+        Restoring and maximizing are requests a window manager may ignore,
+        so a refusal leaves the window as it is rather than raising; the
+        loop reads the size it ends up with each frame either way."""
+        self.sdl.set_window_fullscreen(self.handle, False)
+        self.sdl.set_window_bordered(self.handle, True)
+        _ = self.sdl.restore_window(self.handle)
+        if fullscreen:
+            self.sdl.set_window_fullscreen(self.handle, True)
+        elif borderless:
+            self.sdl.set_window_bordered(self.handle, False)
+        elif maximized:
+            _ = self.sdl.maximize_window(self.handle)
 
     def rumble_gamepad(
         self,
