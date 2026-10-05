@@ -25,7 +25,11 @@ from create.core.context import Context
 
 from ._events import apply_events
 from ._step import first_step, step
-from ._window_loop import _finish_frame
+from ._window_loop import (
+    _AppliedWindow,
+    _apply_window_dials,
+    _finish_frame,
+)
 from .program import Program
 from .window_mode import WindowMode
 
@@ -108,6 +112,7 @@ def _run_loop[
     mut win: GLWindow,
     var state: PersistentCanvasState,
     mut context: Context,
+    var applied: _AppliedWindow,
 ) raises:
     context.time._start(win.ticks())
     while win.is_open() and not context._quit:
@@ -123,6 +128,7 @@ def _run_loop[
         var frame_start = win.ticks()
         context._advance_frame(frame_start)
         state = step(program, context, state^)
+        _apply_window_dials(win, applied, context)
         _present(win, state)
         _finish_frame(win, context, frame_start)
     # Rule 3 from `_gl.mojo`: the context owner must outlive the last GL call,
@@ -172,8 +178,12 @@ def run_gl[
     var context = Context()
     context.design_size(width, height)
     context.autoscale(autoscale)
+    context.title(title)
+    context.resizable(resizable)
     # Before create(), from `run`'s arguments, as in the CPU loop.
     _wait_for_dimensions(win, state, context)
+    var applied = _AppliedWindow(context)
     var program = first_step[P](context, state)
+    _apply_window_dials(win, applied, context)
     _present(win, state)
-    _run_loop(program, win, state^, context)
+    _run_loop(program, win, state^, context, applied^)

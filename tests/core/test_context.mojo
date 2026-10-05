@@ -79,5 +79,15 @@ def test_dials_read_back_what_was_set() raises -> None:
     assert_true(not context.quit_on_escape())
 
 
+def test_window_dials_read_back_what_was_set() raises -> None:
+    var context = Context()
+    assert_equal(context.title(), "")
+    assert_true(context.resizable())
+    context.title("Score: 3")
+    context.resizable(False)
+    assert_equal(context.title(), "Score: 3")
+    assert_true(not context.resizable())
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

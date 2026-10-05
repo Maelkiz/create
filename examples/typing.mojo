@@ -37,6 +37,13 @@ struct TypingTest(Program):
         )
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        # Set every frame; the window is only told when it changes.
+        context.title(
+            "Typing — phrase "
+            + String(self.phrase + 1)
+            + " of "
+            + String(len(self.phrases))
+        )
         canvas.background(Color(30, 30, 40))
         var target = characters(self.phrases[self.phrase])
         var finished = self.typed.text == self.phrases[self.phrase]

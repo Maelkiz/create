@@ -6,7 +6,11 @@ from create.render.canvas import PersistentCanvasState
 from create.core.context import Context
 from ._events import apply_events
 from ._step import first_step, step
-from ._window_loop import _finish_frame
+from ._window_loop import (
+    _AppliedWindow,
+    _apply_window_dials,
+    _finish_frame,
+)
 from create.render.surface import Surface
 from .program import Program
 from .window_mode import WindowMode
@@ -55,6 +59,7 @@ def _run_loop[
     mut win: Window,
     var state: PersistentCanvasState,
     mut context: Context,
+    var applied: _AppliedWindow,
 ) raises:
     # Seeded here rather than in run() so the program's create() — which may
     # load fonts or decode audio — does not land in the first frame's delta.
@@ -79,6 +84,7 @@ def _run_loop[
         # resize, and a stale width would run the raster loops off the new
         # buffer.
         state = step(program, context, state^)
+        _apply_window_dials(win, applied, context)
         _present(win, state)
         _finish_frame(win, context, frame_start)
 
@@ -173,10 +179,14 @@ def run[
     var context = Context()
     context.design_size(width, height)
     context.autoscale(autoscale)
+    context.title(title)
+    context.resizable(resizable)
     # The mapping comes from `run`'s arguments and is in place before
     # create(), so a dial create() turns applies from the next frame, as it
     # does from `update`.
     _wait_for_dimensions(win, state, context)
+    var applied = _AppliedWindow(context)
     var program = first_step[P](context, state)
+    _apply_window_dials(win, applied, context)
     _present(win, state)
-    _run_loop(program, win, state^, context)
+    _run_loop(program, win, state^, context, applied^)

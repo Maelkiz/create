@@ -55,6 +55,8 @@ struct Context(Copyable, Movable):
     write it: the loop carries it into the next frame."""
     var _autoscale: AutoScale
     var _quit_on_escape: Bool
+    var _title: String
+    var _resizable: Bool
     var _design_w: Int
     var _design_h: Int
     var _frame_count: Int
@@ -69,6 +71,8 @@ struct Context(Copyable, Movable):
         self.input = Input()
         self._autoscale = AutoScale.FIT
         self._quit_on_escape = True
+        self._title = ""
+        self._resizable = True
         self._design_w = 0
         self._design_h = 0
         self._frame_count = 0
@@ -113,8 +117,35 @@ struct Context(Copyable, Movable):
         """Whether Escape stops the run loop. On by default."""
         self._quit_on_escape = enabled
 
+    def title(self) -> String:
+        """The window's title: `run`'s `title` unless set."""
+        return self._title
+
+    def title(mut self, title: String):
+        """Retitle the window — a score, a level name, an unsaved mark.
+
+        Shows with the frame it is set in: the loop applies it before
+        presenting, and only when it changed, so setting it every frame
+        costs nothing. A headless run has no window and ignores it.
+        """
+        self._title = title
+
+    def resizable(self) -> Bool:
+        """Whether the user can resize the window: `run`'s `resizable`
+        unless set."""
+        return self._resizable
+
+    def resizable(mut self, enabled: Bool):
+        """Let the user drag the window's edges to resize it, or stop them.
+
+        Applied with the frame it is set in, like `title`. A headless run
+        ignores it.
+        """
+        self._resizable = enabled
+
     def frame_count(self) -> Int:
-        """Frames rendered so far. 1 during the first `update`."""
+        """Frames rendered so far: 1 in `create`, which draws the first, and
+        2 during the first `update`."""
         return self._frame_count
 
     def frame_rate(self) -> Float64:
