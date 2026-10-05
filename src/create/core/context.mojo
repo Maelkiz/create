@@ -22,29 +22,26 @@ struct Context(Copyable, Movable):
     Two directions share it. The loop writes `time` and `input` before each
     `update`, for the program to read; the program sets the dials, for the
     loop to read. Every dial is a method, like the `Canvas` style setters:
-    `context.autoclear(False)`, `context.max_frame_rate(30)`. Called with no
-    arguments, each reads back the value as set, for a debug overlay or a
-    settings screen to show.
+    `context.autoscale(AutoScale.EXTEND)`, `context.max_frame_rate(30)`.
+    Called with no arguments, each reads back the value as set, for a debug
+    overlay or a settings screen to show.
 
     The dials are the run's, not the drawing's: the autoscale mode and design
-    size the next frame's mapping is derived from, whether the next frame
-    opens with a clear, and the ones the run loop reads after a frame has
-    been released, `max_frame_rate`, `quit` and `rumble`. Drawing settings
-    that outlive a frame, such as the font and the letterbox colour, are on
-    the `Canvas`.
+    size the next frame's mapping is derived from, and the ones the run loop
+    reads after a frame has been released, `max_frame_rate`, `quit` and
+    `rumble`. Drawing settings that outlive a frame, such as the font, the
+    letterbox colour and the autoclear, are on the `Canvas`.
 
     Handed alongside the `Canvas` to `Program.create`, which draws frame 1,
     and to every `Program.update` after it.
 
-    **Read at frame construction.** `Canvas` takes its copy of `autoclear`
-    when it is built, and the loop
-    re-derives the viewport from `autoscale` and the design size at the top of
-    each frame. So a dial turned part-way through `update` applies to the *next*
-    frame, uniformly — the clear of the frame being rendered was recorded before
-    `update` was called, and one frame cannot record under two mappings. Set
-    them in `create` to have them hold from frame two. `max_frame_rate`,
-    `quit` and `rumble` are the exception, and only because the loop reads
-    them after the frame body returns. A dial read back after such a change
+    **Read at frame construction.** The loop re-derives the viewport from
+    `autoscale` and the design size at the top of each frame. So a dial turned
+    part-way through `update` applies to the *next* frame — one frame cannot
+    record under two mappings. Set them in `create` to have them hold from
+    frame two, or pass them to `run` to have them hold from frame one.
+    `max_frame_rate`, `quit` and `rumble` are the exception, and only because
+    the loop reads them after the frame body returns. A dial read back after such a change
     reports the new value, not the one the frame in hand was built with.
     """
 
@@ -57,7 +54,6 @@ struct Context(Copyable, Movable):
     it before `update`, so it is settled for the whole frame. Read it, don't
     write it: the loop carries it into the next frame."""
     var _autoscale: AutoScale
-    var _autoclear: Bool
     var _quit_on_escape: Bool
     var _design_w: Int
     var _design_h: Int
@@ -72,7 +68,6 @@ struct Context(Copyable, Movable):
         self.time = Time()
         self.input = Input()
         self._autoscale = AutoScale.FIT
-        self._autoclear = True
         self._quit_on_escape = True
         self._design_w = 0
         self._design_h = 0
@@ -109,19 +104,6 @@ struct Context(Copyable, Movable):
         """Choose how the design size maps onto the window — see
         `AutoScale`."""
         self._autoscale = mode
-
-    def autoclear(self) -> Bool:
-        """Whether each frame opens with a clear. `True` unless set."""
-        return self._autoclear
-
-    def autoclear(mut self, enabled: Bool):
-        """Switch the clear each frame opens with off or back on.
-
-        On by default, clearing to gray 200 so the default style is visible
-        on a program that never calls `canvas.background()`. Off lets ink
-        accumulate across frames.
-        """
-        self._autoclear = enabled
 
     def quit_on_escape(self) -> Bool:
         """Whether Escape stops the run loop. `True` unless set."""
@@ -174,11 +156,8 @@ struct Context(Copyable, Movable):
         )
 
     def _new_canvas(self, var state: PersistentCanvasState) -> Canvas:
-        """Build this frame's `Canvas` under the dials as they stand now."""
-        return Canvas(
-            state^,
-            autoclear=self._autoclear,
-        )
+        """Build this frame's `Canvas` from the carried-over state."""
+        return Canvas(state^)
 
     def _advance_frame(mut self, now: Int):
         """Tick the clock and count the frame, before each `update`."""

@@ -9,9 +9,9 @@ struct App(Program):
     def create(mut context: Context, mut canvas: Canvas) raises -> App:
         # The trails below are rendered by fading the *previous* frame, so the
         # per-frame clear has to be off — it would wipe what they fade.
-        context.autoclear(False)
-        # The first frame is cleared already, so it is painted the colour the
-        # trails fade towards rather than starting from the gray clear.
+        canvas.autoclear(False)
+        # With no clear, the first frame is painted the colour the trails
+        # fade towards, once.
         canvas.background(Color(0x11, 0x11, 0x11))
         return App(0.0)
 

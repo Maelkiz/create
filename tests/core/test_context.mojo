@@ -63,7 +63,6 @@ def test_quit_is_recorded_on_the_context() raises -> None:
 def test_dials_read_back_their_defaults() raises -> None:
     var context = Context()
     assert_true(context.autoscale() == AutoScale.FIT)
-    assert_true(context.autoclear())
     assert_true(context.quit_on_escape())
     assert_equal(context.max_frame_rate(), 0)
 
@@ -72,13 +71,11 @@ def test_dials_read_back_what_was_set() raises -> None:
     var context = Context()
     context.design_size(800, 600)
     context.autoscale(AutoScale.EXTEND)
-    context.autoclear(False)
     context.quit_on_escape(False)
     var size = context.design_size()
     assert_equal(size[0], 800)
     assert_equal(size[1], 600)
     assert_true(context.autoscale() == AutoScale.EXTEND)
-    assert_true(not context.autoclear())
     assert_true(not context.quit_on_escape())
 
 

@@ -144,9 +144,9 @@ def test_with_the_autoclear_off_reads_start_from_the_last_frame() raises -> (
     None
 ):
     var context = Context()
-    context.autoclear(False)
     var mem = MemorySurface(200, 100)
     var canvas = _canvas(context)
+    canvas.autoclear(False)
     canvas.background(Color.RED)
     # The first read switches keeping frames on; it sees only this frame.
     assert_equal(canvas.pixel((0, 0)), Color.RED)

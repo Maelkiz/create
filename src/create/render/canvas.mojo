@@ -87,6 +87,9 @@ struct PersistentCanvasState(Movable):
     var letterbox_color: Color
     """The colour of the bars outside the design area under `AutoScale.FIT`,
     set through `canvas.letterbox_color`."""
+    var autoclear: Bool
+    """Whether each frame opens with a clear, set through
+    `canvas.autoclear`."""
 
     def __init__(out self, kind: RenderBackend = RenderBackend.CPU) raises:
         """`kind` picks the backend that will present the frames — a GPU one
@@ -94,6 +97,7 @@ struct PersistentCanvasState(Movable):
         self.backend = Backend(kind)
         self.view = Viewport()
         self.letterbox_color = Color.BLACK
+        self.autoclear = True
 
     def _set_viewport(
         mut self,
@@ -269,9 +273,6 @@ struct Canvas:
     var height: Int
     var scale: Float64
     var _view: Viewport
-    var _autoclear: Bool
-    """Whether this frame opened with a clear, so whether a read starts
-    from transparent or from the last frame's pixels."""
     var _state: PersistentCanvasState
     # Style is per-frame, not carried in `_state`: carrying one across would
     # only preserve a forgotten setting. A reusable style is a `Style` field.
@@ -293,23 +294,13 @@ struct Canvas:
     var _transform_inv: Matrix[3, 3]
     var _transform_stack: List[Matrix[3, 3]]
 
-    def __init__(
-        out self,
-        var state: PersistentCanvasState,
-        *,
-        autoclear: Bool,
-    ):
-        """Adopt the carried-over state, and this frame's mapping and dials.
-
-        `autoclear` is `Context`'s, copied in by value when the frame begins:
-        the frame's clear is recorded here, so a program turning it mid-frame
-        changes the next frame rather than this one halfway through.
-        """
+    def __init__(out self, var state: PersistentCanvasState):
+        """Adopt the carried-over state and this frame's mapping, and open
+        the frame with a clear unless `autoclear` is off."""
         self._view = state.view
         self.width = state.view.width
         self.height = state.view.height
         self.scale = state.view.scale
-        self._autoclear = autoclear
         self._state = state^
         self._style = Style()
         self._base = self._view.base_matrix()
@@ -325,8 +316,8 @@ struct Canvas:
         self._state.backend.begin_frame(self._base, self.width, self.height)
         # Recorded here rather than by the loop so both loops get it from one
         # place, and so a program's own `background()` can coalesce with it.
-        if autoclear:
-            self._state.backend.record_clear(clear_command(_AUTOCLEAR_COLOR))
+        if self._state.autoclear:
+            self._state.backend.open_with_clear(clear_command(_AUTOCLEAR_COLOR))
 
     def _release(deinit self) -> PersistentCanvasState:
         """Hand back the state the next frame's `Canvas` should start from.
@@ -727,10 +718,10 @@ struct Canvas:
         A translucent color blends instead of clearing, which is how motion
         trails are rendered: `canvas.background(Color(0x11, 0x11, 0x11, 24))`
         fades the previous frame a little further each time. Trails need
-        `context.autoclear(False)` set in `create`, or the frame's own clear wipes
+        `canvas.autoclear(False)` set in `create`, or the frame's own clear wipes
         what they were fading.
 
-        An opaque color replaces `context.autoclear`'s clear rather than
+        An opaque color replaces the autoclear rather than
         stacking on it, so opening `update` with this costs one clear, not two.
         """
         self._state.backend.record_clear(clear_command(color))
@@ -743,7 +734,7 @@ struct Canvas:
         whole window. Where `FIT` leaves letterbox bars, the bars are painted
         over it as usual.
 
-        Like a colour, it replaces `context.autoclear`'s clear if every stop
+        Like a colour, it replaces the autoclear if every stop
         is opaque, and blends over what is there otherwise.
         """
         self._state.backend.record_clear(
@@ -821,7 +812,7 @@ struct Canvas:
         replays the frame on the CPU once, and again only after something
         more is drawn, so many reads in a row cost one replay.
 
-        With `context.autoclear(False)`, a read starts from the last frame's
+        With `canvas.autoclear(False)`, a read starts from the last frame's
         pixels, as the frame did — from the second frame that reads on; the
         first sees only what it drew itself. That needs the CPU backend,
         which is also the only one that accumulates.
@@ -830,7 +821,7 @@ struct Canvas:
         var y = Int(floor(Float64(self.height) / 2.0 - position.y))
         if x < 0 or y < 0 or x >= self.width or y >= self.height:
             return Color.TRANSPARENT
-        self._state.backend.read_frame(seeded=not self._autoclear)
+        self._state.backend.read_frame(seeded=not self._state.autoclear)
         return self._state.backend.frame_read.value().pixel(x, y)
 
     def snapshot(mut self, scale: Float64 = 1.0) raises -> Image:
@@ -877,13 +868,15 @@ struct Canvas:
         ):
             # The whole screen at design size is what `pixel` reads,
             # so the two share one replay.
-            backend.read_frame(seeded=not self._autoclear)
+            backend.read_frame(seeded=not self._state.autoclear)
             return Image.from_rgba(pw, ph, backend.frame_read.value().data)
         var to_target = mat_translate(
             (region.w / 2.0 - region.position.x) * scale,
             (region.h / 2.0 + region.position.y) * scale,
         ) @ mat_scale(scale, -scale)
-        var mem = backend.read(pw, ph, scale, to_target, not self._autoclear)
+        var mem = backend.read(
+            pw, ph, scale, to_target, not self._state.autoclear
+        )
         return Image.from_rgba(pw, ph, mem.data)
 
     def save_screenshot(mut self, path: String) raises:
@@ -1296,6 +1289,27 @@ struct Canvas:
         not typographic baselines.
         """
         self._style.text_align = align
+
+    def autoclear(self) -> Bool:
+        """Whether frames open with the clear to gray 200. On unless set."""
+        return self._state.autoclear
+
+    def autoclear(mut self, enabled: Bool):
+        """Switch the clear each frame opens with off or back on.
+
+        On by default, clearing to gray 200 so the default style is visible
+        on a program that never calls `background()`. Off lets ink
+        accumulate across frames (CPU backend only — the GPU swaps buffers).
+
+        A frame-wide setting: it applies to this whole frame, wherever in it
+        it is called — off takes this frame's opening clear back out, on puts
+        it back — and lasts until changed, so set it once in `create`. An
+        opaque `background()` already drawn this frame stays either way.
+        """
+        self._state.autoclear = enabled
+        self._state.backend.set_autoclear(
+            enabled, clear_command(_AUTOCLEAR_COLOR)
+        )
 
     def letterbox_color(self) -> Color:
         """The colour of the bars outside the design area. Black unless set."""

@@ -818,6 +818,10 @@ struct Backend(Movable):
     var last_frame: Optional[MemorySurface]
     """The last presented frame at design size, while `keep_frames`
     is on: what a read with the autoclear off starts from."""
+    var autoclear_head: Bool
+    """Whether the frame's first command is still the clear the frame opened
+    with, so `set_autoclear` can take it back out. Cleared when a
+    `background()` replaces it, which then stays."""
     var commands: List[RenderCommand]
     """The frame being recorded.
 
@@ -848,6 +852,7 @@ struct Backend(Movable):
         self.screen_w = 0
         self.screen_h = 0
         self.recorded = 0
+        self.autoclear_head = False
         self.frame_read = None
         self.frame_read_at = -1
         self.keep_frames = False
@@ -880,7 +885,7 @@ struct Backend(Movable):
         immediately before it — with no render in between to survive — paints
         nothing. Dropping it here rather than at replay keeps both backends
         and both captures agreeing, and costs the common case nothing: a
-        program that keeps `context.autoclear` on and also opens `update` with
+        program that keeps `canvas.autoclear` on and also opens `update` with
         `background()` records one clear, not two. A clipped clear covers only
         its clip, so it replaces nothing.
         """
@@ -892,9 +897,45 @@ struct Backend(Movable):
             and len(self.commands) > 0
             and self.commands[len(self.commands) - 1].kind == CMD_CLEAR
         ):
+            if len(self.commands) == 1:
+                self.autoclear_head = False
             self.commands[len(self.commands) - 1] = c^
             return
         self.commands.append(c^)
+
+    def open_with_clear(mut self, var clear: RenderCommand):
+        """Record the clear a frame opens with, as its first command."""
+        self.record_clear(clear^)
+        self.autoclear_head = True
+
+    def set_autoclear(mut self, enabled: Bool, var clear: RenderCommand):
+        """Take the frame's opening clear back out, or put `clear` in as
+        its first command, partway through recording.
+
+        Off removes only the clear the frame opened with: an opaque
+        `background()` that replaced it is the program's own and stays. On
+        does nothing if the frame already opens with an opaque clear. Either
+        change counts as a record, so a cached read is replayed.
+        """
+        if not enabled:
+            if self.autoclear_head:
+                _ = self.commands.pop(0)
+                self.autoclear_head = False
+                self.recorded += 1
+            return
+        if self.autoclear_head:
+            return
+        if (
+            len(self.commands) > 0
+            and self.commands[0].kind == CMD_CLEAR
+            and self.commands[0].clip == 0
+            and _clear_is_opaque(self.commands[0])
+        ):
+            return
+        clear.clip = 0
+        self.commands.insert(0, clear^)
+        self.autoclear_head = True
+        self.recorded += 1
 
     def request_image(mut self, var request: _ImageRequest):
         """File a design-size capture of the frame being recorded."""
@@ -974,6 +1015,7 @@ struct Backend(Movable):
         self.screen_inv = inverse(screen)
         self.screen_w = width
         self.screen_h = height
+        self.autoclear_head = False
 
     def read(
         mut self,
