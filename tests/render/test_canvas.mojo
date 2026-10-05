@@ -16,7 +16,7 @@ from std.testing import (
 from create import *
 from create.core.headless import run_headless
 from create.render.surface import MemorySurface
-from create.sprite.sprite import Sprite
+from create.image.image import Image
 from std.memory import ArcPointer
 from create.math.geometry import (
     Circle,
@@ -574,52 +574,52 @@ def test_triangle_corner_radius_under_rotation() raises -> None:
     assert_equal(m.pixel(50, 78), Color.BLACK)
 
 
-struct SpriteBlit(Program):
-    var sprite: Sprite
+struct ImageBlit(Program):
+    var image: Image
 
-    def __init__(out self, var sprite: Sprite):
-        self.sprite = sprite^
+    def __init__(out self, var image: Image):
+        self.image = image^
 
     @staticmethod
-    def create(mut context: Context) raises -> SpriteBlit:
-        return SpriteBlit(Sprite.load("tests/fixtures/test_2x2.bmp"))
+    def create(mut context: Context) raises -> ImageBlit:
+        return ImageBlit(Image.load("tests/fixtures/test_2x2.bmp"))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.sprite(self.sprite, (0.0, 0.0))
+        canvas.image(self.image, (0.0, 0.0))
 
 
-def test_sprite_blits_unflipped() raises -> None:
+def test_image_blits_unflipped() raises -> None:
     # test_2x2.bmp: top-left red, top-right white, bottom-left blue, bottom-
-    # right white. Sprites are not y-flipped — only their anchor is mapped — so
+    # right white. Images are not y-flipped — only their anchor is mapped — so
     # the image's top row stays on top.
-    var m = run_headless[SpriteBlit](100, 100)
+    var m = run_headless[ImageBlit](100, 100)
     assert_equal(m.pixel(49, 49), Color.RED)
     assert_equal(m.pixel(50, 49), Color.WHITE)
     assert_equal(m.pixel(49, 50), Color.BLUE)
     assert_equal(m.pixel(50, 50), Color.WHITE)
 
 
-struct PngSpriteBlit(Program):
-    var sprite: Sprite
+struct PngImageBlit(Program):
+    var image: Image
 
-    def __init__(out self, var sprite: Sprite):
-        self.sprite = sprite^
+    def __init__(out self, var image: Image):
+        self.image = image^
 
     @staticmethod
-    def create(mut context: Context) raises -> PngSpriteBlit:
-        return PngSpriteBlit(Sprite.load("tests/fixtures/test_2x2.png"))
+    def create(mut context: Context) raises -> PngImageBlit:
+        return PngImageBlit(Image.load("tests/fixtures/test_2x2.png"))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.sprite(self.sprite, (0.0, 0.0))
+        canvas.image(self.image, (0.0, 0.0))
 
 
-def test_png_sprite_blits_unflipped() raises -> None:
+def test_png_image_blits_unflipped() raises -> None:
     # test_2x2.png: top-left=red, top-right=green, bottom-left=blue,
     # bottom-right=white -- proves the decode-to-screen path for a format
     # other than BMP, sharing the already-covered raster blit.
-    var m = run_headless[PngSpriteBlit](100, 100)
+    var m = run_headless[PngImageBlit](100, 100)
     assert_equal(m.pixel(49, 49), Color.RED)
     assert_equal(m.pixel(50, 49), Color(0, 255, 0))
     assert_equal(m.pixel(49, 50), Color.BLUE)
@@ -2122,21 +2122,21 @@ def _takes_a_bare_canvas(mut canvas: Canvas) raises:
 struct AnimatorBlit(Program):
     """Eight 2x2 frames, frame i tinted R = i * 20, advanced by the run loop.
 
-    `SpriteAnimation`, `SpriteAnimator` and the `canvas.sprite` overload all
+    `Animation`, `Animator` and the `canvas.image` overload all
     arrive through `from create import *` alone.
     """
 
-    var animator: SpriteAnimator
+    var animator: Animator
 
-    def __init__(out self, var animator: SpriteAnimator):
+    def __init__(out self, var animator: Animator):
         self.animator = animator^
 
     @staticmethod
     def create(mut context: Context) raises -> AnimatorBlit:
-        var frames = List[Sprite]()
+        var frames = List[Image]()
         for i in range(8):
-            frames.append(Sprite.solid(2, 2, UInt8(i * 20), 0, 0))
-        var a = SpriteAnimator(ArcPointer(SpriteAnimation(frames^, 100.0)))
+            frames.append(Image.solid(2, 2, UInt8(i * 20), 0, 0))
+        var a = Animator(ArcPointer(Animation(frames^, 100.0)))
         a.play()
         return AnimatorBlit(a^)
 
@@ -2144,7 +2144,7 @@ struct AnimatorBlit(Program):
         self.animator.update(context.time.delta)
 
         canvas.background(Color.BLACK)
-        canvas.sprite(self.animator, (0.0, 0.0))
+        canvas.image(self.animator, (0.0, 0.0))
 
 
 def test_animator_blits_the_current_frame() raises -> None:
@@ -2164,22 +2164,20 @@ def test_animator_blits_the_current_frame() raises -> None:
 
 
 struct AnimatorSized(Program):
-    var animator: SpriteAnimator
+    var animator: Animator
 
-    def __init__(out self, var animator: SpriteAnimator):
+    def __init__(out self, var animator: Animator):
         self.animator = animator^
 
     @staticmethod
     def create(mut context: Context) raises -> AnimatorSized:
-        var frames = List[Sprite]()
-        frames.append(Sprite.solid(2, 2, 255, 0, 0))
-        return AnimatorSized(
-            SpriteAnimator(ArcPointer(SpriteAnimation(frames^)))
-        )
+        var frames = List[Image]()
+        frames.append(Image.solid(2, 2, 255, 0, 0))
+        return AnimatorSized(Animator(ArcPointer(Animation(frames^))))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.sprite(self.animator, Point2D(0.0, 0.0), 40, 40)
+        canvas.image(self.animator, Point2D(0.0, 0.0), 40, 40)
 
 
 def test_animator_sized_overload_scales() raises -> None:
@@ -2192,39 +2190,37 @@ def test_animator_sized_overload_scales() raises -> None:
 
 
 struct AnimatorEveryOverload(Program):
-    """Renders through both `canvas.sprite(SpriteAnimator, ...)` overloads,
+    """Renders through both `canvas.image(Animator, ...)` overloads,
     each from a `Float64` tuple, an `Int` tuple and a `Point2D`.
 
     Without a call site each is never type-checked: a library build only
     checks the `def` bodies it reaches. The assertions below double as the
     positioning check -- every call must land its frame on the same anchor
-    its `Sprite` counterpart would.
+    its `Image` counterpart would.
     """
 
-    var animator: SpriteAnimator
+    var animator: Animator
 
-    def __init__(out self, var animator: SpriteAnimator):
+    def __init__(out self, var animator: Animator):
         self.animator = animator^
 
     @staticmethod
     def create(mut context: Context) raises -> AnimatorEveryOverload:
-        var frames = List[Sprite]()
-        frames.append(Sprite.solid(2, 2, 255, 0, 0))
-        return AnimatorEveryOverload(
-            SpriteAnimator(ArcPointer(SpriteAnimation(frames^)))
-        )
+        var frames = List[Image]()
+        frames.append(Image.solid(2, 2, 255, 0, 0))
+        return AnimatorEveryOverload(Animator(ArcPointer(Animation(frames^))))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
         # Top row: the unsized overloads, at 1:1 so the 2x2 frame covers its
         # own anchor pixel.
-        canvas.sprite(self.animator, (-40.0, 40.0))
-        canvas.sprite(self.animator, (-20, 40))
-        canvas.sprite(self.animator, Point2D(0.0, 40.0))
+        canvas.image(self.animator, (-40.0, 40.0))
+        canvas.image(self.animator, (-20, 40))
+        canvas.image(self.animator, Point2D(0.0, 40.0))
         # Bottom row: the sized overloads, scaled up to 4x4.
-        canvas.sprite(self.animator, (-40.0, -40.0), 4, 4)
-        canvas.sprite(self.animator, (-20, -40), 4, 4)
-        canvas.sprite(self.animator, Point2D(0.0, -40.0), 4, 4)
+        canvas.image(self.animator, (-40.0, -40.0), 4, 4)
+        canvas.image(self.animator, (-20, -40), 4, 4)
+        canvas.image(self.animator, Point2D(0.0, -40.0), 4, 4)
 
 
 def test_every_animator_overload_renders_at_its_anchor() raises -> None:
@@ -2240,9 +2236,9 @@ def test_every_animator_overload_renders_at_its_anchor() raises -> None:
     assert_equal(m.pixel(50, 50), Color.BLACK)
 
 
-def _half_opaque() raises -> Sprite:
-    """A 2x2 sprite whose left column is opaque red, its right transparent."""
-    var sp = Sprite(2, 2)
+def _half_opaque() raises -> Image:
+    """A 2x2 image whose left column is opaque red, its right transparent."""
+    var sp = Image(2, 2)
     var ptr = sp._pixels.unsafe_ptr()
     for row in range(2):
         var off = row * 2 * 4
@@ -2251,25 +2247,25 @@ def _half_opaque() raises -> Sprite:
     return sp^
 
 
-struct ShadowedSpriteEveryOverload(Program):
-    """Renders through all four `canvas.sprite` overloads with a hard shadow
+struct ShadowedImageEveryOverload(Program):
+    """Renders through all four `canvas.image` overloads with a hard shadow
     straight down, so each overload's shadow path gets type-checked and its
     silhouette read back."""
 
-    var image: Sprite
-    var animator: SpriteAnimator
+    var image: Image
+    var animator: Animator
 
-    def __init__(out self, var image: Sprite, var animator: SpriteAnimator):
+    def __init__(out self, var image: Image, var animator: Animator):
         self.image = image^
         self.animator = animator^
 
     @staticmethod
-    def create(mut context: Context) raises -> ShadowedSpriteEveryOverload:
-        var frames = List[Sprite]()
+    def create(mut context: Context) raises -> ShadowedImageEveryOverload:
+        var frames = List[Image]()
         frames.append(_half_opaque())
-        return ShadowedSpriteEveryOverload(
+        return ShadowedImageEveryOverload(
             _half_opaque(),
-            SpriteAnimator(ArcPointer(SpriteAnimation(frames^))),
+            Animator(ArcPointer(Animation(frames^))),
         )
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -2282,15 +2278,15 @@ struct ShadowedSpriteEveryOverload(Program):
                 shadow_enabled=True,
             )
         ):
-            canvas.sprite(self.image, (-40, 30))
-            canvas.sprite(self.animator, (-20, 30))
-            canvas.sprite(self.image, (0, 30), 4, 4)
-            canvas.sprite(self.animator, (20, 30), 4, 4)
+            canvas.image(self.image, (-40, 30))
+            canvas.image(self.animator, (-20, 30))
+            canvas.image(self.image, (0, 30), 4, 4)
+            canvas.image(self.animator, (20, 30), 4, 4)
 
 
-def test_every_sprite_overload_casts_its_alpha_as_a_shadow() raises -> None:
+def test_every_image_overload_casts_its_alpha_as_a_shadow() raises -> None:
     # Anchor (x, 30) lands on pixel (50 + x, 20); the shadow ten rows below.
-    var m = run_headless[ShadowedSpriteEveryOverload](100, 100)
+    var m = run_headless[ShadowedImageEveryOverload](100, 100)
     for x in [10, 30]:
         assert_equal(m.pixel(x - 1, 20), Color.RED)
         # Only the opaque column casts a shadow.
@@ -2315,14 +2311,14 @@ comptime _IMG_2X = "/tmp/mojo_create_test_save_image_2x.png"
 comptime _IMG_ALPHA = "/tmp/mojo_create_test_save_image_alpha.png"
 
 
-def _saved(path: String) raises -> Sprite:
+def _saved(path: String) raises -> Image:
     """Read back a file one of these programs wrote, then delete it."""
-    var back = Sprite.load(path)
+    var back = Image.load(path)
     remove(path)
     return back^
 
 
-def _px(s: Sprite, x: Int, y: Int) -> Color:
+def _px(s: Image, x: Int, y: Int) -> Color:
     var off = (y * s.width + x) * 4
     return Color(
         s._pixels[off],

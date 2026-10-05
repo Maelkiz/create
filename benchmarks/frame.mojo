@@ -4,7 +4,7 @@
     pixi run benchmark frame cpu    # CPU replay, for comparison
 
 The sketch is deliberately more than a display is worth: a few thousand
-animated shapes, two sprites and a block of text, all of it re-recorded every
+animated shapes, two images and a block of text, all of it re-recorded every
 frame so the measurement covers recording, tessellation and rasterisation
 rather than a static buffer being re-shown. Frame times are printed as a
 rolling mean over `_WINDOW` frames, so a single hitch does not read as a
@@ -38,7 +38,7 @@ def _round(v: Float64) -> String:
 @fieldwise_init
 struct Bench(Program):
     var t: Float64
-    var logo: Sprite
+    var logo: Image
     var frames: Int
     var elapsed: Float64
     var worst: Float64
@@ -48,7 +48,7 @@ struct Bench(Program):
         context.autoscale(AutoScale.OFF)
         return Bench(
             0.0,
-            Sprite.load(source_path("../assets/logo/png/logo-cutout.png")),
+            Image.load(source_path("../assets/logo/png/logo-cutout.png")),
             0,
             0.0,
             0.0,
@@ -107,10 +107,10 @@ struct Bench(Program):
                         (x + size, y - size),
                     )
 
-        # Two sprites: one texture, so one extra batch for the pair rather
+        # Two images: one texture, so one extra batch for the pair rather
         # than one each.
-        canvas.sprite(self.logo, (-w + 90, h - 90), 140, 140)
-        canvas.sprite(self.logo, (-w + 220, h - 90), 100, 100)
+        canvas.image(self.logo, (-w + 90, h - 90), 140, 140)
+        canvas.image(self.logo, (-w + 220, h - 90), 100, 100)
 
         with canvas.style():
             canvas.outline_enabled(False)
@@ -118,7 +118,7 @@ struct Bench(Program):
             canvas.font_weight(FontWeight.MEDIUM)
             canvas.text_align(Align.CENTER)
             canvas.text(
-                String(_SHAPES) + " shapes, two sprites, this text", (0, 0)
+                String(_SHAPES) + " shapes, two images, this text", (0, 0)
             )
 
 

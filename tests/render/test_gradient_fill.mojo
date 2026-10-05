@@ -283,7 +283,7 @@ def test_extend_spans_the_whole_window() raises -> None:
 
 def test_a_transparent_capture_drops_the_background() raises -> None:
     _ = run_headless[TransparentCapture](100, 100)
-    var img = Sprite.load(_IMG_TRANSPARENT)
+    var img = Image.load(_IMG_TRANSPARENT)
     remove(_IMG_TRANSPARENT)
 
     def px(x: Int, y: Int) {imm img} -> Color:

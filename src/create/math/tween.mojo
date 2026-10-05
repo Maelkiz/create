@@ -7,7 +7,7 @@ from .util import lerp, fmod
 struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
     """A value moving from one number to another over a fixed duration.
 
-    A tween is a playhead, in the same sense as `SpriteAnimator`: the program
+    A tween is a playhead, in the same sense as `Animator`: the program
     owns one per thing being animated and ticks it once per frame with the
     frame delta.
 
@@ -38,7 +38,7 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
     ```
 
     Constructed stopped at `start` -- nothing moves until `play`, `loop` or
-    `ping_pong`. The verbs mean what they mean on `SpriteAnimator`: `play`
+    `ping_pong`. The verbs mean what they mean on `Animator`: `play`
     always restarts from the beginning, `pause` freezes where it is and
     `resume` continues from there.
     """
@@ -157,7 +157,7 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
         """Advance the playhead by `dt` seconds. Call once per frame.
 
         Nothing else moves a tween, so a tween never ticked is a tween stuck at
-        `start` -- the same failure mode as a `SpriteAnimator` that is never
+        `start` -- the same failure mode as an `Animator` that is never
         updated.
         """
         if not self._playing:

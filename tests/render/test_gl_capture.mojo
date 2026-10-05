@@ -10,7 +10,7 @@ from std.os import remove
 from create import *
 from create.core.headless import run_headless
 from create.render.render_backend import RenderBackend
-from create.sprite.sprite import Sprite
+from create.image.image import Image
 from std.testing import TestSuite, assert_equal
 
 comptime _SHOT = "/tmp/mojo_create_test_gl_capture_shot.png"
@@ -18,14 +18,14 @@ comptime _IMG_CPU = "/tmp/mojo_create_test_gl_capture_image_cpu.png"
 comptime _IMG_GPU = "/tmp/mojo_create_test_gl_capture_image_gpu.png"
 
 
-def _saved(path: String) raises -> Sprite:
+def _saved(path: String) raises -> Image:
     """Read back a file one of these programs wrote, then delete it."""
-    var back = Sprite.load(path)
+    var back = Image.load(path)
     remove(path)
     return back^
 
 
-def _px(s: Sprite, x: Int, y: Int) -> Color:
+def _px(s: Image, x: Int, y: Int) -> Color:
     var off = (y * s.width + x) * 4
     return Color(
         s._pixels[off],

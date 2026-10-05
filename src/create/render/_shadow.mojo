@@ -39,7 +39,7 @@ from ._command import (
     CMD_POLYGON,
     CMD_RECT,
     CMD_SECTOR,
-    CMD_SPRITE,
+    CMD_IMAGE,
     CMD_TEXT,
     CMD_TRIANGLE,
     RenderCommand,
@@ -69,14 +69,14 @@ def casts_outer_shadow(c: RenderCommand) -> Bool:
         return c.style._outline_visible()
     if c.kind == CMD_TEXT:
         return c.style.text_color.a > 0
-    return c.kind == CMD_SPRITE
+    return c.kind == CMD_IMAGE
 
 
 def casts_inset_shadow(c: RenderCommand) -> Bool:
     """Whether `c` paints an inset shadow over itself.
 
-    Only the shapes with an interior take one; a line, a curve, text or a
-    sprite ignores `shadow_inset` and casts nothing. Painted whether or not the
+    Only the shapes with an interior take one; a line, a curve, text or an
+    image ignores `shadow_inset` and casts nothing. Painted whether or not the
     fill is visible, as in CSS: the shadow is inside the shape, not on it.
     """
     if not c.style._shadow_visible() or not c.style.shadow_inset:
@@ -161,7 +161,7 @@ def shadow_command(c: RenderCommand, scale: Float64) -> RenderCommand:
     if c.kind == CMD_TEXT:
         s.style.text_color = color
         return s^
-    if c.kind == CMD_SPRITE:
+    if c.kind == CMD_IMAGE:
         s.style.fill_color = color
         s.silhouette = True
         return s^

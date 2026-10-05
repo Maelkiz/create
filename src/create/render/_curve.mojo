@@ -7,7 +7,7 @@ the same quads — the CPU through `fill_quad`, the GPU as vertices — which is
 A blurred curve shadow is a mask rasterised from those same quads and blurred
 (`bezier_shadow_mask`), which both backends composite; `quads_shadow_mask`
 builds one from any device quads, which is how sectors and polygons cast theirs too.
-Unlike a sprite's, it is not cached: a curve has no stable id to key it by,
+Unlike an image's, it is not cached: a curve has no stable id to key it by,
 so every blurred curve shadow costs one blur per frame.
 """
 

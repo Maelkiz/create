@@ -18,7 +18,7 @@ The GPU multisamples its framebuffer, fixed when the GL context is created,
 so the level is a `run` argument rather than a `Context` dial. The CPU
 replays each shape through its own rasteriser on a grid that much finer and
 composites the coverage once, fill and outline together, so a shape's edge
-has no seam between the two. Shapes only: text and sprites are smooth
+has no seam between the two. Shapes only: text and images are smooth
 already, and a clip stays hard-edged. Pixel reads and `save_image` replay on
 the CPU at the same level, under either backend.
 

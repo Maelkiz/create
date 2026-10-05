@@ -1,46 +1,42 @@
 from std.os import listdir
 
-from create.sprite.sprite import Sprite
+from create.image.image import Image
 
 
-struct SpriteAnimation(Movable):
+struct Animation(Movable):
     """An ordered sequence of frames and the rate they play at.
 
-    A `SpriteAnimation` is the asset, not the playhead -- it holds the frames
-    and how fast they are meant to run, and never mutates. `SpriteAnimator`
+    An `Animation` is the asset, not the playhead -- it holds the frames
+    and how fast they are meant to run, and never mutates. `Animator`
     walks it. The rate lives here because it is a property of the artwork: a
     run cycle and an idle cycle are rendered for different speeds.
 
-    Frames are cut into owned `Sprite`s at construction, so a sheet or a folder
+    Frames are cut into owned `Image`s at construction, so a sheet or a folder
     is paid for once and every render afterwards is a plain blit.
 
-    Hold one as an `ArcPointer[SpriteAnimation]` field, like a `Sound`, so
+    Hold one as an `ArcPointer[Animation]` field, like a `Sound`, so
     several animators can share the frame buffers by refcount instead of
     copying them.
 
     There is no `frame()` accessor and cannot be one: a `List` element's origin
-    is not spellable from user code, so a `-> ref Sprite` signature does not
-    compile. Index `frames` inline at the use site instead, as `canvas.sprite`
+    is not spellable from user code, so a `-> ref Image` signature does not
+    compile. Index `frames` inline at the use site instead, as `canvas.image`
     does.
     """
 
-    var frames: List[Sprite]
+    var frames: List[Image]
     var fps: Float64
 
-    def __init__(
-        out self, var frames: List[Sprite], fps: Float64 = 12.0
-    ) raises:
+    def __init__(out self, var frames: List[Image], fps: Float64 = 12.0) raises:
         """Build an animation from frames already in memory.
 
         Raises on an empty frame list: an animation with no frames has no valid
         frame index, so every consumer would have to guard against it.
         """
         if len(frames) == 0:
-            raise Error("SpriteAnimation needs at least one frame")
+            raise Error("Animation needs at least one frame")
         if fps <= 0.0:
-            raise Error(
-                "SpriteAnimation fps must be positive, got " + String(fps)
-            )
+            raise Error("Animation fps must be positive, got " + String(fps))
         self.frames = frames^
         self.fps = fps
 
@@ -54,21 +50,21 @@ struct SpriteAnimation(Movable):
 
     @staticmethod
     def from_sheet(
-        sheet: Sprite,
+        sheet: Image,
         frame_width: Int,
         frame_height: Int,
         start: Int = 0,
         count: Int = 0,
         fps: Float64 = 12.0,
-    ) raises -> SpriteAnimation:
+    ) raises -> Animation:
         """Cut frames out of a sprite sheet, left to right then top to bottom.
 
         Cells are numbered row-major from zero, so one sheet holding idle on
         row 0 and run on row 1 yields two animations without a sheet type:
 
         ```mojo
-        var idle = SpriteAnimation.from_sheet(sheet, 32, 32, start=0, count=4)
-        var run = SpriteAnimation.from_sheet(sheet, 32, 32, start=4, count=6)
+        var idle = Animation.from_sheet(sheet, 32, 32, start=0, count=4)
+        var run = Animation.from_sheet(sheet, 32, 32, start=4, count=6)
         ```
 
         `count = 0` means every remaining cell. Raises when the sheet is not a
@@ -117,10 +113,10 @@ struct SpriteAnimation(Movable):
                 + " frames"
             )
 
-        var frames = List[Sprite]()
+        var frames = List[Image]()
         for index in range(start, start + take):
             frames.append(
-                SpriteAnimation._cut(
+                Animation._cut(
                     sheet,
                     (index % cols) * frame_width,
                     (index // cols) * frame_height,
@@ -128,16 +124,14 @@ struct SpriteAnimation(Movable):
                     frame_height,
                 )
             )
-        return SpriteAnimation(frames^, fps)
+        return Animation(frames^, fps)
 
     @staticmethod
-    def from_folder(
-        path: String, fps: Float64 = 12.0
-    ) raises -> SpriteAnimation:
+    def from_folder(path: String, fps: Float64 = 12.0) raises -> Animation:
         """Load every image in a directory as a frame, in natural number order.
 
         ```mojo
-        var run = SpriteAnimation.from_folder(source_path("../assets/run"))
+        var run = Animation.from_folder(source_path("../assets/run"))
         ```
 
         Names are ordered by the number they end in, not by string comparison,
@@ -148,22 +142,22 @@ struct SpriteAnimation(Movable):
         """
         var names = List[String]()
         for entry in listdir(path):
-            var ext = Sprite._extension(entry)
-            if Sprite.supports_extension(ext):
+            var ext = Image._extension(entry)
+            if Image.supports_extension(ext):
                 names.append(entry)
         if len(names) == 0:
             raise Error("no BMP, PNG or JPEG files in " + path)
         _sort_frame_names(names)
 
-        var frames = List[Sprite]()
+        var frames = List[Image]()
         for name in names:
-            frames.append(Sprite.load(path + "/" + name))
-        return SpriteAnimation(frames^, fps)
+            frames.append(Image.load(path + "/" + name))
+        return Animation(frames^, fps)
 
     @staticmethod
-    def _cut(sheet: Sprite, x: Int, y: Int, w: Int, h: Int) raises -> Sprite:
+    def _cut(sheet: Image, x: Int, y: Int, w: Int, h: Int) raises -> Image:
         """Copy one w x h cell at (x, y) out of the sheet, RGBA row by row."""
-        var frame = Sprite(w, h)
+        var frame = Image(w, h)
         var src = sheet._pixels.unsafe_ptr()
         var dst = frame._pixels.unsafe_ptr()
         for row in range(h):
@@ -177,7 +171,7 @@ struct SpriteAnimation(Movable):
 def _frame_number(name: String) -> Int:
     """The integer a file's stem ends in, or -1 when it ends in no digits."""
     var bytes = name.as_bytes()
-    var end = Sprite._stem_end(name)
+    var end = Image._stem_end(name)
     var start = end
     while start > 0 and bytes[start - 1] >= 48 and bytes[start - 1] <= 57:
         start -= 1

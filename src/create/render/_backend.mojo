@@ -18,7 +18,7 @@ from ._command import (
     CMD_CIRCLE,
     CMD_LINE,
     CMD_TRIANGLE,
-    CMD_SPRITE,
+    CMD_IMAGE,
     CMD_TEXT,
     CMD_LETTERBOX,
     CMD_BEZIER,
@@ -39,14 +39,14 @@ from ._polygon import polygon_quads, polygon_shadow_mask
 from ._blur import (
     SHADOW_MASK_LIMIT,
     BlurredMask,
-    blur_sprite_alpha,
+    blur_image_alpha,
     shadow_mask_key,
 )
 from ._raster import (
     FillPaint,
     blend,
     blit_alpha,
-    blit_sprite,
+    blit_image,
     fill_all,
     fill_convex,
     fill_pixels,
@@ -56,7 +56,7 @@ from ._raster import (
     line_pixels,
 )
 from ._gl_backend import GLRenderer
-from ._image import IMAGE_KEEP_FRAMES, _Image
+from ._interned_image import IMAGE_KEEP_FRAMES, _InternedImage
 from ._clip import _Clip, _ClipRows
 from .style import Style
 from ._transform import pixel_scale, outline_thickness_px, uniform
@@ -751,24 +751,24 @@ struct Backend(Movable):
     """`_shape`'s working memory, kept so a frame of antialiased shapes
     allocates once."""
     var text: TextRenderer
-    var images: Dict[Int, _Image]
-    """Interned sprite copies by backend image id, the id a command
-    carries. One per sprite version rendered, dropped by `_expire_images`."""
-    var sprite_images: Dict[Int, Int]
-    """`Sprite._id` to the backend id of its most recently interned copy."""
+    var images: Dict[Int, _InternedImage]
+    """Interned image copies by backend image id, the id a command
+    carries. One per image version rendered, dropped by `_expire_images`."""
+    var interned_ids: Dict[Int, Int]
+    """`Image._id` to the backend id of its most recently interned copy."""
     var next_image: Int
     var frame: Int
-    """Frames presented so far: the clock `_Image.last_used` is read
+    """Frames presented so far: the clock `_InternedImage.last_used` is read
     against."""
     var shadow_masks: Dict[Int, BlurredMask]
-    """Blurred sprite silhouettes, keyed by `shadow_mask_key`: a sprite's
+    """Blurred image silhouettes, keyed by `shadow_mask_key`: an image's
     shadow is blurred once per image, device size and blur, not per frame."""
     var gl: Optional[GLRenderer]
     """The GPU resources, present exactly when `kind == RenderBackend.GPU`.
 
     They live on `Backend` rather than beside it so that the fonts, the image
     cache and the command buffer stay in one place whichever path presents
-    them — `kind` then means what it says, and a sprite interned for the CPU
+    them — `kind` then means what it says, and an image interned for the CPU
     replay is the same entry the GL path will key a texture from.
     """
     var pending_screenshot: Optional[String]
@@ -836,8 +836,8 @@ struct Backend(Movable):
         self._coverage_runs = List[Int]()
         self._coverage = CoverageScratch()
         self.text = TextRenderer()
-        self.images = Dict[Int, _Image]()
-        self.sprite_images = Dict[Int, Int]()
+        self.images = Dict[Int, _InternedImage]()
+        self.interned_ids = Dict[Int, Int]()
         self.next_image = 1
         self.frame = 0
         self.shadow_masks = Dict[Int, BlurredMask]()
@@ -1104,18 +1104,18 @@ struct Backend(Movable):
         so: Origin
     ](
         mut self,
-        sprite: Int,
+        source: Int,
         version: Int,
         src: Pointer[UInt8, so],
         width: Int,
         height: Int,
     ) -> Int:
         """Return a backend id for the `width` x `height` RGBA buffer at
-        `src`, version `version` of sprite `sprite`.
+        `src`, version `version` of image `source`.
 
         Copies on first sight of each version and returns the cached id
-        thereafter, so a sprite rendered every frame is copied once. `sprite`
-        must be stable for the life of the image — a `Sprite`'s identity, not
+        thereafter, so an image rendered every frame is copied once. `source`
+        must be stable for the life of the image — an `Image`'s identity, not
         its pixel address, which could be reused after a free. A new version
         gets a new id, so a command recorded before an edit keeps replaying
         the pixels it was recorded with.
@@ -1124,23 +1124,23 @@ struct Backend(Movable):
         borrow of caller-owned memory out of the command buffer.
         """
         try:
-            if sprite in self.sprite_images:
-                var id = self.sprite_images[sprite]
+            if source in self.interned_ids:
+                var id = self.interned_ids[source]
                 ref image = self.images[id]
                 if image.version == version:
                     image.last_used = self.frame
                     return id
         except:
-            pass  # unreachable: `sprite_images` names only interned ids
+            pass  # unreachable: `interned_ids` names only interned ids
         var buf = List[UInt8](length=width * height * 4, fill=0)
         for i in range(width * height * 4):
             buf[i] = src[unsafe_offset=i]
         var id = self.next_image
         self.next_image += 1
-        self.images[id] = _Image(
-            buf^, width, height, sprite, version, self.frame
+        self.images[id] = _InternedImage(
+            buf^, width, height, source, version, self.frame
         )
-        self.sprite_images[sprite] = id
+        self.interned_ids[source] = id
         return id
 
     def _expire_images(mut self) raises:
@@ -1156,10 +1156,10 @@ struct Backend(Movable):
         for id in expired:
             var image = self.images.pop(id)
             if (
-                image.sprite in self.sprite_images
-                and self.sprite_images[image.sprite] == id
+                image.source in self.interned_ids
+                and self.interned_ids[image.source] == id
             ):
-                _ = self.sprite_images.pop(image.sprite)
+                _ = self.interned_ids.pop(image.source)
         if self.gl and len(expired) > 0:
             self.gl.value().forget_images(expired)
 
@@ -1266,8 +1266,8 @@ struct Backend(Movable):
                 _blurred_shadow(t, sh, scale, sm)
             elif c.kind == CMD_TEXT:
                 self._text(t, sh, scale, sm, blur)
-            elif c.kind == CMD_SPRITE:
-                self._sprite_shadow(t, sh, scale, sm, blur)
+            elif c.kind == CMD_IMAGE:
+                self._image_shadow(t, sh, scale, sm, blur)
             elif (
                 c.kind == CMD_BEZIER
                 or c.kind == CMD_SECTOR
@@ -1306,8 +1306,8 @@ struct Backend(Movable):
             or c.kind == CMD_TRIANGLE
         ):
             self._shape(t, c, scale, m)
-        elif c.kind == CMD_SPRITE:
-            self._sprite(t, c, scale, m)
+        elif c.kind == CMD_IMAGE:
+            self._image(t, c, scale, m)
         elif c.kind == CMD_TEXT:
             self._text(t, c, scale, m)
         elif c.kind == CMD_LETTERBOX:
@@ -1962,7 +1962,7 @@ struct Backend(Movable):
         if outline_visible:
             _fill_quads(s, pieces.ring, c.style.outline_color)
 
-    def _sprite[
+    def _image[
         o: Origin[mut=True]
     ](
         mut self,
@@ -1980,7 +1980,7 @@ struct Backend(Movable):
         # Bound by reference so the pixels stay in the cache rather than being
         # copied out of it once per render.
         ref img = self.images[c.image]
-        blit_sprite(
+        blit_image(
             s,
             img.pixels.unsafe_ptr(),
             img.width,
@@ -1993,7 +1993,7 @@ struct Backend(Movable):
             c.image_alpha,
         )
 
-    def _sprite_shadow[
+    def _image_shadow[
         o: Origin[mut=True]
     ](
         mut self,
@@ -2004,7 +2004,7 @@ struct Backend(Movable):
         blur: Int,
     ) raises:
         """The silhouette command `c` blurred by `blur` device pixels, from
-        a cached mask laid over the same destination rect `_sprite` uses."""
+        a cached mask laid over the same destination rect `_image` uses."""
         if c.image not in self.images:
             return
         var p = mat_apply(m, c.geom[0], c.geom[1])
@@ -2016,7 +2016,7 @@ struct Backend(Movable):
             if len(self.shadow_masks) >= SHADOW_MASK_LIMIT:
                 self.shadow_masks.clear()
             ref img = self.images[c.image]
-            self.shadow_masks[key] = blur_sprite_alpha(
+            self.shadow_masks[key] = blur_image_alpha(
                 img.pixels.unsafe_ptr(),
                 img.width,
                 img.height,

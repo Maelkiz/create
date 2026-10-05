@@ -62,9 +62,9 @@ solid's UVs are never read and solids batch with anything."""
 comptime MODE_MASK: Float32 = 1.0
 """Glyph: the sampled red channel scales the vertex colour's alpha."""
 comptime MODE_TEXTURE: Float32 = 2.0
-"""Sprite: the sampled RGBA multiplies the vertex colour."""
+"""Image: the sampled RGBA multiplies the vertex colour."""
 comptime MODE_SILHOUETTE: Float32 = 3.0
-"""Sprite shadow: the vertex colour, its alpha scaled by the sampled alpha."""
+"""Image shadow: the vertex colour, its alpha scaled by the sampled alpha."""
 comptime MODE_SHADOW_BOX: Float32 = 4.0
 """Blurred rectangle, rounded rectangle, circle or line shadow: `uv` is the
 position relative to the box's centre, `s0, s1` its half-extents, `s2` its
@@ -831,7 +831,7 @@ def emit_letterbox(
         vb.quad(cx1, cy0, w, cy0, w, cy1, cx1, cy1, col)
 
 
-def emit_sprite(
+def emit_image(
     mut vb: VertexBuffer, c: RenderCommand, scale: Float64, pad: Int = 0
 ):
     """One textured quad, axis-aligned in device space, grown by `pad`
@@ -839,13 +839,13 @@ def emit_sprite(
     (`BlurredMask.pad`), so its texels land one-to-one on device pixels.
 
     Deliberately not a `_mapped_quad`: the CPU replay maps the anchor and then
-    blits an upright rectangle around it, so a rotated transform turns a
-    sprite's *position* but not the sprite. Mapping four corners here would
+    blits an upright rectangle around it, so a rotated transform turns an
+    image's *position* but not the image. Mapping four corners here would
     rotate the image too and the two backends would diverge. The rounding
-    matches `Backend._sprite`'s for the same reason.
+    matches `Backend._image`'s for the same reason.
 
     `v` grows with device y, which grows downward, so row 0 of the image
-    lands at the top of the quad and the sprite is not flipped.
+    lands at the top of the quad and the image is not flipped.
     """
     var m = c.transform
     var p = mat_apply(m, c.geom[0], c.geom[1])
@@ -878,7 +878,7 @@ def emit_silhouette_mask(
     h: Float64,
     color: Color,
 ):
-    """One quad in device pixels over a whole blurred mask on the sprite
+    """One quad in device pixels over a whole blurred mask on the image
     unit, placed where `blit_alpha` would put it, so texels land one-to-one
     on device pixels. `MODE_SILHOUETTE` scales `color`'s alpha by the
     sampled alpha."""

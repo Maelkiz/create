@@ -5,7 +5,7 @@ from std.reflection import call_location
 def source_path(relative: String) -> String:
     """`relative`, resolved against the directory of the calling source file.
 
-    `Sprite.load(source_path("../assets/sprite.png"))` finds the asset from
+    `Image.load(source_path("../assets/image.png"))` finds the asset from
     wherever the program is run, where a bare relative path resolves against
     the CWD. Called from a helper, it resolves against the helper's file —
     the same rule as Python's `__file__`.

@@ -23,7 +23,7 @@ from create.render._command import (
     polygon_command,
     rect_command,
     sector_command,
-    sprite_command,
+    image_command,
     text_command,
     triangle_command,
 )
@@ -302,9 +302,9 @@ def test_text_shadow_recolours_the_glyphs() raises -> None:
     assert_equal(sh.text, "hi")
 
 
-def test_sprite_shadow_is_a_silhouette() raises -> None:
+def test_image_shadow_is_a_silhouette() raises -> None:
     var s = _shadowed()
-    var c = sprite_command(identity[3](), s, 0, 0, 4, 4, 7, 4, 4)
+    var c = image_command(identity[3](), s, 0, 0, 4, 4, 7, 4, 4)
     assert_false(c.silhouette)
     var sh = shadow_command(c, 1.0)
     assert_true(sh.silhouette)

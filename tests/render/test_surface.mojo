@@ -2,7 +2,7 @@ from std.os import remove
 from std.testing import TestSuite, assert_equal, assert_raises
 from create.color.color import Color
 from create.render.surface import MemorySurface, Surface
-from create.sprite.sprite import Sprite
+from create.image.image import Image
 
 
 def _scratch(name: String) -> String:
@@ -16,16 +16,16 @@ def _scratch(name: String) -> String:
 
 def _loaded(
     mem: MemorySurface, name: String, opaque: Bool = True
-) raises -> Sprite:
-    """Save `mem` as a PNG, read it back as a `Sprite`, and delete the file."""
+) raises -> Image:
+    """Save `mem` as a PNG, read it back as an `Image`, and delete the file."""
     var path = _scratch(name)
     mem.save(path, opaque)
-    var back = Sprite.load(path)
+    var back = Image.load(path)
     remove(path)
     return back^
 
 
-def _pixel(s: Sprite, x: Int, y: Int) -> Color:
+def _pixel(s: Image, x: Int, y: Int) -> Color:
     var off = (y * s.width + x) * 4
     return Color(
         s._pixels[off],

@@ -6,23 +6,23 @@ from create._bytes import le_uint, sign_extend_32
 from create.color.color import Color
 
 
-def _new_sprite_ids() -> Atomic[Int64]:
+def _new_image_ids() -> Atomic[Int64]:
     return Atomic[Int64](0)
 
 
-comptime _SPRITE_IDS = _Global["create_sprite_ids", _new_sprite_ids]
-"""Process-wide counter behind `Sprite._id`.
+comptime _IMAGE_IDS = _Global["create_image_ids", _new_image_ids]
+"""Process-wide counter behind `Image._id`.
 
-Global rather than per-`Sprite` because the point is uniqueness *between*
-sprites, and global rather than per-backend because a sprite may be rendered
+Global rather than per-`Image` because the point is uniqueness *between*
+images, and global rather than per-backend because an image may be rendered
 through more than one.
 """
 
 
-def _next_sprite_id() raises -> Int:
-    """The next never-yet-used sprite identity. Starts at 1, so 0 stays free
+def _next_image_id() raises -> Int:
+    """The next never-yet-used image identity. Starts at 1, so 0 stays free
     to mean "no image"."""
-    return Int(_SPRITE_IDS.get_or_create_ptr()[].fetch_add(1)) + 1
+    return Int(_IMAGE_IDS.get_or_create_ptr()[].fetch_add(1)) + 1
 
 
 def _read_u16(data: List[UInt8], off: Int) -> Int:
@@ -61,16 +61,16 @@ def _jpeg_dimensions(data: List[UInt8]) raises -> Tuple[Int, Int]:
     raise Error("No SOF marker found in JPEG")
 
 
-struct Sprite(Movable):
+struct Image(Movable):
     """An owned RGBA pixel buffer, row-major, 8 bits per channel.
 
-    Decoded once at load — `Sprite.load` picks a BMP, PNG or JPEG decoder by
-    file extension — and blitted many times afterwards. `Sprite.solid` and
-    `Sprite.from_rgba` build one without a file, and `resize` resamples in
+    Decoded once at load — `Image.load` picks a BMP, PNG or JPEG decoder by
+    file extension — and blitted many times afterwards. `Image.solid` and
+    `Image.from_rgba` build one without a file, and `resize` resamples in
     place. `pixel` reads one pixel and `set_pixel` writes one; the buffer
     itself is private, so every edit is one a backend's cached copy can see.
 
-    Deliberately not a render type: `raster.blit_sprite` takes a pixel pointer
+    Deliberately not a render type: `raster.blit_image` takes a pixel pointer
     with a width and a height rather than this struct, so the image decoders
     stay out of the render path and the rasteriser is written against no layout
     but its own.
@@ -85,16 +85,16 @@ struct Sprite(Movable):
     var _id: Int
     """This image's identity, unique for the life of the process.
 
-    A backend caches a copy or a GPU texture per sprite and needs a key that
-    cannot collide. The pixel buffer's address cannot serve: free one sprite,
+    A backend caches a copy or a GPU texture per image and needs a key that
+    cannot collide. The pixel buffer's address cannot serve: free one image,
     allocate another, and the second inherits the first's cached image. A
     counter can only run out, and it never does at 63 bits.
 
-    Bumped by `resize`, which replaces the pixels — so a resized sprite is a
+    Bumped by `resize`, which replaces the pixels — so a resized image is a
     new image to a cache, which is exactly what it is.
     """
     var _version: Int
-    """How many times `set_pixel` has changed this sprite. A backend's
+    """How many times `set_pixel` has changed this image. A backend's
     cached copy is current only for the version it copied, so an edit is
     drawn from the next render on, and a render before it keeps the old
     pixels."""
@@ -105,7 +105,7 @@ struct Sprite(Movable):
         self.width = width
         self.height = height
         self._pixels = List[UInt8](length=width * height * 4, fill=0)
-        self._id = _next_sprite_id()
+        self._id = _next_image_id()
         self._version = 0
 
     @staticmethod
@@ -116,8 +116,8 @@ struct Sprite(Movable):
         g: UInt8,
         b: UInt8,
         a: UInt8 = 255,
-    ) raises -> Sprite:
-        var s = Sprite(width, height)
+    ) raises -> Image:
+        var s = Image(width, height)
         var ptr = s._pixels.unsafe_ptr()
         for i in range(width * height):
             var off = i * 4
@@ -128,10 +128,10 @@ struct Sprite(Movable):
         return s^
 
     @staticmethod
-    def from_rgba(width: Int, height: Int, data: List[UInt8]) raises -> Sprite:
+    def from_rgba(width: Int, height: Int, data: List[UInt8]) raises -> Image:
         """Precondition: `data` holds at least `width * height * 4` bytes — not bounds-checked.
         """
-        var s = Sprite(width, height)
+        var s = Image(width, height)
         unsafe_memcpy(
             dest=s._pixels.unsafe_ptr(),
             src=data.unsafe_ptr(),
@@ -157,8 +157,8 @@ struct Sprite(Movable):
         """Replace the pixel in column `x` of row `y`, counted from the
         top-left corner. Outside the image it does nothing.
 
-        A render call copies the sprite as it is then, so an edit shows
-        from the next render of it on. Each edited sprite is copied again
+        A render call copies the image as it is then, so an edit shows
+        from the next render of it on. Each edited image is copied again
         once per frame it is drawn in, not once per edit.
         """
         if x < 0 or y < 0 or x >= self.width or y >= self.height:
@@ -176,7 +176,7 @@ struct Sprite(Movable):
         Takes a fresh identity: the pixels are not the ones a backend may
         already have cached under the old one.
         """
-        self._id = _next_sprite_id()
+        self._id = _next_image_id()
         var dst = List[UInt8](length=new_w * new_h * 4, fill=0)
         if self.width == 0 or self.height == 0:
             # No source pixel to sample -- leave the zero-filled buffer as is
@@ -202,9 +202,9 @@ struct Sprite(Movable):
         self.height = new_h
 
     @staticmethod
-    def load(path: String, width: Int, height: Int) raises -> Sprite:
+    def load(path: String, width: Int, height: Int) raises -> Image:
         """Load an image file and resize to the given dimensions."""
-        var s = Sprite.load(path)
+        var s = Image.load(path)
         s.resize(width, height)
         return s^
 
@@ -215,7 +215,7 @@ struct Sprite(Movable):
         Where the stem ends and any extension begins. Shared with the frame
         ordering in `animation`, which needs the same split to find the number
         a name ends in. Scans the whole path, not just the last segment, so
-        `assets/v1.2/sprite` reports the dot in the directory -- long-standing
+        `assets/v1.2/image` reports the dot in the directory -- long-standing
         behaviour, pinned by test.
         """
         var bytes = path.as_bytes()
@@ -228,7 +228,7 @@ struct Sprite(Movable):
     @staticmethod
     def _extension(path: String) -> String:
         var bytes = path.as_bytes()
-        var dot = Sprite._stem_end(path)
+        var dot = Image._stem_end(path)
         if dot == len(bytes):
             return ""
         var ext = String()
@@ -246,7 +246,7 @@ struct Sprite(Movable):
         return ext == "png" or ext == "jpg" or ext == "jpeg" or ext == "bmp"
 
     @staticmethod
-    def _load_png(data: List[UInt8]) raises -> Sprite:
+    def _load_png(data: List[UInt8]) raises -> Image:
         var lib = _DLHandle("libpng16.so")
         var img = Array[UInt8, 104](fill=0)
         img[8] = 1  # PNG_IMAGE_VERSION
@@ -261,7 +261,7 @@ struct Sprite(Movable):
         var h = le_uint(img.unsafe_ptr(), 16, 4)
         img[20] = 3  # PNG_FORMAT_RGBA
 
-        var s = Sprite(w, h)
+        var s = Image(w, h)
         var ok2 = lib.call["png_image_finish_read", Int](
             img.unsafe_ptr(), Int(0), s._pixels.unsafe_ptr(), Int(0), Int(0)
         )
@@ -272,7 +272,7 @@ struct Sprite(Movable):
         return s^
 
     @staticmethod
-    def _load_jpeg(data: List[UInt8]) raises -> Sprite:
+    def _load_jpeg(data: List[UInt8]) raises -> Image:
         var dims = _jpeg_dimensions(data)
         var w = dims[0]
         var h = dims[1]
@@ -282,7 +282,7 @@ struct Sprite(Movable):
         if handle == 0:
             raise Error("Failed to init JPEG decompressor")
 
-        var s = Sprite(w, h)
+        var s = Image(w, h)
         var result = lib.call["tjDecompress2", Int32](
             handle,
             data.unsafe_ptr(),
@@ -301,16 +301,16 @@ struct Sprite(Movable):
         return s^
 
     @staticmethod
-    def load(path: String) raises -> Sprite:
+    def load(path: String) raises -> Image:
         """Load an image file. Supports BMP, PNG, and JPEG."""
-        var ext = Sprite._extension(path)
+        var ext = Image._extension(path)
         with open(path, "r") as f:
             var data = f.read_bytes()
 
             if ext == "png":
-                return Sprite._load_png(data)
+                return Image._load_png(data)
             if ext == "jpg" or ext == "jpeg":
-                return Sprite._load_jpeg(data)
+                return Image._load_jpeg(data)
 
             if len(data) < 54:
                 raise Error("BMP file too small: " + path)
@@ -334,7 +334,7 @@ struct Sprite(Movable):
             if compression != 0:
                 raise Error("Compressed BMP not supported: " + path)
 
-            var s = Sprite(w, h)
+            var s = Image(w, h)
             var dst = s._pixels.unsafe_ptr()
 
             # 24- and 32-bit differ only in the source stride and where alpha

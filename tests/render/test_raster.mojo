@@ -4,7 +4,7 @@ from create.color.color import Color
 from create.render._raster import (
     blend,
     blit_glyph,
-    blit_sprite,
+    blit_image,
     fill_all,
     fill_pixels,
     fill_span,
@@ -13,7 +13,7 @@ from create.render._raster import (
 )
 from create.render.font import _GlyphInfo
 from create.render.surface import MemorySurface, Surface
-from create.sprite.sprite import Sprite
+from create.image.image import Image
 
 
 def _filled(width: Int, height: Int, c: Color) raises -> MemorySurface:
@@ -304,10 +304,10 @@ def test_fill_triangle_matches_the_old_half_plane_test_within_one_pixel() raises
         _assert_dilation_bound(got, want, 1)
 
 
-def test_blit_sprite_one_to_one() raises -> None:
-    var sp = Sprite.solid(2, 2, 255, 0, 0)
+def test_blit_image_one_to_one() raises -> None:
+    var sp = Image.solid(2, 2, 255, 0, 0)
     var mem = MemorySurface(4, 4)
-    blit_sprite(
+    blit_image(
         mem.surface(), sp._pixels.unsafe_ptr(), sp.width, sp.height, 1, 1, 2, 2
     )
     assert_equal(mem.pixel(1, 1), Color(255, 0, 0, 255))
@@ -316,8 +316,8 @@ def test_blit_sprite_one_to_one() raises -> None:
     assert_equal(mem.pixel(3, 3).a, 0)
 
 
-def test_blit_sprite_downscales_by_nearest_neighbour() raises -> None:
-    var sp = Sprite(4, 4)
+def test_blit_image_downscales_by_nearest_neighbour() raises -> None:
+    var sp = Image(4, 4)
     var ptr = sp._pixels.unsafe_ptr()
     # Left half red, right half blue — a downscale must keep both halves.
     for row in range(4):
@@ -328,7 +328,7 @@ def test_blit_sprite_downscales_by_nearest_neighbour() raises -> None:
             ptr[unsafe_offset=off + 2] = 0 if col < 2 else 255
             ptr[unsafe_offset=off + 3] = 255
     var mem = MemorySurface(4, 4)
-    blit_sprite(
+    blit_image(
         mem.surface(), sp._pixels.unsafe_ptr(), sp.width, sp.height, 0, 0, 2, 2
     )
     assert_equal(mem.pixel(0, 0), Color(255, 0, 0, 255))
@@ -336,22 +336,22 @@ def test_blit_sprite_downscales_by_nearest_neighbour() raises -> None:
     assert_equal(mem.pixel(0, 2).a, 0)
 
 
-def test_blit_sprite_skips_transparent_source_pixels() raises -> None:
-    var sp = Sprite(2, 1)
+def test_blit_image_skips_transparent_source_pixels() raises -> None:
+    var sp = Image(2, 1)
     var ptr = sp._pixels.unsafe_ptr()
     ptr[unsafe_offset=0] = 255
     ptr[unsafe_offset=3] = 255  # opaque red
     ptr[unsafe_offset=7] = 0  # fully transparent
     var mem = _filled(2, 1, Color(9, 9, 9, 255))
-    blit_sprite(
+    blit_image(
         mem.surface(), sp._pixels.unsafe_ptr(), sp.width, sp.height, 0, 0, 2, 1
     )
     assert_equal(mem.pixel(0, 0), Color(255, 0, 0, 255))
     assert_equal(mem.pixel(1, 0), Color(9, 9, 9, 255))
 
 
-def test_blit_sprite_tint_paints_the_silhouette() raises -> None:
-    var sp = Sprite(3, 1)
+def test_blit_image_tint_paints_the_silhouette() raises -> None:
+    var sp = Image(3, 1)
     var ptr = sp._pixels.unsafe_ptr()
     ptr[unsafe_offset=0] = 255
     ptr[unsafe_offset=3] = 255  # opaque red
@@ -359,7 +359,7 @@ def test_blit_sprite_tint_paints_the_silhouette() raises -> None:
     ptr[unsafe_offset=7] = 128  # half-transparent green
     ptr[unsafe_offset=11] = 0  # fully transparent
     var mem = _filled(3, 1, Color(0, 0, 0, 255))
-    blit_sprite(
+    blit_image(
         mem.surface(),
         sp._pixels.unsafe_ptr(),
         sp.width,
@@ -378,11 +378,11 @@ def test_blit_sprite_tint_paints_the_silhouette() raises -> None:
     assert_equal(mem.pixel(2, 0), Color(0, 0, 0, 255))
 
 
-def test_blit_sprite_clips_against_every_edge() raises -> None:
-    var sp = Sprite.solid(4, 4, 255, 255, 255)
+def test_blit_image_clips_against_every_edge() raises -> None:
+    var sp = Image.solid(4, 4, 255, 255, 255)
     var mem = MemorySurface(4, 4)
     # Anchored off the top-left: only the bottom-right quarter lands.
-    blit_sprite(
+    blit_image(
         mem.surface(),
         sp._pixels.unsafe_ptr(),
         sp.width,
@@ -397,7 +397,7 @@ def test_blit_sprite_clips_against_every_edge() raises -> None:
     assert_equal(mem.pixel(2, 2).a, 0)
 
     var far = MemorySurface(4, 4)
-    blit_sprite(
+    blit_image(
         far.surface(), sp._pixels.unsafe_ptr(), sp.width, sp.height, 3, 3, 4, 4
     )
     assert_equal(far.pixel(3, 3), Color.WHITE)

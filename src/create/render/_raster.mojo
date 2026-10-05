@@ -68,7 +68,7 @@ def blend[
     `Color.over` owns the mixing. Any other mode goes through `_blend_lanes`.
 
     `clipped=False` skips the clip test, for a per-pixel loop that has
-    checked once that `s` has no clip — the test alone cost a sprite blit
+    checked once that `s` has no clip — the test alone cost an image blit
     ~15%.
     """
     if c.a == 0:
@@ -701,13 +701,13 @@ def _silhouette(tint: Color, alpha: UInt8) -> Color:
 
 @always_inline
 def _faded(texel: UInt8, alpha: UInt8) -> UInt8:
-    """A texel's alpha under a sprite's opacity `alpha`."""
+    """A texel's alpha under an image's opacity `alpha`."""
     if alpha == 255:
         return texel
     return UInt8(Int(texel) * Int(alpha) // 255)
 
 
-def blit_sprite[
+def blit_image[
     o: Origin[mut=True], so: Origin
 ](
     s: Surface[o],
@@ -722,14 +722,14 @@ def blit_sprite[
     alpha: UInt8 = 255,
 ):
     """Blit the `sw` x `sh` RGBA buffer at `src` into the device rect at
-    `(x0, y0)` sized `dw` x `dh`; see `_blit_sprite`."""
+    `(x0, y0)` sized `dw` x `dh`; see `_blit_image`."""
     if s._clip:
-        _blit_sprite[clipped=True](s, src, sw, sh, x0, y0, dw, dh, tint, alpha)
+        _blit_image[clipped=True](s, src, sw, sh, x0, y0, dw, dh, tint, alpha)
     else:
-        _blit_sprite[clipped=False](s, src, sw, sh, x0, y0, dw, dh, tint, alpha)
+        _blit_image[clipped=False](s, src, sw, sh, x0, y0, dw, dh, tint, alpha)
 
 
-def _blit_sprite[
+def _blit_image[
     o: Origin[mut=True], so: Origin, //, clipped: Bool
 ](
     s: Surface[o],
@@ -745,10 +745,10 @@ def _blit_sprite[
 ):
     """Blit the `sw` x `sh` RGBA buffer at `src` into the device rect at
     `(x0, y0)` sized `dw` x `dh`, every texel's alpha scaled by `alpha` (the
-    sprite's opacity).
+    image's opacity).
 
     With `tint`, paint the image's silhouette instead: `tint` wherever the
-    image is opaque, its alpha scaled by each texel's. That is a sprite's
+    image is opaque, its alpha scaled by each texel's. That is an image's
     shadow; `tint` already carries any opacity, so `alpha` is ignored.
 
     Takes a bare pixel view rather than an image type, for the same reason
@@ -871,7 +871,7 @@ def _blit_alpha[
     colour compose rather than one overriding the other.
 
     Rows and columns are clipped once against the surface up front, as
-    `blit_sprite` does, instead of testing each pixel against the bounds.
+    `blit_image` does, instead of testing each pixel against the bounds.
     Coverage is still tested per pixel — a mask is genuinely scattered, not a
     run — so it keeps `blend` rather than moving to `fill_span`.
     """

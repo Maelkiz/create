@@ -12,7 +12,7 @@ and the layering rules.
 | `_backend.mojo` | `Backend` — fonts, glyph cache, interned images; replays commands via `present` (CPU) or `present_gpu` |
 | `_raster.mojo` | CPU rasteriser over a `Surface`; called only from `_backend.mojo` |
 | `_gl.mojo` | GL entry points resolved at runtime; the only file that talks to the driver |
-| `_gl_backend.mojo` | `GLRenderer` — shader, vertex buffer, glyph atlas, sprite textures, batching |
+| `_gl_backend.mojo` | `GLRenderer` — shader, vertex buffer, glyph atlas, image textures, batching |
 | `_tessellate.mojo` | `RenderCommand` to triangles for the GPU |
 | `_shadow.mojo` | Shadow geometry shared by both backends: `shadow_command` (the hard silhouette as a command, offset matrix composed in), `BlurredSilhouette` (analytic Gaussian coverage for shapes), `InsetRegion` (an inset shadow's interior and cut) |
 | `_curve.mojo` | Bézier stroke geometry for both replays: flattening in device pixels, the mitred quad strip; the blurred shadow mask of any device quads (`quads_shadow_mask`) |
@@ -21,7 +21,7 @@ and the layering rules.
 | `_triangle.mojo` | A rounded or outlined triangle as a convex fill and ring quads for both replays (`triangle_pieces`) |
 | `_coverage.mojo` | CPU antialiasing: `composite_coverage` turns a shape's runs recorded on a finer grid into per-pixel coverage, composited once |
 | `_clip.mojo` | `_Clip` (one `canvas.clip` level: region command, invert, parent) and `_ClipRows`, the CPU replay's per-row runs of a clip |
-| `_blur.mojo` | Three-box-blur approximation of a Gaussian over an alpha mask, for text and sprite shadows; the blurred-mask cache limit and key |
+| `_blur.mojo` | Three-box-blur approximation of a Gaussian over an alpha mask, for text and image shadows; the blurred-mask cache limit and key |
 | `_transform.mojo`, `_image.mojo`, `_fillet.mojo` | Shared by both replay paths (split out to avoid an import cycle, or so both agree on the numbers) |
 | `_gl_target.mojo` | Offscreen FBO of an exact size, for the parity test and headless GPU |
 
@@ -29,7 +29,7 @@ and the layering rules.
 
 A `Canvas` render call **records, never paints**: it appends a `RenderCommand` (local geometry,
 transform at record time, style resolved now) to the `Backend`. Nothing rasterises until
-`present`/`present_gpu` replays the frame, so later style calls can't reach back. Sprites are interned
+`present`/`present_gpu` replays the frame, so later style calls can't reach back. Images are interned
 into the backend at record time (the command carries an id); text is recorded as an owned `String`
 and laid out at replay. Add a shape by extending `_command.mojo`'s kinds and `_backend.mojo`'s replay
 (plus `_tessellate.mojo`), never by calling `_raster.mojo` from `Canvas`.
@@ -173,8 +173,8 @@ the same shape cover the same pixels:
   pixels, so no rasteriser knows about clips.
   - The clipped paths are out of line (`_fill_span_clipped`, `_shade_span_clipped`, `_clip_keeps`).
     Keep them there: a recursive or larger `fill_span` stops inlining and cost circles ~40%.
-  - `blit_sprite`/`blit_alpha` check for a clip once and pass `blend[clipped=False]`, because the
-    per-pixel test alone cost a sprite blit ~15%.
+  - `blit_image`/`blit_alpha` check for a clip once and pass `blend[clipped=False]`, because the
+    per-pixel test alone cost an image blit ~15%.
   - The rows live in a local `List` that the surfaces point into untracked (`MutUntrackedOrigin`),
     built in full before the first command so it never reallocates under them.
 - **GPU:** the stencil buffer. When `c.clip` differs from what the stencil holds,
@@ -194,7 +194,7 @@ rectangle.
 
 `Backend.antialiasing` (an `Antialiasing`, set by the run loops) applies to the CPU replay of the
 shape kinds — rect, circle, line, Bézier, sector, polygon, triangle — through `Backend._shape`.
-Clear, text, sprites, letterbox and blurred or inset shadows are untouched; a hard shadow is a
+Clear, text, images, letterbox and blurred or inset shadows are untouched; a hard shadow is a
 shape command, so it is antialiased like one.
 
 - **Record at `grid`×.** `_shape` replays the command through the kind's own rasteriser
@@ -233,9 +233,9 @@ the screen are made transparent afterwards, since a clear fills the whole target
   each finished CPU frame down to design size into `last_frame` (`_keep_frame`), and later
   reads start from it (`_seed`), nearest pixel.
 
-**The image cache** (`Backend.images`) is keyed by a backend id per *sprite version*.
-`intern_image(sprite, version, …)` reuses the copy only while `Sprite._version` matches, so an
-edited sprite gets a new id and earlier commands keep the old copy. `_expire_images`, after each
+**The image cache** (`Backend.images`) is keyed by a backend id per *image version*.
+`intern_image(source, version, …)` reuses the copy only while `Image._version` matches, so an
+edited image gets a new id and earlier commands keep the old copy. `_expire_images`, after each
 present, drops copies unused for `IMAGE_KEEP_FRAMES` frames and tells `GLRenderer.forget_images` to
 delete their textures.
 
@@ -285,8 +285,8 @@ Both replays handle a command's shadow around the command itself, in the command
   (`Int(shadow_blur * pixel_scale + 0.5)`) by both backends identically; 0 replays
   `shadow_command(c, scale)` through the normal dispatch. Otherwise shapes and lines evaluate
   `BlurredSilhouette` coverage analytically (CPU per pixel over the reach; GPU one quad in
-  `MODE_SHADOW_BOX`/`MODE_SHADOW_EDGES`), and text and sprites blur a mask (`_blur.mojo`): glyph
-  masks are keyed by blur in the glyph cache and packed into the atlas; sprite masks are cached per
+  `MODE_SHADOW_BOX`/`MODE_SHADOW_EDGES`), and text and images blur a mask (`_blur.mojo`): glyph
+  masks are keyed by blur in the glyph cache and packed into the atlas; image masks are cached per
   `shadow_mask_key` in `Backend.shadow_masks` (CPU) and `GLRenderer.shadow_textures` (GPU), both
   dropped whole at `SHADOW_MASK_LIMIT`.
   A Bézier's stroke and a sector's or polygon's quads are rasterised into a mask and blurred too
@@ -312,7 +312,7 @@ the same coverage formulas at pixel centres.
 
 Compute each row's covered run analytically and hand `(start, count)` to `fill_span` once — never
 test every pixel in a bounding box. `fill_span` owns the opaque-store and vectorised compositing.
-`blend` is only for genuinely per-pixel alpha (glyph coverage, sprite texels).
+`blend` is only for genuinely per-pixel alpha (glyph coverage, image texels).
 
 The command's `BlendMode` rides on the `Surface` (`_with_blend_mode`, set once in `Backend._one`), as
 does its clip (see Clips), so no raster loop threads either; `blend` and `fill_span` read it and share `_blend_lanes` for every mode but
@@ -330,17 +330,17 @@ only ever hold quantities affine across a triangle, so interpolation evaluates t
 |---|---|---|
 | `MODE_SOLID` | 0 | Vertex colour, no sampling |
 | `MODE_MASK` | 1 | Glyph: atlas red scales alpha |
-| `MODE_TEXTURE` | 2 | Sprite: sampled RGBA × colour |
-| `MODE_SILHOUETTE` | 3 | Sprite shadow: sampled alpha scales colour alpha |
+| `MODE_TEXTURE` | 2 | Image: sampled RGBA × colour |
+| `MODE_SILHOUETTE` | 3 | Image shadow: sampled alpha scales colour alpha |
 | `MODE_SHADOW_BOX` | 4 | Blurred rect/rounded rect/circle/line shadow; `s3` a ring |
 | `MODE_SHADOW_EDGES` | 5 | Blurred triangle shadow, three edge distances; `s3` a ring |
 | `MODE_INSET_BOX` / `MODE_INSET_EDGES` | 6 / 7 | 4 / 5 without ring, coverage inverted |
 | `MODE_GRADIENT` | 8 | Gradient fill: `uv` the device mapping, `s0` radial, `s1` ramp row; samples unit 2, dithers |
 
 A batch breaks only on an opaque `CMD_CLEAR`, a second distinct unit-1 texture, a `BlendMode`
-change, a clip change (see Clips), or frame end — glyph atlas on texture unit 0, sprites on unit 1, gradient ramps on unit 2
-(never rebound, so gradients batch with anything; a ramp texture refill flushes once). A blurred sprite shadow's
-mask is its own unit-1 texture, so a shadowed sprite costs one extra draw call, and interleaving
+change, a clip change (see Clips), or frame end — glyph atlas on texture unit 0, images on unit 1, gradient ramps on unit 2
+(never rebound, so gradients batch with anything; a ramp texture refill flushes once). A blurred image shadow's
+mask is its own unit-1 texture, so a shadowed image costs one extra draw call, and interleaving
 several costs one per switch; a blurred Bézier, sector or polygon shadow likewise costs one. Blurred text shadows
 live in the atlas and cost none. Per frame, only the viewport is written, and only on resize.
 

@@ -1,7 +1,7 @@
 """Little-endian integer decoding, shared by the file and FFI readers.
 
 A leaf module: it imports nothing and nothing re-exports it. Both the image
-decoders in `sprite` and the freetype struct readers in `render` need to
+decoders in `image` and the freetype struct readers in `render` need to
 assemble bytes into an `Int`, and neither may depend on the other, so the one
 copy of that loop lives here.
 
@@ -36,7 +36,7 @@ def cstr(s: String) -> List[UInt8]:
     follows it. Building the terminator explicitly sidesteps that.
 
     Here rather than beside any one FFI wrapper because `audio`, `render` and
-    `sprite` all hand paths to C libraries and none of them may depend on the
+    `image` all hand paths to C libraries and none of them may depend on the
     others.
     """
     var bytes = List[UInt8]()

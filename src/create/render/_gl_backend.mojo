@@ -8,12 +8,12 @@ here decides geometry.
 **One batch spans as many commands as it can.** The vertex buffer accumulates
 across commands and is flushed only when something makes a shared draw call
 impossible — an opaque `CMD_CLEAR` (which resets the framebuffer, so earlier
-vertices must already have landed), a *second* sprite texture (a blurred
-sprite shadow's mask counts: it is a texture of its own), a change of
-`BlendMode` (blend state is per draw call), and the end of the frame. Solids, glyphs and one sprite share a batch because they sample
-different things: the atlas is permanently on texture unit 0 and sprites go on
-unit 1, so a sprite between two glyphs costs no rebind and text rendered over a
-sprite — the obvious way to write a HUD — costs no break either. That is the
+vertices must already have landed), a *second* image texture (a blurred
+image shadow's mask counts: it is a texture of its own), a change of
+`BlendMode` (blend state is per draw call), and the end of the frame. Solids, glyphs and one image share a batch because they sample
+different things: the atlas is permanently on texture unit 0 and images go on
+unit 1, so an image between two glyphs costs no rebind and text rendered over an
+image — the obvious way to write a HUD — costs no break either. That is the
 whole point of baking the
 transform per vertex rather than passing it as a uniform: a per-command
 uniform would force a draw call per command and there would be no batching to
@@ -47,7 +47,7 @@ from ._command import (
     CMD_LETTERBOX,
     CMD_LINE,
     CMD_RECT,
-    CMD_SPRITE,
+    CMD_IMAGE,
     CMD_TEXT,
     CMD_TRIANGLE,
     RenderCommand,
@@ -108,14 +108,14 @@ from ._gl import (
 from ._blur import (
     SHADOW_MASK_LIMIT,
     blur_reach,
-    blur_sprite_alpha,
+    blur_image_alpha,
     shadow_mask_key,
 )
 from ._clip import _Clip
 from ._curve import PlacedMask, bezier_shadow_mask
 from ._sector import sector_shadow_mask
 from ._polygon import polygon_shadow_mask
-from ._image import _Image
+from ._interned_image import _InternedImage
 from ._tessellate import (
     MODE_SOLID,
     VertexBuffer,
@@ -131,7 +131,7 @@ from ._tessellate import (
     emit_polygon,
     emit_sector,
     emit_silhouette_mask,
-    emit_sprite,
+    emit_image,
     emit_triangle,
 )
 from ._shadow import (
@@ -207,7 +207,7 @@ in float v_mode;
 in vec4 v_shape;
 
 uniform sampler2D u_atlas;
-uniform sampler2D u_sprite;
+uniform sampler2D u_image;
 uniform sampler2D u_ramp;
 uniform int u_premultiply;
 uniform vec2 u_viewport;
@@ -256,9 +256,9 @@ void main() {
     } else if (v_mode < 1.5) {
         frag_color = vec4(v_color.rgb, v_color.a * texture(u_atlas, v_uv).r);
     } else if (v_mode < 2.5) {
-        frag_color = v_color * texture(u_sprite, v_uv);
+        frag_color = v_color * texture(u_image, v_uv);
     } else if (v_mode < 3.5) {
-        frag_color = vec4(v_color.rgb, v_color.a * texture(u_sprite, v_uv).a);
+        frag_color = vec4(v_color.rgb, v_color.a * texture(u_image, v_uv).a);
     } else if (v_mode > 7.5) {
         // Gradient: `Gradient._sample`, with texture filtering reading
         // between ramp entries and the dither indexed by device pixel, rows
@@ -463,14 +463,14 @@ struct GLRenderer(Movable):
     """The `TextRenderer.font_generation` these rects were packed against."""
     var textures: Dict[Int, UInt32]
     """Backend image id to GL texture name. The id is already the interning
-    key on `Backend.images`, so a sprite rendered a thousand times is one entry
-    and one upload; the pixels are read from the `_Image` only the first
+    key on `Backend.images`, so an image rendered a thousand times is one entry
+    and one upload; the pixels are read from the `_InternedImage` only the first
     time."""
     var shadow_textures: Dict[Int, UInt32]
-    """Blurred sprite silhouettes as textures, keyed by `shadow_mask_key`
+    """Blurred image silhouettes as textures, keyed by `shadow_mask_key`
     like the CPU's `Backend.shadow_masks`. Each is a texture of its own on
-    the sprite unit, so a blurred sprite shadow costs a draw call per
-    distinct mask it switches to, where a hard one samples the sprite's own
+    the image unit, so a blurred image shadow costs a draw call per
+    distinct mask it switches to, where a hard one samples the image's own
     texture and costs none."""
     var frame_textures: List[UInt32]
     """Textures used for one frame only — blurred curve shadows, whose masks
@@ -485,7 +485,7 @@ struct GLRenderer(Movable):
     """The gradient whose ramp each row holds, in row order. Kept across
     frames, so a gradient built once in `create` uploads once."""
     var bound: UInt32
-    """What is on texture unit 1 — the sprite unit — right now. Kept across
+    """What is on texture unit 1 — the image unit — right now. Kept across
     frames, since nothing else in the library binds there. A batch is one
     `glDrawArrays`, so replacing it has to flush first; the atlas on unit 0 is
     never replaced and so never forces one."""
@@ -543,7 +543,7 @@ struct GLRenderer(Movable):
         self.gl.use_program(self.program)
         self.gl.bind_vertex_array(self.vao)
         self._sampler_unit("u_atlas", 0)
-        self._sampler_unit("u_sprite", 1)
+        self._sampler_unit("u_image", 1)
         self._sampler_unit("u_ramp", 2)
 
         self.gl.enable(GL_BLEND)
@@ -594,7 +594,7 @@ struct GLRenderer(Movable):
         can sample "full coverage" without a glyph.
 
         Unit 0 is the atlas's for the life of the renderer: it is bound here
-        and never replaced, which is what lets glyphs batch with sprites.
+        and never replaced, which is what lets glyphs batch with images.
         """
         self.gl.active_texture(GL_TEXTURE0)
         self.gl.bind_texture(GL_TEXTURE_2D, self.atlas)
@@ -711,7 +711,7 @@ struct GLRenderer(Movable):
         mut self,
         cmds: List[RenderCommand],
         clips: List[_Clip],
-        images: Dict[Int, _Image],
+        images: Dict[Int, _InternedImage],
         mut text: TextRenderer,
         width: Int,
         height: Int,
@@ -743,7 +743,7 @@ struct GLRenderer(Movable):
             if c.kind != CMD_CLEAR:
                 self._blend_mode(c.style.blend_mode)
             # The shadow shares the command's blend mode, so it joins the
-            # same batch; a sprite's samples the sprite's own texture.
+            # same batch; an image's samples the image's own texture.
             if casts_outer_shadow(c):
                 var sh = shadow_command(c, scale)
                 # Quantised as the CPU replay does, so both agree on when a
@@ -757,8 +757,8 @@ struct GLRenderer(Movable):
                     emit_blurred_shadow(self.vertices, sh, scale)
                 elif c.kind == CMD_TEXT:
                     self._text(sh, text, scale, blur)
-                elif c.kind == CMD_SPRITE:
-                    self._sprite_shadow(sh, images, scale, blur)
+                elif c.kind == CMD_IMAGE:
+                    self._image_shadow(sh, images, scale, blur)
                 elif c.kind == CMD_BEZIER:
                     self._mask_shadow(
                         bezier_shadow_mask(sh, sh.transform, scale, blur),
@@ -790,7 +790,7 @@ struct GLRenderer(Movable):
     def _one(
         mut self,
         c: RenderCommand,
-        images: Dict[Int, _Image],
+        images: Dict[Int, _InternedImage],
         mut text: TextRenderer,
         width: Int,
         height: Int,
@@ -824,8 +824,8 @@ struct GLRenderer(Movable):
         elif c.kind == CMD_TRIANGLE:
             var row = self._ramp_row(c)
             emit_triangle(self.vertices, c, scale, row)
-        elif c.kind == CMD_SPRITE:
-            self._sprite(c, images, scale)
+        elif c.kind == CMD_IMAGE:
+            self._image(c, images, scale)
         elif c.kind == CMD_TEXT:
             self._text(c, text, scale)
         elif c.kind == CMD_LETTERBOX:
@@ -939,8 +939,8 @@ struct GLRenderer(Movable):
         self.shelf_x += g.width + _ATLAS_PAD
         self.shelf_h = max(self.shelf_h, g.height)
 
-        # An upload targets whatever is bound, so name the atlas's unit; a
-        # sprite may well be current on unit 1.
+        # An upload targets whatever is bound, so name the atlas's unit; an
+        # image may well be current on unit 1.
         var mask = text.glyph_mask(g.key)
         self.gl.active_texture(GL_TEXTURE0)
         self.gl.pixel_storei(GL_UNPACK_ALIGNMENT, 1)
@@ -960,7 +960,7 @@ struct GLRenderer(Movable):
         return rect
 
     def _bind(mut self, name: UInt32) raises:
-        """Put `name` on the sprite unit, flushing first if that replaces a
+        """Put `name` on the image unit, flushing first if that replaces a
         texture the batch so far is sampling."""
         if name == self.bound:
             return
@@ -969,15 +969,20 @@ struct GLRenderer(Movable):
         self.gl.bind_texture(GL_TEXTURE_2D, name)
         self.bound = name
 
-    def _sprite(
-        mut self, c: RenderCommand, images: Dict[Int, _Image], scale: Float64
+    def _image(
+        mut self,
+        c: RenderCommand,
+        images: Dict[Int, _InternedImage],
+        scale: Float64,
     ) raises:
         if c.image not in images:
             return
         self._bind(self._texture(c.image, images))
-        emit_sprite(self.vertices, c, scale)
+        emit_image(self.vertices, c, scale)
 
-    def _texture(mut self, id: Int, images: Dict[Int, _Image]) raises -> UInt32:
+    def _texture(
+        mut self, id: Int, images: Dict[Int, _InternedImage]
+    ) raises -> UInt32:
         """The GL texture for a backend image id, uploaded on first use."""
         if id in self.textures:
             return self.textures[id]
@@ -990,7 +995,7 @@ struct GLRenderer(Movable):
             img.width, img.height, Int(img.pixels.unsafe_ptr()), GL_LINEAR
         )
         # The bind above went behind `_bind`'s back; tell it what is current.
-        # Nothing was batched against the old binding — `_sprite` calls this
+        # Nothing was batched against the old binding — `_image` calls this
         # through `_bind`, which flushed first.
         self.bound = name
         self.textures[id] = name
@@ -1006,15 +1011,15 @@ struct GLRenderer(Movable):
                     self.bound = 0
                 _ = self.textures.pop(id)
 
-    def _sprite_shadow(
+    def _image_shadow(
         mut self,
         c: RenderCommand,
-        images: Dict[Int, _Image],
+        images: Dict[Int, _InternedImage],
         scale: Float64,
         blur: Int,
     ) raises:
         """The silhouette command `c` blurred by `blur` device pixels: the
-        CPU replay's mask, uploaded once and drawn over `_sprite`'s rect
+        CPU replay's mask, uploaded once and drawn over `_image`'s rect
         grown by the blur's reach."""
         if c.image not in images:
             return
@@ -1026,7 +1031,7 @@ struct GLRenderer(Movable):
         if key in self.shadow_textures:
             self._bind(self.shadow_textures[key])
         else:
-            # Uploading rebinds the sprite unit, so whatever the batch so far
+            # Uploading rebinds the image unit, so whatever the batch so far
             # samples there has to land first — as in `_texture`.
             self._flush()
             if len(self.shadow_textures) >= SHADOW_MASK_LIMIT:
@@ -1034,11 +1039,11 @@ struct GLRenderer(Movable):
                     _delete_object(self.gl.delete_textures, entry.value)
                 self.shadow_textures.clear()
             ref img = images[c.image]
-            var mask = blur_sprite_alpha(
+            var mask = blur_image_alpha(
                 img.pixels.unsafe_ptr(), img.width, img.height, dw, dh, sigma
             )
             # White with the mask in alpha: `MODE_SILHOUETTE` reads only
-            # alpha, and RGBA keeps every texture on the sprite unit alike.
+            # alpha, and RGBA keeps every texture on the image unit alike.
             var rgba = List[UInt8](
                 length=mask.width * mask.height * 4, fill=255
             )
@@ -1052,7 +1057,7 @@ struct GLRenderer(Movable):
             _ = rgba^
             self.bound = name
             self.shadow_textures[key] = name
-        emit_sprite(self.vertices, c, scale, blur_reach(sigma))
+        emit_image(self.vertices, c, scale, blur_reach(sigma))
 
     def _mask_shadow(mut self, placed: PlacedMask, color: Color) raises:
         """A blurred curve or sector shadow: the CPU replay's mask, uploaded
@@ -1060,7 +1065,7 @@ struct GLRenderer(Movable):
         ref mask = placed.mask
         if mask.width == 0 or mask.height == 0:
             return
-        # Uploading rebinds the sprite unit; see `_sprite_shadow`.
+        # Uploading rebinds the image unit; see `_image_shadow`.
         self._flush()
         var rgba = List[UInt8](length=mask.width * mask.height * 4, fill=255)
         for i in range(mask.width * mask.height):
@@ -1084,7 +1089,7 @@ struct GLRenderer(Movable):
         mut self, width: Int, height: Int, pixels: Int, filter: Int32
     ) raises -> UInt32:
         """A new RGBA texture of the `width` x `height` pixels at address
-        `pixels`, left bound on the sprite unit. The caller flushes first and
+        `pixels`, left bound on the image unit. The caller flushes first and
         records the binding in `bound`."""
         var name = _gen_object(self.gl.gen_textures)
         self.gl.active_texture(GL_TEXTURE1)
@@ -1155,7 +1160,7 @@ struct GLRenderer(Movable):
         mut self,
         id: Int,
         clips: List[_Clip],
-        images: Dict[Int, _Image],
+        images: Dict[Int, _InternedImage],
         mut text: TextRenderer,
         width: Int,
         height: Int,

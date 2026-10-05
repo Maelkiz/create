@@ -1,7 +1,7 @@
 """Gaussian blur of an alpha mask, for the shadows no formula describes.
 
 A shape's blurred shadow is evaluated analytically (`_shadow.mojo`); a glyph's
-or a sprite's silhouette is an arbitrary mask, so it is blurred as pixels
+or an image's silhouette is an arbitrary mask, so it is blurred as pixels
 instead — once, and cached by whoever owns the mask.
 
 Three box blurs in a row approximate a Gaussian closely, and each costs the
@@ -18,13 +18,13 @@ comptime _PASSES = 3
 
 
 comptime SHADOW_MASK_LIMIT = 256
-"""Blurred sprite masks a cache keeps before it is dropped whole — the same
+"""Blurred image masks a cache keeps before it is dropped whole — the same
 policy, for the same reason, as `_text._GLYPH_CACHE_LIMIT`. Both backends'
 caches (CPU masks, GL textures) use it."""
 
 
 def shadow_mask_key(image: Int, width: Int, height: Int, blur: Int) -> Int:
-    """Pack what a blurred sprite mask depends on into one key: 24 bits of
+    """Pack what a blurred image mask depends on into one key: 24 bits of
     image id, 15 each of device width and height, and 10 of blur."""
     return (
         image
@@ -164,7 +164,7 @@ def blur_alpha(
     return BlurredMask(out^, w, h, pad)
 
 
-def blur_sprite_alpha[
+def blur_image_alpha[
     so: Origin
 ](
     src: Pointer[UInt8, so],
@@ -177,7 +177,7 @@ def blur_sprite_alpha[
     """The alpha of the `src_width` x `src_height` RGBA image at `src`,
     resampled to `width` x `height` and blurred by `sigma` pixels.
 
-    Resampled first, with the same nearest-neighbour mapping `blit_sprite`
+    Resampled first, with the same nearest-neighbour mapping `blit_image`
     uses, so the blur is in device pixels: blurring a small image before
     scaling it up would magnify its blur into blocks.
     """

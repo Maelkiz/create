@@ -1,6 +1,6 @@
 from std.testing import TestSuite, assert_equal, assert_true
 
-from create.render._blur import blur_alpha, blur_sprite_alpha, box_widths
+from create.render._blur import blur_alpha, blur_image_alpha, box_widths
 
 
 def _block(
@@ -80,12 +80,12 @@ def test_a_blur_is_symmetric_and_peaks_in_the_middle() raises -> None:
     assert_true(peak < 255)
 
 
-def test_a_sprite_is_resampled_before_blurring() raises -> None:
+def test_a_image_is_resampled_before_blurring() raises -> None:
     # 2x1 RGBA, left texel transparent, right opaque, drawn 8x4: the opaque
     # half covers device columns 4..7, so the unblurred mask splits there.
     var src = List[UInt8](length=8, fill=0)
     src[7] = 255
-    var m = blur_sprite_alpha(src.unsafe_ptr(), 2, 1, 8, 4, 0.0)
+    var m = blur_image_alpha(src.unsafe_ptr(), 2, 1, 8, 4, 0.0)
     assert_equal(m.width, 8)
     assert_equal(m.height, 4)
     for y in range(4):

@@ -1,6 +1,6 @@
 """Every kind of render call composites once, so a translucent one is as
 translucent everywhere — fill and outline included — and opacity reaches
-sprites like everything else.
+images like everything else.
 
 Each scene draws one shape in red at opacity 0.5 over black with a 6-pixel
 outline where it has one: every inked pixel must come out half red (127),
@@ -36,7 +36,7 @@ def _name(kind: Int) -> String:
         "sector",
         "polygon",
         "text",
-        "sprite",
+        "image",
     ]
     return names[kind]
 
@@ -95,7 +95,7 @@ def _draw(mut canvas: Canvas, kind: Int) raises:
         canvas.font_size(40)
         canvas.text("WM", (0, 0))
     else:
-        canvas.sprite(Sprite.solid(30, 30, 255, 0, 0), (0, 0))
+        canvas.image(Image.solid(30, 30, 255, 0, 0), (0, 0))
 
 
 @fieldwise_init
@@ -184,23 +184,23 @@ def test_a_transformed_rectangle_covers_its_pixels_by_their_centres() raises -> 
 
 
 @fieldwise_init
-struct FadedSpriteShadow(Program):
+struct FadedImageShadow(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> FadedSpriteShadow:
-        return FadedSpriteShadow(0)
+    def create(mut context: Context) raises -> FadedImageShadow:
+        return FadedImageShadow(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
         canvas.opacity(0.5)
         canvas.shadow(color=Color.GREEN, offset=Vector2D(40, 0), blur=0)
-        canvas.sprite(Sprite.solid(20, 20, 255, 0, 0), (0, 0))
+        canvas.image(Image.solid(20, 20, 255, 0, 0), (0, 0))
 
 
-def test_opacity_fades_a_sprite_and_its_shadow_once_each() raises -> None:
-    var m = run_headless[FadedSpriteShadow](200, 100)
-    assert_equal(m.pixel(100, 50), Color(127, 0, 0), "the sprite")
+def test_opacity_fades_a_image_and_its_shadow_once_each() raises -> None:
+    var m = run_headless[FadedImageShadow](200, 100)
+    assert_equal(m.pixel(100, 50), Color(127, 0, 0), "the image")
     assert_equal(m.pixel(140, 50), Color(0, 127, 0), "its shadow")
 
 

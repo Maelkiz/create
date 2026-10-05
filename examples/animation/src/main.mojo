@@ -18,35 +18,33 @@ struct Game(Program):
     end up as the same type, so nothing downstream cares which path was used.
     """
 
-    var idle: ArcPointer[SpriteAnimation]
-    var run: ArcPointer[SpriteAnimation]
-    var spin: ArcPointer[SpriteAnimation]
-    var animator: SpriteAnimator
+    var idle: ArcPointer[Animation]
+    var run: ArcPointer[Animation]
+    var spin: ArcPointer[Animation]
+    var animator: Animator
     var x: Float64
     var spinning: Bool
 
     @staticmethod
     def create(mut context: Context) raises -> Game:
-        var sheet = Sprite.load(source_path("../assets/character.png"))
+        var sheet = Image.load(source_path("../assets/character.png"))
 
         # Row-major: the first four cells are the idle cycle, the next four
-        # the run cycle. One sheet, two animations, no SpriteSheet type.
+        # the run cycle. One sheet, two animations, no sheet type.
         var idle = ArcPointer(
-            SpriteAnimation.from_sheet(sheet, 32, 32, start=0, count=4, fps=6.0)
+            Animation.from_sheet(sheet, 32, 32, start=0, count=4, fps=6.0)
         )
         var run = ArcPointer(
-            SpriteAnimation.from_sheet(
-                sheet, 32, 32, start=4, count=4, fps=12.0
-            )
+            Animation.from_sheet(sheet, 32, 32, start=4, count=4, fps=12.0)
         )
 
         # spin_1.png .. spin_8.png, ordered by their trailing number rather
         # than lexicographically, so spin_10 would follow spin_9.
         var spin = ArcPointer(
-            SpriteAnimation.from_folder(source_path("../assets/spin"), fps=16.0)
+            Animation.from_folder(source_path("../assets/spin"), fps=16.0)
         )
 
-        var animator = SpriteAnimator(idle.copy())
+        var animator = Animator(idle.copy())
         animator.loop()
         return Game(idle^, run^, spin^, animator^, 0.0, False)
 
@@ -101,7 +99,7 @@ struct Game(Program):
 
         # Rendered four times the 32x32 source size -- pixel art wants to be
         # scaled up, and the sized overload does it without touching the asset.
-        canvas.sprite(
+        canvas.image(
             self.animator,
             (self.x, _GROUND + _SIZE / 2.0 - _FOOT_PAD),
             _SIZE,

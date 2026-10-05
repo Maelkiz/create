@@ -1,6 +1,6 @@
 # GPU-only coverage the CPU-vs-GPU parity test cannot reach, because it renders
 # one shape kind per frame by design: a batch breaks on an opaque clear, on a
-# second distinct sprite texture, and at the end of the frame, and none of
+# second distinct image texture, and at the end of the frame, and none of
 # those three are exercised by a single shape. Every case runs through the
 # GL backend into an offscreen target and skips with no GL context, same as
 # the parity test — and shares its one `GLWindow`, built once per file
@@ -16,7 +16,7 @@ from create.render._gl_target import _GLTarget
 from create.render.autoscale import AutoScale
 from create.render.canvas import PersistentCanvasState
 from create.render.render_backend import RenderBackend
-from create.sprite.sprite import Sprite
+from create.image.image import Image
 from std.testing import TestSuite, assert_equal, assert_true
 
 comptime _GRID = 20
@@ -55,33 +55,33 @@ struct ClearMidFrame(Program):
 
 
 @fieldwise_init
-struct TwoSprites(Program):
+struct TwoImages(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> TwoSprites:
-        return TwoSprites(0)
+    def create(mut context: Context) raises -> TwoImages:
+        return TwoImages(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        var a = Sprite.solid(2, 2, 255, 0, 255)
-        var b = Sprite.solid(2, 2, 0, 255, 255)
-        canvas.sprite(a, (-20, 0), 16, 16)
-        canvas.sprite(b, (20, 0), 16, 16)
+        var a = Image.solid(2, 2, 255, 0, 255)
+        var b = Image.solid(2, 2, 0, 255, 255)
+        canvas.image(a, (-20, 0), 16, 16)
+        canvas.image(b, (20, 0), 16, 16)
 
 
 @fieldwise_init
-struct TextAndSprite(Program):
+struct TextAndImage(Program):
     var _unused: Int
 
     @staticmethod
-    def create(mut context: Context) raises -> TextAndSprite:
-        return TextAndSprite(0)
+    def create(mut context: Context) raises -> TextAndImage:
+        return TextAndImage(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        var img = Sprite.solid(2, 2, 255, 0, 0)
-        canvas.sprite(img, (-30, 0), 16, 16)
+        var img = Image.solid(2, 2, 255, 0, 0)
+        canvas.image(img, (-30, 0), 16, 16)
         canvas.text_color(Color.WHITE)
         canvas.font_size(24)
         canvas.text_align(Align.TOP_LEFT)
@@ -271,14 +271,14 @@ struct BlurredText[shadows: Bool](Program):
 
 
 @fieldwise_init
-struct BlurredSprite[shadows: Bool](Program):
-    """One sprite, with or without a blurred shadow."""
+struct BlurredImage[shadows: Bool](Program):
+    """One image, with or without a blurred shadow."""
 
-    var image: Sprite
+    var image: Image
 
     @staticmethod
-    def create(mut context: Context) raises -> BlurredSprite[Self.shadows]:
-        return BlurredSprite[Self.shadows](Sprite.solid(20, 20, 255, 0, 0))
+    def create(mut context: Context) raises -> BlurredImage[Self.shadows]:
+        return BlurredImage[Self.shadows](Image.solid(20, 20, 255, 0, 0))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
@@ -286,7 +286,7 @@ struct BlurredSprite[shadows: Bool](Program):
         st.shadow_enabled = Self.shadows
         st.shadow_blur = 8.0
         with canvas.style(st):
-            canvas.sprite(self.image, (0.0, 0.0), 20, 20)
+            canvas.image(self.image, (0.0, 0.0), 20, 20)
 
 
 @fieldwise_init
@@ -426,27 +426,27 @@ def test_gl_batching_behaviours() raises -> None:
         "clear mid-frame: later render missing",
     )
 
-    # Case 2: a second distinct sprite texture in one frame forces a batch
-    # break on the bind — both sprites must still blit correctly.
-    var two_sprites = _gpu_frame[TwoSprites](win, 64, 64)
+    # Case 2: a second distinct image texture in one frame forces a batch
+    # break on the bind — both images must still blit correctly.
+    var two_images = _gpu_frame[TwoImages](win, 64, 64)
     assert_equal(
-        two_sprites.pixel(12, 32), Color(255, 0, 255), "two sprites: first"
+        two_images.pixel(12, 32), Color(255, 0, 255), "two images: first"
     )
     assert_equal(
-        two_sprites.pixel(52, 32), Color(0, 255, 255), "two sprites: second"
+        two_images.pixel(52, 32), Color(0, 255, 255), "two images: second"
     )
 
-    # Case 3: text (glyph atlas, unit 0) and a sprite (unit 1) in one frame
+    # Case 3: text (glyph atlas, unit 0) and an image (unit 1) in one frame
     # must not displace each other.
-    var text_and_sprite = _gpu_frame[TextAndSprite](win, 100, 100)
+    var text_and_image = _gpu_frame[TextAndImage](win, 100, 100)
     assert_equal(
-        text_and_sprite.pixel(20, 50),
+        text_and_image.pixel(20, 50),
         Color.RED,
-        "text and sprite: sprite missing or wrong colour",
+        "text and image: image missing or wrong colour",
     )
     assert_true(
-        _has_ink(text_and_sprite, Color.BLACK, 50, 30, 80, 50),
-        "text and sprite: text missing",
+        _has_ink(text_and_image, Color.BLACK, 50, 30, 80, 50),
+        "text and image: text missing",
     )
 
     # Case 4: several hundred shapes over two frames — the vertex buffer
@@ -490,12 +490,12 @@ def test_gl_batching_behaviours() raises -> None:
         "blurred text shadow: extra draw calls",
     )
 
-    # Case 8: a blurred sprite shadow samples a mask texture of its own, so
-    # switching from it to the sprite breaks the batch exactly once.
+    # Case 8: a blurred image shadow samples a mask texture of its own, so
+    # switching from it to the image breaks the batch exactly once.
     assert_equal(
-        _gpu_draw_calls[BlurredSprite[True]](win),
-        _gpu_draw_calls[BlurredSprite[False]](win) + 1,
-        "blurred sprite shadow: expected one extra draw call",
+        _gpu_draw_calls[BlurredImage[True]](win),
+        _gpu_draw_calls[BlurredImage[False]](win) + 1,
+        "blurred image shadow: expected one extra draw call",
     )
 
     # Case 9: a Bézier stroke is solid quads like any shape's, so it rides

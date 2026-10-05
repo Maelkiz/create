@@ -34,7 +34,7 @@ committed:
 
 The rects/alpha case improved least: `fill_span`'s own per-call overhead and
 `Backend`'s per-shape bookkeeping dominate at that shape count and size, not
-the inner loop the other phases targeted. Sprite and glyph blits (added in a
+the inner loop the other phases targeted. Image and glyph blits (added in a
 later phase, not part of the original baseline table) aren't listed above for
 that reason; see the phase's own commit for their before/after.
 """
@@ -53,7 +53,7 @@ from create.render._command import (
 from create.render._raster import (
     fill_all,
     fill_pixels,
-    blit_sprite,
+    blit_image,
     line_pixels,
 )
 from create.render import Style
@@ -194,7 +194,7 @@ def _rotated_bench(
     _report("2000 rects, rotated, alpha    ", t0, t1)
 
 
-def _sprite_bench():
+def _image_bench():
     comptime SW = 64
     comptime SH = 64
     var src = List[UInt8](length=SW * SH * 4, fill=0)
@@ -212,18 +212,18 @@ def _sprite_bench():
         var s = mem.surface()
         for row in range(0, _H, 260):
             for col in range(0, _W, 260):
-                blit_sprite(s, sp, SW, SH, col, row, 256, 256)
+                blit_image(s, sp, SW, SH, col, row, 256, 256)
     var t1 = perf_counter_ns()
-    _report("sprite blit, upscaled 4x      ", t0, t1)
+    _report("image blit, upscaled 4x      ", t0, t1)
 
     t0 = perf_counter_ns()
     for _ in range(_REPS):
         var s = mem.surface()
         for row in range(0, _H, 20):
             for col in range(0, _W, 20):
-                blit_sprite(s, sp, SW, SH, col, row, 16, 16)
+                blit_image(s, sp, SW, SH, col, row, 16, 16)
     t1 = perf_counter_ns()
-    _report("sprite blit, downscaled 4x    ", t0, t1)
+    _report("image blit, downscaled 4x    ", t0, t1)
 
 
 def _line_bench():
@@ -256,7 +256,7 @@ def _text_bench(
                     st,
                     -800.0,
                     400.0,
-                    String("2000 shapes, two sprites, this line"),
+                    String("2000 shapes, two images, this line"),
                 )
             )
         var s = mem.surface()
@@ -349,7 +349,7 @@ def main() raises:
 
     _shapes_bench(m, be, mem)
     _rotated_bench(rot, be, mem)
-    _sprite_bench()
+    _image_bench()
     _line_bench()
     _text_bench(m, be, mem)
     _frame_bench(m, be, mem)

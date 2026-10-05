@@ -12,7 +12,7 @@ comptime CMD_RECT = 1
 comptime CMD_CIRCLE = 2
 comptime CMD_LINE = 3
 comptime CMD_TRIANGLE = 4
-comptime CMD_SPRITE = 5
+comptime CMD_IMAGE = 5
 comptime CMD_TEXT = 6
 comptime CMD_LETTERBOX = 7
 """Paint the four bars outside the design area. `style.fill_color` is the colour and
@@ -63,7 +63,7 @@ struct RenderCommand(Copyable, Movable):
     | `CMD_CIRCLE` | `cx` | `cy` | `r` | — | — | — |
     | `CMD_LINE` | `x0` | `y0` | `x1` | `y1` | — | — |
     | `CMD_TRIANGLE` | `x1` | `y1` | `x2` | `y2` | `x3` | `y3` |
-    | `CMD_SPRITE` | `cx` | `cy` | `w` | `h` | — | — |
+    | `CMD_IMAGE` | `cx` | `cy` | `w` | `h` | — | — |
     | `CMD_TEXT` | `x` | `y` | — | — | — | — |
     | `CMD_LETTERBOX` | `cx0` | `cy0` | `cx1` | `cy1` | — | — |
     | `CMD_BEZIER` | — | — | — | — | — | — |
@@ -90,17 +90,17 @@ struct RenderCommand(Copyable, Movable):
     vertices, in order. Empty for every other kind, which costs no
     allocation."""
     var image: Int
-    """`CMD_SPRITE` only: a backend image id, interned at record time. The
-    pixels are copied or uploaded when the sprite is first seen, so no borrow
+    """`CMD_IMAGE` only: a backend image id, interned at record time. The
+    pixels are copied or uploaded when the image is first seen, so no borrow
     of caller-owned memory ever enters the buffer."""
     var image_w: Int
     var image_h: Int
     var silhouette: Bool
-    """`CMD_SPRITE` only: paint `style.fill_color` wherever the image is
-    opaque, scaled by its alpha, instead of the image. A sprite's shadow."""
+    """`CMD_IMAGE` only: paint `style.fill_color` wherever the image is
+    opaque, scaled by its alpha, instead of the image. An image's shadow."""
     var image_alpha: UInt8
-    """`CMD_SPRITE` only: the style's opacity, which scales every texel's
-    alpha. A sprite takes none of the style's colours, so opacity cannot be
+    """`CMD_IMAGE` only: the style's opacity, which scales every texel's
+    alpha. An image takes none of the style's colours, so opacity cannot be
     resolved into one of them as it is for every other kind; a silhouette
     ignores it, since its colour already carries it."""
     var clip: Int
@@ -319,7 +319,7 @@ def polygon_command(
     return c^
 
 
-def sprite_command(
+def image_command(
     transform: Matrix[3, 3],
     style: Style,
     cx: Float64,
@@ -330,13 +330,13 @@ def sprite_command(
     image_w: Int,
     image_h: Int,
 ) -> RenderCommand:
-    """A sprite centred at `(cx, cy)`, rendered `w` by `h` local units.
+    """An image centred at `(cx, cy)`, rendered `w` by `h` local units.
 
     `image` is a backend id, not a pointer — see the field docstring. `image_w`
     and `image_h` are the source pixel dimensions, which the replay needs to
     resample and the record site already knows.
     """
-    var c = RenderCommand(CMD_SPRITE, transform, style, cx, cy, w, h)
+    var c = RenderCommand(CMD_IMAGE, transform, style, cx, cy, w, h)
     c.image = image
     c.image_w = image_w
     c.image_h = image_h

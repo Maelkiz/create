@@ -18,7 +18,7 @@ from create.render._command import (
     RenderCommand,
     polygon_command,
     sector_command,
-    sprite_command,
+    image_command,
     triangle_command,
 )
 from create.render.style import Style
@@ -39,7 +39,7 @@ from create.render._tessellate import (
     emit_rect,
     emit_polygon,
     emit_sector,
-    emit_sprite,
+    emit_image,
     emit_triangle,
 )
 from create.math.matrix import rotate
@@ -411,12 +411,12 @@ def test_a_full_frame_content_rect_emits_no_bars() raises -> None:
     assert_equal(vb.count(), 0)
 
 
-def test_a_sprite_is_one_textured_quad_over_the_full_image() raises -> None:
+def test_a_image_is_one_textured_quad_over_the_full_image() raises -> None:
     var vb = VertexBuffer()
     var v = _viewport(100, 100)
-    emit_sprite(
+    emit_image(
         vb,
-        sprite_command(
+        image_command(
             v.base_matrix(), _plain(), 0.0, 0.0, 10.0, 10.0, 7, 32, 32
         ),
         v.scale,
@@ -432,14 +432,14 @@ def test_a_sprite_is_one_textured_quad_over_the_full_image() raises -> None:
     assert_equal(max_u, Float32(1.0))
 
 
-def test_a_sprite_is_not_flipped() raises -> None:
+def test_a_image_is_not_flipped() raises -> None:
     # Row 0 of the image belongs at the top of the quad, which in device
     # space — y down — is the smallest y.
     var vb = VertexBuffer()
     var v = _viewport(100, 100)
-    emit_sprite(
+    emit_image(
         vb,
-        sprite_command(
+        image_command(
             v.base_matrix(), _plain(), 0.0, 0.0, 10.0, 10.0, 7, 32, 32
         ),
         v.scale,
@@ -450,14 +450,14 @@ def test_a_sprite_is_not_flipped() raises -> None:
     assert_true(_y(vb, 0) < _y(vb, 2))
 
 
-def test_a_sprite_is_upright_under_rotation() raises -> None:
+def test_a_image_is_upright_under_rotation() raises -> None:
     # Only the anchor is mapped, matching the CPU blit — a rotated transform
-    # moves the sprite but must not turn it.
+    # moves the image but must not turn it.
     var v = _viewport(100, 100)
     var vb = VertexBuffer()
-    emit_sprite(
+    emit_image(
         vb,
-        sprite_command(
+        image_command(
             v.base_matrix() @ rotate(0.7),
             _plain(),
             20.0,

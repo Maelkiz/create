@@ -56,7 +56,7 @@ comptime _DESIGN_W = 200
 comptime _DESIGN_H = 150
 comptime _PIXEL_W = 240
 """Wider than the design, so `FIT` leaves a letterbox bar on each side while
-the scale factor stays exactly 1 — a resampled sprite would be comparing two
+the scale factor stays exactly 1 — a resampled image would be comparing two
 interpolation rules rather than two backends."""
 comptime _PIXEL_H = 150
 
@@ -97,7 +97,7 @@ comptime _SHAPE_STROKED_RECT = 1
 comptime _SHAPE_CIRCLE = 2
 comptime _SHAPE_LINE = 3
 comptime _SHAPE_TRIANGLE = 4
-comptime _SHAPE_SPRITE = 5
+comptime _SHAPE_IMAGE = 5
 comptime _SHAPE_TEXT = 6
 comptime _SHAPE_ROTATED_RECT = 7
 comptime _SHAPE_ROUNDED_RECT = 8
@@ -107,7 +107,7 @@ comptime _SHAPE_SHADOWED_CIRCLE = 11
 comptime _SHAPE_SHADOWED_TRIANGLE = 12
 comptime _SHAPE_SHADOWED_LINE = 13
 comptime _SHAPE_SHADOWED_TEXT = 14
-comptime _SHAPE_SHADOWED_SPRITE = 15
+comptime _SHAPE_SHADOWED_IMAGE = 15
 comptime _SHAPE_BLURRED_RECT = 16
 comptime _SHAPE_BLURRED_RING = 17
 comptime _SHAPE_BLURRED_CIRCLE = 18
@@ -115,7 +115,7 @@ comptime _SHAPE_BLURRED_TRIANGLE = 19
 comptime _SHAPE_BLURRED_TRIANGLE_RING = 20
 comptime _SHAPE_BLURRED_LINE = 21
 comptime _SHAPE_BLURRED_TEXT = 22
-comptime _SHAPE_BLURRED_SPRITE = 23
+comptime _SHAPE_BLURRED_IMAGE = 23
 comptime _SHAPE_INSET_RECT = 24
 comptime _SHAPE_BLURRED_INSET_RECT = 25
 comptime _SHAPE_INSET_ROUNDED_RECT = 26
@@ -200,8 +200,8 @@ def _shape_name(shape: Int) -> String:
         return "line"
     elif shape == _SHAPE_TRIANGLE:
         return "triangle"
-    elif shape == _SHAPE_SPRITE:
-        return "sprite"
+    elif shape == _SHAPE_IMAGE:
+        return "image"
     elif shape == _SHAPE_TEXT:
         return "text"
     elif shape == _SHAPE_ROTATED_RECT:
@@ -220,8 +220,8 @@ def _shape_name(shape: Int) -> String:
         return "shadowed line"
     elif shape == _SHAPE_SHADOWED_TEXT:
         return "shadowed text"
-    elif shape == _SHAPE_SHADOWED_SPRITE:
-        return "shadowed sprite"
+    elif shape == _SHAPE_SHADOWED_IMAGE:
+        return "shadowed image"
     elif shape == _SHAPE_BLURRED_RECT:
         return "blurred rect"
     elif shape == _SHAPE_BLURRED_RING:
@@ -234,8 +234,8 @@ def _shape_name(shape: Int) -> String:
         return "blurred triangle ring"
     elif shape == _SHAPE_BLURRED_TEXT:
         return "blurred text"
-    elif shape == _SHAPE_BLURRED_SPRITE:
-        return "blurred sprite"
+    elif shape == _SHAPE_BLURRED_IMAGE:
+        return "blurred image"
     elif shape == _SHAPE_INSET_RECT:
         return "inset rect"
     elif shape == _SHAPE_BLURRED_INSET_RECT:
@@ -333,11 +333,11 @@ def _spline(mut canvas: Canvas, closed: Bool):
 struct _Parity(Program):
     """One command kind the GL backend implements, picked by `shape`."""
 
-    var image: Sprite
-    var block: Sprite
+    var image: Image
+    var block: Image
     """Opaque and large enough that its blurred shadow clears the ink
     threshold; drawn at native size, like `image`, so neither backend
-    resamples the sprite itself."""
+    resamples the image itself."""
     var shape: Int
 
     @staticmethod
@@ -348,8 +348,8 @@ struct _Parity(Program):
     def create(mut context: Context, shape: Int) raises -> _Parity:
         context.design_size(_DESIGN_W, _DESIGN_H)
         return _Parity(
-            Sprite.load("tests/fixtures/test_2x2.png"),
-            Sprite.solid(30, 30, 0xE0, 0x90, 0x40),
+            Image.load("tests/fixtures/test_2x2.png"),
+            Image.solid(30, 30, 0xE0, 0x90, 0x40),
             shape,
         )
 
@@ -380,10 +380,10 @@ struct _Parity(Program):
                 canvas.outline_enabled(False)
                 canvas.fill(Color(0xA0, 0x60, 0xF0))
                 canvas.triangle((20, -50), (70, -50), (45, -5))
-        elif self.shape == _SHAPE_SPRITE:
+        elif self.shape == _SHAPE_IMAGE:
             # Native size: at a scale of 1 neither backend resamples, so this
             # is testing the blit, not the filter.
-            canvas.sprite(self.image, (70, 50), 2, 2)
+            canvas.image(self.image, (70, 50), 2, 2)
         elif self.shape == _SHAPE_TEXT:
             with canvas.style():
                 canvas.outline_enabled(False)
@@ -459,11 +459,11 @@ struct _Parity(Program):
                 )
             ):
                 canvas.text("parity", (0, 0))
-        elif self.shape == _SHAPE_SHADOWED_SPRITE:
-            # Native size, like the plain sprite: the silhouette is the same
-            # blit through the sprite's alpha.
+        elif self.shape == _SHAPE_SHADOWED_IMAGE:
+            # Native size, like the plain image: the silhouette is the same
+            # blit through the image's alpha.
             with canvas.style(_shadowed(Style())):
-                canvas.sprite(self.image, (70, 50), 2, 2)
+                canvas.image(self.image, (70, 50), 2, 2)
         elif self.shape == _SHAPE_BLURRED_RECT:
             # Sharp corners: the exact separable form.
             with canvas.style(
@@ -529,10 +529,10 @@ struct _Parity(Program):
                 )
             ):
                 canvas.text("Il", (0, 0))
-        elif self.shape == _SHAPE_BLURRED_SPRITE:
+        elif self.shape == _SHAPE_BLURRED_IMAGE:
             # Both backends blit the same cached mask one-to-one.
             with canvas.style(_blurred(Style())):
-                canvas.sprite(self.block, (-20, 10), 30, 30)
+                canvas.image(self.block, (-20, 10), 30, 30)
         elif self.shape == _SHAPE_INSET_RECT:
             with canvas.style(
                 _inset(
@@ -1037,7 +1037,7 @@ def _assert_interior_colour_matches(
                 total += a - b if a > b else b - a
             count += 1
     if count == 0:
-        # Thin shapes (the line, the sprite at this size) may have no pixel
+        # Thin shapes (the line, the image at this size) may have no pixel
         # fully surrounded by ink in both masks — nothing to check.
         return
     var mean = Float64(total) / Float64(count * 3)

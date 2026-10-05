@@ -1,4 +1,4 @@
-"""Reading pixels back: `canvas.pixel`, `canvas.snapshot`, and the `Sprite`
+"""Reading pixels back: `canvas.pixel`, `canvas.snapshot`, and the `Image`
 pixels they hand back, edits included.
 
 A 200 x 100 design: screen x in -100..100, y in -50..50, y up. Most tests
@@ -132,7 +132,7 @@ def test_a_snapshot_drawn_back_lines_up_with_the_frame() raises -> None:
     _square(canvas, (30, -10), Color.BLUE)
     var shot = canvas.snapshot()
     canvas.background(Color.GREEN)
-    canvas.sprite(shot, (0, 0), canvas.width, canvas.height)
+    canvas.image(shot, (0, 0), canvas.width, canvas.height)
     var mem = MemorySurface(400, 200)
     _ = _present(context, canvas^, mem)
     # Screen (30, -10) is window pixel (260, 120) at 2x.
@@ -171,8 +171,8 @@ def test_with_the_autoclear_on_reads_start_clear() raises -> None:
     assert_equal(canvas.pixel((0, 0)), _GRAY)
 
 
-def test_sprite_pixels_read_and_write_in_image_coordinates() raises -> None:
-    var s = Sprite(3, 2)
+def test_image_pixels_read_and_write_in_image_coordinates() raises -> None:
+    var s = Image(3, 2)
     s.set_pixel(2, 1, Color.RED)
     assert_equal(s.pixel(2, 1), Color.RED)
     assert_equal(s.pixel(0, 0), Color.TRANSPARENT)
@@ -186,12 +186,12 @@ def test_sprite_pixels_read_and_write_in_image_coordinates() raises -> None:
 def test_an_edit_shows_from_the_next_render_on() raises -> None:
     var context = Context()
     var canvas = _canvas(context)
-    var s = Sprite.solid(10, 10, 255, 0, 0)
-    canvas.sprite(s, (-30, 0))
+    var s = Image.solid(10, 10, 255, 0, 0)
+    canvas.image(s, (-30, 0))
     for y in range(10):
         for x in range(10):
             s.set_pixel(x, y, Color.BLUE)
-    canvas.sprite(s, (30, 0))
+    canvas.image(s, (30, 0))
     assert_equal(canvas.pixel((-30, 0)), Color.RED, "drawn before the edit")
     assert_equal(canvas.pixel((30, 0)), Color.BLUE, "drawn after it")
 
@@ -209,7 +209,7 @@ struct DrawsASnapshotBack(Program):
         _square(canvas, (30, -10), Color.BLUE)
         var shot = canvas.snapshot()
         canvas.background(Color.GREEN)
-        canvas.sprite(shot, (0, 0), canvas.width, canvas.height)
+        canvas.image(shot, (0, 0), canvas.width, canvas.height)
 
 
 def test_the_gpu_backend_reads_and_draws_back_the_same() raises -> None:

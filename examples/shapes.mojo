@@ -22,7 +22,7 @@ from create import *
 @fieldwise_init
 struct App(Program):
     var angle: Float64
-    var logo: Sprite
+    var logo: Image
     var fps: Int
 
     @staticmethod
@@ -32,7 +32,7 @@ struct App(Program):
         context.autoscale(AutoScale.FIT)
         context.design_size(800, 600)
         # Twice, below, from one interned image and so one GL upload.
-        var logo = Sprite.load(source_path("../assets/logo/png/logo.png"))
+        var logo = Image.load(source_path("../assets/logo/png/logo.png"))
         return App(0.0, logo^, 0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -94,8 +94,8 @@ struct App(Program):
 
         # The same image at two sizes: one texture, one upload, and — since
         # the two renders are adjacent — one extra batch for the pair.
-        # Text before the sprites: solids and glyphs share the atlas binding
-        # and so share one batch, which the sprite texture then breaks.
+        # Text before the images: solids and glyphs share the atlas binding
+        # and so share one batch, which the image texture then breaks.
         with canvas.style():
             canvas.outline_enabled(False)
             canvas.text_color(Color.WHITE)
@@ -120,8 +120,8 @@ struct App(Program):
                 (canvas.right() - 12, canvas.bottom() + 12),
             )
 
-        canvas.sprite(self.logo, (250, -170), 140, 140)
-        canvas.sprite(self.logo, (90, -230), 70, 70)
+        canvas.image(self.logo, (250, -170), 140, 140)
+        canvas.image(self.logo, (90, -230), 70, 70)
 
         with canvas.style():
             canvas.font_size(20)

@@ -31,8 +31,8 @@ from create.math.matrix import (
     scale as mat_scale,
     translate as mat_translate,
 )
-from create.sprite.sprite import Sprite
-from create.sprite.animator import SpriteAnimator
+from create.image.image import Image
+from create.image.animator import Animator
 from ._backend import Backend, _ImageRequest
 from .render_backend import RenderBackend
 from ._command import (
@@ -45,7 +45,7 @@ from ._command import (
     polygon_command,
     rect_command,
     sector_command,
-    sprite_command,
+    image_command,
     text_command,
     triangle_command,
 )
@@ -63,7 +63,7 @@ struct PersistentCanvasState(Movable):
 
     A `Canvas` is built fresh each frame, so anything it must remember between
     frames — the backend, and through it the loaded fonts, the glyph cache and
-    the interned sprite images — is moved out at the end of one frame and into
+    the interned images — is moved out at the end of one frame and into
     the next. The transform stack and the style are deliberately absent: both
     start fresh every frame by construction, so a missing pop or a forgotten
     `outline_enabled(False)` cannot leak into the next frame.
@@ -254,7 +254,7 @@ struct Canvas:
     device pixels. A style is resolved at record time, so a later `fill()`
     cannot reach back and change what an earlier command paints.
 
-    Every pixel write blends source-over, so a fill, outline, sprite, glyph or
+    Every pixel write blends source-over, so a fill, outline, image, glyph or
     `background` with `a < 255` composites with what is already there —
     unless `blend_mode` picks another way to combine them.
     """
@@ -541,7 +541,7 @@ struct Canvas:
 
         ```mojo
         with canvas.clip(Rectangle((0, 0), 200, 120)):
-            canvas.sprite(self.photo, (0, 0))
+            canvas.image(self.photo, (0, 0))
         ```
 
         `r` is placed by the transform and camera current here, and stays
@@ -646,7 +646,7 @@ struct Canvas:
 
         ```mojo
         canvas.camera(self.cam)
-        canvas.sprite(self.player.position, ...)  # world-space coordinates
+        canvas.image(self.player.position, ...)  # world-space coordinates
         with canvas.overlay():
             canvas.text("Score: " + str(self.score), (0, canvas.top() - 20))
         ```
@@ -834,11 +834,11 @@ struct Canvas:
         self._state.backend.read_frame(seeded=not self._autoclear)
         return self._state.backend.frame_read.value().pixel(x, y)
 
-    def snapshot(mut self, scale: Float64 = 1.0) raises -> Sprite:
-        """What this frame has drawn so far, as a `Sprite` of the whole
+    def snapshot(mut self, scale: Float64 = 1.0) raises -> Image:
+        """What this frame has drawn so far, as an `Image` of the whole
         screen: `width * scale` by `height * scale` pixels.
 
-        Drawn back with `canvas.sprite(shot, (0, 0), canvas.width,
+        Drawn back with `canvas.image(shot, (0, 0), canvas.width,
         canvas.height)` it lines up with the frame exactly — a feedback
         effect is a snapshot kept as a field and drawn under the next frame.
         `scale=canvas.scale` gives the window's own resolution instead.
@@ -853,12 +853,12 @@ struct Canvas:
 
     def snapshot(
         mut self, region: Rectangle, scale: Float64 = 1.0
-    ) raises -> Sprite:
-        """What this frame has drawn so far inside `region`, as a `Sprite`
+    ) raises -> Image:
+        """What this frame has drawn so far inside `region`, as an `Image`
         of `region.w * scale` by `region.h * scale` pixels.
 
         `region` is in screen space, like `pixel`'s position, so it is always
-        upright; outside the screen the sprite is transparent.
+        upright; outside the screen the image is transparent.
         """
         if scale <= 0.0:
             raise Error("snapshot needs a positive scale, got " + String(scale))
@@ -879,13 +879,13 @@ struct Canvas:
             # The whole screen at design size is what `pixel` reads,
             # so the two share one replay.
             backend.read_frame(seeded=not self._autoclear)
-            return Sprite.from_rgba(pw, ph, backend.frame_read.value().data)
+            return Image.from_rgba(pw, ph, backend.frame_read.value().data)
         var to_target = mat_translate(
             (region.w / 2.0 - region.position.x) * scale,
             (region.h / 2.0 + region.position.y) * scale,
         ) @ mat_scale(scale, -scale)
         var mem = backend.read(pw, ph, scale, to_target, not self._autoclear)
-        return Sprite.from_rgba(pw, ph, mem.data)
+        return Image.from_rgba(pw, ph, mem.data)
 
     def save_screenshot(mut self, path: String) raises:
         """Save this frame as a PNG at the framebuffer's own resolution.
@@ -1029,7 +1029,7 @@ struct Canvas:
         composites once, except at a sharp cusp, where it may overlap slightly.
 
         A blurred shadow is blurred afresh every frame (it cannot be cached
-        like a sprite's), and on the GPU costs one extra draw call.
+        like an image's), and on the GPU costs one extra draw call.
         """
         self.bezier(Bezier(start, control1, control2, end))
 
@@ -1133,51 +1133,51 @@ struct Canvas:
     def triangle(mut self, t: Triangle):
         self.triangle(t.a, t.b, t.c)
 
-    def sprite(mut self, s: Sprite, position: Point2D):
+    def image(mut self, s: Image, position: Point2D):
         """Render `s` at its own pixel size.
 
         The same command as the sized overload: at a pixel scale of 1 the two
-        agree exactly, and the one-sprite-pixel-per-framebuffer-pixel shortcut
-        they used to differ by now lives inside `blit_sprite`, where the replay
+        agree exactly, and the one-image-pixel-per-framebuffer-pixel shortcut
+        they used to differ by now lives inside `blit_image`, where the replay
         can take it without the record site having to know.
         """
-        self.sprite(s, position, s.width, s.height)
+        self.image(s, position, s.width, s.height)
 
-    def sprite(mut self, s: Sprite, position: Point2D, w: Int, h: Int):
+    def image(mut self, s: Image, position: Point2D, w: Int, h: Int):
         # Rotation and shear are not resampled — only position and scale apply.
         #
         # The image is interned *now*, not at replay: the command then carries
         # an id rather than a borrow of the program's pixels, which is what
         # keeps caller-owned memory out of a buffer that outlives the call.
-        var image = self._state.backend.intern_image(
+        var id = self._state.backend.intern_image(
             s._id, s._version, s._pixels.unsafe_ptr(), s.width, s.height
         )
         self._state.backend.record(
-            sprite_command(
+            image_command(
                 self._transform,
                 self._style,
                 position.x,
                 position.y,
                 Float64(w),
                 Float64(h),
-                image,
+                id,
                 s.width,
                 s.height,
             )
         )
 
-    def sprite(mut self, a: SpriteAnimator, position: Point2D):
+    def image(mut self, a: Animator, position: Point2D):
         """Render the animator's current frame, centred at `position`.
 
         The frame is indexed here rather than handed back by an accessor on
-        `SpriteAnimator`: a `List` element's origin is not spellable from user
+        `Animator`: a `List` element's origin is not spellable from user
         code, so a reference to it cannot cross a function boundary. That is
         also why the sized overload below indexes it inline too.
         """
-        self.sprite(a.animation[].frames[a.frame_index], position)
+        self.image(a.animation[].frames[a.frame_index], position)
 
-    def sprite(mut self, a: SpriteAnimator, position: Point2D, w: Int, h: Int):
-        self.sprite(a.animation[].frames[a.frame_index], position, w, h)
+    def image(mut self, a: Animator, position: Point2D, w: Int, h: Int):
+        self.image(a.animation[].frames[a.frame_index], position, w, h)
 
     def corner_radius(mut self, radius: Int):
         """Round the corners of rectangles and triangles, in world units,
@@ -1203,7 +1203,7 @@ struct Canvas:
 
     def opacity(mut self, value: Float64):
         """Fade whatever is rendered next: fill, gradient, outline, text,
-        sprite and shadow alike, never `background`. `1.0` (the default)
+        image and shadow alike, never `background`. `1.0` (the default)
         leaves it untouched; `0.0` renders nothing visible. Each shape
         composites once, so a translucent one is evenly translucent, outline
         and fill included. Resolved at record time, like every other style
@@ -1215,7 +1215,7 @@ struct Canvas:
         `mode` — `BlendMode.ADD` for glows, `MULTIPLY` for shadows — instead
         of painting over it. `BlendMode.NORMAL` (the default) paints over.
 
-        Applies to shapes, text and sprites, never to `background`.
+        Applies to shapes, text and images, never to `background`.
         """
         self._style.blend_mode = mode
 
@@ -1236,7 +1236,7 @@ struct Canvas:
         Works like CSS `drop-shadow`: the shadow is the shape's whole
         silhouette, fill and outline together, cast once — a translucent
         fill shows its own shadow through it. Lines cast their stroke, text
-        its glyphs and sprites their alpha. `blur` is the CSS blur radius,
+        its glyphs and images their alpha. `blur` is the CSS blur radius,
         twice the Gaussian's standard deviation; `spread` grows the
         silhouette before blurring. Both are world units, scaled like a
         coordinate.
@@ -1245,7 +1245,7 @@ struct Canvas:
         fill and within its outline, as if the shape were a hole cut in a
         surface: the band shows on the side the offset points away from.
         Only rectangles, circles and triangles take an inset shadow; lines,
-        text and sprites cast none while it is set.
+        text and images cast none while it is set.
 
         The offset is fixed to the screen, so a rotated shape's shadow still
         falls the same way; see `shadow_follows_transform`. The shadow

@@ -1,4 +1,4 @@
-# Regression coverage for post-render clipping and the sized sprite overload
+# Regression coverage for post-render clipping and the sized image overload
 # — kept out of test_canvas.mojo, already the package's slowest file, since
 # both tests here use larger buffers.
 
@@ -7,7 +7,7 @@ from std.testing import TestSuite, assert_equal
 from create import *
 from create.core.headless import run_headless
 from create.render.surface import MemorySurface
-from create.sprite.sprite import Sprite
+from create.image.image import Image
 
 
 @fieldwise_init
@@ -39,28 +39,28 @@ def test_letterbox_clips_a_shape_rendered_past_the_design_edge() raises -> None:
     assert_equal(m.pixel(50, 50), Color.GREEN)
 
 
-struct ScaledSprite(Program):
-    var sprite: Sprite
+struct ScaledImage(Program):
+    var image: Image
 
-    def __init__(out self, var sprite: Sprite):
-        self.sprite = sprite^
+    def __init__(out self, var image: Image):
+        self.image = image^
 
     @staticmethod
-    def create(mut context: Context) raises -> ScaledSprite:
-        return ScaledSprite(Sprite.load("tests/fixtures/test_2x2.bmp"))
+    def create(mut context: Context) raises -> ScaledImage:
+        return ScaledImage(Image.load("tests/fixtures/test_2x2.bmp"))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.sprite(self.sprite, (0.0, 0.0), 8, 8)
+        canvas.image(self.image, (0.0, 0.0), 8, 8)
 
 
-def test_sized_sprite_overload_resamples_nearest_neighbour() raises -> None:
+def test_sized_image_overload_resamples_nearest_neighbour() raises -> None:
     # test_2x2.bmp: top-left red, top-right white, bottom-left blue, bottom-
-    # right white (test_sprite_blits_unflipped's fixture, in test_canvas.mojo).
+    # right white (test_image_blits_unflipped's fixture, in test_canvas.mojo).
     # Blown up 4x to an 8x8 destination, each source pixel becomes a sharp 4x4
     # block — nearest-neighbour, so the boundary between blocks is exact
     # rather than blended.
-    var m = run_headless[ScaledSprite](100, 100)
+    var m = run_headless[ScaledImage](100, 100)
     assert_equal(m.pixel(46, 46), Color.RED)
     assert_equal(m.pixel(49, 49), Color.RED)
     assert_equal(m.pixel(50, 49), Color.WHITE)

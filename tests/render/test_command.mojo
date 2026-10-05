@@ -9,7 +9,7 @@ from create.render._command import (
     CMD_CIRCLE,
     CMD_LINE,
     CMD_TRIANGLE,
-    CMD_SPRITE,
+    CMD_IMAGE,
     CMD_TEXT,
     CMD_LETTERBOX,
     CMD_BEZIER,
@@ -19,7 +19,7 @@ from create.render._command import (
     circle_command,
     line_command,
     triangle_command,
-    sprite_command,
+    image_command,
     text_command,
     letterbox_command,
     bezier_command,
@@ -107,11 +107,11 @@ def test_other_kinds_carry_no_points() raises -> None:
     )
 
 
-def test_sprite_carries_an_image_id_not_a_pointer() raises -> None:
-    var c = sprite_command(
+def test_image_carries_an_image_id_not_a_pointer() raises -> None:
+    var c = image_command(
         identity[3](), Style(), 1.0, 2.0, 30.0, 40.0, 77, 16, 24
     )
-    assert_equal(c.kind, CMD_SPRITE)
+    assert_equal(c.kind, CMD_IMAGE)
     assert_equal(c.geom[2], 30.0)
     assert_equal(c.image, 77)
     assert_equal(c.image_w, 16)

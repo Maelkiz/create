@@ -24,7 +24,7 @@ trait Program(Deinitable, Movable):
         """Build the program, before the first frame.
 
         Where resources the program drives on its own schedule are
-        constructed — sprites, fonts, sounds, an `Audio` device — and where
+        constructed — images, fonts, sounds, an `Audio` device — and where
         `context.design_size` or `context.autoscale` is called if the
         defaults don't suit.
 

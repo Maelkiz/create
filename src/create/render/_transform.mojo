@@ -40,7 +40,7 @@ def uniform(m: Matrix[3, 3]) -> Bool:
 def pixel_scale(m: Matrix[3, 3], fallback: Float64) -> Float64:
     """Pixels per world unit along `m`.
 
-    Outline thickness, font size and sprite extents are authored in world
+    Outline thickness, font size and image extents are authored in world
     units but rasterised in pixels, so they all scale by this. `fallback` is
     the frame's autoscale factor, used when `m` is not uniform and no single
     factor exists.

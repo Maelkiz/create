@@ -79,7 +79,7 @@ struct App(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         # Nothing else advances a tween. A tween never updated sits at its
-        # start forever, exactly like an un-ticked SpriteAnimator.
+        # start forever, exactly like an un-ticked Animator.
         self.clock.update(context.time.delta)
         self.slide.update(context.time.delta)
 

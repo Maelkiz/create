@@ -1,10 +1,10 @@
 from std.memory import ArcPointer
 
-from create.sprite.animation import SpriteAnimation
+from create.image.animation import Animation
 
 
-struct SpriteAnimator(Copyable, Movable, Writable):
-    """The playhead over one `SpriteAnimation`.
+struct Animator(Copyable, Movable, Writable):
+    """The playhead over one `Animation`.
 
     An animation is the artwork and never moves; an animator is the frame a
     particular entity is on right now, so an entity owns one and several can
@@ -22,14 +22,14 @@ struct SpriteAnimator(Copyable, Movable, Writable):
     confused with one another.
     """
 
-    var animation: ArcPointer[SpriteAnimation]
+    var animation: ArcPointer[Animation]
     var frame_index: Int
     var _playing: Bool
     var _looping: Bool
     var _finished: Bool
     var _elapsed: Float64
 
-    def __init__(out self, var animation: ArcPointer[SpriteAnimation]):
+    def __init__(out self, var animation: ArcPointer[Animation]):
         """Hold `animation`, stopped on frame 0.
 
         An animator always has an animation, so there is no empty state to
@@ -45,9 +45,9 @@ struct SpriteAnimator(Copyable, Movable, Writable):
     def write_to[W: Writer](self, mut writer: W):
         # The animation is a shared asset, not printable, so only the
         # playhead shows.
-        writer.write("SpriteAnimator(frame_index=", self.frame_index, ")")
+        writer.write("Animator(frame_index=", self.frame_index, ")")
 
-    def use(mut self, var animation: ArcPointer[SpriteAnimation]):
+    def use(mut self, var animation: ArcPointer[Animation]):
         """Switch to `animation`, rewound to frame 0 and stopped.
 
         Switching to the animation already held does nothing at all. That
@@ -81,7 +81,7 @@ struct SpriteAnimator(Copyable, Movable, Writable):
         self._looping = False
         self._finished = False
 
-    def play(mut self, var animation: ArcPointer[SpriteAnimation]):
+    def play(mut self, var animation: ArcPointer[Animation]):
         """`use` then `play` -- restarts even if the animation is unchanged."""
         self.use(animation^)
         self.play()
@@ -91,7 +91,7 @@ struct SpriteAnimator(Copyable, Movable, Writable):
         self.play()
         self._looping = True
 
-    def loop(mut self, var animation: ArcPointer[SpriteAnimation]):
+    def loop(mut self, var animation: ArcPointer[Animation]):
         """`use` then `loop`, and a no-op restart-wise if already looping it."""
         if (
             Pointer(to=self.animation[]) == Pointer(to=animation[])

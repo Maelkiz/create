@@ -1,5 +1,5 @@
 struct BlendMode(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
-    """How a shape, glyph or sprite combines with what is already rendered.
+    """How a shape, glyph or image combines with what is already rendered.
 
     Set with `canvas.blend_mode` or the `blend_mode` keyword of
     `canvas.style`/`Style`, and read by every render call after it, like any

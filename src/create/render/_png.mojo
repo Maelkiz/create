@@ -1,6 +1,6 @@
 """Writing an RGBA buffer out as a PNG file.
 
-The encoder half of what `Sprite._load_png` already does for decoding:
+The encoder half of what `Image._load_png` already does for decoding:
 libpng's *simplified* API, reached through `_DLHandle`, with the 104-byte
 `png_image` control struct laid out by hand. Nothing here knows what the
 pixels mean — it takes a buffer, its extent and a path, which is what keeps it
@@ -19,7 +19,7 @@ comptime _PNG_IMAGE_VERSION = 1
 
 comptime _PNG_FORMAT_RGBA = 3
 """`PNG_FORMAT_FLAG_COLOR | PNG_FORMAT_FLAG_ALPHA` — the same value
-`Sprite._load_png` asks for on the way in."""
+`Image._load_png` asks for on the way in."""
 
 comptime _PNG_IMAGE_SIZE = 104
 """`sizeof(png_image)`: an opaque pointer, seven `png_uint_32` fields, then a

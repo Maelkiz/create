@@ -8,7 +8,7 @@ struct Pixels(Program):
     outwards, and the swatch at the bottom shows the colour under the
     mouse."""
 
-    var last: Optional[Sprite]
+    var last: Optional[Image]
 
     @staticmethod
     def create(mut context: Context) raises -> Pixels:
@@ -19,7 +19,7 @@ struct Pixels(Program):
         if self.last:
             # The last frame, 1% larger, faded by a translucent background:
             # a trail that drifts outwards.
-            canvas.sprite(
+            canvas.image(
                 self.last.value(),
                 (0, 0),
                 Int(Float64(canvas.width) * 1.01),
