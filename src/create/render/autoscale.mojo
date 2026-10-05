@@ -7,7 +7,7 @@ struct AutoScale(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     changes it. What changes is how it lands on the window:
 
     - `FIT` scales uniformly by `min(w, h)`, centres the design, and paints the
-      leftover with `context.letterbox_color` after the frame is rendered --
+      leftover with `canvas.letterbox_color` after the frame is rendered --
       which also clips anything rendered past the design bounds.
       `canvas.width`/`height` never move, so a layout written against them
       survives any window size.

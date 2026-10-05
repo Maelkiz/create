@@ -1,6 +1,5 @@
 from create.render.autoscale import AutoScale
 from create.render.canvas import Canvas, PersistentCanvasState
-from create.color.color import Color
 
 from .time import Time
 from .input import Input
@@ -27,18 +26,18 @@ struct Context(Copyable, Movable):
     arguments, each reads back the value as set, for a debug overlay or a
     settings screen to show.
 
-    A `Canvas` is built and dropped inside one frame, so a setting that has to
-    survive the frame boundary cannot live on it. These do — the autoscale
-    mode and design size the next frame's mapping is derived from,
-    whether the next frame opens with a clear, the letterbox colour, and the
-    ones the run loop reads after a frame has been released, `max_frame_rate`,
-    `quit` and `rumble`.
+    The dials are the run's, not the drawing's: the autoscale mode and design
+    size the next frame's mapping is derived from, whether the next frame
+    opens with a clear, and the ones the run loop reads after a frame has
+    been released, `max_frame_rate`, `quit` and `rumble`. Drawing settings
+    that outlive a frame, such as the font and the letterbox colour, are on
+    the `Canvas`.
 
     Handed alongside the `Canvas` to `Program.create`, which draws frame 1,
     and to every `Program.update` after it.
 
     **Read at frame construction.** `Canvas` takes its copy of `autoclear`
-    and `letterbox_color` when it is built, and the loop
+    when it is built, and the loop
     re-derives the viewport from `autoscale` and the design size at the top of
     each frame. So a dial turned part-way through `update` applies to the *next*
     frame, uniformly — the clear of the frame being rendered was recorded before
@@ -59,7 +58,6 @@ struct Context(Copyable, Movable):
     write it: the loop carries it into the next frame."""
     var _autoscale: AutoScale
     var _autoclear: Bool
-    var _letterbox_color: Color
     var _quit_on_escape: Bool
     var _design_w: Int
     var _design_h: Int
@@ -75,7 +73,6 @@ struct Context(Copyable, Movable):
         self.input = Input()
         self._autoscale = AutoScale.FIT
         self._autoclear = True
-        self._letterbox_color = Color.BLACK
         self._quit_on_escape = True
         self._design_w = 0
         self._design_h = 0
@@ -125,17 +122,6 @@ struct Context(Copyable, Movable):
         accumulate across frames.
         """
         self._autoclear = enabled
-
-    def letterbox_color(self) -> Color:
-        """The colour of the bars under `AutoScale.FIT`. Black unless set."""
-        return self._letterbox_color
-
-    def letterbox_color(mut self, color: Color):
-        """Colour the bars outside the design area under `AutoScale.FIT`.
-
-        Black by default.
-        """
-        self._letterbox_color = color
 
     def quit_on_escape(self) -> Bool:
         """Whether Escape stops the run loop. `True` unless set."""
@@ -192,7 +178,6 @@ struct Context(Copyable, Movable):
         return Canvas(
             state^,
             autoclear=self._autoclear,
-            letterbox_color=self._letterbox_color,
         )
 
     def _advance_frame(mut self, now: Int):

@@ -68,9 +68,11 @@ struct PersistentCanvasState(Movable):
     start fresh every frame by construction, so a missing pop or a forgotten
     `outline_enabled(False)` cannot leak into the next frame.
 
-    Machinery, not dials. What the *program* sets between frames lives in
-    `Context`, which the loop carries beside this and never hands to a
-    `Canvas` to own — that is what lets `update` be given both at once.
+    It also holds the frame-wide settings a program sets once and keeps —
+    the font and the letterbox colour — so they can be set in `create` and
+    last until changed. What decides the frame's geometry (the design size
+    and the autoscale mode) stays on `Context`, which the loop reads to
+    derive `view` before a `Canvas` exists.
 
     It also owns what the run loop needs *before* a `Canvas` exists: event
     processing maps pointer positions through `view`, and the dimension wait
@@ -82,12 +84,16 @@ struct PersistentCanvasState(Movable):
     """The authoritative design-to-pixel mapping, re-derived by the loop every
     frame from `Context`. A `Canvas` copies it; `Canvas._release` deliberately
     does not write it back, which would undo the loop's own resize handling."""
+    var letterbox_color: Color
+    """The colour of the bars outside the design area under `AutoScale.FIT`,
+    set through `canvas.letterbox_color`."""
 
     def __init__(out self, kind: RenderBackend = RenderBackend.CPU) raises:
         """`kind` picks the backend that will present the frames — a GPU one
         builds its GL resources now, so a context must already be current."""
         self.backend = Backend(kind)
         self.view = Viewport()
+        self.letterbox_color = Color.BLACK
 
     def _set_viewport(
         mut self,
@@ -263,17 +269,12 @@ struct Canvas:
     var height: Int
     var scale: Float64
     var _view: Viewport
-    var _letterbox_color: Color
-    """This frame's bar colour, snapshotted from `Context` at construction —
-    the frame is rendered under one set of dials, whatever `update` does to them
-    for the next."""
     var _autoclear: Bool
     """Whether this frame opened with a clear, so whether a read starts
     from transparent or from the last frame's pixels."""
     var _state: PersistentCanvasState
-    # Style is per-frame, not carried in `_state`: `Canvas` is only reachable
-    # from `update`, so nothing can seed a style outside a frame and carrying
-    # one across would only preserve a forgotten setting.
+    # Style is per-frame, not carried in `_state`: carrying one across would
+    # only preserve a forgotten setting. A reusable style is a `Style` field.
     var _style: Style
     var _base: Matrix[3, 3]
     var _base_inv: Matrix[3, 3]
@@ -297,20 +298,17 @@ struct Canvas:
         var state: PersistentCanvasState,
         *,
         autoclear: Bool,
-        letterbox_color: Color,
     ):
         """Adopt the carried-over state, and this frame's mapping and dials.
 
-        The dials are `Context`'s, copied in by value when the frame begins:
-        the frame is rendered under them as they stood then, so a program
-        turning one mid-frame changes the next frame rather than this one
-        halfway through.
+        `autoclear` is `Context`'s, copied in by value when the frame begins:
+        the frame's clear is recorded here, so a program turning it mid-frame
+        changes the next frame rather than this one halfway through.
         """
         self._view = state.view
         self.width = state.view.width
         self.height = state.view.height
         self.scale = state.view.scale
-        self._letterbox_color = letterbox_color
         self._autoclear = autoclear
         self._state = state^
         self._style = Style()
@@ -337,8 +335,9 @@ struct Canvas:
         presents it — nothing can append to a frame that is being replayed.
 
         Nothing is written back. `self._view` is this frame's copy of a mapping
-        the loop re-derives every frame, and the dials a program turns are in `Context`, which a `Canvas`
-        never owned — so there is no merge to get wrong here.
+        the loop re-derives every frame, and the settings a program sets on
+        the canvas that outlive the frame are written to `_state` directly —
+        so there is no merge to get wrong here.
         """
         return self._state^
 
@@ -384,7 +383,7 @@ struct Canvas:
             Int(self._view.offset_y + Float64(self.height) * self.scale + 0.5)
         )
         self._state.backend.record(
-            letterbox_command(self._letterbox_color, cx0, cy0, cx1, cy1)
+            letterbox_command(self._state.letterbox_color, cx0, cy0, cx1, cy1)
         )
 
     # `_uniform`, `_pixel_scale`, `_device_bounds` and `_outline_thickness_px`
@@ -1297,6 +1296,20 @@ struct Canvas:
         not typographic baselines.
         """
         self._style.text_align = align
+
+    def letterbox_color(self) -> Color:
+        """The colour of the bars outside the design area. Black unless set."""
+        return self._state.letterbox_color
+
+    def letterbox_color(mut self, color: Color):
+        """Colour the bars outside the design area under `AutoScale.FIT`.
+
+        A frame-wide setting: the bars are painted after the frame is drawn,
+        so this frame's bars take it wherever in the frame it is called, and
+        it lasts until changed — set it once in `create`. Not part of a
+        style.
+        """
+        self._state.letterbox_color = color
 
     def font(mut self, var f: Font):
         """Swap the face. Lives in `PersistentCanvasState`, so unlike the style

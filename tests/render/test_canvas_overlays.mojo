@@ -41,6 +41,57 @@ def test_letterbox_clips_a_shape_rendered_past_the_design_edge() raises -> None:
     assert_equal(m.pixel(50, 50), Color.GREEN)
 
 
+@fieldwise_init
+struct RedBarsFromCreate(Program):
+    """Sets red bars once in `create`; never touches them again."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> RedBarsFromCreate:
+        canvas.letterbox_color(Color.RED)
+        canvas.background(Color.GREEN)
+        return RedBarsFromCreate(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.GREEN)
+
+
+def test_a_letterbox_colour_set_in_create_lasts() raises -> None:
+    # 100x50 design in a 100x100 buffer: 25-row bars top and bottom.
+    var first = run_headless[RedBarsFromCreate](100, 50, 0, 100, 100)
+    assert_equal(first.pixel(50, 5), Color.RED)
+    assert_equal(first.pixel(50, 50), Color.GREEN)
+    var later = run_headless[RedBarsFromCreate](100, 50, 3, 100, 100)
+    assert_equal(later.pixel(50, 5), Color.RED)
+    assert_equal(later.pixel(50, 95), Color.RED)
+
+
+@fieldwise_init
+struct BarsChangedLate(Program):
+    """Turns the bars blue at the end of `update`, after drawing."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> BarsChangedLate:
+        return BarsChangedLate(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.GREEN)
+        assert_equal(canvas.letterbox_color(), Color.BLACK)
+        canvas.letterbox_color(Color.BLUE)
+
+
+def test_a_letterbox_colour_set_mid_frame_paints_that_frame() raises -> None:
+    var m = run_headless[BarsChangedLate](100, 50, 1, 100, 100)
+    assert_equal(m.pixel(50, 5), Color.BLUE)
+
+
 struct ScaledImage(Program):
     var image: Image
 
