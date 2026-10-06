@@ -63,9 +63,20 @@ $found"
 done
 files=$(echo "$files" | sed '/^$/d' | sort -u)
 
+# The library is compiled once, here, and every test file imports the
+# result. Against src each file would parse and elaborate the whole package
+# again — most of a render test's build time. Built fresh on every run, so it
+# is never stale.
+if ! mojo precompile src/create -o "$logs/create.mojoc" > "$logs/precompile" 2>&1
+then
+    cat "$logs/precompile"
+    echo "The library does not compile; no tests were run."
+    exit 1
+fi
+
 echo "$files" | xargs -P "$jobs" -I{} sh -c '
     log="$LOGS/$(echo "{}" | tr / _).log"
-    if mojo run -I src "{}" > "$log" 2>&1; then
+    if mojo run -I "$LOGS" "{}" > "$log" 2>&1; then
         # One write, so a concurrent worker cannot land between the lines.
         printf "%s\n" "PASS {}$(grep "SKIP" "$log" | sed "s/^/\n    /")"
     else
