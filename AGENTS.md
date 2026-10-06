@@ -60,8 +60,23 @@ Two tiers of automated checks:
 | CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)), every PR and push to `main` | Formatting, `mojo precompile`, every example and benchmark, the test suite — a GL test that skips fails the job |
 
 The hook skips entirely when every staged path is inert (`*.md`, `LICENSE`, agent/editor config) —
-the allowlist is in `.githooks/_inert.sh`. `main` is protected: changes land through a pull
-request once CI passes.
+the allowlist is in `.githooks/_inert.sh`.
+
+**Workflow.** `main` is protected by a ruleset: no direct pushes, no force pushes, no deletion,
+and a linear history. Every change lands as a squash-merged pull request once the four CI checks
+(`format`, `precompile`, `examples`, `tests`) pass; no approval is required.
+
+```bash
+git switch -c some-change                 # from an up-to-date main
+git push -u origin some-change            # pushes run no hook; CI runs on the PR
+gh pr create --fill
+gh pr merge --auto --squash               # merges itself once CI is green
+git switch main && git pull --ff-only
+```
+
+The branch need not be up to date with `main` to merge, and the head branch is deleted on merge.
+A repository admin may bypass the checks when merging a pull request (CI itself broken), never
+for a direct push. Leave merging to the user unless they ask for it.
 
 Neither tier subsumes the other: building a consumer program type-checks only the `def` bodies it
 reaches (catches API drift, not an uncalled broken function); `mojo precompile` is the reverse.
