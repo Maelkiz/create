@@ -533,8 +533,8 @@ struct GLRenderer(Movable):
     """The shelf allocator's cursor: glyphs fill a row left to right, then a
     new row starts below the tallest glyph of the last one. Nothing is ever
     freed — the atlas is reset whole or not at all."""
-    var font_generation: Int
-    """The `TextRenderer.font_generation` these rects were packed against."""
+    var atlas_generation: Int
+    """The `TextRenderer.atlas_generation` these rects were packed against."""
     var textures: Dict[Int, UInt32]
     """Backend image id to GL texture name. The id is already the interning
     key on `Backend.images`, so an image rendered a thousand times is one entry
@@ -591,7 +591,7 @@ struct GLRenderer(Movable):
         self.shelf_x = _ATLAS_PAD
         self.shelf_y = 0
         self.shelf_h = 1
-        self.font_generation = 0
+        self.atlas_generation = 0
         self.textures = Dict[Int, UInt32]()
         self.shadow_textures = Dict[Int, UInt32]()
         self.frame_textures = List[UInt32]()
@@ -1027,14 +1027,14 @@ struct GLRenderer(Movable):
         """
         if c.style.text_color.a == 0:
             return
-        if text.font_generation != self.font_generation:
-            # A different face behind the same keys: the packed masks are the
-            # old face's, so the shelves start over.
+        if text.atlas_generation != self.atlas_generation:
+            # The renderer handed its font slots out afresh, so the packed
+            # masks may belong to a face a key no longer names: start over.
             self.glyphs.clear()
             self.shelf_x = _ATLAS_PAD
             self.shelf_y = 0
             self.shelf_h = 1
-            self.font_generation = text.font_generation
+            self.atlas_generation = text.atlas_generation
         var m = c.transform
         # Only the anchor is mapped — the layout happens in pixel space.
         var p = mat_apply(m, c.geom[0], c.geom[1])

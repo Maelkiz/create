@@ -10,7 +10,15 @@ from create.color.color import Color
 from create.text.font import Font, FontWeight, default_font_path, _GlyphInfo
 from create.render.style import Style
 from create.render.surface import MemorySurface
-from create.render._text import TextRenderer, _GLYPH_CACHE_LIMIT
+from create.render._text import (
+    TextRenderer,
+    _FONT_SLOTS,
+    _GLYPH_CACHE_LIMIT,
+    _MAX_BLUR,
+    _MAX_SIZE,
+    _MAX_WEIGHT,
+    _pixel_size,
+)
 
 
 def _ink_box(m: MemorySurface) -> Tuple[Int, Int, Int, Int]:
@@ -71,25 +79,25 @@ def test_construction_touches_no_disk() raises -> None:
     # A program that renders no text must not pay the font load, and must not
     # fail on a missing file it never needed.
     var t = TextRenderer()
-    assert_equal(len(t._font), 0)
+    assert_false(Bool(t._default))
     assert_equal(len(t._fallback_font), 0)
     assert_false(t._fallback_attempted)
 
 
 def test_font_loads_lazily_on_first_render() raises -> None:
     var t = TextRenderer()
-    t._ensure_font(16)
-    assert_equal(len(t._font), 1)
+    t._ensure_font()
+    assert_true(Bool(t._default))
     assert_true(t._fallback_attempted)
 
 
 def test_fallback_is_attempted_at_most_once() raises -> None:
     # A missing fallback must not be retried on every glyph of every frame.
     var t = TextRenderer()
-    t._ensure_font(16)
+    t._ensure_font()
     var loaded = len(t._fallback_font)
-    t._ensure_font(16)
-    t._ensure_font(32)
+    t._ensure_font()
+    t._ensure_font()
     assert_equal(len(t._fallback_font), loaded)
 
 
@@ -205,15 +213,58 @@ def test_size_and_weight_are_part_of_the_key() raises -> None:
     )
 
 
-def test_swapping_the_font_drops_the_cache() raises -> None:
-    # The key says nothing about which face rendered the mask, so a face swap
-    # would otherwise keep rendering the old font's glyphs.
+def test_switching_fonts_keeps_the_cache() raises -> None:
+    # Each face keys its glyphs by its own slot, so going back to a face finds
+    # its masks still there rather than rasterising them again.
     var t = TextRenderer()
-    var top_left = _style(Align.TOP_LEFT)
-    _ = _render_with(t, top_left^)
-    assert_true(len(t._glyphs) > 0, "nothing was cached")
-    t.set_font(Font(default_font_path(), 24))
+    var a = Font.load(default_font_path())
+    var b = Font.load(default_font_path())
+    t.set_font(a)
+    _ = _render_with(t, _style(Align.TOP_LEFT))
+    var after_a = len(t._glyphs)
+    assert_true(after_a > 0, "nothing was cached")
+    t.set_font(b)
+    _ = _render_with(t, _style(Align.TOP_LEFT))
+    var after_b = len(t._glyphs)
+    assert_true(after_b > after_a, "b reused a's masks")
+    t.set_font(a)
+    _ = _render_with(t, _style(Align.TOP_LEFT))
+    assert_equal(len(t._glyphs), after_b, "going back to a rasterised again")
+    assert_equal(t.atlas_generation, 0, "a switch must not reset the atlas")
+
+
+def test_the_same_glyph_in_two_faces_has_two_keys() raises -> None:
+    var t = TextRenderer()
+    var a = t._slot(Font.load(default_font_path()))
+    var b = t._slot(Font.load(default_font_path()))
+    assert_true(a != b)
+    assert_true(
+        t._glyph_key(a, ord("H"), 24, 400) != t._glyph_key(b, ord("H"), 24, 400)
+    )
+
+
+def test_running_out_of_slots_starts_over() raises -> None:
+    var t = TextRenderer()
+    var f = Font.load(default_font_path())
+    for i in range(_FONT_SLOTS):
+        # Distinct identities on one open face: slots, not faces, are tested.
+        var copy = f.copy()
+        copy._id = -1 - i
+        _ = t._slot(copy)
+    t._glyphs[1] = _GlyphInfo(0, 0, 0, 0, 4)
+    assert_equal(t._slot(f), 0, "the first slot of a fresh start")
     assert_equal(len(t._glyphs), 0)
+    assert_equal(t.atlas_generation, 1)
+
+
+def test_an_oversized_font_is_clamped_not_overflowed() raises -> None:
+    var big = _style(Align.TOP_LEFT)
+    big.font_size = 5000
+    assert_equal(_pixel_size(big, 1.0), _MAX_SIZE)
+    var t = TextRenderer()
+    var slot = t._slot(Font.load(default_font_path()))
+    var key = t._glyph_key(slot, 0x10FFFF, _MAX_SIZE, _MAX_WEIGHT, _MAX_BLUR)
+    assert_true(key > 0, "the packed key overflowed into the sign bit")
 
 
 def test_the_cache_is_bounded() raises -> None:
@@ -223,9 +274,9 @@ def test_the_cache_is_bounded() raises -> None:
     # is the guard, and rasterising four thousand real glyphs to reach it
     # would cost the suite a minute and prove nothing extra.
     var t = TextRenderer()
-    t._ensure_font(16)
+    var slot = t._slot(t._current())
     for i in range(_GLYPH_CACHE_LIMIT):
-        var key = t._glyph_key(0xE000 + i, 16, FontWeight.REGULAR)
+        var key = t._glyph_key(slot, 0xE000 + i, 16, FontWeight.REGULAR)
         t._glyphs[key] = _GlyphInfo(0, 0, 0, 0, 4)
     assert_equal(len(t._glyphs), _GLYPH_CACHE_LIMIT)
 

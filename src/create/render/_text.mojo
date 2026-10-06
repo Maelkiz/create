@@ -1,5 +1,5 @@
-from std.collections import Dict
-from std.math import max
+from std.collections import Dict, Optional
+from std.math import max, min
 from .align import Align
 from create.color.color import Color
 from create.text.font import (
@@ -13,6 +13,15 @@ from ._raster import blit_glyph
 from .style import Style
 from .surface import Surface
 
+comptime _MAX_SIZE = 4095
+"""The largest pixel size text is rasterised at: 12 bits of the glyph key."""
+comptime _MAX_WEIGHT = 1023
+"""The largest weight a key can hold, 10 bits; faces stop at 900 anyway."""
+comptime _MAX_BLUR = 1023
+"""The widest shadow blur, in pixels, a glyph mask is made for: 10 bits."""
+comptime _FONT_SLOTS = 1024
+"""Faces one renderer keys glyphs for before it starts over: 10 bits."""
+
 comptime _GLYPH_CACHE_LIMIT = 4096
 """Cached masks kept before the cache is dropped whole.
 
@@ -24,8 +33,16 @@ fills costs one repopulating frame and needs no recency bookkeeping.
 
 
 def _pixel_size(style: Style, pixel_scale: Float64) -> Int:
-    """The font size in pixels: world units scaled, never below one."""
-    return max(Int(Float64(style.font_size) * pixel_scale + 0.5), 1)
+    """The font size in pixels: world units scaled, at least one and at most
+    `_MAX_SIZE`."""
+    return min(
+        max(Int(Float64(style.font_size) * pixel_scale + 0.5), 1), _MAX_SIZE
+    )
+
+
+def _key_weight(style: Style) -> Int:
+    """The style's weight, clamped into the glyph key's 10 bits."""
+    return min(max(style.font_weight, 0), _MAX_WEIGHT)
 
 
 struct PlacedGlyph(Copyable, Movable):
@@ -66,35 +83,41 @@ struct TextRenderer(Movable):
     pixel space and hands each glyph's coverage mask to the rasteriser.
     """
 
-    var _font: List[Font]
+    var _font: Optional[Font]
+    """The face set with `set_font`, or none for the packaged default."""
+    var _default: Optional[Font]
+    """Noto Sans, loaded on first use."""
     var _fallback_font: List[Font]
     var _fallback_attempted: Bool
+    var _fonts: Dict[Int, Font]
+    """The faces glyphs have been cached for, by slot: the number a glyph
+    key carries to say which face drew it. Held so a slot keeps naming its
+    face for as long as its keys are cached."""
+    var _font_slots: Dict[Int, Int]
+    """`Font._id` to its slot."""
     var _glyphs: Dict[Int, _GlyphInfo]
-    var font_generation: Int
-    """Bumped whenever a cache key starts meaning a different bitmap.
-
-    A key packs codepoint, pixel size and weight, so the eviction in
-    `_ensure_glyph` re-renders identical masks and changes nothing — but
-    `set_font` makes the same key a different face. A backend that caches
+    var atlas_generation: Int
+    """Bumped whenever a glyph key starts meaning a different bitmap — only
+    when the slots run out and are handed out afresh. A backend that caches
     glyphs of its own (the GL atlas does) watches this and drops them.
-    """
+    Switching fonts does not bump it: each face has keys of its own."""
 
     def __init__(out self):
-        self._font = List[Font]()
+        self._font = None
+        self._default = None
         self._fallback_font = List[Font]()
         self._fallback_attempted = False
+        self._fonts = Dict[Int, Font]()
+        self._font_slots = Dict[Int, Int]()
         self._glyphs = Dict[Int, _GlyphInfo]()
-        self.font_generation = 0
+        self.atlas_generation = 0
 
-    def set_font(mut self, var f: Font):
-        self._font = List[Font]()
-        self._font.append(f^)
-        # Cached masks belong to the face that drew them, and the key says
-        # nothing about which face that was — a swap has to drop them.
-        self._glyphs.clear()
-        self.font_generation += 1
+    def set_font(mut self, f: Font):
+        """Draw with `f` from now on. Glyphs cached for other faces stay:
+        their keys name their own face."""
+        self._font = f.copy()
 
-    def _ensure_font(mut self, size: Int) raises:
+    def _ensure_font(mut self) raises:
         """Lazily load the packaged default/fallback fonts on first use.
 
         Construction never touches disk — a program that renders no text pays no
@@ -102,30 +125,69 @@ struct TextRenderer(Movable):
         attempted at most once; a missing fallback file just means no fallback
         glyphs, not a render failure.
         """
-        if len(self._font) == 0:
-            self._font.append(Font(default_font_path(), size))
+        if not self._default:
+            self._default = Font.load(default_font_path())
         if not self._fallback_attempted:
             self._fallback_attempted = True
             try:
-                self._fallback_font.append(Font(fallback_font_path(), size))
+                self._fallback_font.append(Font.load(fallback_font_path()))
             except:
                 pass
 
-    def _glyph_key(
-        self, codepoint: Int, size: Int, weight: Int, blur: Int = 0
-    ) -> Int:
-        """Pack what a mask depends on into one key.
+    def _current(mut self) raises -> Font:
+        """The face text is drawn with now."""
+        self._ensure_font()
+        if self._font:
+            return self._font.value().copy()
+        return self._default.value().copy()
 
-        A codepoint is 21 bits, a size 16 and a weight 10, which leaves the
-        top 16 bits of an Int for the blur.
+    def _slot(mut self, f: Font) -> Int:
+        """The slot `f`'s glyphs are keyed by, assigned on first sight.
+
+        Slots are 10 bits of the key. A renderer that has seen that many
+        faces starts over: every cached glyph goes, and `atlas_generation`
+        tells the GL atlas its keys now mean something else.
         """
-        return codepoint | (size << 21) | (weight << 37) | (blur << 47)
+        if f._id in self._font_slots:
+            try:
+                return self._font_slots[f._id]
+            except:
+                pass  # unreachable: just checked
+        if len(self._fonts) >= _FONT_SLOTS:
+            self._fonts.clear()
+            self._font_slots.clear()
+            self._glyphs.clear()
+            self.atlas_generation += 1
+        var slot = len(self._fonts)
+        self._fonts[slot] = f.copy()
+        self._font_slots[f._id] = slot
+        return slot
+
+    def _glyph_key(
+        self, slot: Int, codepoint: Int, size: Int, weight: Int, blur: Int = 0
+    ) -> Int:
+        """Pack what a mask depends on into one key: 21 bits of codepoint,
+        12 of size, 10 of weight, 10 of blur and 10 of font slot. Size, weight
+        and blur are clamped into theirs where they enter (`_MAX_SIZE`,
+        `_MAX_WEIGHT`, `_MAX_BLUR`)."""
+        return (
+            codepoint
+            | (size << 21)
+            | (weight << 33)
+            | (blur << 43)
+            | (slot << 53)
+        )
 
     def _ensure_glyph(
-        mut self, codepoint: Int, size: Int, weight: Int, blur: Int = 0
+        mut self,
+        slot: Int,
+        codepoint: Int,
+        size: Int,
+        weight: Int,
+        blur: Int = 0,
     ) raises -> Int:
-        """Cache the mask for `(codepoint, size, weight, blur)` and return its
-        key.
+        """Cache the mask for `(codepoint, size, weight, blur)` in the face
+        in `slot`, and return its key.
 
         A `blur` above 0 is a shadow's: the plain mask blurred with sigma
         `blur / 2` pixels, grown by the blur's reach and moved back by it, so
@@ -143,11 +205,11 @@ struct TextRenderer(Movable):
         depends on the fill, the position or the alignment; only these three
         inputs change what is stored.
         """
-        var key = self._glyph_key(codepoint, size, weight, blur)
+        var key = self._glyph_key(slot, codepoint, size, weight, blur)
         if key in self._glyphs:
             return key
         if blur > 0:
-            var plain = self._ensure_glyph(codepoint, size, weight)
+            var plain = self._ensure_glyph(slot, codepoint, size, weight)
             ref g = self._glyphs[plain]
             var mask = blur_alpha(
                 g.pixels, g.width, g.height, Float64(blur) / 2.0
@@ -168,14 +230,14 @@ struct TextRenderer(Movable):
             self._glyphs.clear()
         # Both faces are set to the requested weight here rather than at the
         # call site, because this is the only place either one rasterises.
-        if len(self._fallback_font) > 0 and not self._font[0].has_glyph(
-            codepoint
-        ):
+        # A copy shares the face, so this is where it rasterises.
+        var face = self._fonts[slot].copy()
+        if len(self._fallback_font) > 0 and not face.has_glyph(codepoint):
             self._fallback_font[0]._set_weight(weight)
             self._glyphs[key] = self._fallback_font[0].render(codepoint, size)
         else:
-            self._font[0]._set_weight(weight)
-            self._glyphs[key] = self._font[0].render(codepoint, size)
+            face._set_weight(weight)
+            self._glyphs[key] = face.render(codepoint, size)
         return key
 
     def glyph_mask(self, key: Int) raises -> List[UInt8]:
@@ -190,13 +252,13 @@ struct TextRenderer(Movable):
         return self._glyphs[key].pixels.copy()
 
     def _advance(
-        mut self, s: String, size: Int, weight: Int, blur: Int
+        mut self, slot: Int, s: String, size: Int, weight: Int, blur: Int
     ) raises -> Int:
         """The pen advance across `s` in pixels: its width as laid out, since
         glyphs are placed advance to advance with no kerning."""
         var advance = 0
         for cp in s.codepoints():
-            var key = self._ensure_glyph(Int(cp), size, weight, blur)
+            var key = self._ensure_glyph(slot, Int(cp), size, weight, blur)
             advance += self._glyphs[key].advance_x
         return advance
 
@@ -205,8 +267,8 @@ struct TextRenderer(Movable):
     ) raises -> Int:
         """How wide `layout` makes `s`, in pixels, without placing it."""
         var size = _pixel_size(style, pixel_scale)
-        self._ensure_font(size)
-        return self._advance(s, size, style.font_weight, 0)
+        var slot = self._slot(self._current())
+        return self._advance(slot, s, size, _key_weight(style), 0)
 
     def layout(
         mut self,
@@ -228,11 +290,13 @@ struct TextRenderer(Movable):
         each one's mask by key without another FreeType call.
         """
         var size = _pixel_size(style, pixel_scale)
-        self._ensure_font(size)
-        var weight = style.font_weight
+        var face = self._current()
+        var slot = self._slot(face)
+        var weight = _key_weight(style)
+        var blur_px = min(max(blur, 0), _MAX_BLUR)
 
         # Two passes: measure the total advance for alignment, then place.
-        var tw = self._advance(s, size, weight, blur)
+        var tw = self._advance(slot, s, size, weight, blur_px)
 
         var pen_x = Int(tx)
         var pen_y = Int(ty)
@@ -242,8 +306,10 @@ struct TextRenderer(Movable):
         elif not align._left():
             pen_x -= tw // 2
 
-        var asc = self._font[0].ascender()
-        var desc = self._font[0].descender()
+        # Set the size first: with every glyph cached, nothing above did.
+        face._set_size(size)
+        var asc = face.ascender()
+        var desc = face.descender()
         var baseline_y = pen_y
         if align._top():
             baseline_y += asc
@@ -257,7 +323,7 @@ struct TextRenderer(Movable):
         for cp in s.codepoints():
             # Bound by reference: the mask stays in the cache rather than
             # being copied out of it once per character.
-            var key = self._ensure_glyph(Int(cp), size, weight, blur)
+            var key = self._ensure_glyph(slot, Int(cp), size, weight, blur_px)
             ref g = self._glyphs[key]
             if g.width > 0 and g.height > 0:
                 placed.append(

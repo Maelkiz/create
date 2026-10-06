@@ -199,7 +199,7 @@ struct _Face(Movable):
         self._set_size(ft, size)
         self._set_weight(weight)
 
-    def __del__(deinit self):
+    def __deinit__(deinit self):
         """Close the face, then the library it belongs to. Nothing can be
         done about a failure this late, so none is raised."""
         try:
@@ -375,6 +375,11 @@ struct Font(Copyable, Movable, Writable):
 
     def _set_weight(mut self, weight: Int) raises:
         self._face[]._set_weight(weight)
+
+    def _set_size(mut self, size: Int) raises:
+        """Scale the face to `size` pixels, so `ascender`/`descender` are
+        that size's. Free when it already is."""
+        self._face[]._set_size(_DLHandle("libfreetype.so.6"), size)
 
     def render(mut self, codepoint: Int, size: Int) raises -> _GlyphInfo:
         """Rasterise one glyph at `size` pixels; see `_Face.render`."""
