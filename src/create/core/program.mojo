@@ -25,8 +25,8 @@ trait Program(Deinitable, Movable):
 
         Where resources the program drives on its own schedule are
         constructed — images, fonts, sounds, an `Audio` device — and where
-        canvas settings that outlive the frame, such as `canvas.font`, are
-        set once.
+        canvas settings that outlive the frame, such as `canvas.autoclear`,
+        are set once.
 
         `canvas` is a real frame, presented like every later one: what is
         drawn here shows, and geometry is as valid as on any first frame (see

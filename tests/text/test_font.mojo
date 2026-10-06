@@ -14,14 +14,14 @@ def test_the_packaged_faces_load_from_the_text_package() raises -> None:
     # They are located from font.mojo's own path, so moving the file must
     # take them with it.
     assert_true(default_font_path().endswith("text/fonts/NotoSans.ttf"))
-    var f = Font(default_font_path(), 24)
+    var f = Font.load(default_font_path())
     assert_true(f.has_glyph(ord("A")))
     # Loading raises if the file is not where the path says.
-    _ = Font(fallback_font_path(), 24)
+    _ = Font.load(fallback_font_path())
 
 
 def test_a_glyph_renders() raises -> None:
-    var f = Font(default_font_path(), 24)
+    var f = Font.load(default_font_path())
     var g = f.render(ord("A"), 24)
     assert_true(g.width > 0 and g.height > 0)
     assert_true(g.advance_x > 0)

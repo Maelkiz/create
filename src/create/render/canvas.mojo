@@ -64,15 +64,15 @@ struct PersistentCanvasState(Movable):
     """The part of a `Canvas` that outlives the frame it was rendered in.
 
     A `Canvas` is built fresh each frame, so anything it must remember between
-    frames — the backend, and through it the loaded fonts, the glyph cache and
-    the interned images — is moved out at the end of one frame and into
+    frames — the backend, and through it the glyph cache and the interned
+    images — is moved out at the end of one frame and into
     the next. The transform stack and the style are deliberately absent: both
     start fresh every frame by construction, so a missing pop or a forgotten
     `outline_enabled(False)` cannot leak into the next frame.
 
     It also holds the frame-wide settings a program sets once and keeps —
-    the font and the letterbox colour — so they can be set in `create` and
-    last until changed. What decides the frame's geometry (the design size
+    the autoclear, the letterbox colour and the antialiasing — so they can be
+    set in `create` and last until changed. What decides the frame's geometry (the design size
     and the autoscale mode) stays on `Context`, which the loop reads to
     derive `view` before a `Canvas` exists.
 

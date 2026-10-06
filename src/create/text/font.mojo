@@ -351,13 +351,6 @@ struct Font(Copyable, ImplicitlyCopyable, Movable, Writable):
         self._id = id
         self.path = path^
 
-    def __init__(out self, path: String, size: Int, weight: Int = 400) raises:
-        """Deprecated: `Font.load(path)`. Size and weight come from the
-        style, so these only preset the face."""
-        self = Font.load(path)
-        self._face[]._set_size(_DLHandle("libfreetype.so.6"), size)
-        self._face[]._set_weight(weight)
-
     def write_to[W: Writer](self, mut writer: W):
         writer.write('Font.load("', self.path, '")')
 

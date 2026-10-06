@@ -83,8 +83,6 @@ struct TextRenderer(Movable):
     pixel space and hands each glyph's coverage mask to the rasteriser.
     """
 
-    var _font: Optional[Font]
-    """The face set with `set_font`, or none for the packaged default."""
     var _default: Optional[Font]
     """Noto Sans, loaded on first use."""
     var _fallback_font: List[Font]
@@ -103,7 +101,6 @@ struct TextRenderer(Movable):
     Switching fonts does not bump it: each face has keys of its own."""
 
     def __init__(out self):
-        self._font = None
         self._default = None
         self._fallback_font = List[Font]()
         self._fallback_attempted = False
@@ -111,11 +108,6 @@ struct TextRenderer(Movable):
         self._font_slots = Dict[Int, Int]()
         self._glyphs = Dict[Int, _GlyphInfo]()
         self.atlas_generation = 0
-
-    def set_font(mut self, f: Font):
-        """Draw with `f` from now on. Glyphs cached for other faces stay:
-        their keys name their own face."""
-        self._font = f.copy()
 
     def _ensure_font(mut self) raises:
         """Lazily load the packaged default/fallback fonts on first use.
@@ -133,13 +125,6 @@ struct TextRenderer(Movable):
                 self._fallback_font.append(Font.load(fallback_font_path()))
             except:
                 pass
-
-    def _current(mut self) raises -> Font:
-        """The face `set_font` chose, or the default."""
-        self._ensure_font()
-        if self._font:
-            return self._font.value().copy()
-        return self._default.value().copy()
 
     def _face(mut self, style: Style) raises -> Font:
         """The face `style` draws text in: its own, or the packaged

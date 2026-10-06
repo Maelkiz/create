@@ -277,7 +277,7 @@ def test_the_cache_is_bounded() raises -> None:
     # is the guard, and rasterising four thousand real glyphs to reach it
     # would cost the suite a minute and prove nothing extra.
     var t = TextRenderer()
-    var slot = t._slot(t._current())
+    var slot = t._slot(t._face(Style()))
     for i in range(_GLYPH_CACHE_LIMIT):
         var key = t._glyph_key(slot, 0xE000 + i, 16, FontWeight.REGULAR)
         t._glyphs[key] = _GlyphInfo(0, 0, 0, 0, 4)
