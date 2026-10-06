@@ -1084,7 +1084,7 @@ struct GLRenderer(Movable):
 
         # An upload targets whatever is bound, so name the atlas's unit; an
         # image may well be current on unit 1.
-        var mask = text.glyph_mask(g.key)
+        ref mask = text.glyph_mask(g.key)
         self.gl.active_texture(GL_TEXTURE0)
         self.gl.pixel_storei(GL_UNPACK_ALIGNMENT, 1)
         self.gl.tex_sub_image_2d(
@@ -1098,7 +1098,6 @@ struct GLRenderer(Movable):
             GL_UNSIGNED_BYTE,
             _Bytes(unsafe_from_address=Int(mask.unsafe_ptr())),
         )
-        _ = mask^
         self.glyphs[g.key] = rect
         return rect
 

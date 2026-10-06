@@ -245,16 +245,11 @@ struct TextRenderer(Movable):
             self._glyphs[key] = face.render(codepoint, size)
         return key
 
-    def glyph_mask(self, key: Int) raises -> List[UInt8]:
-        """A copy of a cached glyph's coverage mask, row-major, 8-bit.
-
-        A copy because nothing in this Mojo version can hand back a reference
-        to a `Dict` value across a function boundary (Gotcha 4). That is
-        affordable only because the one caller — the GL atlas — reads a glyph
-        exactly once, on upload; the CPU blit still reads it by reference from
-        inside `render`.
-        """
-        return self._glyphs[key].pixels.copy()
+    def glyph_mask(
+        self, key: Int
+    ) raises -> ref[self._glyphs[0].pixels] List[UInt8]:
+        """A cached glyph's coverage mask, row-major, 8-bit, by reference."""
+        return self._glyphs[key].pixels
 
     def _advance(
         mut self, slot: Int, s: String, size: Int, weight: Int, blur: Int
