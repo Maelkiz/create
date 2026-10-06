@@ -2407,10 +2407,10 @@ def _saved(path: String) raises -> Image:
 def _px(s: Image, x: Int, y: Int) -> Color:
     var off = (y * s.width + x) * 4
     return Color(
-        s._pixels[off],
-        s._pixels[off + 1],
-        s._pixels[off + 2],
-        s._pixels[off + 3],
+        s._pixels[][off],
+        s._pixels[][off + 1],
+        s._pixels[][off + 2],
+        s._pixels[][off + 3],
     )
 
 

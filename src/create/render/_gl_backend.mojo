@@ -1135,7 +1135,7 @@ struct GLRenderer(Movable):
         self._flush()
         ref img = images[id]
         var name = self._upload(
-            img.width, img.height, Int(img.pixels.unsafe_ptr()), GL_LINEAR
+            img.width, img.height, Int(img.pixels[].unsafe_ptr()), GL_LINEAR
         )
         # The bind above went behind `_bind`'s back; tell it what is current.
         # Nothing was batched against the old binding — `_image` calls this
@@ -1183,7 +1183,7 @@ struct GLRenderer(Movable):
                 self.shadow_textures.clear()
             ref img = images[c.image]
             var mask = blur_image_alpha(
-                img.pixels.unsafe_ptr(), img.width, img.height, dw, dh, sigma
+                img.pixels[].unsafe_ptr(), img.width, img.height, dw, dh, sigma
             )
             # White with the mask in alpha: `MODE_SILHOUETTE` reads only
             # alpha, and RGBA keeps every texture on the image unit alike.

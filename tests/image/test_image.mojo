@@ -14,12 +14,12 @@ def test_solid_dimensions() raises -> None:
     var s = Image.solid(4, 3, 255, 0, 0)
     assert_equal(s.width, 4)
     assert_equal(s.height, 3)
-    assert_equal(len(s._pixels), 4 * 3 * 4)
+    assert_equal(len(s._pixels[]), 4 * 3 * 4)
 
 
 def test_solid_pixels_correct() raises -> None:
     var s = Image.solid(2, 2, 255, 0, 0)
-    var ptr = s._pixels.unsafe_ptr()
+    var ptr = s._pixels[].unsafe_ptr()
     for i in range(4):
         var off = i * 4
         assert_equal(Int(ptr[unsafe_offset=off]), 255)  # R
@@ -30,7 +30,7 @@ def test_solid_pixels_correct() raises -> None:
 
 def test_solid_blue() raises -> None:
     var s = Image.solid(1, 1, 0, 0, 255)
-    var ptr = s._pixels.unsafe_ptr()
+    var ptr = s._pixels[].unsafe_ptr()
     assert_equal(Int(ptr[unsafe_offset=0]), 0)  # R
     assert_equal(Int(ptr[unsafe_offset=1]), 0)  # G
     assert_equal(Int(ptr[unsafe_offset=2]), 255)  # B
@@ -42,25 +42,25 @@ def test_from_rgba_roundtrip() raises -> None:
     var s = Image.from_rgba(2, 1, data)
     assert_equal(s.width, 2)
     assert_equal(s.height, 1)
-    assert_equal(Int(s._pixels[0]), 10)
-    assert_equal(Int(s._pixels[1]), 20)
-    assert_equal(Int(s._pixels[2]), 30)
-    assert_equal(Int(s._pixels[3]), 128)
-    assert_equal(Int(s._pixels[4]), 40)
-    assert_equal(Int(s._pixels[7]), 200)
+    assert_equal(Int(s._pixels[][0]), 10)
+    assert_equal(Int(s._pixels[][1]), 20)
+    assert_equal(Int(s._pixels[][2]), 30)
+    assert_equal(Int(s._pixels[][3]), 128)
+    assert_equal(Int(s._pixels[][4]), 40)
+    assert_equal(Int(s._pixels[][7]), 200)
 
 
 def test_load_bmp_dimensions() raises -> None:
     var s = Image.load("tests/fixtures/test_2x2.bmp")
     assert_equal(s.width, 2)
     assert_equal(s.height, 2)
-    assert_equal(len(s._pixels), 2 * 2 * 4)
+    assert_equal(len(s._pixels[]), 2 * 2 * 4)
 
 
 def test_load_bmp_pixels() raises -> None:
     # test_2x2.bmp: top-left=red, top-right=white, bottom-left=blue, bottom-right=white
     var s = Image.load("tests/fixtures/test_2x2.bmp")
-    var ptr = s._pixels.unsafe_ptr()
+    var ptr = s._pixels[].unsafe_ptr()
     assert_equal(Int(ptr[unsafe_offset=0]), 255)  # (0,0) R
     assert_equal(Int(ptr[unsafe_offset=1]), 0)  # (0,0) G
     assert_equal(Int(ptr[unsafe_offset=2]), 0)  # (0,0) B
@@ -81,7 +81,7 @@ def test_load_bmp_32bit_pixels_and_alpha() raises -> None:
     var s = Image.load("tests/fixtures/test_2x2_32bit.bmp")
     assert_equal(s.width, 2)
     assert_equal(s.height, 2)
-    var ptr = s._pixels.unsafe_ptr()
+    var ptr = s._pixels[].unsafe_ptr()
     assert_equal(Int(ptr[unsafe_offset=0]), 255)  # (0,0) R -- red
     assert_equal(Int(ptr[unsafe_offset=1]), 0)
     assert_equal(Int(ptr[unsafe_offset=2]), 0)
@@ -108,8 +108,8 @@ def test_load_topdown_bmp_matches_bottom_up() raises -> None:
     var bottom_up = Image.load("tests/fixtures/test_2x2.bmp")
     assert_equal(top_down.width, bottom_up.width)
     assert_equal(top_down.height, bottom_up.height)
-    var a = top_down._pixels.unsafe_ptr()
-    var b = bottom_up._pixels.unsafe_ptr()
+    var a = top_down._pixels[].unsafe_ptr()
+    var b = bottom_up._pixels[].unsafe_ptr()
     for i in range(2 * 2 * 4):
         assert_equal(Int(a[unsafe_offset=i]), Int(b[unsafe_offset=i]))
 
@@ -118,14 +118,14 @@ def test_load_png() raises -> None:
     var s = Image.load("tests/assets/image.png")
     assert_equal(s.width, 500)
     assert_equal(s.height, 500)
-    assert_equal(len(s._pixels), 500 * 500 * 4)
+    assert_equal(len(s._pixels[]), 500 * 500 * 4)
 
 
 def test_load_jpeg() raises -> None:
     var s = Image.load("tests/assets/image.jpeg")
     assert_equal(s.width, 500)
     assert_equal(s.height, 500)
-    assert_equal(len(s._pixels), 500 * 500 * 4)
+    assert_equal(len(s._pixels[]), 500 * 500 * 4)
 
 
 def test_load_png_pixels() raises -> None:
@@ -133,7 +133,7 @@ def test_load_png_pixels() raises -> None:
     # bottom-right=white. Source has no alpha channel -- decoder must
     # synthesise 255.
     var s = Image.load("tests/fixtures/test_2x2.png")
-    var ptr = s._pixels.unsafe_ptr()
+    var ptr = s._pixels[].unsafe_ptr()
     assert_equal(Int(ptr[unsafe_offset=0]), 255)  # (0,0) R -- red
     assert_equal(Int(ptr[unsafe_offset=1]), 0)
     assert_equal(Int(ptr[unsafe_offset=2]), 0)
@@ -160,7 +160,7 @@ def test_load_jpeg_pixels() raises -> None:
     # the gap between any two of these colours -- a red/blue channel swap
     # would blow well past this tolerance.
     var s = Image.load("tests/fixtures/test_2x2.jpeg")
-    var ptr = s._pixels.unsafe_ptr()
+    var ptr = s._pixels[].unsafe_ptr()
     var tol = 16
     _assert_close(Int(ptr[unsafe_offset=0]), 255, tol)  # (0,0) -- red
     _assert_close(Int(ptr[unsafe_offset=1]), 0, tol)
@@ -222,7 +222,7 @@ def test_resize_dimensions() raises -> None:
     s = s.resize(2, 2)
     assert_equal(s.width, 2)
     assert_equal(s.height, 2)
-    assert_equal(len(s._pixels), 2 * 2 * 4)
+    assert_equal(len(s._pixels[]), 2 * 2 * 4)
 
 
 def test_resize_uniform_image_stays_uniform() raises -> None:
@@ -230,7 +230,7 @@ def test_resize_uniform_image_stays_uniform() raises -> None:
     # sampled -- only that whichever it picked was the same colour everywhere.
     var s = Image.solid(4, 4, 255, 0, 0)
     s = s.resize(2, 2)
-    var ptr = s._pixels.unsafe_ptr()
+    var ptr = s._pixels[].unsafe_ptr()
     for i in range(4):  # 2×2 = 4 pixels
         var off = i * 4
         assert_equal(Int(ptr[unsafe_offset=off]), 255)  # R
@@ -260,7 +260,7 @@ def test_resize_downscale_nearest_neighbour() raises -> None:
                 ptr[unsafe_offset=off + 2] = 255
             ptr[unsafe_offset=off + 3] = 255
     var s = Image(buffer^).resize(2, 2)
-    var dst = s._pixels.unsafe_ptr()
+    var dst = s._pixels[].unsafe_ptr()
     assert_equal(Int(dst[unsafe_offset=0]), 255)  # (0,0) red
     assert_equal(Int(dst[unsafe_offset=1]), 0)
     assert_equal(Int(dst[unsafe_offset=4]), 0)  # (1,0) green
@@ -288,7 +288,7 @@ def test_resize_upscale_block_replication() raises -> None:
     for i in range(4):
         ptr[unsafe_offset=12 + i] = 255  # (1,1) white
     var s = Image(buffer^).resize(4, 4)
-    var dst = s._pixels.unsafe_ptr()
+    var dst = s._pixels[].unsafe_ptr()
     for row in range(2):
         for col in range(2):
             var off = (row * 4 + col) * 4
@@ -314,7 +314,7 @@ def test_resize_upscale() raises -> None:
     s = s.resize(4, 4)
     assert_equal(s.width, 4)
     assert_equal(s.height, 4)
-    assert_equal(len(s._pixels), 4 * 4 * 4)
+    assert_equal(len(s._pixels[]), 4 * 4 * 4)
 
 
 def test_resize_to_1x1() raises -> None:
@@ -322,15 +322,15 @@ def test_resize_to_1x1() raises -> None:
     s = s.resize(1, 1)
     assert_equal(s.width, 1)
     assert_equal(s.height, 1)
-    assert_equal(len(s._pixels), 4)
+    assert_equal(len(s._pixels[]), 4)
 
 
 def test_solid_1x1() raises -> None:
     var s = Image.solid(1, 1, 0, 255, 0)
     assert_equal(s.width, 1)
     assert_equal(s.height, 1)
-    assert_equal(len(s._pixels), 4)
-    var ptr = s._pixels.unsafe_ptr()
+    assert_equal(len(s._pixels[]), 4)
+    var ptr = s._pixels[].unsafe_ptr()
     assert_equal(Int(ptr[unsafe_offset=0]), 0)  # R
     assert_equal(Int(ptr[unsafe_offset=1]), 255)  # G
     assert_equal(Int(ptr[unsafe_offset=2]), 0)  # B
@@ -342,18 +342,18 @@ def test_from_rgba_ignores_trailing_bytes() raises -> None:
     # bytes -- extra bytes past that must be ignored, not appended.
     var data: List[UInt8] = [1, 2, 3, 4, 99, 99, 99, 99]
     var s = Image.from_rgba(1, 1, data)
-    assert_equal(len(s._pixels), 4)
-    assert_equal(Int(s._pixels[0]), 1)
-    assert_equal(Int(s._pixels[1]), 2)
-    assert_equal(Int(s._pixels[2]), 3)
-    assert_equal(Int(s._pixels[3]), 4)
+    assert_equal(len(s._pixels[]), 4)
+    assert_equal(Int(s._pixels[][0]), 1)
+    assert_equal(Int(s._pixels[][1]), 2)
+    assert_equal(Int(s._pixels[][2]), 3)
+    assert_equal(Int(s._pixels[][3]), 4)
 
 
 def test_image_zero_dimensions() raises -> None:
     var s = Image(PixelBuffer(0, 0))
     assert_equal(s.width, 0)
     assert_equal(s.height, 0)
-    assert_equal(len(s._pixels), 0)
+    assert_equal(len(s._pixels[]), 0)
 
 
 def test_resize_to_zero_dimension() raises -> None:
@@ -361,7 +361,7 @@ def test_resize_to_zero_dimension() raises -> None:
     s = s.resize(0, 4)
     assert_equal(s.width, 0)
     assert_equal(s.height, 4)
-    assert_equal(len(s._pixels), 0)
+    assert_equal(len(s._pixels[]), 0)
 
 
 def test_resize_from_zero_width_stays_blank() raises -> None:
@@ -372,8 +372,8 @@ def test_resize_from_zero_width_stays_blank() raises -> None:
     s = s.resize(2, 2)
     assert_equal(s.width, 2)
     assert_equal(s.height, 2)
-    assert_equal(len(s._pixels), 2 * 2 * 4)
-    var ptr = s._pixels.unsafe_ptr()
+    assert_equal(len(s._pixels[]), 2 * 2 * 4)
+    var ptr = s._pixels[].unsafe_ptr()
     for i in range(2 * 2 * 4):
         assert_equal(Int(ptr[unsafe_offset=i]), 0)
 
@@ -479,7 +479,7 @@ def test_jpeg_dimensions_bad_marker_raises() raises -> None:
 
 def test_load_bmp_alpha_channel() raises -> None:
     var s = Image.load("tests/fixtures/test_2x2.bmp")
-    var ptr = s._pixels.unsafe_ptr()
+    var ptr = s._pixels[].unsafe_ptr()
     # BMP has no alpha — loader should set alpha=255 for all pixels
     assert_equal(Int(ptr[unsafe_offset=3]), 255)  # (0,0) A
     assert_equal(Int(ptr[unsafe_offset=7]), 255)  # (1,0) A
@@ -530,6 +530,13 @@ def test_every_image_gets_its_own_identity() raises -> None:
     assert_true(b._id != c._id)
     assert_true(c._id != d._id)
     assert_true(a._id > 0, "0 is reserved for no image")
+
+
+def test_a_copied_image_shares_its_identity_and_pixels() raises -> None:
+    var a = Image.solid(2, 2, 255, 0, 0)
+    var b = a.copy()
+    assert_equal(b._id, a._id)
+    assert_equal(Int(b._pixels[].unsafe_ptr()), Int(a._pixels[].unsafe_ptr()))
 
 
 def test_a_moved_image_keeps_its_identity() raises -> None:

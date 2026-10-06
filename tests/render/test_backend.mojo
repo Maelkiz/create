@@ -3,6 +3,7 @@
 # and the last one pins it against the Canvas output it has to reproduce.
 
 from std.math import pi, max, min
+from std.memory import ArcPointer
 from std.testing import TestSuite, assert_equal, assert_true
 
 from create import *
@@ -475,7 +476,7 @@ def test_image_replays_from_an_interned_image() raises -> None:
     src[7] = 255
     var mem = MemorySurface(_W, _H)
     var backend = Backend()
-    var id = backend.intern_image(7, src.unsafe_ptr(), 2, 1)
+    var id = backend.intern_image(7, ArcPointer(src.copy()), 2, 1)
 
     var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
@@ -488,25 +489,58 @@ def test_image_replays_from_an_interned_image() raises -> None:
 def test_interning_the_same_key_twice_reuses_the_copy() raises -> None:
     var src = List[UInt8](length=4, fill=255)
     var backend = Backend()
-    var a = backend.intern_image(3, src.unsafe_ptr(), 1, 1)
-    var b = backend.intern_image(3, src.unsafe_ptr(), 1, 1)
+    var a = backend.intern_image(3, ArcPointer(src.copy()), 1, 1)
+    var b = backend.intern_image(3, ArcPointer(src.copy()), 1, 1)
     assert_equal(a, b)
     assert_equal(len(backend.images), 1)
+
+
+def test_interning_shares_the_pixels_rather_than_copying_them() raises -> None:
+    var image = Image.solid(4, 4, 255, 0, 0)
+    var backend = Backend()
+    var id = backend.intern_image(
+        image._id, image._pixels, image.width, image.height
+    )
+    assert_equal(
+        Int(backend.images[id].pixels[].unsafe_ptr()),
+        Int(image._pixels[].unsafe_ptr()),
+    )
+
+
+def _intern_a_red_image(mut backend: Backend) raises -> Int:
+    """Intern an image that is dropped as this returns."""
+    var image = Image.solid(2, 1, 255, 0, 0)
+    return backend.intern_image(
+        image._id, image._pixels, image.width, image.height
+    )
+
+
+def test_an_interned_image_outlives_the_image() raises -> None:
+    var backend = Backend()
+    var id = _intern_a_red_image(backend)
+    var mem = MemorySurface(_W, _H)
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    cmds.append(image_command(_base(), Style(), 0.0, 0.0, 20.0, 10.0, id, 2, 1))
+    backend.replay(mem.surface(), cmds, 1.0)
+    assert_equal(mem.pixel(50, 50), Color.RED)
 
 
 def test_an_image_unused_for_long_enough_is_dropped() raises -> None:
     var src = List[UInt8](length=4, fill=255)
     var backend = Backend()
-    var kept = backend.intern_image(1, src.unsafe_ptr(), 1, 1)
-    var dropped = backend.intern_image(2, src.unsafe_ptr(), 1, 1)
+    var kept = backend.intern_image(1, ArcPointer(src.copy()), 1, 1)
+    var dropped = backend.intern_image(2, ArcPointer(src.copy()), 1, 1)
     var mem = MemorySurface(1, 1)
     for _ in range(IMAGE_KEEP_FRAMES + 1):
-        _ = backend.intern_image(1, src.unsafe_ptr(), 1, 1)
+        _ = backend.intern_image(1, ArcPointer(src.copy()), 1, 1)
         backend.present(mem.surface(), 1.0)
     assert_true(kept in backend.images)
     assert_true(dropped not in backend.images)
     # Seen again, it is copied afresh rather than resurrected.
-    assert_true(backend.intern_image(2, src.unsafe_ptr(), 1, 1) != dropped)
+    assert_true(
+        backend.intern_image(2, ArcPointer(src.copy()), 1, 1) != dropped
+    )
 
 
 def test_image_with_an_unknown_image_is_skipped() raises -> None:
@@ -886,7 +920,7 @@ def _blurred_image_frame(
 def test_a_blurred_image_shadow_softens_past_its_silhouette() raises -> None:
     var src = List[UInt8](length=16, fill=255)
     var backend = Backend()
-    var image = backend.intern_image(3, src.unsafe_ptr(), 2, 2)
+    var image = backend.intern_image(3, ArcPointer(src.copy()), 2, 2)
     var mem = MemorySurface(_W, _H)
     _blurred_image_frame(backend, mem, image)
     # The silhouette spans columns 70..89 on row 50 (image at 30..49).

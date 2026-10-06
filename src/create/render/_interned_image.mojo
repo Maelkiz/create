@@ -6,6 +6,8 @@ paths need it and the GL one cannot import the CPU one: `_backend` reaches
 `_transform.mojo` exists.
 """
 
+from std.memory import ArcPointer
+
 
 struct _InternedImage(Copyable, Movable):
     """Interned on the first render of an image, so the command
@@ -17,7 +19,9 @@ struct _InternedImage(Copyable, Movable):
     otherwise keep every one of them alive in the cache.
     """
 
-    var pixels: List[UInt8]
+    var pixels: ArcPointer[List[UInt8]]
+    """The image's own pixels, shared rather than copied: an image never
+    changes, so holding them is as good as a copy."""
     var width: Int
     var height: Int
     var source: Int
@@ -27,7 +31,7 @@ struct _InternedImage(Copyable, Movable):
 
     def __init__(
         out self,
-        var pixels: List[UInt8],
+        var pixels: ArcPointer[List[UInt8]],
         width: Int,
         height: Int,
         source: Int,

@@ -309,7 +309,14 @@ def test_blit_image_one_to_one() raises -> None:
     var sp = Image.solid(2, 2, 255, 0, 0)
     var mem = MemorySurface(4, 4)
     blit_image(
-        mem.surface(), sp._pixels.unsafe_ptr(), sp.width, sp.height, 1, 1, 2, 2
+        mem.surface(),
+        sp._pixels[].unsafe_ptr(),
+        sp.width,
+        sp.height,
+        1,
+        1,
+        2,
+        2,
     )
     assert_equal(mem.pixel(1, 1), Color(255, 0, 0, 255))
     assert_equal(mem.pixel(2, 2), Color(255, 0, 0, 255))
@@ -385,7 +392,7 @@ def test_blit_image_clips_against_every_edge() raises -> None:
     # Anchored off the top-left: only the bottom-right quarter lands.
     blit_image(
         mem.surface(),
-        sp._pixels.unsafe_ptr(),
+        sp._pixels[].unsafe_ptr(),
         sp.width,
         sp.height,
         -2,
@@ -399,7 +406,14 @@ def test_blit_image_clips_against_every_edge() raises -> None:
 
     var far = MemorySurface(4, 4)
     blit_image(
-        far.surface(), sp._pixels.unsafe_ptr(), sp.width, sp.height, 3, 3, 4, 4
+        far.surface(),
+        sp._pixels[].unsafe_ptr(),
+        sp.width,
+        sp.height,
+        3,
+        3,
+        4,
+        4,
     )
     assert_equal(far.pixel(3, 3), Color.WHITE)
     # A wrapped row would light up column 0.

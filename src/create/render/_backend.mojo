@@ -1,5 +1,5 @@
 from std.collections import Dict, Optional
-from std.memory import unsafe_memcpy
+from std.memory import ArcPointer, unsafe_memcpy
 from std.math import max, min, abs, sqrt, ceil, floor, cos, sin, pi
 
 from create.math.matrix import (
@@ -1204,23 +1204,23 @@ struct Backend(Movable):
         self.frame_read = None
         self._expire_images()
 
-    def intern_image[
-        so: Origin
-    ](
+    def intern_image(
         mut self,
         source: Int,
-        src: Pointer[UInt8, so],
+        pixels: ArcPointer[List[UInt8]],
         width: Int,
         height: Int,
     ) -> Int:
-        """Return a backend id for the `width` x `height` RGBA buffer at
-        `src`, the pixels of image `source`.
+        """Return a backend id for `pixels`, the `width` x `height` RGBA
+        pixels of image `source`.
 
-        Copies on first sight of an image and returns the cached id
-        thereafter, so an image rendered every frame is copied once. `source`
-        must be stable for the life of the image — an `Image`'s identity, not
-        its pixel address, which could be reused after a free. An image never
-        changes, so its identity alone says the copy is current.
+        Keeps a share of the pixels on first sight of an image and returns
+        the cached id thereafter. Nothing is copied: an image never changes,
+        so its identity alone says the share is current, and the share keeps
+        the pixels alive for a command replayed after the image itself is
+        gone. `source` must be stable for the life of the image — an
+        `Image`'s identity, not its pixel address, which could be reused
+        after a free.
 
         Called while recording rather than at replay, which is what keeps a
         borrow of caller-owned memory out of the command buffer.
@@ -1232,13 +1232,10 @@ struct Backend(Movable):
                 return id
         except:
             pass  # unreachable: `interned_ids` names only interned ids
-        var buf = List[UInt8](length=width * height * 4, fill=0)
-        for i in range(width * height * 4):
-            buf[i] = src[unsafe_offset=i]
         var id = self.next_image
         self.next_image += 1
         self.images[id] = _InternedImage(
-            buf^, width, height, source, self.frame
+            pixels, width, height, source, self.frame
         )
         self.interned_ids[source] = id
         return id
@@ -2091,7 +2088,7 @@ struct Backend(Movable):
         ref img = self.images[c.image]
         blit_image(
             s,
-            img.pixels.unsafe_ptr(),
+            img.pixels[].unsafe_ptr(),
             img.width,
             img.height,
             Int(p[0]) - dw // 2,
@@ -2126,7 +2123,7 @@ struct Backend(Movable):
                 self.shadow_masks.clear()
             ref img = self.images[c.image]
             self.shadow_masks[key] = blur_image_alpha(
-                img.pixels.unsafe_ptr(),
+                img.pixels[].unsafe_ptr(),
                 img.width,
                 img.height,
                 dw,

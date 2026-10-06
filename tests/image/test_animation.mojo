@@ -23,15 +23,19 @@ def _sheet(cols: Int, rows: Int, cell: Int) raises -> Image:
 
 
 def _red(s: Image, x: Int, y: Int) -> Int:
-    return Int(s._pixels.unsafe_ptr()[unsafe_offset=(y * s.width + x) * 4])
+    return Int(s._pixels[].unsafe_ptr()[unsafe_offset=(y * s.width + x) * 4])
 
 
 def _green(s: Image, x: Int, y: Int) -> Int:
-    return Int(s._pixels.unsafe_ptr()[unsafe_offset=(y * s.width + x) * 4 + 1])
+    return Int(
+        s._pixels[].unsafe_ptr()[unsafe_offset=(y * s.width + x) * 4 + 1]
+    )
 
 
 def _blue(s: Image, x: Int, y: Int) -> Int:
-    return Int(s._pixels.unsafe_ptr()[unsafe_offset=(y * s.width + x) * 4 + 2])
+    return Int(
+        s._pixels[].unsafe_ptr()[unsafe_offset=(y * s.width + x) * 4 + 2]
+    )
 
 
 def test_from_sheet_cuts_every_cell() raises -> None:

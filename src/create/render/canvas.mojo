@@ -1270,7 +1270,7 @@ struct Canvas(Movable):
         # an id rather than a borrow of the program's pixels, which is what
         # keeps caller-owned memory out of a buffer that outlives the call.
         var id = self._state.backend.intern_image(
-            s._id, s._pixels.unsafe_ptr(), s.width, s.height
+            s._id, s._pixels, s.width, s.height
         )
         self._state.backend.record(
             image_command(

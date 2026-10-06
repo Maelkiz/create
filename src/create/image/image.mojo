@@ -1,6 +1,6 @@
 from std.atomic import Atomic
 from std.ffi import _DLHandle, _Global
-from std.memory import unsafe_memcpy
+from std.memory import ArcPointer, unsafe_memcpy
 
 from create._bytes import le_uint, sign_extend_32
 from create.color.color import Color
@@ -62,7 +62,7 @@ def _jpeg_dimensions(data: List[UInt8]) raises -> Tuple[Int, Int]:
     raise Error("No SOF marker found in JPEG")
 
 
-struct Image(Movable):
+struct Image(Copyable, Movable):
     """An RGBA image, row-major, 8 bits per channel: an asset, never
     changed once made.
 
@@ -79,9 +79,11 @@ struct Image(Movable):
     but its own.
     """
 
-    var _pixels: List[UInt8]
+    var _pixels: ArcPointer[List[UInt8]]
     """RGBA, row-major from the top. Private so that nothing outside this
-    package can change an image after it is made."""
+    package can change an image after it is made — which is what lets a copy
+    of the image, and a backend's cache of it, share these rather than copy
+    them."""
     var width: Int
     var height: Int
     var _id: Int
@@ -99,7 +101,7 @@ struct Image(Movable):
         """An image of `pixels`, which it takes over without copying."""
         self.width = pixels.width
         self.height = pixels.height
-        self._pixels = pixels^._take_data()
+        self._pixels = ArcPointer(pixels^._take_data())
         self._id = _next_image_id()
 
     @staticmethod
@@ -141,10 +143,10 @@ struct Image(Movable):
             return Color.TRANSPARENT
         var off = (y * self.width + x) * 4
         return Color(
-            self._pixels[off],
-            self._pixels[off + 1],
-            self._pixels[off + 2],
-            self._pixels[off + 3],
+            self._pixels[][off],
+            self._pixels[][off + 1],
+            self._pixels[][off + 2],
+            self._pixels[][off + 3],
         )
 
     def resize(self, new_w: Int, new_h: Int) raises -> Image:
@@ -156,7 +158,7 @@ struct Image(Movable):
             # No source pixel to sample -- leave the zero-filled buffer as is
             # rather than computing an offset into an empty source.
             return Image(dst^)
-        var src_ptr = self._pixels.unsafe_ptr()
+        var src_ptr = self._pixels[].unsafe_ptr()
         var dst_ptr = dst._data.unsafe_ptr()
         for row in range(new_h):
             var src_row = row * self.height // new_h
