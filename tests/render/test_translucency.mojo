@@ -1,11 +1,13 @@
 """Every kind of render call composites once, so a translucent one is as
 translucent everywhere — fill and outline included — and opacity reaches
-images like everything else.
+images like everything else. Tint reaches the same calls and composites the
+same way.
 
 Each scene draws one shape in red at opacity 0.5 over black with a 6-pixel
 outline where it has one: every inked pixel must come out half red (127),
-never 191 (two layers) or more. Run through both backends; the GPU half
-skips with no GL context.
+never 191 (two layers) or more. The tinted scenes draw it white under a
+half-transparent red tint instead, which must come out the same and with no
+green. Run through both backends; the GPU half skips with no GL context.
 """
 
 from std.testing import TestSuite, assert_equal, assert_true
@@ -99,34 +101,43 @@ def _draw(mut canvas: Canvas, kind: Int) raises:
 
 
 @fieldwise_init
-struct HalfRed[kind: Int](Program):
+struct HalfRed[kind: Int, tinted: Bool = False](Program):
     var _unused: Int
 
     @staticmethod
     def create(
         mut context: Context, mut canvas: Canvas
-    ) raises -> HalfRed[Self.kind]:
-        return HalfRed[Self.kind](0)
+    ) raises -> HalfRed[Self.kind, Self.tinted]:
+        return HalfRed[Self.kind, Self.tinted](0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        canvas.fill(Color.RED)
-        canvas.outline(Color.RED, 6)
-        canvas.text_color(Color.RED)
-        canvas.opacity(0.5)
+        comptime if Self.tinted:
+            canvas.fill(Color.WHITE)
+            canvas.outline(Color.WHITE, 6)
+            canvas.text_color(Color.WHITE)
+            canvas.tint(Color(255, 0, 0, 128))
+        else:
+            canvas.fill(Color.RED)
+            canvas.outline(Color.RED, 6)
+            canvas.text_color(Color.RED)
+            canvas.opacity(0.5)
         _draw(canvas, Self.kind)
 
 
 def _check(kind: Int, backend: String, m: MemorySurface) raises:
     var inked = 0
     var deepest = 0
+    var greenest = 0
     for y in range(m.height):
         for x in range(m.width):
             var r = Int(m.pixel(x, y).r)
             if r > 0:
                 inked += 1
             deepest = max(deepest, r)
+            greenest = max(greenest, Int(m.pixel(x, y).g))
     var name = _name(kind) + " on " + backend
+    assert_equal(greenest, 0, name + ": not recoloured")
     assert_true(inked > 100, name + ": nothing drawn")
     # Antialiased glyph edges may be lighter; nothing may be deeper.
     assert_true(
@@ -139,6 +150,11 @@ def _all(backend: RenderBackend, label: String) raises:
     comptime for kind in range(_KINDS):
         _check(
             kind, label, run_headless[HalfRed[kind]](200, 100, backend=backend)
+        )
+        _check(
+            kind,
+            label + " tinted",
+            run_headless[HalfRed[kind, True]](200, 100, backend=backend),
         )
 
 
@@ -206,6 +222,31 @@ def test_opacity_fades_a_image_and_its_shadow_once_each() raises -> None:
     var m = run_headless[FadedImageShadow](200, 100)
     assert_equal(m.pixel(100, 50), Color(127, 0, 0), "the image")
     assert_equal(m.pixel(140, 50), Color(0, 127, 0), "its shadow")
+
+
+@fieldwise_init
+struct TintedImageShadow(Program):
+    var _unused: Int
+
+    @staticmethod
+    def create(
+        mut context: Context, mut canvas: Canvas
+    ) raises -> TintedImageShadow:
+        return TintedImageShadow(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.shadow(
+            color=Color(200, 200, 200), offset=Vector2D(40, 0), blur=0
+        )
+        with canvas.style(tint=Color(255, 128, 0)):
+            canvas.image(Image.solid(20, 20, 200, 100, 255), (0, 0))
+
+
+def test_tint_multiplies_an_image_and_its_shadow() raises -> None:
+    var m = run_headless[TintedImageShadow](200, 100)
+    assert_equal(m.pixel(100, 50), Color(200, 50, 0), "the image")
+    assert_equal(m.pixel(140, 50), Color(200, 100, 0), "its shadow")
 
 
 def main() raises:

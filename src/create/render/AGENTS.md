@@ -67,7 +67,7 @@ bumps `recorded` either way.
 
 ## Gradients
 
-A fill gradient rides on the command's `Style` (`fill_gradient`); opacity scales its stops at
+A fill gradient rides on the command's `Style` (`fill_gradient`); tint and opacity multiply its stops at
 record time. Everything a replay needs comes from three pieces in `create/color/gradient.mojo`, shared so the
 backends agree:
 - **The ramp:** `RAMP_SIZE` (256) colours sampled from the stops at construction, behind an
@@ -325,8 +325,8 @@ edges and half inside.
 
 **Every kind composites once.** Fill and outline never overlap, and neither do pieces of either, so
 a translucent shape or a non-`NORMAL` blend mode is as translucent everywhere.
-`test_translucency.mojo` draws every kind at opacity 0.5 on both backends and fails on any pixel
-deeper than one layer. A new shape or path must keep this:
+`test_translucency.mojo` draws every kind at opacity 0.5, and again white under a half-transparent
+red tint, on both backends and fails on any pixel deeper than one layer. A new shape or path must keep this:
 - **Rectangles:** the fill is inset by the outline. The CPU's axis-aligned paths split each row into
   outline, fill, outline: four bands when sharp, `_rounded_box_row` when rounded. Rotated and
   stretched rectangles take the general affine path, which samples pixel **centres**, as every

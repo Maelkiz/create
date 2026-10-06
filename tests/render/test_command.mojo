@@ -207,5 +207,21 @@ def test_opacity_folds_into_the_fill_gradient() raises -> None:
     assert_equal(s.fill_gradient.value()._stops[][0][1].a, 255)
 
 
+def test_tint_folds_into_every_colour() raises -> None:
+    var s = Style(
+        fill=Color(200, 100, 50),
+        outline=Color.WHITE,
+        text_color=Color.WHITE,
+        tint=Color(255, 128, 0, 128),
+        opacity=0.5,
+    )
+    var c = rect_command(identity[3](), s, 0.0, 0.0, 1.0, 1.0)
+    assert_equal(c.style.fill_color, Color(200, 50, 0, 64))
+    assert_equal(c.style.outline_color, Color(255, 128, 0, 64))
+    assert_equal(c.style.text_color, Color(255, 128, 0, 64))
+    assert_equal(c.style.tint, Color.WHITE)
+    assert_equal(c.image_tint, Color(255, 128, 0, 64))
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

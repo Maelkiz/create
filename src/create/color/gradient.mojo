@@ -1,7 +1,7 @@
 from std.math import abs, floor, max, min, sqrt
 from std.memory import ArcPointer
 
-from .color import Color, _scaled_alpha
+from .color import Color, _tinted
 from create.math.matrix import Matrix
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
@@ -396,12 +396,12 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
                 return True
         return False
 
-    def _with_opacity(self, opacity: Float64) -> Gradient:
-        """The same gradient with every stop's alpha scaled by `opacity`, as a
-        command resolves a colour's."""
+    def _tinted(self, tint: Color, opacity: Float64 = 1.0) -> Gradient:
+        """The same gradient with every stop multiplied by `tint` and its
+        alpha by `opacity`, as a command resolves a colour's."""
         var stops = self._stops[].copy()
         for i in range(len(stops)):
-            stops[i] = (stops[i][0], _scaled_alpha(stops[i][1], opacity))
+            stops[i] = (stops[i][0], _tinted(stops[i][1], tint, opacity))
         return Gradient(
             kind=self._kind,
             stops=stops^,

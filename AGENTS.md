@@ -232,11 +232,15 @@ keywords.
   images cast nothing while it is set.
 - **The offset is screen-fixed** by default (`(4, -4)`, down-right): rotation doesn't turn it, but
   camera zoom and autoscale scale it. `shadow_follows_transform(True)` turns it with the shape.
-- Shadows use the command's own opacity and blend mode.
+- Shadows use the command's own tint, opacity and blend mode.
 
-**Opacity and blend modes reach every render call** (images included, `background()` never), and
+**Tint, opacity and blend modes reach every render call** (images included, `background()` never), and
 every shape composites once: fill and outline never overlap, so a translucent shape is evenly
-translucent.
+translucent. `canvas.tint(color)` multiplies every colour of the call — fill, gradient stops,
+outline, text, shadow, each image texel — channel by channel; white (the default) is no tint, and
+its alpha stacks with `opacity`. It recolours a whole look at once, where `fill`/`outline`/
+`text_color` set one part each; scope it with `with canvas.style(tint=...)`. Multiplying only
+darkens, so it can't flash a sprite white.
 
 **Scope with the guards.** `canvas.transform(m)`, `canvas.style(...)`, `canvas.overlay()` and
 `canvas.clip(...)` return `with`-block guards that unwind on exit. Bare style mutators straight from `update` are fine (style,

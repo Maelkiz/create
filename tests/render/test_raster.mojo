@@ -358,7 +358,7 @@ def test_blit_image_skips_transparent_source_pixels() raises -> None:
     assert_equal(mem.pixel(1, 0), Color(9, 9, 9, 255))
 
 
-def test_blit_image_tint_paints_the_silhouette() raises -> None:
+def test_blit_image_silhouette_paints_its_colour() raises -> None:
     var sp = PixelBuffer(3, 1)
     var ptr = sp._data.unsafe_ptr()
     ptr[unsafe_offset=0] = 255
@@ -376,14 +376,32 @@ def test_blit_image_tint_paints_the_silhouette() raises -> None:
         0,
         3,
         1,
-        Color(0, 0, 200, 255),
+        silhouette=Color(0, 0, 200, 255),
     )
-    # The tint's colour, never the texel's; its alpha scaled by the texel's.
+    # The silhouette's colour, never the texel's; its alpha scaled by the
+    # texel's.
     assert_equal(mem.pixel(0, 0), Color(0, 0, 200, 255))
     assert_equal(mem.pixel(1, 0).r, 0)
     assert_equal(mem.pixel(1, 0).g, 0)
     assert_true(mem.pixel(1, 0).b >= 99 and mem.pixel(1, 0).b <= 101)
     assert_equal(mem.pixel(2, 0), Color(0, 0, 0, 255))
+
+
+def test_blit_image_multiplies_every_texel_by_the_tint() raises -> None:
+    var sp = Image.solid(1, 1, 200, 100, 255)
+    var mem = _filled(1, 1, Color(0, 0, 0, 255))
+    blit_image(
+        mem.surface(),
+        sp._pixels[].unsafe_ptr(),
+        1,
+        1,
+        0,
+        0,
+        1,
+        1,
+        tint=Color(255, 128, 0, 255),
+    )
+    assert_equal(mem.pixel(0, 0), Color(200, 50, 0, 255))
 
 
 def test_blit_image_clips_against_every_edge() raises -> None:

@@ -2096,7 +2096,7 @@ struct Backend(Movable):
             dw,
             dh,
             Optional(c.style.fill_color) if c.silhouette else None,
-            c.image_alpha,
+            c.image_tint,
         )
 
     def _image_shadow[

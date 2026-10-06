@@ -32,10 +32,23 @@ def _mix(a: UInt8, b: UInt8, t: Float64) -> UInt8:
     return UInt8(Int(fa + (fb - fa) * t + 0.5))
 
 
-def _scaled_alpha(color: Color, opacity: Float64) -> Color:
-    """`color` with its alpha multiplied by `opacity`, clamped to `UInt8`."""
-    var a = Float64(color.a) * opacity
-    return Color(color.r, color.g, color.b, UInt8(max(0.0, min(255.0, a))))
+@always_inline
+def _multiplied(c: UInt8, t: UInt8) -> UInt8:
+    """One channel `c` scaled by `t / 255`, rounded; exact for `t == 255`."""
+    return UInt8((UInt32(c) * UInt32(t) + 127) // 255)
+
+
+def _tinted(color: Color, tint: Color, opacity: Float64 = 1.0) -> Color:
+    """`color` multiplied channel by channel by `tint`, its alpha also by
+    `opacity`, clamped to `UInt8`. A white `tint` and an `opacity` of 1 leave
+    it exactly as it was."""
+    var a = Float64(color.a) * (opacity * (Float64(tint.a) / 255.0))
+    return Color(
+        _multiplied(color.r, tint.r),
+        _multiplied(color.g, tint.g),
+        _multiplied(color.b, tint.b),
+        UInt8(max(0.0, min(255.0, a))),
+    )
 
 
 struct Color(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):

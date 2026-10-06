@@ -158,11 +158,11 @@ def test_opaque_and_visible() raises -> None:
     )
 
 
-def test_with_opacity_scales_every_stop() raises -> None:
-    var g = Gradient.linear(
-        Color.RED, Color.BLUE.with_alpha(100)
-    )._with_opacity(0.5)
-    assert_equal(g._stops[][0][1], Color(255, 0, 0, 127))
+def test_tinted_multiplies_every_stop() raises -> None:
+    var g = Gradient.linear(Color.RED, Color.BLUE.with_alpha(100))._tinted(
+        Color(128, 255, 255), 0.5
+    )
+    assert_equal(g._stops[][0][1], Color(128, 0, 0, 127))
     assert_equal(g._stops[][1][1], Color(0, 0, 255, 50))
 
 

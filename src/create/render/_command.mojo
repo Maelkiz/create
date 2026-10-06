@@ -1,4 +1,4 @@
-from create.color.color import Color, _scaled_alpha
+from create.color.color import Color, _tinted
 from create.color.gradient import Gradient
 from .style import Style
 from create.math.bezier import Bezier
@@ -98,11 +98,11 @@ struct RenderCommand(Copyable, Movable):
     var silhouette: Bool
     """`CMD_IMAGE` only: paint `style.fill_color` wherever the image is
     opaque, scaled by its alpha, instead of the image. An image's shadow."""
-    var image_alpha: UInt8
-    """`CMD_IMAGE` only: the style's opacity, which scales every texel's
-    alpha. An image takes none of the style's colours, so opacity cannot be
-    resolved into one of them as it is for every other kind; a silhouette
-    ignores it, since its colour already carries it."""
+    var image_tint: Color
+    """`CMD_IMAGE` only: the style's tint with its alpha scaled by opacity,
+    which multiplies every texel. An image takes none of the style's
+    colours, so neither can be resolved into one of them as for every other
+    kind; a silhouette ignores it, since its colour already carries both."""
     var clip: Int
     """The id of the innermost `canvas.clip` this was rendered under — an
     index into `Backend.clips`, one past — or 0 for none. Stamped by
@@ -130,27 +130,28 @@ struct RenderCommand(Copyable, Movable):
         self.geom[5] = g5
         self.transform = transform
         self.style = style
-        var alpha: UInt8 = 255
-        if self.style.opacity != 1.0:
-            self.style.fill_color = _scaled_alpha(
-                self.style.fill_color, self.style.opacity
+        var image_tint = Color.WHITE
+        if self.style.tint != Color.WHITE or self.style.opacity != 1.0:
+            var tint = self.style.tint
+            var opacity = self.style.opacity
+            self.style.fill_color = _tinted(
+                self.style.fill_color, tint, opacity
             )
             if self.style.fill_gradient:
                 self.style.fill_gradient = (
-                    self.style.fill_gradient.value()._with_opacity(
-                        self.style.opacity
-                    )
+                    self.style.fill_gradient.value()._tinted(tint, opacity)
                 )
-            self.style.outline_color = _scaled_alpha(
-                self.style.outline_color, self.style.opacity
+            self.style.outline_color = _tinted(
+                self.style.outline_color, tint, opacity
             )
-            self.style.text_color = _scaled_alpha(
-                self.style.text_color, self.style.opacity
+            self.style.text_color = _tinted(
+                self.style.text_color, tint, opacity
             )
-            self.style.shadow_color = _scaled_alpha(
-                self.style.shadow_color, self.style.opacity
+            self.style.shadow_color = _tinted(
+                self.style.shadow_color, tint, opacity
             )
-            alpha = _scaled_alpha(Color.WHITE, self.style.opacity).a
+            image_tint = _tinted(Color.WHITE, tint, opacity)
+            self.style.tint = Color.WHITE
             self.style.opacity = 1.0
         self.text = String("")
         self.points = List[Point2D]()
@@ -158,7 +159,7 @@ struct RenderCommand(Copyable, Movable):
         self.image_w = 0
         self.image_h = 0
         self.silhouette = False
-        self.image_alpha = alpha
+        self.image_tint = image_tint
         self.clip = 0
 
 

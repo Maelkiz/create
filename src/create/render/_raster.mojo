@@ -3,7 +3,7 @@ from std.math import max, min, abs, ceil, floor, sqrt
 from std.sys import is_big_endian
 
 from create.color.blend_mode import BlendMode
-from create.color.color import Color
+from create.color.color import Color, _multiplied
 from create.text.font import _GlyphInfo
 from create.color.gradient import Gradient, _DeviceMapping
 from .surface import Surface
@@ -726,6 +726,22 @@ def _faded(texel: UInt8, alpha: UInt8) -> UInt8:
     return UInt8(Int(texel) * Int(alpha) // 255)
 
 
+@always_inline
+def _texel[
+    so: Origin
+](src: Pointer[UInt8, so], off: Int, tint: Color, recolored: Bool) -> Color:
+    """The texel at `off`, multiplied by `tint`: its colour channels only if
+    `recolored`, its alpha always."""
+    var r = src[unsafe_offset=off]
+    var g = src[unsafe_offset=off + 1]
+    var b = src[unsafe_offset=off + 2]
+    if recolored:
+        r = _multiplied(r, tint.r)
+        g = _multiplied(g, tint.g)
+        b = _multiplied(b, tint.b)
+    return Color(r, g, b, _faded(src[unsafe_offset=off + 3], tint.a))
+
+
 def blit_image[
     o: Origin[mut=True], so: Origin
 ](
@@ -737,15 +753,19 @@ def blit_image[
     y0: Int,
     dw: Int,
     dh: Int,
-    tint: Optional[Color] = None,
-    alpha: UInt8 = 255,
+    silhouette: Optional[Color] = None,
+    tint: Color = Color.WHITE,
 ):
     """Blit the `sw` x `sh` RGBA buffer at `src` into the device rect at
     `(x0, y0)` sized `dw` x `dh`; see `_blit_image`."""
     if s._clip:
-        _blit_image[clipped=True](s, src, sw, sh, x0, y0, dw, dh, tint, alpha)
+        _blit_image[clipped=True](
+            s, src, sw, sh, x0, y0, dw, dh, silhouette, tint
+        )
     else:
-        _blit_image[clipped=False](s, src, sw, sh, x0, y0, dw, dh, tint, alpha)
+        _blit_image[clipped=False](
+            s, src, sw, sh, x0, y0, dw, dh, silhouette, tint
+        )
 
 
 def _blit_image[
@@ -759,16 +779,18 @@ def _blit_image[
     y0: Int,
     dw: Int,
     dh: Int,
-    tint: Optional[Color],
-    alpha: UInt8,
+    silhouette: Optional[Color],
+    tint: Color,
 ):
     """Blit the `sw` x `sh` RGBA buffer at `src` into the device rect at
-    `(x0, y0)` sized `dw` x `dh`, every texel's alpha scaled by `alpha` (the
-    image's opacity).
+    `(x0, y0)` sized `dw` x `dh`, every texel multiplied by `tint` (the
+    image's tint and opacity). A white tint leaves the colour channels
+    untouched without multiplying them.
 
-    With `tint`, paint the image's silhouette instead: `tint` wherever the
-    image is opaque, its alpha scaled by each texel's. That is an image's
-    shadow; `tint` already carries any opacity, so `alpha` is ignored.
+    With `silhouette`, paint the image's silhouette instead: that colour
+    wherever the image is opaque, its alpha scaled by each texel's. That is
+    an image's shadow; its colour already carries any tint and opacity, so
+    `tint` is ignored.
 
     Takes a bare pixel view rather than an image type, for the same reason
     `Surface` is a plain value: nothing here needs to know where the pixels
@@ -793,8 +815,9 @@ def _blit_image[
     var H = s.height
     var sp = src
     var one_to_one = dw == sw and dh == sh
-    var silhouette = Bool(tint)
-    var t = tint.value() if tint else Color.WHITE
+    var silhouetted = Bool(silhouette)
+    var t = silhouette.value() if silhouette else Color.WHITE
+    var recolored = tint.r != 255 or tint.g != 255 or tint.b != 255
 
     var row_lo = max(0, -y0)
     var row_hi = min(dh, H - y0)
@@ -815,11 +838,8 @@ def _blit_image[
                 blend[clipped=clipped](
                     s,
                     dst_row_off + (x0 + col) * 4,
-                    _silhouette(t, sa) if silhouette else Color(
-                        sp[unsafe_offset=src_off],
-                        sp[unsafe_offset=src_off + 1],
-                        sp[unsafe_offset=src_off + 2],
-                        _faded(sa, alpha),
+                    _silhouette(t, sa) if silhouetted else _texel(
+                        sp, src_off, tint, recolored
                     ),
                 )
         else:
@@ -833,11 +853,8 @@ def _blit_image[
                     blend[clipped=clipped](
                         s,
                         dst_row_off + (x0 + col) * 4,
-                        _silhouette(t, sa) if silhouette else Color(
-                            sp[unsafe_offset=src_off],
-                            sp[unsafe_offset=src_off + 1],
-                            sp[unsafe_offset=src_off + 2],
-                            _faded(sa, alpha),
+                        _silhouette(t, sa) if silhouetted else _texel(
+                            sp, src_off, tint, recolored
                         ),
                     )
                 err += sw

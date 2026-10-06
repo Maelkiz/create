@@ -462,6 +462,7 @@ struct Canvas(Movable):
         font_weight: Optional[Int] = None,
         font_italic: Optional[Bool] = None,
         text_align: Optional[Align] = None,
+        tint: Optional[Color] = None,
         opacity: Optional[Float64] = None,
         blend_mode: Optional[BlendMode] = None,
         shadow: Optional[Color] = None,
@@ -516,6 +517,8 @@ struct Canvas(Movable):
             self.font_italic(font_italic.value())
         if text_align:
             self.text_align(text_align.value())
+        if tint:
+            self.tint(tint.value())
         if opacity:
             self.opacity(opacity.value())
         if blend_mode:
@@ -1332,6 +1335,23 @@ struct Canvas(Movable):
         it has one (the packaged Noto Sans does), otherwise its own italic
         axis, otherwise its upright glyphs slanted."""
         self._style.font_italic = enabled
+
+    def tint(mut self, color: Color):
+        """Multiply whatever is rendered next by `color`, channel by channel.
+
+        Reaches fill, gradient, outline, text, image and shadow alike, never
+        `background`. `Color.WHITE` (the default) leaves it untouched; a
+        colour recolours and darkens, and its alpha fades like `opacity`,
+        which it stacks with. Tints a whole look at once, where `fill`,
+        `outline` and `text_color` each set one part:
+
+        ```mojo
+        with canvas.style(tint=Color(255, 90, 90)):
+            self.player.draw(canvas)
+        ```
+
+        Resolved at record time, like every other style setting."""
+        self._style.tint = color
 
     def opacity(mut self, value: Float64):
         """Fade whatever is rendered next: fill, gradient, outline, text,
