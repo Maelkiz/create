@@ -154,15 +154,34 @@ struct SDL:
         ]()
         return String(unsafe_from_utf8_ptr=ptr)
 
-    def init_subsystems(mut self) raises:
+    def init_subsystems(mut self, offscreen: Bool = False) raises:
         """Starts video, which must work, and gamepads, which may not.
 
         A missing controller stack (no udev in a sandbox) is no reason to
         stop a program that may never touch a gamepad, so a refused gamepad
         subsystem only means no gamepad events. Once it runs, SDL announces
         every pad already plugged in as an added event.
+
+        `offscreen` starts video on SDL's offscreen driver: windows are never
+        shown and GL contexts come from EGL, so no display server is needed.
+        SDL reads the driver only when video starts, so the hint is reset
+        straight after — once every window has closed and video has shut
+        down, the next window gets the usual driver. While video is already
+        running it keeps the driver it started with, and `offscreen` changes
+        nothing. An `SDL_VIDEODRIVER` environment variable outranks it.
         """
-        if not self.lib.call["SDL_Init", Bool](SDL_INIT_VIDEO):
+        var hint = String("SDL_VIDEO_DRIVER")
+        if offscreen:
+            var driver = String("offscreen")
+            _ = self.lib.call["SDL_SetHint", Bool](
+                hint.as_c_string_span().ptr(), driver.as_c_string_span().ptr()
+            )
+        var started = self.lib.call["SDL_Init", Bool](SDL_INIT_VIDEO)
+        if offscreen:
+            _ = self.lib.call["SDL_ResetHint", Bool](
+                hint.as_c_string_span().ptr()
+            )
+        if not started:
             raise Error("SDL_Init(SDL_INIT_VIDEO) failed: " + self.get_error())
         self._gamepad = self.lib.call["SDL_InitSubSystem", Bool](
             SDL_INIT_GAMEPAD

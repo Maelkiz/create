@@ -30,11 +30,12 @@ from .program import Program
 def _open_headless_window() raises -> GLWindow:
     """Tiny and never rendered into — the frame lands in the `_GLTarget` FBO,
     and this exists only because a GL context needs a window to belong to.
-    So it is not multisampled either.
+    So it is not multisampled either, and offscreen: never shown, no display
+    needed.
 
     This is what raises when there is no GL context at all.
     """
-    return GLWindow("headless", 64, 64)
+    return GLWindow("headless", 64, 64, offscreen=True)
 
 
 def _run_headless_gl[

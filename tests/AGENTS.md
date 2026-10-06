@@ -32,9 +32,10 @@ namespace any scratch path under `/tmp` per file.
   renders each gradient scene through both and compares every pixel at least two pixels from an
   edge, within one level per channel.
 
-GL tests skip without a context. `pixi run test` uses SDL's offscreen driver when no display is set
-(`DISPLAY`, `WAYLAND_DISPLAY`, `XDG_RUNTIME_DIR` all unset), which gives a software GL 3.3 context —
-enough for library-logic bugs, blind to driver-specific ones. If GL tests skip on a machine with a
+GL tests skip without a context. Their windows are `GLWindow(..., offscreen=True)` (as is
+`run_headless`'s GPU path): SDL's offscreen driver, never shown and needing no display, with its
+context from EGL — the host's GPU driver where there is one, Mesa's software GL elsewhere, which is
+enough for library-logic bugs but blind to driver-specific ones. If GL tests skip on a machine with a
 working driver, suspect the environment's libraries shadowing the host driver's:
 `scripts/activate.sh` preloads the system libdrm for that reason. Window tests that open a window
 pin `SDL_VIDEODRIVER=dummy` in their own `main`.

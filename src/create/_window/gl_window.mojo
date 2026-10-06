@@ -37,6 +37,7 @@ struct GLWindow(NativeWindow):
         resizable: Bool = True,
         borderless: Bool = False,
         maximized: Bool = False,
+        offscreen: Bool = False,
     ) raises:
         """`core` requests a core profile (no legacy fixed-function GL); off
         by default it is not restricted, since some drivers reject a profile
@@ -47,7 +48,11 @@ struct GLWindow(NativeWindow):
         this constructor's. `fullscreen` covers the display and, as with
         `Window`, makes SDL ignore the requested size -- `width()`/`height()`
         report what it actually got. `maximized` opens filling the desktop
-        work area, and is subject to the same size substitution."""
+        work area, and is subject to the same size substitution.
+        `offscreen` never shows the window and needs no display, for a
+        context that only renders into framebuffer objects -- unless another
+        window already holds SDL's video subsystem, whose driver it then
+        shares (see `SDL.init_subsystems`)."""
         var attributes: List[Tuple[Int32, Int32]] = [
             (SDL_GL_CONTEXT_MAJOR_VERSION, Int32(major_version)),
             (SDL_GL_CONTEXT_MINOR_VERSION, Int32(minor_version)),
@@ -73,6 +78,7 @@ struct GLWindow(NativeWindow):
             maximized,
             opengl=True,
             gl_attributes=attributes^,
+            offscreen=offscreen,
         )
         self._context = self._native.sdl.gl_create_context(self._native.handle)
         try:

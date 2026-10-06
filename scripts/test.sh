@@ -37,10 +37,6 @@ if [ -z "$jobs" ]; then
 fi
 
 export SDL_AUDIO_DRIVER=dummy
-if [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ] \
-    && [ -z "${XDG_RUNTIME_DIR:-}" ]; then
-    export SDL_VIDEODRIVER=offscreen
-fi
 
 logs=$(mktemp -d)
 trap 'rm -rf "$logs"' EXIT

@@ -1130,7 +1130,7 @@ def test_the_gl_backend_matches_the_cpu_backend() raises -> None:
     try:
         # Tiny and never rendered into: the frame goes to an FBO, and this exists
         # only because a GL context needs a window to belong to.
-        win = GLWindow("parity", 64, 64)
+        win = GLWindow("parity", 64, 64, offscreen=True)
     except e:
         print("SKIP — no GL context:", e)
         return

@@ -85,11 +85,13 @@ struct _SDLWindow:
         maximized: Bool,
         opengl: Bool = False,
         gl_attributes: List[Tuple[Int32, Int32]] = [],
+        offscreen: Bool = False,
     ) raises:
         """`gl_attributes` are `SDL_GL_*` pairs, set before the window is
-        created because SDL reads them then."""
+        created because SDL reads them then. `offscreen` as for
+        `SDL.init_subsystems`."""
         self.sdl = SDL()
-        self.sdl.init_subsystems()
+        self.sdl.init_subsystems(offscreen)
         try:
             for attribute in gl_attributes:
                 self.sdl.gl_set_attribute(attribute[0], attribute[1])

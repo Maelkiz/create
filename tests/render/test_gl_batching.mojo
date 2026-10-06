@@ -424,7 +424,7 @@ def test_gl_batching_behaviours() raises -> None:
     try:
         # Tiny and never rendered into: every frame lands in an FBO, and this
         # exists only because a GL context needs a window to belong to.
-        win = GLWindow("gl_batching", 64, 64)
+        win = GLWindow("gl_batching", 64, 64, offscreen=True)
     except e:
         print("SKIP — no GL context:", e)
         return
