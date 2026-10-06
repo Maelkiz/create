@@ -12,6 +12,7 @@ scripts = ["scripts/activate.sh"]
 example = "bash scripts/example.sh"
 benchmark = "bash scripts/benchmark.sh"
 test = "bash scripts/test.sh"
+build-examples = "bash scripts/build_examples.sh"
 precompile = "mkdir -p build && mojo precompile src/create -o build/create.mojoc"
 format = "mojo format src examples benchmarks tests"
 setup = "git config core.hooksPath .githooks && git config blame.ignoreRevsFile .git-blame-ignore-revs"
