@@ -2278,10 +2278,10 @@ struct AnimatorEveryOverload(Program):
     """Renders through both `canvas.image(Animator, ...)` overloads,
     each from a `Float64` tuple, an `Int` tuple and a `Point2D`.
 
-    Without a call site each is never type-checked: a library build only
-    checks the `def` bodies it reaches. The assertions below double as the
-    positioning check -- every call must land its frame on the same anchor
-    its `Image` counterpart would.
+    `mojo precompile` type-checks the overloads themselves; these calls check
+    that each resolves from every argument form a sketch writes. The
+    assertions below double as the positioning check -- every call must land
+    its frame on the same anchor its `Image` counterpart would.
     """
 
     var animator: Animator
