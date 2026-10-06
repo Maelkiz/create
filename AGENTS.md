@@ -27,7 +27,7 @@ it makes the library better.
 | `render` | `src/create/render/` | `Canvas`, `Camera`, `Antialiasing`, font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
 | `color` | `src/create/color/` | `Color`, `Gradient` (with the ramp and dither both backends share), `BlendMode` |
 | `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes (`Rectangle`, `Circle`, `Triangle`, `Sector`, `Polygon`, `Line`, `Arc`), `Bezier`, `Spline`, `Random`, `Noise`, easing and `Tween`, util functions |
-| `image` | `src/create/image/` | `Image` (BMP/PNG/JPEG), `Animation`, `Animator` |
+| `image` | `src/create/image/` | `Image` (BMP/PNG/JPEG), `PixelBuffer`, `Animation`, `Animator` |
 | `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |
 | `_bytes` | `src/create/_bytes.mojo` | Internal leaf: little-endian integer decoding |
 | `_window` | `src/create/_window/` | Internal platform layer: `Window`, `GLWindow`, typed `Event`s, SDL3 video bindings |
@@ -105,7 +105,8 @@ the loop carries both into the next frame.
 - `animator.update(context.time.delta)` / `tween.update(context.time.delta)` — otherwise the playhead
   never moves.
 
-Shared assets (`Animation`, `Sound`) are held as `ArcPointer` fields. Read
+Shared assets (`Animation`, `Sound`) are held as `ArcPointer` fields; an `Image` shares its pixels
+itself, so a plain `Image` field or `.copy()` is already cheap. Read
 [`Animator.use`](src/create/image/animator.mojo) before driving an animator.
 
 ### Printing
@@ -115,7 +116,7 @@ A public value type implements `Writable` and prints as it would be written in s
 `Int`-wrapping enum (an unnamed value falls back to `Easing(99)`); keyword form otherwise, labelled
 by the constructor's keywords where it has them (`Circle(position=Point2D(0.0, 0.0), r=5.0)`) and by
 public field names where it doesn't (`Time`, `Tween`). Private fields are left out. Resource handles
-(`Font`, `Image`, `Sound`, `Audio`) and shared assets (`Animation`) are not printable.
+(`Font`, `Image`, `PixelBuffer`, `Sound`, `Audio`) and shared assets (`Animation`) are not printable.
 
 ### Imports and public surface
 
@@ -291,11 +292,15 @@ field to draw into across frames. See [examples/offscreen.mojo](examples/offscre
 canvas to transparent, the frame canvas to its opening clear (or, with the autoclear off, the last
 frame's pixels). Style, transform and settings are untouched; `background()` paints over instead.
 
-`Image.pixel(x, y)`/`set_pixel(x, y, color)` read and edit an image in **image coordinates** (top-left
-origin, y down); off the image, reads are transparent and writes do nothing. The buffer is private:
-every write goes through `set_pixel`, which versions the image so a render after the edit draws the
-new pixels and one before it keeps the old ones. An image not drawn for `IMAGE_KEEP_FRAMES` (120)
-frames is dropped from the backends' caches, so a fresh snapshot every frame costs bounded memory.
+**An `Image` is immutable**, an asset like `Sound`: `image.pixel(x, y)` reads it, nothing writes it.
+Build one pixel by pixel in a `PixelBuffer` — `set(x, y, color)`/`pixel(x, y)`, transparent to start
+— then `Image(buffer^)` takes the pixels over without copying. Both use **image coordinates**
+(top-left origin, y down); off the image, reads are transparent and writes do nothing.
+`image.resize(w, h)` returns a new image, nearest pixel. Copying an image shares its pixels, and so
+does a backend's cache of it, so drawing a new image costs no copy. An image not drawn for
+`IMAGE_KEEP_FRAMES` (120) frames is dropped from the backends' caches, so a fresh snapshot every
+frame costs bounded memory. Shapes, text and gradients go into an image through an offscreen
+`Canvas` instead (above).
 
 ### Coordinates, camera, autoscale
 
@@ -361,7 +366,7 @@ frame body returns. Headless runs ignore the window dials, like `rumble`.
 |---|---|
 | Screen space | Origin-centred, y-up, camera-independent. `canvas.left()`…`top()` and `context.input.mouse` live here |
 | World space | What render calls use once a `Camera` is set; identical to screen space without one. `canvas.to_world`/`to_local` convert a `Point2D` between world space and the current transform |
-| Asset vs. playhead | `Animation`/`Sound` are shared immutable assets; `Animator`/an `Audio` voice are one entity's position in one. `fps` belongs to the asset |
+| Asset vs. playhead | `Image`/`Animation`/`Sound` are shared immutable assets; `Animator`/an `Audio` voice are one entity's position in one. `fps` belongs to the asset |
 | `Easing` / `Tween` | An `Easing` is a stateless curve over a 0-to-1 fraction (`ease(curve, t)`); a `Tween` walks that fraction over a duration. Each entity owns its own `Tween`. Frame-by-frame animation is `Animation`/`Animator` (in `image`), not a tween |
 | `Time` / `DateTime` | `context.time` is the run's clock: ticked by the loop, zero at the first frame, synthetic in headless runs. `DateTime.now()` is the computer's local wall clock, read once into consistent fields (`year` … `millisecond`) — take one reading per frame rather than calling it per field |
 | `Random` / `Noise` | Both seeded, both in `[0, 1]`. `Random` is stateful (`mut`, `Movable`): each call is an independent sample. `Noise` is immutable (`Copyable`): `at(...)` is a pure function of its input, and nearby inputs give nearby values. `feature_size` divides space only; `at(position, time)` leaves `time` for the caller to scale. Averaged octaves cluster around 0.5 — stretch with `smoothstep` for contrast |

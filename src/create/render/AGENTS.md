@@ -271,11 +271,13 @@ density and otherwise resamples through `_seed`, which takes the source's screen
 index, which must stay valid. `autoclear` stays off on it — `set_autoclear` would insert a gray clear
 that the next bake paints in.
 
-**The image cache** (`Backend.images`) is keyed by a backend id per *image version*.
-`intern_image(source, version, …)` reuses the copy only while `Image._version` matches, so an
-edited image gets a new id and earlier commands keep the old copy. `_expire_images`, after each
-present, drops copies unused for `IMAGE_KEEP_FRAMES` frames and tells `GLRenderer.forget_images` to
-delete their textures.
+**The image cache** (`Backend.images`) holds one entry per image, keyed by a backend id;
+`interned_ids` maps `Image._id` to it. An image never changes, so `intern_image(source, pixels, …)`
+reuses the entry whenever the identity matches. The entry holds the image's own
+`ArcPointer[List[UInt8]]`, not a copy: interning costs no pixel copy, and the share keeps the
+pixels alive for a command replayed after the `Image` is gone. `_expire_images`, after each present
+(or offscreen bake), drops entries unused for `IMAGE_KEEP_FRAMES` frames and tells
+`GLRenderer.forget_images` to delete their textures.
 
 ## Captures
 
