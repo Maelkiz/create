@@ -223,6 +223,17 @@ def test_images_built_from_buffers_draw_their_own_pixels() raises -> None:
     assert_equal(canvas.pixel((30, 0)), Color.BLUE)
 
 
+def test_an_image_drawn_every_frame_is_interned_once() raises -> None:
+    var context = Context()
+    var mem = MemorySurface(200, 100)
+    var canvas = _canvas(context)
+    var image = Image.solid(10, 10, 255, 0, 0)
+    for _ in range(3):
+        canvas.image(image, (0, 0))
+        canvas = _present(context, canvas^, mem)
+    assert_equal(len(canvas._state.backend.images), 1)
+
+
 @fieldwise_init
 struct DrawsASnapshotBack(Program):
     var _unused: Int

@@ -475,7 +475,7 @@ def test_image_replays_from_an_interned_image() raises -> None:
     src[7] = 255
     var mem = MemorySurface(_W, _H)
     var backend = Backend()
-    var id = backend.intern_image(7, 0, src.unsafe_ptr(), 2, 1)
+    var id = backend.intern_image(7, src.unsafe_ptr(), 2, 1)
 
     var cmds = List[RenderCommand]()
     cmds.append(clear_command(Color.BLACK))
@@ -488,38 +488,25 @@ def test_image_replays_from_an_interned_image() raises -> None:
 def test_interning_the_same_key_twice_reuses_the_copy() raises -> None:
     var src = List[UInt8](length=4, fill=255)
     var backend = Backend()
-    var a = backend.intern_image(3, 0, src.unsafe_ptr(), 1, 1)
-    var b = backend.intern_image(3, 0, src.unsafe_ptr(), 1, 1)
+    var a = backend.intern_image(3, src.unsafe_ptr(), 1, 1)
+    var b = backend.intern_image(3, src.unsafe_ptr(), 1, 1)
     assert_equal(a, b)
     assert_equal(len(backend.images), 1)
-
-
-def test_a_new_version_is_a_new_copy_and_the_old_one_stays() raises -> None:
-    # A command recorded before an edit must keep replaying the old pixels.
-    var src = List[UInt8](length=4, fill=255)
-    var backend = Backend()
-    var before = backend.intern_image(3, 0, src.unsafe_ptr(), 1, 1)
-    src[0] = 0
-    var after = backend.intern_image(3, 1, src.unsafe_ptr(), 1, 1)
-    assert_true(before != after)
-    assert_equal(backend.images[before].pixels[0], 255)
-    assert_equal(backend.images[after].pixels[0], 0)
-    assert_equal(backend.intern_image(3, 1, src.unsafe_ptr(), 1, 1), after)
 
 
 def test_an_image_unused_for_long_enough_is_dropped() raises -> None:
     var src = List[UInt8](length=4, fill=255)
     var backend = Backend()
-    var kept = backend.intern_image(1, 0, src.unsafe_ptr(), 1, 1)
-    var dropped = backend.intern_image(2, 0, src.unsafe_ptr(), 1, 1)
+    var kept = backend.intern_image(1, src.unsafe_ptr(), 1, 1)
+    var dropped = backend.intern_image(2, src.unsafe_ptr(), 1, 1)
     var mem = MemorySurface(1, 1)
     for _ in range(IMAGE_KEEP_FRAMES + 1):
-        _ = backend.intern_image(1, 0, src.unsafe_ptr(), 1, 1)
+        _ = backend.intern_image(1, src.unsafe_ptr(), 1, 1)
         backend.present(mem.surface(), 1.0)
     assert_true(kept in backend.images)
     assert_true(dropped not in backend.images)
     # Seen again, it is copied afresh rather than resurrected.
-    assert_true(backend.intern_image(2, 0, src.unsafe_ptr(), 1, 1) != dropped)
+    assert_true(backend.intern_image(2, src.unsafe_ptr(), 1, 1) != dropped)
 
 
 def test_image_with_an_unknown_image_is_skipped() raises -> None:
@@ -899,7 +886,7 @@ def _blurred_image_frame(
 def test_a_blurred_image_shadow_softens_past_its_silhouette() raises -> None:
     var src = List[UInt8](length=16, fill=255)
     var backend = Backend()
-    var image = backend.intern_image(3, 0, src.unsafe_ptr(), 2, 2)
+    var image = backend.intern_image(3, src.unsafe_ptr(), 2, 2)
     var mem = MemorySurface(_W, _H)
     _blurred_image_frame(backend, mem, image)
     # The silhouette spans columns 70..89 on row 50 (image at 30..49).

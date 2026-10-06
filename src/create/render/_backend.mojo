@@ -1209,20 +1209,18 @@ struct Backend(Movable):
     ](
         mut self,
         source: Int,
-        version: Int,
         src: Pointer[UInt8, so],
         width: Int,
         height: Int,
     ) -> Int:
         """Return a backend id for the `width` x `height` RGBA buffer at
-        `src`, version `version` of image `source`.
+        `src`, the pixels of image `source`.
 
-        Copies on first sight of each version and returns the cached id
+        Copies on first sight of an image and returns the cached id
         thereafter, so an image rendered every frame is copied once. `source`
         must be stable for the life of the image — an `Image`'s identity, not
-        its pixel address, which could be reused after a free. A new version
-        gets a new id, so a command recorded before an edit keeps replaying
-        the pixels it was recorded with.
+        its pixel address, which could be reused after a free. An image never
+        changes, so its identity alone says the copy is current.
 
         Called while recording rather than at replay, which is what keeps a
         borrow of caller-owned memory out of the command buffer.
@@ -1230,10 +1228,8 @@ struct Backend(Movable):
         try:
             if source in self.interned_ids:
                 var id = self.interned_ids[source]
-                ref image = self.images[id]
-                if image.version == version:
-                    image.last_used = self.frame
-                    return id
+                self.images[id].last_used = self.frame
+                return id
         except:
             pass  # unreachable: `interned_ids` names only interned ids
         var buf = List[UInt8](length=width * height * 4, fill=0)
@@ -1242,7 +1238,7 @@ struct Backend(Movable):
         var id = self.next_image
         self.next_image += 1
         self.images[id] = _InternedImage(
-            buf^, width, height, source, version, self.frame
+            buf^, width, height, source, self.frame
         )
         self.interned_ids[source] = id
         return id

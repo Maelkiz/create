@@ -94,9 +94,6 @@ struct Image(Movable):
 
     A resized image is a new image, with its own.
     """
-    var _version: Int
-    """Always 0 now that an image cannot change; the backend's cache still
-    reads it."""
 
     def __init__(out self, var pixels: PixelBuffer) raises:
         """An image of `pixels`, which it takes over without copying."""
@@ -104,7 +101,6 @@ struct Image(Movable):
         self.height = pixels.height
         self._pixels = pixels^._take_data()
         self._id = _next_image_id()
-        self._version = 0
 
     @staticmethod
     def solid(

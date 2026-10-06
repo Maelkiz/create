@@ -8,7 +8,7 @@ paths need it and the GL one cannot import the CPU one: `_backend` reaches
 
 
 struct _InternedImage(Copyable, Movable):
-    """Interned on the first render of a given image version, so the command
+    """Interned on the first render of an image, so the command
     buffer carries an id rather than a borrow of program-owned memory. The GL
     backend keys its textures by the same id.
 
@@ -22,8 +22,6 @@ struct _InternedImage(Copyable, Movable):
     var height: Int
     var source: Int
     """The `Image._id` this is a copy of."""
-    var version: Int
-    """The `Image._version` it was copied at."""
     var last_used: Int
     """The frame it was last rendered in, counted by `Backend.frame`."""
 
@@ -33,14 +31,12 @@ struct _InternedImage(Copyable, Movable):
         width: Int,
         height: Int,
         source: Int,
-        version: Int,
         last_used: Int,
     ):
         self.pixels = pixels^
         self.width = width
         self.height = height
         self.source = source
-        self.version = version
         self.last_used = last_used
 
 
