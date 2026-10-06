@@ -59,12 +59,13 @@ Two tiers of automated checks:
 | `pre-commit` hook (after `pixi run setup`) | Formatting check on staged `.mojo` files, then builds `tests/core/test_smoke.mojo`. Constant cost |
 | CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)), every PR and push to `main` | Formatting, `mojo precompile`, every example and benchmark, the test suite — a GL test that skips fails the job |
 
-The hook skips entirely when every staged path is inert (`*.md`, `LICENSE`, agent/editor config) —
-the allowlist is in `.githooks/_inert.sh`.
+Both skip their checks when every changed path is inert (`*.md`, `LICENSE`, agent/editor config) —
+the allowlist is in `.githooks/_inert.sh`, read by the hook and the workflow alike.
 
 **Workflow.** `main` is protected by a ruleset: no direct pushes, no force pushes, no deletion,
-and a linear history. Every change lands as a squash-merged pull request once the four CI checks
-(`format`, `precompile`, `examples`, `tests`) pass; no approval is required.
+and a linear history. Every change lands as a squash-merged pull request once the required check
+`ci` passes — it passes when `format`, `precompile`, `examples` and `tests` all passed, or were
+skipped for an inert change; no approval is required.
 
 ```bash
 git switch -c some-change                 # from an up-to-date main
