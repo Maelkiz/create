@@ -2325,13 +2325,10 @@ def test_every_animator_overload_renders_at_its_anchor() raises -> None:
 
 def _half_opaque() raises -> Image:
     """A 2x2 image whose left column is opaque red, its right transparent."""
-    var sp = Image(2, 2)
-    var ptr = sp._pixels.unsafe_ptr()
+    var sp = PixelBuffer(2, 2)
     for row in range(2):
-        var off = row * 2 * 4
-        ptr[unsafe_offset=off] = 255
-        ptr[unsafe_offset=off + 3] = 255
-    return sp^
+        sp.set(0, row, Color(255, 0, 0, 255))
+    return Image(sp^)
 
 
 struct ShadowedImageEveryOverload(Program):

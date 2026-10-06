@@ -1,6 +1,7 @@
 from std.os import listdir
 
 from create.image.image import Image
+from create.image.pixel_buffer import PixelBuffer
 
 
 struct Animation(Movable):
@@ -157,15 +158,15 @@ struct Animation(Movable):
     @staticmethod
     def _cut(sheet: Image, x: Int, y: Int, w: Int, h: Int) raises -> Image:
         """Copy one w x h cell at (x, y) out of the sheet, RGBA row by row."""
-        var frame = Image(w, h)
+        var frame = PixelBuffer(w, h)
         var src = sheet._pixels.unsafe_ptr()
-        var dst = frame._pixels.unsafe_ptr()
+        var dst = frame._data.unsafe_ptr()
         for row in range(h):
             var s = ((y + row) * sheet.width + x) * 4
             var d = row * w * 4
             for i in range(w * 4):
                 dst[unsafe_offset=d + i] = src[unsafe_offset=s + i]
-        return frame^
+        return Image(frame^)
 
 
 def _frame_number(name: String) -> Int:

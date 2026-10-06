@@ -63,13 +63,15 @@ def _jpeg_dimensions(data: List[UInt8]) raises -> Tuple[Int, Int]:
 
 
 struct Image(Movable):
-    """An owned RGBA pixel buffer, row-major, 8 bits per channel.
+    """An RGBA image, row-major, 8 bits per channel: an asset, never
+    changed once made.
 
     Decoded once at load — `Image.load` picks a BMP, PNG or JPEG decoder by
-    file extension — and blitted many times afterwards. `Image.solid` and
-    `Image.from_rgba` build one without a file, and `resize` resamples in
-    place. `pixel` reads one pixel and `set_pixel` writes one; the buffer
-    itself is private, so every edit is one a backend's cached copy can see.
+    file extension — and blitted many times afterwards. `Image(buffer^)`
+    takes over the pixels of a `PixelBuffer`, the way to build one pixel by
+    pixel; `Image.solid` and `Image.from_rgba` build one without a file, and
+    `resize` returns a resampled copy. `pixel` reads one pixel. Since nothing
+    changes an image, a backend's cached copy of one is never stale.
 
     Deliberately not a render type: `raster.blit_image` takes a pixel pointer
     with a width and a height rather than this struct, so the image decoders
@@ -78,9 +80,8 @@ struct Image(Movable):
     """
 
     var _pixels: List[UInt8]
-    """RGBA, row-major from the top. Private so that every write goes
-    through `set_pixel`, which bumps `_version`: a write straight into the
-    buffer would leave a backend drawing its stale copy."""
+    """RGBA, row-major from the top. Private so that nothing outside this
+    package can change an image after it is made."""
     var width: Int
     var height: Int
     var _id: Int
@@ -91,23 +92,11 @@ struct Image(Movable):
     allocate another, and the second inherits the first's cached image. A
     counter can only run out, and it never does at 63 bits.
 
-    Bumped by `resize`, which replaces the pixels — so a resized image is a
-    new image to a cache, which is exactly what it is.
+    A resized image is a new image, with its own.
     """
     var _version: Int
-    """How many times `set_pixel` has changed this image. A backend's
-    cached copy is current only for the version it copied, so an edit is
-    drawn from the next render on, and a render before it keeps the old
-    pixels."""
-
-    def __init__(out self, width: Int, height: Int) raises:
-        """Raises only if the process-wide identity counter cannot be reached,
-        which is why every construction path here raises."""
-        self.width = width
-        self.height = height
-        self._pixels = List[UInt8](length=width * height * 4, fill=0)
-        self._id = _next_image_id()
-        self._version = 0
+    """Always 0 now that an image cannot change; the backend's cache still
+    reads it."""
 
     def __init__(out self, var pixels: PixelBuffer) raises:
         """An image of `pixels`, which it takes over without copying."""
@@ -126,27 +115,27 @@ struct Image(Movable):
         b: UInt8,
         a: UInt8 = 255,
     ) raises -> Image:
-        var s = Image(width, height)
-        var ptr = s._pixels.unsafe_ptr()
+        var buffer = PixelBuffer(width, height)
+        var ptr = buffer._data.unsafe_ptr()
         for i in range(width * height):
             var off = i * 4
             ptr[unsafe_offset=off] = r
             ptr[unsafe_offset=off + 1] = g
             ptr[unsafe_offset=off + 2] = b
             ptr[unsafe_offset=off + 3] = a
-        return s^
+        return Image(buffer^)
 
     @staticmethod
     def from_rgba(width: Int, height: Int, data: List[UInt8]) raises -> Image:
         """Precondition: `data` holds at least `width * height * 4` bytes — not bounds-checked.
         """
-        var s = Image(width, height)
+        var buffer = PixelBuffer(width, height)
         unsafe_memcpy(
-            dest=s._pixels.unsafe_ptr(),
+            dest=buffer._data.unsafe_ptr(),
             src=data.unsafe_ptr(),
             count=width * height * 4,
         )
-        return s^
+        return Image(buffer^)
 
     def pixel(self, x: Int, y: Int) -> Color:
         """The pixel in column `x` of row `y`, counted from the top-left
@@ -161,23 +150,6 @@ struct Image(Movable):
             self._pixels[off + 2],
             self._pixels[off + 3],
         )
-
-    def set_pixel(mut self, x: Int, y: Int, color: Color):
-        """Replace the pixel in column `x` of row `y`, counted from the
-        top-left corner. Outside the image it does nothing.
-
-        A render call copies the image as it is then, so an edit shows
-        from the next render of it on. Each edited image is copied again
-        once per frame it is drawn in, not once per edit.
-        """
-        if x < 0 or y < 0 or x >= self.width or y >= self.height:
-            return
-        var off = (y * self.width + x) * 4
-        self._pixels[off] = color.r
-        self._pixels[off + 1] = color.g
-        self._pixels[off + 2] = color.b
-        self._pixels[off + 3] = color.a
-        self._version += 1
 
     def resize(self, new_w: Int, new_h: Int) raises -> Image:
         """A copy of this image at `new_w` x `new_h`, nearest-neighbour
@@ -260,15 +232,15 @@ struct Image(Movable):
         var h = le_uint(img.unsafe_ptr(), 16, 4)
         img[20] = 3  # PNG_FORMAT_RGBA
 
-        var s = Image(w, h)
+        var buffer = PixelBuffer(w, h)
         var ok2 = lib.call["png_image_finish_read", Int](
-            img.unsafe_ptr(), Int(0), s._pixels.unsafe_ptr(), Int(0), Int(0)
+            img.unsafe_ptr(), Int(0), buffer._data.unsafe_ptr(), Int(0), Int(0)
         )
         lib.call["png_image_free"](img.unsafe_ptr())
 
         if ok2 == 0:
             raise Error("Failed to decode PNG")
-        return s^
+        return Image(buffer^)
 
     @staticmethod
     def _load_jpeg(data: List[UInt8]) raises -> Image:
@@ -281,12 +253,12 @@ struct Image(Movable):
         if handle == 0:
             raise Error("Failed to init JPEG decompressor")
 
-        var s = Image(w, h)
+        var buffer = PixelBuffer(w, h)
         var result = lib.call["tjDecompress2", Int32](
             handle,
             data.unsafe_ptr(),
             len(data),
-            s._pixels.unsafe_ptr(),
+            buffer._data.unsafe_ptr(),
             Int32(w),
             Int32(0),
             Int32(h),
@@ -297,7 +269,7 @@ struct Image(Movable):
 
         if result != 0:
             raise Error("Failed to decode JPEG")
-        return s^
+        return Image(buffer^)
 
     @staticmethod
     def load(path: String) raises -> Image:
@@ -333,8 +305,8 @@ struct Image(Movable):
             if compression != 0:
                 raise Error("Compressed BMP not supported: " + path)
 
-            var s = Image(w, h)
-            var dst = s._pixels.unsafe_ptr()
+            var buffer = PixelBuffer(w, h)
+            var dst = buffer._data.unsafe_ptr()
 
             # 24- and 32-bit differ only in the source stride and where alpha
             # comes from. Rows are padded to a 4-byte boundary, which the
@@ -356,4 +328,4 @@ struct Image(Movable):
                         data[src + 3] if bytes_per_px == 4 else 255
                     )
 
-            return s^
+            return Image(buffer^)

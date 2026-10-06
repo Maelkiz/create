@@ -197,29 +197,30 @@ def test_with_the_autoclear_off_clear_returns_to_the_last_frame() raises -> (
     assert_equal(mem.pixel(100, 50), Color.RED)
 
 
-def test_image_pixels_read_and_write_in_image_coordinates() raises -> None:
-    var s = Image(3, 2)
-    s.set_pixel(2, 1, Color.RED)
+def test_image_pixels_read_in_image_coordinates() raises -> None:
+    var buffer = PixelBuffer(3, 2)
+    buffer.set(2, 1, Color.RED)
+    var s = Image(buffer^)
     assert_equal(s.pixel(2, 1), Color.RED)
     assert_equal(s.pixel(0, 0), Color.TRANSPARENT)
-    # Outside the image: reads are transparent, writes do nothing.
+    # Outside the image reads are transparent.
     assert_equal(s.pixel(3, 0), Color.TRANSPARENT)
     assert_equal(s.pixel(-1, 0), Color.TRANSPARENT)
-    s.set_pixel(5, 5, Color.BLUE)
-    assert_equal(s._version, 1)
 
 
-def test_an_edit_shows_from_the_next_render_on() raises -> None:
+def test_images_built_from_buffers_draw_their_own_pixels() raises -> None:
     var context = Context()
     var canvas = _canvas(context)
-    var s = Image.solid(10, 10, 255, 0, 0)
-    canvas.image(s, (-30, 0))
+    var red = PixelBuffer(10, 10)
+    var blue = PixelBuffer(10, 10)
     for y in range(10):
         for x in range(10):
-            s.set_pixel(x, y, Color.BLUE)
-    canvas.image(s, (30, 0))
-    assert_equal(canvas.pixel((-30, 0)), Color.RED, "drawn before the edit")
-    assert_equal(canvas.pixel((30, 0)), Color.BLUE, "drawn after it")
+            red.set(x, y, Color.RED)
+            blue.set(x, y, Color.BLUE)
+    canvas.image(Image(red^), (-30, 0))
+    canvas.image(Image(blue^), (30, 0))
+    assert_equal(canvas.pixel((-30, 0)), Color.RED)
+    assert_equal(canvas.pixel((30, 0)), Color.BLUE)
 
 
 @fieldwise_init

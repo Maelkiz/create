@@ -7,6 +7,7 @@ from std.testing import (
 )
 from create.color.color import Color
 from create.image.image import Image, _jpeg_dimensions
+from create.image.pixel_buffer import PixelBuffer
 
 
 def test_solid_dimensions() raises -> None:
@@ -242,8 +243,8 @@ def test_resize_downscale_nearest_neighbour() raises -> None:
     # A 4x4 source with four distinct quadrant colours, downscaled to 2x2 --
     # each destination pixel must land in the matching source quadrant, which
     # a uniform-colour source could never prove.
-    var s = Image(4, 4)
-    var ptr = s._pixels.unsafe_ptr()
+    var buffer = PixelBuffer(4, 4)
+    var ptr = buffer._data.unsafe_ptr()
     for row in range(4):
         for col in range(4):
             var off = (row * 4 + col) * 4
@@ -258,7 +259,7 @@ def test_resize_downscale_nearest_neighbour() raises -> None:
                 ptr[unsafe_offset=off + 1] = 255
                 ptr[unsafe_offset=off + 2] = 255
             ptr[unsafe_offset=off + 3] = 255
-    s = s.resize(2, 2)
+    var s = Image(buffer^).resize(2, 2)
     var dst = s._pixels.unsafe_ptr()
     assert_equal(Int(dst[unsafe_offset=0]), 255)  # (0,0) red
     assert_equal(Int(dst[unsafe_offset=1]), 0)
@@ -276,8 +277,8 @@ def test_resize_upscale_block_replication() raises -> None:
     # Nearest-neighbour upscaling replicates each source pixel into a block --
     # a 2x2 source blown up to 4x4 must show each quadrant colour unchanged
     # across its whole 2x2 destination block, not blended or interpolated.
-    var s = Image(2, 2)
-    var ptr = s._pixels.unsafe_ptr()
+    var buffer = PixelBuffer(2, 2)
+    var ptr = buffer._data.unsafe_ptr()
     ptr[unsafe_offset=0] = 255  # (0,0) red
     ptr[unsafe_offset=3] = 255
     ptr[unsafe_offset=5] = 255  # (1,0) green
@@ -286,7 +287,7 @@ def test_resize_upscale_block_replication() raises -> None:
     ptr[unsafe_offset=11] = 255
     for i in range(4):
         ptr[unsafe_offset=12 + i] = 255  # (1,1) white
-    s = s.resize(4, 4)
+    var s = Image(buffer^).resize(4, 4)
     var dst = s._pixels.unsafe_ptr()
     for row in range(2):
         for col in range(2):
@@ -349,7 +350,7 @@ def test_from_rgba_ignores_trailing_bytes() raises -> None:
 
 
 def test_image_zero_dimensions() raises -> None:
-    var s = Image(0, 0)
+    var s = Image(PixelBuffer(0, 0))
     assert_equal(s.width, 0)
     assert_equal(s.height, 0)
     assert_equal(len(s._pixels), 0)
@@ -367,7 +368,7 @@ def test_resize_from_zero_width_stays_blank() raises -> None:
     # A zero-width source has no pixel to sample -- the guard must skip the
     # offset arithmetic entirely rather than dividing by/indexing an empty
     # buffer, and leave the destination zero-filled.
-    var s = Image(0, 4)
+    var s = Image(PixelBuffer(0, 4))
     s = s.resize(2, 2)
     assert_equal(s.width, 2)
     assert_equal(s.height, 2)
@@ -521,8 +522,8 @@ def test_stem_end_without_a_dot_is_the_length() raises -> None:
 def test_every_image_gets_its_own_identity() raises -> None:
     # A backend caches one image per id, so two images sharing one would make
     # the second render the first's pixels.
-    var a = Image(2, 2)
-    var b = Image(2, 2)
+    var a = Image(PixelBuffer(2, 2))
+    var b = Image(PixelBuffer(2, 2))
     var c = Image.solid(1, 1, 255, 0, 0)
     var d = Image.from_rgba(1, 1, List[UInt8](length=4, fill=255))
     assert_true(a._id != b._id)
@@ -532,7 +533,7 @@ def test_every_image_gets_its_own_identity() raises -> None:
 
 
 def test_a_moved_image_keeps_its_identity() raises -> None:
-    var a = Image(2, 2)
+    var a = Image(PixelBuffer(2, 2))
     var want = a._id
     var moved = a^
     assert_equal(moved._id, want)

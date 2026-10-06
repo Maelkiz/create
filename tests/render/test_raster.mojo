@@ -14,6 +14,7 @@ from create.render._raster import (
 from create.render.font import _GlyphInfo
 from create.render.surface import MemorySurface, Surface
 from create.image.image import Image
+from create.image.pixel_buffer import PixelBuffer
 
 
 def _filled(width: Int, height: Int, c: Color) raises -> MemorySurface:
@@ -317,8 +318,8 @@ def test_blit_image_one_to_one() raises -> None:
 
 
 def test_blit_image_downscales_by_nearest_neighbour() raises -> None:
-    var sp = Image(4, 4)
-    var ptr = sp._pixels.unsafe_ptr()
+    var sp = PixelBuffer(4, 4)
+    var ptr = sp._data.unsafe_ptr()
     # Left half red, right half blue — a downscale must keep both halves.
     for row in range(4):
         for col in range(4):
@@ -329,7 +330,7 @@ def test_blit_image_downscales_by_nearest_neighbour() raises -> None:
             ptr[unsafe_offset=off + 3] = 255
     var mem = MemorySurface(4, 4)
     blit_image(
-        mem.surface(), sp._pixels.unsafe_ptr(), sp.width, sp.height, 0, 0, 2, 2
+        mem.surface(), sp._data.unsafe_ptr(), sp.width, sp.height, 0, 0, 2, 2
     )
     assert_equal(mem.pixel(0, 0), Color(255, 0, 0, 255))
     assert_equal(mem.pixel(1, 0), Color(0, 0, 255, 255))
@@ -337,22 +338,22 @@ def test_blit_image_downscales_by_nearest_neighbour() raises -> None:
 
 
 def test_blit_image_skips_transparent_source_pixels() raises -> None:
-    var sp = Image(2, 1)
-    var ptr = sp._pixels.unsafe_ptr()
+    var sp = PixelBuffer(2, 1)
+    var ptr = sp._data.unsafe_ptr()
     ptr[unsafe_offset=0] = 255
     ptr[unsafe_offset=3] = 255  # opaque red
     ptr[unsafe_offset=7] = 0  # fully transparent
     var mem = _filled(2, 1, Color(9, 9, 9, 255))
     blit_image(
-        mem.surface(), sp._pixels.unsafe_ptr(), sp.width, sp.height, 0, 0, 2, 1
+        mem.surface(), sp._data.unsafe_ptr(), sp.width, sp.height, 0, 0, 2, 1
     )
     assert_equal(mem.pixel(0, 0), Color(255, 0, 0, 255))
     assert_equal(mem.pixel(1, 0), Color(9, 9, 9, 255))
 
 
 def test_blit_image_tint_paints_the_silhouette() raises -> None:
-    var sp = Image(3, 1)
-    var ptr = sp._pixels.unsafe_ptr()
+    var sp = PixelBuffer(3, 1)
+    var ptr = sp._data.unsafe_ptr()
     ptr[unsafe_offset=0] = 255
     ptr[unsafe_offset=3] = 255  # opaque red
     ptr[unsafe_offset=5] = 255
@@ -361,7 +362,7 @@ def test_blit_image_tint_paints_the_silhouette() raises -> None:
     var mem = _filled(3, 1, Color(0, 0, 0, 255))
     blit_image(
         mem.surface(),
-        sp._pixels.unsafe_ptr(),
+        sp._data.unsafe_ptr(),
         sp.width,
         sp.height,
         0,
