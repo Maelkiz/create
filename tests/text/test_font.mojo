@@ -6,6 +6,7 @@ from create.text.font import (
     Font,
     FontWeight,
     _Face,
+    default_italic_font_path,
     _GlyphInfo,
     default_font_path,
     fallback_font_path,
@@ -81,6 +82,33 @@ def test_a_slnt_axis_is_the_italic_of_its_own_file() raises -> None:
     # the lean.
     slanted._set_weight(FontWeight.BOLD)
     assert_true(_lean(slanted.render(ord("I"), 48)) >= 4)
+
+
+def test_the_packaged_italic_is_variable_in_weight() raises -> None:
+    var face = _Face(default_italic_font_path(), 48, FontWeight.REGULAR)
+    var regular = face.render(ord("l"), 48).width
+    face._set_weight(FontWeight.BLACK)
+    assert_true(face.render(ord("l"), 48).width > regular)
+
+
+def test_the_packaged_italic_is_a_true_italic() raises -> None:
+    # A real italic redraws the letter rather than leaning it: a true italic
+    # "a" is not the upright one sheared.
+    var true_italic = _Face(default_italic_font_path(), 48, FontWeight.REGULAR)
+    var sheared = _Face(
+        default_font_path(), 48, FontWeight.REGULAR, slanted=True
+    )
+    assert_true(not true_italic.sheared)
+    var a = true_italic.render(ord("a"), 48)
+    var b = sheared.render(ord("a"), 48)
+    var same = a.width == b.width and a.height == b.height
+    if same:
+        for i in range(len(a.pixels)):
+            if a.pixels[i] != b.pixels[i]:
+                same = False
+                break
+    assert_true(not same)
+    assert_true(_lean(true_italic.render(ord("I"), 48)) >= 4)
 
 
 def test_load_of_a_missing_file_raises() raises -> None:

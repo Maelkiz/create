@@ -7,8 +7,9 @@ from std.reflection import source_location
 
 from create._bytes import cstr, le_uint, sign_extend_32
 
-# The two packaged faces, loaded lazily on the first text render: Noto Sans for
-# text, Noto Sans Symbols for codepoints the first face has no glyph for.
+# The packaged faces, loaded lazily on the first text render: Noto Sans for
+# text, Noto Sans Italic for its italic, and Noto Sans Symbols for codepoints
+# the first face has no glyph for. All three are under the OFL in `fonts/`.
 #
 # They ship inside the package, in `fonts/` beside this file, and are located
 # from this file's own source path rather than the process CWD — so text works
@@ -27,6 +28,12 @@ def default_font_path() -> String:
     """Noto Sans, the face every text render uses unless `canvas.font` swaps
     it."""
     return _packaged_font("NotoSans.ttf")
+
+
+def default_italic_font_path() -> String:
+    """Noto Sans Italic, the default face's italic: variable on the same
+    axes, so `font_weight` reaches it too."""
+    return _packaged_font("NotoSans-Italic.ttf")
 
 
 def fallback_font_path() -> String:

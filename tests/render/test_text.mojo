@@ -7,7 +7,13 @@ from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
 from create.render.align import Align
 from create.color.color import Color
-from create.text.font import Font, FontWeight, default_font_path, _GlyphInfo
+from create.text.font import (
+    Font,
+    FontWeight,
+    default_font_path,
+    fallback_font_path,
+    _GlyphInfo,
+)
 from create.render.style import Style
 from create.render.surface import MemorySurface
 from create.render._text import (
@@ -240,18 +246,28 @@ def test_italic_is_a_face_of_its_own() raises -> None:
     assert_true(_same_pixels(first, again))
 
 
+def test_the_default_italic_is_the_packaged_one() raises -> None:
+    var t = TextRenderer()
+    var f = t._face(_italic(_style(Align.LEFT)))
+    assert_true(f._draws_italic)
+    assert_true(f.italic_path, "the default face has an italic partner")
+    _ = f.has_glyph(ord("a"))
+    assert_false(f._faces[].face(True).sheared)
+
+
 def test_italic_falls_back_to_an_italic() raises -> None:
-    # The star is in the symbols face only; italic text gets it slanted.
-    var star = "\u2605"
-    assert_false(Font.load(default_font_path()).has_glyph(0x2605))
+    # Aries is in the symbols face only; italic text gets it slanted.
+    var symbol = "\u2648"
+    assert_false(Font.load(default_font_path()).has_glyph(0x2648))
+    assert_true(Font.load(fallback_font_path()).has_glyph(0x2648))
     var t = TextRenderer()
     var upright = _style(Align.TOP_LEFT)
     var a = MemorySurface(200, 120)
-    t.render(a.surface(), star, 40.0, 30.0, upright, 1.0)
+    t.render(a.surface(), symbol, 40.0, 30.0, upright, 1.0)
     var b = MemorySurface(200, 120)
-    t.render(b.surface(), star, 40.0, 30.0, _italic(upright), 1.0)
-    assert_true(_ink_box(a)[0] >= 0, "the star drew nothing")
-    assert_false(_same_pixels(a, b), "the fallback star was not slanted")
+    t.render(b.surface(), symbol, 40.0, 30.0, _italic(upright), 1.0)
+    assert_true(_ink_box(a)[0] >= 0, "the symbol drew nothing")
+    assert_false(_same_pixels(a, b), "the fallback symbol was not slanted")
 
 
 def test_width_follows_the_italic() raises -> None:

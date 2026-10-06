@@ -6,6 +6,7 @@ from create.text.font import (
     Font,
     _GlyphInfo,
     default_font_path,
+    default_italic_font_path,
     fallback_font_path,
 )
 from ._blur import blur_alpha
@@ -118,7 +119,9 @@ struct TextRenderer(Movable):
         glyphs, not a render failure.
         """
         if not self._default:
-            self._default = Font.load(default_font_path())
+            self._default = Font.load(
+                default_font_path(), italic_path=default_italic_font_path()
+            )
         if not self._fallback_attempted:
             self._fallback_attempted = True
             try:
