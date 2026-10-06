@@ -12,9 +12,9 @@ def source_path(relative: String) -> String:
 
     The caller's path is baked in at compile time, which is why this has to be
     inlined: `call_location` reports the site it is inlined into. So `mojo run`
-    and `mojo build` agree on the answer, and it is spelled the way the
-    compiler was handed the file — a binary built from a relative path finds
-    its assets only when run from the directory it was built in.
+    and `mojo build` agree on the answer, and since the compiler makes the
+    path absolute, a built binary finds its assets from any directory, as long
+    as they stay where they were at build time.
     """
     var file = String(call_location().file_name())
     return String(file[byte = : file.rfind("/") + 1]) + relative

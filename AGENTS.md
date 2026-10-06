@@ -373,9 +373,9 @@ frame body returns. Headless runs ignore the window dials, like `rumble`.
 
 2. **Resolve asset paths with `source_path(...)`**, not bare relative paths (those resolve against
    the CWD) — `Image.load`, `Font.load`, `Sound.load` alike. It resolves against the calling source
-   file, baked in at compile time. A `mojo build`
-   binary only resolves from another directory if built with absolute paths, and only while the
-   source exists. Tests assume the repo root as CWD, which `pixi run test` guarantees.
+   file, baked in at compile time as an absolute path, so a `mojo build` binary finds its assets
+   from any directory, as long as they stay where they were at build time. Tests assume the repo
+   root as CWD, which `pixi run test` guarantees.
 
 3. **Don't cache pixel dimensions from `create` or the first frame.** A window's first reported size
    can be wrong (fullscreen, Wayland); the loop corrects it from the next frame on.
