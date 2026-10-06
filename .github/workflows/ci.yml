@@ -1,6 +1,12 @@
 # The checks too slow for a commit hook. pre-commit covers formatting and the
 # smoke build locally; everything else runs here, on every pull request and
 # on main.
+#
+# A change touching only inert paths (.githooks/_inert.sh, the list the hook
+# skips on too) skips the checks. Not through `paths-ignore`: a required
+# check that never starts stays pending and blocks the merge. The workflow
+# always runs, and `ci`, the one required check, passes when the checks
+# passed or were skipped.
 name: CI
 
 on:
@@ -13,7 +19,32 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          . .githooks/_inert.sh
+          code=true
+          # A diff that can't be taken (a first push) counts as code.
+          if changed=$(git diff --name-only "$BASE...$GITHUB_SHA"); then
+              code=false
+              for path in $changed; do
+                  is_inert "$path" || { code=true; break; }
+              done
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
   check:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
     strategy:
@@ -42,3 +73,17 @@ jobs:
           cache: true
           locked: true
       - run: ${{ matrix.run }}
+
+  # The required check. A skipped matrix job reports under its unexpanded
+  # name, not as format/precompile/..., so those can't be required directly.
+  ci:
+    needs: [changes, check]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checks passed or were skipped
+        run: |
+          case "${{ needs.changes.result }}/${{ needs.check.result }}" in
+              success/success | success/skipped) exit 0 ;;
+          esac
+          exit 1

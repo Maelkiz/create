@@ -1,4 +1,4 @@
-# Sourced by pre-commit: the paths a change may touch and still
+# Sourced by pre-commit and CI: the paths a change may touch and still
 # skip every check, since nothing here can reach a build or a test. It is an
 # allowlist on purpose — pixi.toml, scripts/, fixtures and assets look inert
 # and are not, so any path not named here means the full run.
