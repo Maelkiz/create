@@ -117,7 +117,8 @@ A public value type implements `Writable` and prints as it would be written in s
 `Int`-wrapping enum (an unnamed value falls back to `Easing(99)`); keyword form otherwise, labelled
 by the constructor's keywords where it has them (`Circle(position=Point2D(0.0, 0.0), r=5.0)`) and by
 public field names where it doesn't (`Time`, `Tween`). Private fields are left out. Resource handles
-(`Font`, `Image`, `PixelBuffer`, `Sound`, `Audio`) and shared assets (`Animation`) are not printable.
+(`Image`, `PixelBuffer`, `Sound`, `Audio`) and shared assets (`Animation`) are not printable; a `Font`
+prints as it is loaded, `Font.load("path")`.
 
 ### Imports and public surface
 
@@ -162,8 +163,8 @@ text. Every frame opens with a clear to gray 200 so those defaults are visible;
   backend only — GPU swaps buffers).
 
 **Canvas settings that outlive the frame**, unlike style, transform, camera and clip, live on
-`PersistentCanvasState` and last until changed — set them once in `create`: `font`, and the
-frame-wide `autoclear`, `letterbox_color` (the bars outside the design under `FIT`, black by
+`PersistentCanvasState` and last until changed — set them once in `create`: the frame-wide
+`autoclear`, `letterbox_color` (the bars outside the design under `FIT`, black by
 default) and `antialiasing`. A frame-wide setting applies to the whole frame it is set in, since
 nothing is rasterised until present, and reads back with no arguments.
 
@@ -183,7 +184,13 @@ no arguments keep every part, so `fill()` alone paints the default white.
 `Style(...)` takes the setters' names as keywords and, like them, naming any part of the fill,
 outline or shadow switches it on unless its `*_enabled` keyword says otherwise. A reusable style is
 a field built in `create`.
-The font is not part of a style: it outlives the frame (above).
+
+**Fonts** are part of the style: `canvas.font(f)`, `Style(font=f)` or `with canvas.style(font=f):`,
+beside `font_size` and `font_weight`. `f` is a `Font.load(source_path("..."))` kept as a field — a
+shared asset like an `Image`, cheap to copy, closed when its last copy goes. With none set, text is
+packaged Noto Sans, and a codepoint the face lacks falls back to Noto Sans Symbols. Each `text`
+call keeps its face, so several share a frame; like every style setter, `canvas.font` resets
+next frame. Switching faces costs nothing: cached glyphs are keyed by face.
 
 **Gradients** fill regions and backgrounds: `canvas.fill(gradient)` and `canvas.background(gradient)`
 are overloads beside the colour ones, and the `Style`/`canvas.style` keyword is `fill_gradient=`,
@@ -289,8 +296,8 @@ field to draw into across frames. See [examples/offscreen.mojo](examples/offscre
 - `save_image` and `save_screenshot` write **at once**, having no frame to defer to.
   `save_screenshot` writes the pixels at their own density with alpha; `save_image` keeps alpha
   with `transparent=True`. `autoclear` and `letterbox_color` have no effect.
-- Each has its own font, glyph cache and image cache: a few long-lived ones are cheap, one per
-  entity per frame is not.
+- Each has its own glyph cache and image cache (fonts themselves are shared): a few long-lived
+  ones are cheap, one per entity per frame is not.
 
 `canvas.clear()` discards everything drawn so far, back to how the canvas started: an offscreen
 canvas to transparent, the frame canvas to its opening clear (or, with the autoclear off, the last
@@ -350,7 +357,8 @@ frame body returns. Headless runs ignore the window dials, like `rumble`.
 1. **`-I src` is required for every `mojo run`**, or `from create import *` fails. Pixi tasks add it.
 
 2. **Resolve asset paths with `source_path(...)`**, not bare relative paths (those resolve against
-   the CWD). It resolves against the calling source file, baked in at compile time. A `mojo build`
+   the CWD) — `Image.load`, `Font.load`, `Sound.load` alike. It resolves against the calling source
+   file, baked in at compile time. A `mojo build`
    binary only resolves from another directory if built with absolute paths, and only while the
    source exists. Tests assume the repo root as CWD, which `pixi run test` guarantees.
 
@@ -370,7 +378,7 @@ frame body returns. Headless runs ignore the window dials, like `rumble`.
 |---|---|
 | Screen space | Origin-centred, y-up, camera-independent. `canvas.left()`…`top()` and `context.input.mouse` live here |
 | World space | What render calls use once a `Camera` is set; identical to screen space without one. `canvas.to_world`/`to_local` convert a `Point2D` between world space and the current transform |
-| Asset vs. playhead | `Image`/`Animation`/`Sound` are shared immutable assets; `Animator`/an `Audio` voice are one entity's position in one. `fps` belongs to the asset |
+| Asset vs. playhead | `Image`/`Font`/`Animation`/`Sound` are shared immutable assets; `Animator`/an `Audio` voice are one entity's position in one. `fps` belongs to the asset |
 | `Easing` / `Tween` | An `Easing` is a stateless curve over a 0-to-1 fraction (`ease(curve, t)`); a `Tween` walks that fraction over a duration. Each entity owns its own `Tween`. Frame-by-frame animation is `Animation`/`Animator` (in `image`), not a tween |
 | `Time` / `DateTime` | `context.time` is the run's clock: ticked by the loop, zero at the first frame, synthetic in headless runs. `DateTime.now()` is the computer's local wall clock, read once into consistent fields (`year` … `millisecond`) — take one reading per frame rather than calling it per field |
 | `Random` / `Noise` | Both seeded, both in `[0, 1]`. `Random` is stateful (`mut`, `Movable`): each call is an independent sample. `Noise` is immutable (`Copyable`): `at(...)` is a pure function of its input, and nearby inputs give nearby values. `feature_size` divides space only; `at(position, time)` leaves `time` for the caller to scale. Averaged octaves cluster around 0.5 — stretch with `smoothstep` for contrast |

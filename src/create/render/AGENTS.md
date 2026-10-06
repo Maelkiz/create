@@ -9,9 +9,10 @@ and the layering rules.
 |---|---|
 | `canvas.mojo` | `Canvas` (records commands, touches no pixels), `PersistentCanvasState`, the guards |
 | `_command.mojo` | `RenderCommand` and its kind constants; `_fill_box`, the box a fill gradient spans |
-| `_backend.mojo` | `Backend` — fonts, glyph cache, interned images; replays commands via `present` (CPU) or `present_gpu` |
+| `_backend.mojo` | `Backend` — the text renderer, interned images; replays commands via `present` (CPU) or `present_gpu` |
 | `_raster.mojo` | CPU rasteriser over a `Surface`; called only from `_backend.mojo` |
 | `_gl.mojo` | GL entry points resolved at runtime; the only file that talks to the driver |
+| `_text.mojo` | `TextRenderer` — the glyph cache and layout both backends place text with; faces are `create.text.Font` |
 | `_gl_backend.mojo` | `GLRenderer` — shader, vertex buffer, glyph atlas, image textures, batching |
 | `_tessellate.mojo` | `RenderCommand` to triangles for the GPU |
 | `_shadow.mojo` | Shadow geometry shared by both backends: `shadow_command` (the hard silhouette as a command, offset matrix composed in), `BlurredSilhouette` (analytic Gaussian coverage for shapes), `InsetRegion` (an inset shadow's interior and cut) |
@@ -42,7 +43,7 @@ use `RenderCommand.points` instead, a `List` that stays empty (and unallocated) 
 field or parameter, and don't import `_window` from `canvas.mojo`. What survives the frame boundary:
 `PersistentCanvasState` (the `Backend` and `Viewport` — moved in and back out by `_release` — and
 the frame-wide settings a program sets on the canvas: `autoclear`, `letterbox_color`, and through
-the backend the font and `antialiasing`) and `Context` (in `core`, owned by the loop, home to
+the backend `antialiasing`) and `Context` (in `core`, owned by the loop, home to
 `time` and `input`; its mapping dials reach `Canvas` as plain values through `_set_viewport`). The
 transform stack, style and camera deliberately don't.
 
@@ -290,6 +291,26 @@ both the finished framebuffer and the unconsumed command buffer; a failed write 
   is a `glReadPixels` stall — fine on a keypress, not per frame.
 
 See [examples/screenshot/src/main.mojo](../../../examples/screenshot/src/main.mojo).
+
+## Text
+
+A `CMD_TEXT` carries its string and its `Style`, and the style carries the face (`style.font`,
+`None` for the packaged default): the `Font`'s `ArcPointer` keeps the face open until replay, so
+nothing is interned. Faces live in `create.text`; `TextRenderer` lays out and caches.
+- **One layout, two backends:** `layout` returns `PlacedGlyph`s (cache key and device position);
+  the CPU blits each mask, the GPU packs it into the atlas. Neither re-derives a pen position.
+- **The glyph cache** (`_glyphs`) is keyed by one `Int`: codepoint 21 bits, size 12, weight 10,
+  blur 10, font slot 10. Size, weight and blur are clamped into theirs (`_MAX_SIZE` 4095 px,
+  `_MAX_WEIGHT`, `_MAX_BLUR` 1023 px) where they enter. A slot is handed to each face on first
+  sight (`_slot`, by `Font._id`); the renderer holds the face while its slot is live.
+- **Never stale by switching:** a key names its face, so switching fonts keeps every face's masks
+  and the GL atlas. Only running out of `_FONT_SLOTS` (1024) starts over: glyphs and slots are
+  cleared and `atlas_generation` is bumped, which the atlas watches. `_GLYPH_CACHE_LIMIT` drops the
+  masks (not the slots) whole when full.
+- **Metrics:** the layout scales the face to the size it lays out (`Font._set_size`) before reading
+  `ascender`/`descender`, since with every glyph cached nothing else did.
+- The fallback face is consulted per glyph, by `has_glyph` on the style's face; its masks are
+  keyed under the style's face's slot, since that face decided to fall back.
 
 ## Outlines
 
