@@ -32,7 +32,8 @@ from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
 from create.core.context import Context
-from create.core.key import Key
+from create.input.input import Input
+from create.input.key import Key
 from create.render._viewport import Viewport
 
 
@@ -64,54 +65,30 @@ def apply_events(
             var key = Key(event[KeyDown].keycode)
             if key == Key.ESCAPE and context._quit_on_escape:
                 quit = True
-            # A KeyDown for a key already held is SDL's auto-repeat: typed,
-            # but not a new press.
-            input._typed_keys.set(key)
-            if not input.key_down(key):
-                input.key = key
-                input._held_keys.set(key)
-                input._pressed_keys.set(key)
+            input._key_down(key)
         elif event.isa[KeyUp]():
-            var key = Key(event[KeyUp].keycode)
-            input._held_keys.clear(key)
-            input._released_keys.set(key)
+            input._key_up(Key(event[KeyUp].keycode))
         elif event.isa[TextInput]():
-            input.text += event[TextInput].text
+            input._type_text(event[TextInput].text)
         elif event.isa[MouseMoved]():
             var e = event[MouseMoved]
             # Pointer positions reach the program in screen space — the same
             # camera-independent space `canvas.left`/`right`/`bottom`/`top` use.
-            var p = view.to_screen(
-                Point2D(
-                    Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
-                )
-            )
+            var p = _to_screen(view, e.x, e.y, px_per_point)
             input._set_mouse(p.x, p.y)
         elif event.isa[MouseButtonDown]():
             var e = event[MouseButtonDown]
-            var p = view.to_screen(
-                Point2D(
-                    Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
-                )
+            input._mouse_button_down(
+                e.button, _to_screen(view, e.x, e.y, px_per_point)
             )
-            input.mouse_button = e.button
-            input._set_mouse(p.x, p.y)
-            input.mouse_press_position = p
-            input._held_buttons |= 1 << e.button
-            input._pressed_buttons |= 1 << e.button
         elif event.isa[MouseButtonUp]():
             var e = event[MouseButtonUp]
-            var p = view.to_screen(
-                Point2D(
-                    Float64(e.x) * px_per_point, Float64(e.y) * px_per_point
-                )
+            input._mouse_button_up(
+                e.button, _to_screen(view, e.x, e.y, px_per_point)
             )
-            input._set_mouse(p.x, p.y)
-            input._held_buttons &= ~(1 << e.button)
-            input._released_buttons |= 1 << e.button
         elif event.isa[MouseWheel]():
             var e = event[MouseWheel]
-            input.mouse_wheel = Vector2D(Float64(e.x), Float64(e.y))
+            input._scroll(Vector2D(Float64(e.x), Float64(e.y)))
         elif event.isa[GamepadAdded]():
             ref added = event[GamepadAdded]
             input._connect_gamepad(added.id, added.name)
@@ -119,19 +96,22 @@ def apply_events(
             input._disconnect_gamepad(event[GamepadRemoved].id)
         elif event.isa[GamepadAxisMoved]():
             var e = event[GamepadAxisMoved]
-            var slot = input._gamepad_slot(e.id)
-            if slot != -1:
-                input._gamepads[slot]._set_axis(e.axis, e.value)
+            input._gamepad_axis_moved(e.id, e.axis, e.value)
         elif event.isa[GamepadButtonDown]():
             var e = event[GamepadButtonDown]
-            var slot = input._gamepad_slot(e.id)
-            if slot != -1:
-                input._gamepads[slot]._press(e.button)
+            input._gamepad_button_down(e.id, e.button)
         elif event.isa[GamepadButtonUp]():
             var e = event[GamepadButtonUp]
-            var slot = input._gamepad_slot(e.id)
-            if slot != -1:
-                input._gamepads[slot]._release(e.button)
+            input._gamepad_button_up(e.id, e.button)
         elif event.isa[Resized]():
             pass  # The viewport is re-derived every frame regardless.
     return quit
+
+
+def _to_screen(
+    view: Viewport, x: Int, y: Int, px_per_point: Float64
+) -> Point2D:
+    """A pointer position from SDL's window coordinates into screen space."""
+    return view.to_screen(
+        Point2D(Float64(x) * px_per_point, Float64(y) * px_per_point)
+    )

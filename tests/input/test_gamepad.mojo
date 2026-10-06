@@ -6,8 +6,8 @@ from std.testing import (
     assert_true,
 )
 from create.core.context import Context
-from create.core.gamepad import Gamepad
-from create.core.gamepad_button import GamepadButton
+from create.input.gamepad import Gamepad
+from create.input.gamepad_button import GamepadButton
 from create.core._events import apply_events
 from create.render._viewport import Viewport
 from create._window.event import (

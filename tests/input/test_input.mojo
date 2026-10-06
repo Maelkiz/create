@@ -1,6 +1,6 @@
 from std.testing import TestSuite, assert_equal, assert_false, assert_true
-from create.core.input import Input
-from create.core.key import Key
+from create.input.input import Input
+from create.input.key import Key
 from create.core.context import Context
 from create.render._viewport import Viewport
 from create.core._events import apply_events

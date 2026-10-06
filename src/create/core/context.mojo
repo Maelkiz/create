@@ -3,7 +3,7 @@ from create.render.canvas import Canvas, PersistentCanvasState
 
 from .time import Time
 from .window_mode import WindowMode
-from .input import Input
+from create.input.input import Input
 
 
 @fieldwise_init

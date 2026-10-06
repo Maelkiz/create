@@ -11,9 +11,8 @@ layering rules; the render side is in [../render/AGENTS.md](../render/AGENTS.md)
 | `headless.mojo`, `_headless_gl.mojo` | `run_headless` over an owned buffer, CPU and GPU |
 | `_step.mojo` | `first_step` — frame 1, drawn by `create` — and `step`, every later frame's body |
 | `_window_loop.mojo` | Shared by both windowed loops over `NativeWindow`: `_apply_window_dials` (title, resizable — before presenting), `_apply_window_mode` (after presenting), `_finish_frame` (rumble, frame-rate cap) |
-| `_events.mojo` | `apply_events` — the one `Event`-to-`Input` fold, into `context.input` |
-| `context.mojo`, `time.mojo`, `input.mojo`, `key.mojo`, `mouse_button.mojo`, `gamepad.mojo`, `gamepad_button.mojo` | The run state the loop owns and the program reads: `Context` and its `time` and `input` readings |
-| `editable_text.mojo` | `EditableText`, a caret-editing line fed from `Input`. Not run state: the program owns one per field |
+| `_events.mojo` | `apply_events` — the one `Event`-to-`Input` fold, into `context.input`, through `Input`'s per-event methods |
+| `context.mojo`, `time.mojo` | The run state the loop owns and the program reads: `Context` and its `time` reading. Its `input` is `create.input`'s `Input` |
 | `date_time.mojo` | `DateTime`, the wall clock via libc `clock_gettime` + `localtime_r`. Not run state: nothing in the loop touches it |
 
 ## Rules
@@ -42,10 +41,12 @@ The loop owns one `Context` for the whole run and writes the frame's readings in
 `Canvas` comes from `context._new_canvas(state^)` and every remap from `context._set_viewport`, so
 the mapping dials reach `render` in one place.
 
-`Input._set_mouse(x, y)` is the only writer of `mouse`/`mouse_x`/`mouse_y`; every event arm that
-carries a position calls it and adds only what is its own.
+`apply_events` keeps only what needs the loop: mapping pointer positions into screen space and the
+Escape quit. Every write to `Input` goes through one of its `_`-prefixed methods (`_key_down`,
+`_mouse_button_down`, `_gamepad_axis_moved`, …), which own the bookkeeping — auto-repeat, edges,
+slots. `Input._set_mouse(x, y)` is the only writer of `mouse`/`mouse_x`/`mouse_y`.
 
-**Gamepads are opened in `_window`, read in `core`.** SDL sends no axis or button events for a pad
+**Gamepads are opened in `_window`, read in `input`.** SDL sends no axis or button events for a pad
 until it is opened, so `_SDLWindow.events()` — the one event pump both windows own — tries
 `translate_gamepad_device` before `translate_event`: it opens a pad on added (reading its name, which needs the open pad) and closes
 it on removed, and a pad that fails to open is never announced. `apply_events` only assigns slots by

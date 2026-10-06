@@ -22,8 +22,9 @@ it makes the library better.
 
 | Module | Path | Responsibility |
 |---|---|---|
-| root | `src/create/__init__.mojo` | The preamble: star-imports all seven subpackages below |
-| `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`, `Input`, `Key`, `MouseButton`, `Gamepad`, `GamepadButton`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path`, `DateTime` |
+| root | `src/create/__init__.mojo` | The preamble: star-imports all eight subpackages below |
+| `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path`, `DateTime` |
+| `input` | `src/create/input/` | `Input` (keyboard, mouse, gamepads, typed text), `Key`, `MouseButton`, `Gamepad`, `GamepadButton`, `EditableText` |
 | `render` | `src/create/render/` | `Canvas`, `Camera`, `Antialiasing`, style, text layout, the command buffer, both backends (CPU rasteriser, GL 3.3) |
 | `color` | `src/create/color/` | `Color`, `Gradient` (with the ramp and dither both backends share), `BlendMode` |
 | `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes (`Rectangle`, `Circle`, `Triangle`, `Sector`, `Polygon`, `Line`, `Arc`), `Bezier`, `Spline`, `Random`, `Noise`, easing and `Tween`, util functions |
@@ -125,7 +126,7 @@ prints as it is loaded, `Font.load("path")`.
 A program writes `from create import *`. Otherwise import by name from the owning package
 (`from create.math import overlaps`); a single subpackage star is not a preamble.
 
-- The root has no names of its own — it star-imports the seven subpackages. Never add a name there;
+- The root has no names of its own — it star-imports the eight subpackages. Never add a name there;
   add it to the owning subpackage.
 - A subpackage exports only what it owns, never a lower layer's symbol.
 - Public surface is exactly what an `__init__.mojo` lists. A new declaration is internal unless it is
@@ -143,7 +144,10 @@ A program writes `from create import *`. Otherwise import by name from the ownin
   that `Image.pixel` can return a `Color` without a `render`↔`image` cycle.
 - **`text`** depends only on `_bytes`. `render`→`text` is nominal, like `render`→`image`: `Style`,
   `canvas.font` and text layout name `Font`, and `_raster.blit_glyph` takes `_GlyphInfo` by its
-  internal path. `EditableText` stays in `core`, since it reads `Input`.
+  internal path.
+- **`input`** depends only on `math`; `core` imports it. `Input` is plain state: `core`'s
+  `apply_events` folds each window event in through one `_`-prefixed method per kind (`_key_down`,
+  `_mouse_button_down`, …), so `input` never sees an `Event` and `_window` stays `core`'s alone.
 - **`_bytes`** is a leaf imported by `image`, `text` and `render`, re-exported by nothing.
 - **`_window`** imports nothing from `create`; `core` is its only consumer; nothing re-exports it.
 - **`render`→`image` is nominal:** only `canvas.image`'s overloads and `canvas.snapshot` name

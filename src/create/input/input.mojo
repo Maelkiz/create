@@ -132,6 +132,56 @@ struct Input(Copyable, Movable):
         self.mouse_x = Int(floor(x))
         self.mouse_y = Int(floor(y))
 
+    # The loop's event folding (`core._events`) writes input through these,
+    # one per kind of event, so the bookkeeping lives beside the state it
+    # keeps. Positions arrive already in screen space.
+
+    def _key_down(mut self, key: Key):
+        # A KeyDown for a key already held is SDL's auto-repeat: typed, but
+        # not a new press.
+        self._typed_keys.set(key)
+        if not self.key_down(key):
+            self.key = key
+            self._held_keys.set(key)
+            self._pressed_keys.set(key)
+
+    def _key_up(mut self, key: Key):
+        self._held_keys.clear(key)
+        self._released_keys.set(key)
+
+    def _type_text(mut self, text: String):
+        self.text += text
+
+    def _mouse_button_down(mut self, button: Int, position: Point2D):
+        self.mouse_button = button
+        self._set_mouse(position.x, position.y)
+        self.mouse_press_position = position
+        self._held_buttons |= 1 << button
+        self._pressed_buttons |= 1 << button
+
+    def _mouse_button_up(mut self, button: Int, position: Point2D):
+        self._set_mouse(position.x, position.y)
+        self._held_buttons &= ~(1 << button)
+        self._released_buttons |= 1 << button
+
+    def _scroll(mut self, delta: Vector2D):
+        self.mouse_wheel = delta
+
+    def _gamepad_axis_moved(mut self, id: Int, axis: Int, value: Float64):
+        var slot = self._gamepad_slot(id)
+        if slot != -1:
+            self._gamepads[slot]._set_axis(axis, value)
+
+    def _gamepad_button_down(mut self, id: Int, button: Int):
+        var slot = self._gamepad_slot(id)
+        if slot != -1:
+            self._gamepads[slot]._press(button)
+
+    def _gamepad_button_up(mut self, id: Int, button: Int):
+        var slot = self._gamepad_slot(id)
+        if slot != -1:
+            self._gamepads[slot]._release(button)
+
     def _check(self, key: String, bits: _KeySet) -> Bool:
         """Resolve a key name against `bits`.
 

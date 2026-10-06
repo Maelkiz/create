@@ -1,8 +1,8 @@
 from std.testing import TestSuite, assert_equal
 
 from create.core.context import Context
-from create.core.editable_text import EditableText
-from create.core.key import Key
+from create.input.editable_text import EditableText
+from create.input.key import Key
 from create.core._events import apply_events
 from create.render._viewport import Viewport
 from create._window.event import Event, KeyDown, KeyUp, TextInput
