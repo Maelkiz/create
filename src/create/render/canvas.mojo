@@ -457,6 +457,7 @@ struct Canvas(Movable):
         outline_enabled: Optional[Bool] = None,
         corner_radius: Optional[Int] = None,
         text_color: Optional[Color] = None,
+        font: Optional[Font] = None,
         font_size: Optional[Int] = None,
         font_weight: Optional[Int] = None,
         text_align: Optional[Align] = None,
@@ -504,6 +505,8 @@ struct Canvas(Movable):
             self.corner_radius(corner_radius.value())
         if text_color:
             self.text_color(text_color.value())
+        if font:
+            self.font(font.value())
         if font_size:
             self.font_size(font_size.value())
         if font_weight:
@@ -1475,10 +1478,16 @@ struct Canvas(Movable):
         """
         self._state.letterbox_color = color
 
-    def font(mut self, var f: Font):
-        """Swap the face. Lives in `PersistentCanvasState`, so unlike the style
-        settings a font outlives the frame that set it."""
-        self._state.backend.text.set_font(f^)
+    def font(mut self, f: Font):
+        """Draw the next text in `f`, a face from `Font.load`.
+
+        Part of the style, like `fill`: it holds for the rest of the frame,
+        or for a `with canvas.style(font=...)` block, and each `text` call
+        keeps the face it was drawn with. The next frame starts in the
+        packaged Noto Sans again, so a font for the whole program is a
+        field set at the top of `update`, or kept in a `Style`.
+        """
+        self._style.font = f
 
     def text_width(mut self, s: String) raises -> Float64:
         """How wide `text(s, ...)` would render under the current font, size

@@ -213,22 +213,25 @@ def test_size_and_weight_are_part_of_the_key() raises -> None:
     )
 
 
+def _in(font: Font) raises -> Style:
+    var style = _style(Align.TOP_LEFT)
+    style.font = font
+    return style^
+
+
 def test_switching_fonts_keeps_the_cache() raises -> None:
     # Each face keys its glyphs by its own slot, so going back to a face finds
     # its masks still there rather than rasterising them again.
     var t = TextRenderer()
     var a = Font.load(default_font_path())
     var b = Font.load(default_font_path())
-    t.set_font(a)
-    _ = _render_with(t, _style(Align.TOP_LEFT))
+    _ = _render_with(t, _in(a))
     var after_a = len(t._glyphs)
     assert_true(after_a > 0, "nothing was cached")
-    t.set_font(b)
-    _ = _render_with(t, _style(Align.TOP_LEFT))
+    _ = _render_with(t, _in(b))
     var after_b = len(t._glyphs)
     assert_true(after_b > after_a, "b reused a's masks")
-    t.set_font(a)
-    _ = _render_with(t, _style(Align.TOP_LEFT))
+    _ = _render_with(t, _in(a))
     assert_equal(len(t._glyphs), after_b, "going back to a rasterised again")
     assert_equal(t.atlas_generation, 0, "a switch must not reset the atlas")
 

@@ -135,10 +135,18 @@ struct TextRenderer(Movable):
                 pass
 
     def _current(mut self) raises -> Font:
-        """The face text is drawn with now."""
+        """The face `set_font` chose, or the default."""
         self._ensure_font()
         if self._font:
             return self._font.value().copy()
+        return self._default.value().copy()
+
+    def _face(mut self, style: Style) raises -> Font:
+        """The face `style` draws text in: its own, or the packaged
+        default."""
+        self._ensure_font()
+        if style.font:
+            return style.font.value().copy()
         return self._default.value().copy()
 
     def _slot(mut self, f: Font) -> Int:
@@ -267,7 +275,7 @@ struct TextRenderer(Movable):
     ) raises -> Int:
         """How wide `layout` makes `s`, in pixels, without placing it."""
         var size = _pixel_size(style, pixel_scale)
-        var slot = self._slot(self._current())
+        var slot = self._slot(self._face(style))
         return self._advance(slot, s, size, _key_weight(style), 0)
 
     def layout(
@@ -290,7 +298,7 @@ struct TextRenderer(Movable):
         each one's mask by key without another FreeType call.
         """
         var size = _pixel_size(style, pixel_scale)
-        var face = self._current()
+        var face = self._face(style)
         var slot = self._slot(face)
         var weight = _key_weight(style)
         var blur_px = min(max(blur, 0), _MAX_BLUR)

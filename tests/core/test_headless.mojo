@@ -94,33 +94,48 @@ def test_create_is_frame_one_and_the_first_update_frame_two() raises -> None:
 
 
 @fieldwise_init
-struct Labelled[set_font: Bool](Program):
-    """Writes a label each `update`; sets a font in `create` if asked."""
+struct Labelled[in_create: Bool, every_frame: Bool](Program):
+    """Writes a label each `update`, in the symbols face if asked: once in
+    `create`, or every frame from a field."""
 
-    var _unused: Int
+    var font: Font
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> Self:
-        comptime if Self.set_font:
-            # The symbols face has no Latin glyphs, so the label renders
-            # differently under it — or not at all.
-            canvas.font(Font(fallback_font_path(), 24))
-        return Self(0)
+        # The symbols face's Latin letters are hinted a little differently,
+        # so the label renders differently under it.
+        var symbols = Font.load(fallback_font_path())
+        comptime if Self.in_create:
+            canvas.font(symbols)
+        return Self(symbols)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.WHITE)
+        comptime if Self.every_frame:
+            canvas.font(self.font)
         canvas.text("Hello", (0, 0))
 
 
-def test_a_font_set_in_create_lasts_into_update() raises -> None:
-    var default_face = run_headless[Labelled[False]](100, 40, 1)
-    var set_face = run_headless[Labelled[True]](100, 40, 1)
-    var differing = 0
-    for y in range(40):
-        for x in range(100):
-            if default_face.pixel(x, y) != set_face.pixel(x, y):
-                differing += 1
-    assert_true(differing > 0)
+def _differing(a: MemorySurface, b: MemorySurface) -> Int:
+    var n = 0
+    for y in range(a.height):
+        for x in range(a.width):
+            if a.pixel(x, y) != b.pixel(x, y):
+                n += 1
+    return n
+
+
+def test_a_font_set_in_create_does_not_last_into_update() raises -> None:
+    # The font is part of the style, which every frame starts afresh.
+    var default_face = run_headless[Labelled[False, False]](100, 40, 1)
+    var set_in_create = run_headless[Labelled[True, False]](100, 40, 1)
+    assert_equal(_differing(default_face, set_in_create), 0)
+
+
+def test_a_font_kept_in_a_field_draws_every_frame() raises -> None:
+    var default_face = run_headless[Labelled[False, False]](100, 40, 2)
+    var every_frame = run_headless[Labelled[False, True]](100, 40, 2)
+    assert_true(_differing(default_face, every_frame) > 0)
 
 
 def main() raises:

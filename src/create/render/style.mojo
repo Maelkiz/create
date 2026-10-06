@@ -5,7 +5,7 @@ from .align import Align
 from create.color.blend_mode import BlendMode
 from create.color.color import Color
 from create.color.gradient import Gradient
-from create.text.font import FontWeight
+from create.text.font import Font, FontWeight
 from create.math.vector2d import Vector2D
 
 
@@ -64,6 +64,8 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
     var outline_enabled: Bool
     var corner_radius: Int
     var text_color: Color
+    var font: Optional[Font]
+    """The face text is drawn in; none for the packaged Noto Sans."""
     var font_size: Int
     var font_weight: Int
     var text_align: Align
@@ -88,6 +90,7 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         outline_enabled: Optional[Bool] = None,
         corner_radius: Int = 0,
         text_color: Color = Color.BLACK,
+        font: Optional[Font] = None,
         font_size: Int = 16,
         font_weight: Int = FontWeight.REGULAR,
         text_align: Align = Align.CENTER,
@@ -111,6 +114,7 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.outline_enabled = outline_enabled.or_else(True)
         self.corner_radius = corner_radius
         self.text_color = text_color
+        self.font = font
         self.font_size = font_size
         self.font_weight = font_weight
         self.text_align = text_align
@@ -155,6 +159,13 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.corner_radius,
             ", text_color=",
             self.text_color,
+            ", font=",
+        )
+        if self.font:
+            writer.write(self.font.value())
+        else:
+            writer.write("None")
+        writer.write(
             ", font_size=",
             self.font_size,
             ", font_weight=",

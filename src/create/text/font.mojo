@@ -315,7 +315,7 @@ struct _Face(Movable):
         return g^
 
 
-struct Font(Copyable, Movable, Writable):
+struct Font(Copyable, ImplicitlyCopyable, Movable, Writable):
     """A typeface loaded from a file: an asset, like an `Image`.
 
     `Font.load(path)` opens it once; copies share the open face, so a font
