@@ -169,6 +169,10 @@ struct SDL:
         down, the next window gets the usual driver. While video is already
         running it keeps the driver it started with, and `offscreen` changes
         nothing. An `SDL_VIDEODRIVER` environment variable outranks it.
+
+        An offscreen window skips gamepads: it receives no input, and
+        starting the subsystem scans and opens every input device, which can
+        take a second on a desktop — on every GPU `run_headless`.
         """
         var hint = String("SDL_VIDEO_DRIVER")
         if offscreen:
@@ -183,6 +187,8 @@ struct SDL:
             )
         if not started:
             raise Error("SDL_Init(SDL_INIT_VIDEO) failed: " + self.get_error())
+        if offscreen:
+            return
         self._gamepad = self.lib.call["SDL_InitSubSystem", Bool](
             SDL_INIT_GAMEPAD
         )
