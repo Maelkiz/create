@@ -51,10 +51,10 @@ struct Input(Copyable, Movable):
     unplugging player one leaves player two where they were.
     """
 
-    # Keycode of the most recent key press, compared against `Key` (0 before
+    # The most recent key pressed, compared against `Key` (`Key(0)` before
     # any). Kept until the next press, like `mouse_button`; auto-repeat of a
     # held key does not count as a press.
-    var key: Int
+    var key: Key
     # The text typed this frame, UTF-8 — empty on most frames, several
     # characters when typing outpaces the frame rate. Zeroed every frame.
     var text: String
@@ -86,7 +86,7 @@ struct Input(Copyable, Movable):
     var _gamepads: List[Gamepad]
 
     def __init__(out self):
-        self.key = 0
+        self.key = Key(0)
         self.text = ""
         self.mouse_x = 0
         self.mouse_y = 0
@@ -148,68 +148,52 @@ struct Input(Copyable, Movable):
 
         # Single printable char — SDL keycode == ASCII for a-z, 0-9, punctuation
         if key.byte_length() == 1:
-            return bits.test(ord(k))
+            return bits.test(Key(ord(k)))
 
-        # Modifier keys — bare name matches either side
+        # Bare modifier name matches either side; `from_name` has the sides
         if k == "ctrl":
             return bits.test(Key.LEFT_CTRL) or bits.test(Key.RIGHT_CTRL)
-        if k == "left_ctrl":
-            return bits.test(Key.LEFT_CTRL)
-        if k == "right_ctrl":
-            return bits.test(Key.RIGHT_CTRL)
         if k == "shift":
             return bits.test(Key.LEFT_SHIFT) or bits.test(Key.RIGHT_SHIFT)
-        if k == "left_shift":
-            return bits.test(Key.LEFT_SHIFT)
-        if k == "right_shift":
-            return bits.test(Key.RIGHT_SHIFT)
         if k == "alt":
             return bits.test(Key.LEFT_ALT) or bits.test(Key.RIGHT_ALT)
-        if k == "left_alt":
-            return bits.test(Key.LEFT_ALT)
-        if k == "right_alt":
-            return bits.test(Key.RIGHT_ALT)
         if k == "super":
             return bits.test(Key.LEFT_SUPER) or bits.test(Key.RIGHT_SUPER)
-        if k == "left_super":
-            return bits.test(Key.LEFT_SUPER)
-        if k == "right_super":
-            return bits.test(Key.RIGHT_SUPER)
 
-        var code = Key.from_name(k)
-        if code == -1:
+        var named = Key.from_name(k)
+        if not named:
             return False
-        return bits.test(code)
+        return bits.test(named.value())
 
-    def key_down(self, keycode: Int) -> Bool:
+    def key_down(self, key: Key) -> Bool:
         """Whether this key is held right now — true every frame it stays down.
         """
-        return self._held_keys.test(keycode)
+        return self._held_keys.test(key)
 
     def key_down(self, key: String) -> Bool:
         """Whether this key is held right now. See `_check` for the names."""
         return self._check(key, self._held_keys)
 
-    def key_pressed(self, keycode: Int) -> Bool:
+    def key_pressed(self, key: Key) -> Bool:
         """Whether this key went down this frame — true once per press."""
-        return self._pressed_keys.test(keycode)
+        return self._pressed_keys.test(key)
 
     def key_pressed(self, key: String) -> Bool:
         """Whether this key went down this frame. See `_check` for the names."""
         return self._check(key, self._pressed_keys)
 
-    def key_released(self, keycode: Int) -> Bool:
+    def key_released(self, key: Key) -> Bool:
         """Whether this key came up this frame — true once per release."""
-        return self._released_keys.test(keycode)
+        return self._released_keys.test(key)
 
     def key_released(self, key: String) -> Bool:
         """Whether this key came up this frame. See `_check` for the names."""
         return self._check(key, self._released_keys)
 
-    def key_typed(self, keycode: Int) -> Bool:
+    def key_typed(self, key: Key) -> Bool:
         """Whether this key went down or auto-repeated this frame — true once
         per press, then at the system's repeat rate while held."""
-        return self._typed_keys.test(keycode)
+        return self._typed_keys.test(key)
 
     def key_typed(self, key: String) -> Bool:
         """Whether this key went down or auto-repeated this frame. See

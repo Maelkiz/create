@@ -32,6 +32,7 @@ from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
 from create.core.context import Context
+from create.core.key import Key
 from create.render._viewport import Viewport
 
 
@@ -60,20 +61,20 @@ def apply_events(
         if event.isa[Quit]():
             quit = True
         elif event.isa[KeyDown]():
-            var keycode = event[KeyDown].keycode
-            if keycode == 27 and context._quit_on_escape:
+            var key = Key(event[KeyDown].keycode)
+            if key == Key.ESCAPE and context._quit_on_escape:
                 quit = True
             # A KeyDown for a key already held is SDL's auto-repeat: typed,
             # but not a new press.
-            input._typed_keys.set(keycode)
-            if not input.key_down(keycode):
-                input.key = keycode
-                input._held_keys.set(keycode)
-                input._pressed_keys.set(keycode)
+            input._typed_keys.set(key)
+            if not input.key_down(key):
+                input.key = key
+                input._held_keys.set(key)
+                input._pressed_keys.set(key)
         elif event.isa[KeyUp]():
-            var keycode = event[KeyUp].keycode
-            input._held_keys.clear(keycode)
-            input._released_keys.set(keycode)
+            var key = Key(event[KeyUp].keycode)
+            input._held_keys.clear(key)
+            input._released_keys.set(key)
         elif event.isa[TextInput]():
             input.text += event[TextInput].text
         elif event.isa[MouseMoved]():

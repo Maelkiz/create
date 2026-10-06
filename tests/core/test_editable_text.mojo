@@ -31,7 +31,7 @@ def test_update_appends_typed_text() raises -> None:
 
 def test_typing_mid_string_inserts_at_the_caret() raises -> None:
     var field = EditableText("ac")
-    _type(field, [KeyDown(Key.LEFT)])
+    _type(field, [KeyDown(Key.LEFT.value)])
     _type(field, [TextInput("b")])
     assert_equal(field.text, "abc")
     assert_equal(field.before_caret(), "ab")
@@ -39,7 +39,7 @@ def test_typing_mid_string_inserts_at_the_caret() raises -> None:
 
 def test_backspace_removes_a_whole_character() raises -> None:
     var field = EditableText("Zoë")
-    _type(field, [KeyDown(Key.BACKSPACE)])
+    _type(field, [KeyDown(Key.BACKSPACE.value)])
     assert_equal(field.text, "Zo")
     field.delete_backward()
     field.delete_backward()
@@ -49,11 +49,11 @@ def test_backspace_removes_a_whole_character() raises -> None:
 
 def test_delete_removes_the_character_after_the_caret() raises -> None:
     var field = EditableText("éa")
-    _type(field, [KeyDown(Key.HOME)])
-    _type(field, [KeyDown(Key.DELETE)])
+    _type(field, [KeyDown(Key.HOME.value)])
+    _type(field, [KeyDown(Key.DELETE.value)])
     assert_equal(field.text, "a")
     assert_equal(field.before_caret(), "")
-    _type(field, [KeyDown(Key.END)])
+    _type(field, [KeyDown(Key.END.value)])
     field.delete_forward()
     assert_equal(field.text, "a")
 
@@ -76,7 +76,7 @@ def test_held_backspace_keeps_deleting() raises -> None:
     var field = EditableText("abc")
     var context = Context()
     for _ in range(2):
-        var events: List[Event] = [KeyDown(Key.BACKSPACE)]
+        var events: List[Event] = [KeyDown(Key.BACKSPACE.value)]
         _ = apply_events(events, Viewport(), context)
         field.update(context.input)
     assert_equal(field.text, "a")
