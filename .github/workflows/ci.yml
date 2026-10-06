@@ -47,6 +47,8 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
+    env:
+      MOJO_CACHE: .pixi/envs/default/share/max/cache/.mojo_cache
     strategy:
       fail-fast: false
       matrix:
@@ -72,7 +74,36 @@ jobs:
         with:
           cache: true
           locked: true
+      # Mojo's compile cache lives inside the environment, which setup-pixi
+      # restores as installed: empty. Without this every run compiles every
+      # test file cold, about eight times the CPU of a warm run. Entries are
+      # content-keyed, so the latest cache for this toolchain serves any
+      # commit; pull requests read main's.
+      - name: Restore the Mojo compile cache
+        if: matrix.name != 'format'
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.MOJO_CACHE }}
+          key: mojo-${{ matrix.name }}-${{ hashFiles('pixi.lock') }}-${{ github.sha }}
+          restore-keys: mojo-${{ matrix.name }}-${{ hashFiles('pixi.lock') }}-
+      # Every entry is marked unread, so those this run doesn't read can be
+      # dropped before saving and the cache doesn't grow with each commit.
+      - name: Mark the cache entries unread
+        if: matrix.name != 'format'
+        run: |
+          mkdir -p "$MOJO_CACHE"
+          find "$MOJO_CACHE" -type f -exec touch -a -d 2000-01-01 {} +
+          touch "$RUNNER_TEMP/cache-marker"
       - run: ${{ matrix.run }}
+      - name: Drop the entries this run didn't read
+        if: matrix.name != 'format'
+        run: find "$MOJO_CACHE" -type f ! -anewer "$RUNNER_TEMP/cache-marker" -delete
+      - name: Save the Mojo compile cache
+        if: matrix.name != 'format'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.MOJO_CACHE }}
+          key: mojo-${{ matrix.name }}-${{ hashFiles('pixi.lock') }}-${{ github.sha }}
 
   # The required check. A skipped matrix job reports under its unexpanded
   # name, not as format/precompile/..., so those can't be required directly.
