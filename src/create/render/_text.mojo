@@ -128,11 +128,15 @@ struct TextRenderer(Movable):
 
     def _face(mut self, style: Style) raises -> Font:
         """The face `style` draws text in: its own, or the packaged
-        default."""
+        default, and its italic if the style asks for one. The italic has an
+        identity of its own, so it takes a slot of its own."""
         self._ensure_font()
-        if style.font:
-            return style.font.value().copy()
-        return self._default.value().copy()
+        var f = (
+            style.font.value().copy() if style.font else self._default.value()
+        )
+        if style.font_italic:
+            return f._italic()
+        return f^
 
     def _slot(mut self, f: Font) -> Int:
         """The slot `f`'s glyphs are keyed by, assigned on first sight.
@@ -226,8 +230,13 @@ struct TextRenderer(Movable):
         # A copy shares the face, so this is where it rasterises.
         var face = self._fonts[slot].copy()
         if len(self._fallback_font) > 0 and not face.has_glyph(codepoint):
-            self._fallback_font[0]._set_weight(weight)
-            self._glyphs[key] = self._fallback_font[0].render(codepoint, size)
+            # Italic text falls back to the fallback's italic. The key names
+            # the primary face's slot, so the two never share an entry.
+            var fallback = self._fallback_font[0].copy()
+            if face._draws_italic:
+                fallback = fallback._italic()
+            fallback._set_weight(weight)
+            self._glyphs[key] = fallback.render(codepoint, size)
         else:
             face._set_weight(weight)
             self._glyphs[key] = face.render(codepoint, size)

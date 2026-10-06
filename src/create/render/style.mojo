@@ -68,6 +68,7 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
     """The face text is drawn in; none for the packaged Noto Sans."""
     var font_size: Int
     var font_weight: Int
+    var font_italic: Bool
     var text_align: Align
     var opacity: Float64
     var blend_mode: BlendMode
@@ -93,6 +94,7 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         font: Optional[Font] = None,
         font_size: Int = 16,
         font_weight: Int = FontWeight.REGULAR,
+        font_italic: Bool = False,
         text_align: Align = Align.CENTER,
         opacity: Float64 = 1.0,
         blend_mode: BlendMode = BlendMode.NORMAL,
@@ -117,6 +119,7 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.font = font
         self.font_size = font_size
         self.font_weight = font_weight
+        self.font_italic = font_italic
         self.text_align = text_align
         self.opacity = opacity
         self.blend_mode = blend_mode
@@ -170,6 +173,8 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.font_size,
             ", font_weight=",
             self.font_weight,
+            ", font_italic=",
+            self.font_italic,
             ", text_align=",
             self.text_align,
             ", opacity=",

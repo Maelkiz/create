@@ -219,6 +219,53 @@ def _in(font: Font) raises -> Style:
     return style^
 
 
+def _italic(var style: Style) -> Style:
+    style.font_italic = True
+    return style^
+
+
+def test_italic_is_a_face_of_its_own() raises -> None:
+    # The italic takes a slot of its own, so it neither reuses the upright
+    # masks nor evicts them.
+    var t = TextRenderer()
+    var upright = _style(Align.TOP_LEFT)
+    var first = _render_with(t, upright)
+    var after_upright = len(t._glyphs)
+    var slanted = _render_with(t, _italic(upright))
+    assert_true(len(t._glyphs) > after_upright, "italic reused upright masks")
+    assert_false(_same_pixels(first, slanted), "italic drew the same ink")
+    var after_italic = len(t._glyphs)
+    var again = _render_with(t, upright)
+    assert_equal(len(t._glyphs), after_italic, "upright rasterised again")
+    assert_true(_same_pixels(first, again))
+
+
+def test_italic_falls_back_to_an_italic() raises -> None:
+    # The star is in the symbols face only; italic text gets it slanted.
+    var star = "\u2605"
+    assert_false(Font.load(default_font_path()).has_glyph(0x2605))
+    var t = TextRenderer()
+    var upright = _style(Align.TOP_LEFT)
+    var a = MemorySurface(200, 120)
+    t.render(a.surface(), star, 40.0, 30.0, upright, 1.0)
+    var b = MemorySurface(200, 120)
+    t.render(b.surface(), star, 40.0, 30.0, _italic(upright), 1.0)
+    assert_true(_ink_box(a)[0] >= 0, "the star drew nothing")
+    assert_false(_same_pixels(a, b), "the fallback star was not slanted")
+
+
+def test_width_follows_the_italic() raises -> None:
+    var t = TextRenderer()
+    var style = _italic(_style(Align.LEFT))
+    var right = style
+    right.text_align = Align.RIGHT
+    var left_glyphs = t.layout("Hi", 40.0, 30.0, style, 1.0)
+    var right_glyphs = t.layout("Hi", 40.0, 30.0, right, 1.0)
+    assert_equal(
+        left_glyphs[0].x - right_glyphs[0].x, t.width("Hi", style, 1.0)
+    )
+
+
 def test_switching_fonts_keeps_the_cache() raises -> None:
     # Each face keys its glyphs by its own slot, so going back to a face finds
     # its masks still there rather than rasterising them again.

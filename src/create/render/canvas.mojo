@@ -460,6 +460,7 @@ struct Canvas(Movable):
         font: Optional[Font] = None,
         font_size: Optional[Int] = None,
         font_weight: Optional[Int] = None,
+        font_italic: Optional[Bool] = None,
         text_align: Optional[Align] = None,
         opacity: Optional[Float64] = None,
         blend_mode: Optional[BlendMode] = None,
@@ -511,6 +512,8 @@ struct Canvas(Movable):
             self.font_size(font_size.value())
         if font_weight:
             self.font_weight(font_weight.value())
+        if font_italic:
+            self.font_italic(font_italic.value())
         if text_align:
             self.text_align(text_align.value())
         if opacity:
@@ -1323,6 +1326,12 @@ struct Canvas(Movable):
         """Stroke weight of the face, named by `FontWeight`. The packaged Noto
         faces are variable, so this interpolates rather than swapping files."""
         self._style.font_weight = weight
+
+    def font_italic(mut self, enabled: Bool):
+        """Draw text in the face's italic: the font's `italic_path` file where
+        it has one (the packaged Noto Sans does), otherwise its own italic
+        axis, otherwise its upright glyphs slanted."""
+        self._style.font_italic = enabled
 
     def opacity(mut self, value: Float64):
         """Fade whatever is rendered next: fill, gradient, outline, text,

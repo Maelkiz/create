@@ -92,6 +92,27 @@ def test_a_style_block_restores_the_font() raises -> None:
     assert_equal(_differing_in_half(shot, _alone(None, 25), right=True), 0)
 
 
+def _alone_italic(x: Float64) raises -> Image:
+    """ "H" at `x` in the default face's italic, nothing else."""
+    var canvas = _canvas()
+    canvas.font_italic(True)
+    canvas.text("H", (x, 0))
+    return canvas.snapshot()
+
+
+def test_a_style_block_restores_upright_text() raises -> None:
+    var upright = _alone(None, -25)
+    var italic = _alone_italic(-25)
+    assert_true(_differing_in_half(upright, italic, right=False) > 0)
+    var canvas = _canvas()
+    with canvas.style(font_italic=True):
+        canvas.text("H", (-25, 0))
+    canvas.text("H", (25, 0))
+    var shot = canvas.snapshot()
+    assert_equal(_differing_in_half(shot, italic, right=False), 0)
+    assert_equal(_differing_in_half(shot, _alone(None, 25), right=True), 0)
+
+
 def test_text_width_follows_the_font() raises -> None:
     var canvas = _canvas()
     # Each of these is a pixel wider in the symbols face at this size; "H" is

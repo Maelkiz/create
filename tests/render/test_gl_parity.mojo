@@ -154,7 +154,8 @@ comptime _SHAPE_GRADIENT_TRIANGLE = 58
 comptime _SHAPE_GRADIENT_ROUNDED_TRIANGLE = 59
 comptime _SHAPE_GRADIENT_SECTOR = 60
 comptime _SHAPE_GRADIENT_STAR = 61
-comptime _SHAPE_COUNT = 62
+comptime _SHAPE_ITALIC_TEXT = 62
+comptime _SHAPE_COUNT = 63
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -204,6 +205,8 @@ def _shape_name(shape: Int) -> String:
         return "image"
     elif shape == _SHAPE_TEXT:
         return "text"
+    elif shape == _SHAPE_ITALIC_TEXT:
+        return "italic text"
     elif shape == _SHAPE_ROTATED_RECT:
         return "rotated rect"
     elif shape == _SHAPE_ROUNDED_RECT:
@@ -390,6 +393,14 @@ struct _Parity(Program):
                 canvas.text_color(Color.WHITE)
                 canvas.font_size(16)
                 canvas.text_align(Align.CENTER)
+                canvas.text("parity", (0, 0))
+        elif self.shape == _SHAPE_ITALIC_TEXT:
+            with canvas.style(
+                outline_enabled=False,
+                text_color=Color.WHITE,
+                font_size=16,
+                font_italic=True,
+            ):
                 canvas.text("parity", (0, 0))
         elif self.shape == _SHAPE_ROTATED_RECT:
             # Rotation defeats the axis-aligned fast path on both backends,
