@@ -18,11 +18,6 @@ struct Animation(Movable):
     Hold one as an `ArcPointer[Animation]` field, like a `Sound`, so
     several animators can share the frame buffers by refcount instead of
     copying them.
-
-    There is no `frame()` accessor and cannot be one: a `List` element's origin
-    is not spellable from user code, so a `-> ref Image` signature does not
-    compile. Index `frames` inline at the use site instead, as `canvas.image`
-    does.
     """
 
     var frames: List[Image]
@@ -44,6 +39,10 @@ struct Animation(Movable):
     def count(self) -> Int:
         """The number of frames."""
         return len(self.frames)
+
+    def frame(self, index: Int) -> ref[self.frames[0]] Image:
+        """Frame `index`, from 0 to `count() - 1`, by reference."""
+        return self.frames[index]
 
     def frame_duration(self) -> Float64:
         """Seconds each frame is held."""

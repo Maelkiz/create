@@ -380,10 +380,7 @@ frame body returns. Headless runs ignore the window dials, like `rumble`.
 3. **Don't cache pixel dimensions from `create` or the first frame.** A window's first reported size
    can be wrong (fullscreen, Wayland); the loop corrects it from the next frame on.
 
-4. **No function can return a reference to a `List` element** in this Mojo version, so
-   `Animation` has no `frame()` accessor. Index inline at the use site. Don't retry it.
-
-5. **An uncalled overload is type-checked by nothing.** [tests/render/test_canvas.mojo](tests/render/test_canvas.mojo)
+4. **An uncalled overload is type-checked by nothing.** [tests/render/test_canvas.mojo](tests/render/test_canvas.mojo)
    renders through all of `canvas.image`'s animator overloads for this reason — extend it when adding
    one.
 

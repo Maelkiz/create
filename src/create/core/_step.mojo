@@ -53,7 +53,7 @@ def step[
     state handed back; `state.backend.present(surface, scale)` is the caller's
     call, not this one's. That keeps the frame body target-agnostic — a GPU
     backend has no `Surface` to name — and it is why `step` grows no second
-    target parameter, which is the failure mode Gotcha 4 describes. The
+    target parameter. The
     windowed and headless loops both present through a `Surface` they alone
     know how to build; in the windowed case that is only valid after events
     have been pumped.

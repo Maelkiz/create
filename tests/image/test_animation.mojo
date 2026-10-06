@@ -42,29 +42,29 @@ def test_from_sheet_cuts_every_cell() raises -> None:
     var anim = Animation.from_sheet(_sheet(2, 2, 3), 3, 3)
     assert_equal(anim.count(), 4)
     for i in range(4):
-        assert_equal(anim.frames[i].width, 3)
-        assert_equal(anim.frames[i].height, 3)
+        assert_equal(anim.frame(i).width, 3)
+        assert_equal(anim.frame(i).height, 3)
 
 
 def test_from_sheet_is_row_major() raises -> None:
     var anim = Animation.from_sheet(_sheet(2, 2, 3), 3, 3)
     for i in range(4):
         # Every pixel of frame i carries that cell's marker.
-        assert_equal(_red(anim.frames[i], 0, 0), i + 1)
-        assert_equal(_red(anim.frames[i], 2, 2), i + 1)
+        assert_equal(_red(anim.frame(i), 0, 0), i + 1)
+        assert_equal(_red(anim.frame(i), 2, 2), i + 1)
 
 
 def test_from_sheet_window() raises -> None:
     var anim = Animation.from_sheet(_sheet(2, 2, 3), 3, 3, start=2, count=2)
     assert_equal(anim.count(), 2)
-    assert_equal(_red(anim.frames[0], 0, 0), 3)
-    assert_equal(_red(anim.frames[1], 0, 0), 4)
+    assert_equal(_red(anim.frame(0), 0, 0), 3)
+    assert_equal(_red(anim.frame(1), 0, 0), 4)
 
 
 def test_from_sheet_count_zero_takes_the_rest() raises -> None:
     var anim = Animation.from_sheet(_sheet(2, 2, 3), 3, 3, start=1)
     assert_equal(anim.count(), 3)
-    assert_equal(_red(anim.frames[0], 0, 0), 2)
+    assert_equal(_red(anim.frame(0), 0, 0), 2)
 
 
 def test_frame_duration_is_the_inverse_of_fps() raises -> None:
@@ -119,9 +119,9 @@ def test_from_folder_orders_naturally() raises -> None:
     # frame_1 is red, frame_2 green, frame_10 blue -- so the order is readable
     # from the pixels. Lexicographic order would put frame_10 second.
     var anim = Animation.from_folder("tests/fixtures/anim")
-    assert_equal(_red(anim.frames[0], 0, 0), 255)
-    assert_equal(_green(anim.frames[1], 0, 0), 255)
-    assert_equal(_blue(anim.frames[2], 0, 0), 255)
+    assert_equal(_red(anim.frame(0), 0, 0), 255)
+    assert_equal(_green(anim.frame(1), 0, 0), 255)
+    assert_equal(_blue(anim.frame(2), 0, 0), 255)
 
 
 def test_from_folder_fps() raises -> None:

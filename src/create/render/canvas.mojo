@@ -1296,17 +1296,11 @@ struct Canvas(Movable):
         )
 
     def image(mut self, a: Animator, position: Point2D):
-        """Render the animator's current frame, centred at `position`.
-
-        The frame is indexed here rather than handed back by an accessor on
-        `Animator`: a `List` element's origin is not spellable from user
-        code, so a reference to it cannot cross a function boundary. That is
-        also why the sized overload below indexes it inline too.
-        """
-        self.image(a.animation[].frames[a.frame_index], position)
+        """Render the animator's current frame, centred at `position`."""
+        self.image(a.animation[].frame(a.frame_index), position)
 
     def image(mut self, a: Animator, position: Point2D, w: Int, h: Int):
-        self.image(a.animation[].frames[a.frame_index], position, w, h)
+        self.image(a.animation[].frame(a.frame_index), position, w, h)
 
     def corner_radius(mut self, radius: Int):
         """Round the corners of rectangles and triangles, in world units,

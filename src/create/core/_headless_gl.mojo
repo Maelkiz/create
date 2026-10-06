@@ -7,7 +7,7 @@ assert on GPU-only behaviour (batching, texture-unit coexistence, vertex
 buffer growth) that the CPU-vs-GPU parity test is structurally blind to.
 
 Does **not** cover the drawable-size-versus-logical-size distinction that
-`_run_gl.mojo` re-reads every frame (Gotcha 6): an FBO has one size and no
+`_run_gl.mojo` re-reads every frame: an FBO has one size and no
 window manager to disagree with it. That stays a windowed-only concern.
 """
 
