@@ -92,7 +92,7 @@ def test_a_copy_shares_the_face() raises -> None:
     var a = Font.load(default_font_path())
     var b = a.copy()
     assert_equal(b._id, a._id)
-    assert_equal(Int(a._face.count()), 2, "one face, two holders")
+    assert_equal(Int(a._faces.count()), 2, "one face, two holders")
     _ = b^  # Kept alive to here: Mojo would destroy it after its last use.
 
 
@@ -106,6 +106,55 @@ def test_each_load_is_its_own_font() raises -> None:
 def test_a_font_prints_as_it_is_loaded() raises -> None:
     var f = Font.load(default_font_path())
     assert_equal(String(f), 'Font.load("' + default_font_path() + '")')
+
+
+def test_an_italic_partner_prints_with_the_font() raises -> None:
+    var f = Font.load(default_font_path(), italic_path=_SLNT_FIXTURE)
+    assert_equal(
+        String(f),
+        'Font.load("'
+        + default_font_path()
+        + '", italic_path="'
+        + _SLNT_FIXTURE
+        + '")',
+    )
+
+
+def test_a_missing_italic_partner_raises_at_load() raises -> None:
+    with assert_raises(contains="not found"):
+        _ = Font.load(default_font_path(), italic_path="/nonexistent.ttf")
+
+
+def test_the_italic_has_an_identity_of_its_own() raises -> None:
+    var a = Font.load(default_font_path())
+    var b = Font.load(default_font_path())
+    var italic = a._italic()
+    assert_true(italic._id != a._id)
+    assert_true(italic._id != b._id and italic._id != b._italic()._id)
+    assert_equal(a.copy()._italic()._id, italic._id, "stable across copies")
+
+
+def test_an_italic_partner_is_drawn_as_it_is() raises -> None:
+    # The partner file is italic already: drawn as given, never sheared.
+    var f = Font.load(_SLNT_FIXTURE, italic_path=default_font_path())
+    var italic = f._italic()
+    assert_equal(_lean(italic.render(ord("I"), 48)), 0)
+    assert_true(not f._faces[].face(True).sheared)
+
+
+def test_without_a_partner_the_italic_is_the_fonts_own() raises -> None:
+    var f = Font.load(default_font_path())
+    var italic = f._italic()
+    assert_true(_lean(italic.render(ord("I"), 48)) >= 5)
+    assert_equal(_lean(f.render(ord("I"), 48)), 0, "the upright is kept")
+
+
+def test_copies_share_the_italic_once_opened() raises -> None:
+    var a = Font.load(default_font_path())
+    var b = a.copy()
+    assert_true(not a._faces[].italic, "opened on first use")
+    _ = a._italic().has_glyph(ord("I"))
+    assert_true(b._faces[].italic, "opened through one copy, seen by both")
 
 
 def _copy_of_a_dropped_font() raises -> Font:

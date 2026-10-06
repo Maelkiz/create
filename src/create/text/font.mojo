@@ -1,4 +1,5 @@
 from std.atomic import Atomic
+from std.collections import Optional
 from std.ffi import _DLHandle, _Global
 from std.memory import ArcPointer
 from std.math import abs
@@ -378,6 +379,43 @@ struct _Face(Movable):
         return g^
 
 
+struct _FontFaces(Movable):
+    """What every copy of one `Font` shares: its upright face, its italic once
+    something has asked for it, and the identity each is cached by."""
+
+    var upright: _Face
+    var italic: Optional[_Face]
+    """The partner file's face, opened with the font; otherwise the upright
+    file opened slanted, on first use."""
+    var upright_id: Int
+    var italic_id: Int
+    var path: String
+    var italic_path: Optional[String]
+
+    def __init__(
+        out self, var path: String, var italic_path: Optional[String]
+    ) raises:
+        self.upright = _Face(path, 16, FontWeight.REGULAR)
+        self.italic = None
+        if italic_path:
+            self.italic = _Face(italic_path.value(), 16, FontWeight.REGULAR)
+        self.upright_id = _next_font_id()
+        self.italic_id = _next_font_id()
+        self.path = path^
+        self.italic_path = italic_path^
+
+    def face(
+        mut self, italic: Bool
+    ) raises -> ref[self.upright, self.italic._value] _Face:
+        """The face to draw upright or italic text in, opening the italic
+        first if it has not been yet."""
+        if not italic:
+            return self.upright
+        if not self.italic:
+            self.italic = _Face(self.path, 16, FontWeight.REGULAR, slanted=True)
+        return self.italic.value()
+
+
 struct Font(Copyable, ImplicitlyCopyable, Movable, Writable):
     """A typeface loaded from a file: an asset, like an `Image`.
 
@@ -385,58 +423,88 @@ struct Font(Copyable, ImplicitlyCopyable, Movable, Writable):
     is cheap to keep in a field, a `Style` or several of each. The face is
     closed when the last copy goes. Size and weight are not part of a font —
     they come from the style each time text is drawn.
+
+    Its italic is the `italic_path` file where one was given, otherwise the
+    font's own italic axis, otherwise its upright glyphs sheared.
     """
 
-    var _face: ArcPointer[_Face]
+    var _faces: ArcPointer[_FontFaces]
+    var _draws_italic: Bool
+    """Whether this copy draws the italic face: what `_italic()` returns, so
+    a renderer can treat the italic as a font of its own."""
     var _id: Int
-    """This font's identity, unique for the life of the process, shared by
-    its copies: what a renderer keys its cached glyphs by."""
+    """The identity of the face this copy draws, unique for the life of the
+    process and shared by its copies: what a renderer keys its cached glyphs
+    by. The upright and the italic each have their own."""
     var path: String
     """The file it was loaded from."""
+    var italic_path: Optional[String]
+    """The file its italic was loaded from, if it was given one."""
 
     @staticmethod
-    def load(path: String) raises -> Font:
-        """Open the face at `path`. Raises if it cannot be read as one.
+    def load(path: String, italic_path: Optional[String] = None) raises -> Font:
+        """Open the face at `path`, and the italic at `italic_path` if given.
+        Raises if either cannot be read as one.
 
         Resolve a path next to the program's source with `source_path`, as
         for images and sounds.
         """
-        return Font(
-            ArcPointer(_Face(path, 16, FontWeight.REGULAR)),
-            _next_font_id(),
-            path,
-        )
+        var faces = ArcPointer(_FontFaces(path, italic_path))
+        var id = faces[].upright_id
+        return Font(faces^, False, id, path, italic_path)
 
     def __init__(
-        out self, var face: ArcPointer[_Face], id: Int, var path: String
+        out self,
+        var faces: ArcPointer[_FontFaces],
+        italic: Bool,
+        id: Int,
+        var path: String,
+        var italic_path: Optional[String],
     ):
-        self._face = face^
+        self._faces = faces^
+        self._draws_italic = italic
         self._id = id
         self.path = path^
+        self.italic_path = italic_path^
 
     def write_to[W: Writer](self, mut writer: W):
-        writer.write('Font.load("', self.path, '")')
+        writer.write('Font.load("', self.path, '"')
+        if self.italic_path:
+            writer.write(', italic_path="', self.italic_path.value(), '"')
+        writer.write(")")
 
-    def ascender(self) -> Int:
+    def _italic(self) -> Font:
+        """This font drawing its italic face, under the italic's identity."""
+        return Font(
+            self._faces,
+            True,
+            self._faces[].italic_id,
+            self.path,
+            self.italic_path,
+        )
+
+    def ascender(mut self) raises -> Int:
         """Pixels above the baseline at the size last rendered."""
-        return self._face[].ascender
+        return self._faces[].face(self._draws_italic).ascender
 
-    def descender(self) -> Int:
+    def descender(mut self) raises -> Int:
         """Pixels below the baseline at the size last rendered, negative."""
-        return self._face[].descender
+        return self._faces[].face(self._draws_italic).descender
 
     def has_glyph(self, codepoint: Int) raises -> Bool:
         """Whether this face can render `codepoint`."""
-        return self._face[].has_glyph(codepoint)
+        return self._faces[].face(self._draws_italic).has_glyph(codepoint)
 
     def _set_weight(mut self, weight: Int) raises:
-        self._face[]._set_weight(weight)
+        self._faces[].face(self._draws_italic)._set_weight(weight)
 
     def _set_size(mut self, size: Int) raises:
         """Scale the face to `size` pixels, so `ascender`/`descender` are
         that size's. Free when it already is."""
-        self._face[]._set_size(_DLHandle("libfreetype.so.6"), size)
+        self._faces[].face(self._draws_italic)._set_size(
+            _DLHandle("libfreetype.so.6"), size
+        )
 
     def render(mut self, codepoint: Int, size: Int) raises -> _GlyphInfo:
         """Rasterise one glyph at `size` pixels; see `_Face.render`."""
-        return self._face[].render(codepoint, size)
+        return self._faces[].face(self._draws_italic).render(codepoint, size)
