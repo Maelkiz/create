@@ -4,7 +4,7 @@ from std.sys import is_big_endian
 
 from create.color.blend_mode import BlendMode
 from create.color.color import Color
-from .font import _GlyphInfo
+from create.text.font import _GlyphInfo
 from create.color.gradient import Gradient, _DeviceMapping
 from .surface import Surface
 from create.math.point2d import Point2D

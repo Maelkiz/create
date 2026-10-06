@@ -1,13 +1,13 @@
 # TextRenderer, driven straight onto an owned buffer.
 #
-# Hermetic: both faces ship in src/create/render/fonts/, so this asserts on real glyph
+# Hermetic: both faces ship in src/create/text/fonts/, so this asserts on real glyph
 # pixels rather than mocking the rasteriser.
 
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
 from create.render.align import Align
 from create.color.color import Color
-from create.render.font import Font, FontWeight, default_font_path, _GlyphInfo
+from create.text.font import Font, FontWeight, default_font_path, _GlyphInfo
 from create.render.style import Style
 from create.render.surface import MemorySurface
 from create.render._text import TextRenderer, _GLYPH_CACHE_LIMIT

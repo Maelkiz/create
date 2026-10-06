@@ -5,7 +5,7 @@ from .align import Align
 from create.color.blend_mode import BlendMode
 from create.color.color import Color
 from create.color.gradient import Gradient
-from .font import FontWeight
+from create.text.font import FontWeight
 from create.math.vector2d import Vector2D
 
 

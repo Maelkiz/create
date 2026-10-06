@@ -4,7 +4,7 @@
 from std.testing import TestSuite, assert_equal, assert_true
 
 from create import *
-from create.render.font import fallback_font_path
+from create.text.font import fallback_font_path
 
 
 @fieldwise_init

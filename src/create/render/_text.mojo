@@ -2,7 +2,12 @@ from std.collections import Dict
 from std.math import max
 from .align import Align
 from create.color.color import Color
-from .font import Font, _GlyphInfo, default_font_path, fallback_font_path
+from create.text.font import (
+    Font,
+    _GlyphInfo,
+    default_font_path,
+    fallback_font_path,
+)
 from ._blur import blur_alpha
 from ._raster import blit_glyph
 from .style import Style

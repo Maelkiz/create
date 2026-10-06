@@ -11,7 +11,7 @@ from create.render._raster import (
     fill_triangle,
     line_pixels,
 )
-from create.render.font import _GlyphInfo
+from create.text.font import _GlyphInfo
 from create.render.surface import MemorySurface, Surface
 from create.image.image import Image
 from create.image.pixel_buffer import PixelBuffer

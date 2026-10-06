@@ -22,12 +22,13 @@ it makes the library better.
 
 | Module | Path | Responsibility |
 |---|---|---|
-| root | `src/create/__init__.mojo` | The preamble: star-imports all six subpackages below |
+| root | `src/create/__init__.mojo` | The preamble: star-imports all seven subpackages below |
 | `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`, `Input`, `Key`, `MouseButton`, `Gamepad`, `GamepadButton`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path`, `DateTime` |
-| `render` | `src/create/render/` | `Canvas`, `Camera`, `Antialiasing`, font/style, the command buffer, both backends (CPU rasteriser, GL 3.3) |
+| `render` | `src/create/render/` | `Canvas`, `Camera`, `Antialiasing`, style, text layout, the command buffer, both backends (CPU rasteriser, GL 3.3) |
 | `color` | `src/create/color/` | `Color`, `Gradient` (with the ramp and dither both backends share), `BlendMode` |
 | `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes (`Rectangle`, `Circle`, `Triangle`, `Sector`, `Polygon`, `Line`, `Arc`), `Bezier`, `Spline`, `Random`, `Noise`, easing and `Tween`, util functions |
 | `image` | `src/create/image/` | `Image` (BMP/PNG/JPEG), `PixelBuffer`, `Animation`, `Animator` |
+| `text` | `src/create/text/` | `Font` (FreeType faces, glyph rasterisation), `FontWeight`, the packaged Noto faces |
 | `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |
 | `_bytes` | `src/create/_bytes.mojo` | Internal leaf: little-endian integer decoding |
 | `_window` | `src/create/_window/` | Internal platform layer: `Window`, `GLWindow`, typed `Event`s, SDL3 video bindings |
@@ -123,7 +124,7 @@ public field names where it doesn't (`Time`, `Tween`). Private fields are left o
 A program writes `from create import *`. Otherwise import by name from the owning package
 (`from create.math import overlaps`); a single subpackage star is not a preamble.
 
-- The root has no names of its own — it star-imports the six subpackages. Never add a name there;
+- The root has no names of its own — it star-imports the seven subpackages. Never add a name there;
   add it to the owning subpackage.
 - A subpackage exports only what it owns, never a lower layer's symbol.
 - Public surface is exactly what an `__init__.mojo` lists. A new declaration is internal unless it is
@@ -133,13 +134,16 @@ A program writes `from create import *`. Otherwise import by name from the ownin
 ### Layering
 
 - **`render` never imports `core`** (it would be a cycle). `render` depends only on `math`, `color`,
-  `image` and `_bytes`, so it works without a run loop. So the mapping dials reach `render` as
+  `image`, `text` and `_bytes`, so it works without a run loop. So the mapping dials reach `render` as
   plain values: `context._set_viewport(state, …)` in `core` passes the design size and autoscale
   in, and `context._new_canvas(state^)` builds the frame. Frame-wide drawing settings live on
   `PersistentCanvasState` itself.
 - **`color`** depends only on `math`; `image` and `render` both import it. It sits below `image` so
   that `Image.pixel` can return a `Color` without a `render`↔`image` cycle.
-- **`_bytes`** is a leaf imported by `image` and `render`, re-exported by nothing.
+- **`text`** depends only on `_bytes`. `render`→`text` is nominal, like `render`→`image`: `Style`,
+  `canvas.font` and text layout name `Font`, and `_raster.blit_glyph` takes `_GlyphInfo` by its
+  internal path. `EditableText` stays in `core`, since it reads `Input`.
+- **`_bytes`** is a leaf imported by `image`, `text` and `render`, re-exported by nothing.
 - **`_window`** imports nothing from `create`; `core` is its only consumer; nothing re-exports it.
 - **`render`→`image` is nominal:** only `canvas.image`'s overloads and `canvas.snapshot` name
   `Image`/`Animator`.
