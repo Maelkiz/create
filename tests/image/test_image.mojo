@@ -5,6 +5,7 @@ from std.testing import (
     assert_false,
     assert_raises,
 )
+from create.color.color import Color
 from create.image.image import Image, _jpeg_dimensions
 
 
@@ -217,7 +218,7 @@ def test_load_bmp_bitfields_compression_raises() raises -> None:
 
 def test_resize_dimensions() raises -> None:
     var s = Image.solid(4, 4, 255, 0, 0)
-    s.resize(2, 2)
+    s = s.resize(2, 2)
     assert_equal(s.width, 2)
     assert_equal(s.height, 2)
     assert_equal(len(s._pixels), 2 * 2 * 4)
@@ -227,7 +228,7 @@ def test_resize_uniform_image_stays_uniform() raises -> None:
     # A uniform-colour source can't reveal which source pixel nearest-neighbour
     # sampled -- only that whichever it picked was the same colour everywhere.
     var s = Image.solid(4, 4, 255, 0, 0)
-    s.resize(2, 2)
+    s = s.resize(2, 2)
     var ptr = s._pixels.unsafe_ptr()
     for i in range(4):  # 2×2 = 4 pixels
         var off = i * 4
@@ -257,7 +258,7 @@ def test_resize_downscale_nearest_neighbour() raises -> None:
                 ptr[unsafe_offset=off + 1] = 255
                 ptr[unsafe_offset=off + 2] = 255
             ptr[unsafe_offset=off + 3] = 255
-    s.resize(2, 2)
+    s = s.resize(2, 2)
     var dst = s._pixels.unsafe_ptr()
     assert_equal(Int(dst[unsafe_offset=0]), 255)  # (0,0) red
     assert_equal(Int(dst[unsafe_offset=1]), 0)
@@ -285,7 +286,7 @@ def test_resize_upscale_block_replication() raises -> None:
     ptr[unsafe_offset=11] = 255
     for i in range(4):
         ptr[unsafe_offset=12 + i] = 255  # (1,1) white
-    s.resize(4, 4)
+    s = s.resize(4, 4)
     var dst = s._pixels.unsafe_ptr()
     for row in range(2):
         for col in range(2):
@@ -309,7 +310,7 @@ def test_resize_upscale_block_replication() raises -> None:
 
 def test_resize_upscale() raises -> None:
     var s = Image.solid(2, 2, 0, 255, 0)
-    s.resize(4, 4)
+    s = s.resize(4, 4)
     assert_equal(s.width, 4)
     assert_equal(s.height, 4)
     assert_equal(len(s._pixels), 4 * 4 * 4)
@@ -317,7 +318,7 @@ def test_resize_upscale() raises -> None:
 
 def test_resize_to_1x1() raises -> None:
     var s = Image.solid(100, 100, 255, 255, 255)
-    s.resize(1, 1)
+    s = s.resize(1, 1)
     assert_equal(s.width, 1)
     assert_equal(s.height, 1)
     assert_equal(len(s._pixels), 4)
@@ -356,7 +357,7 @@ def test_image_zero_dimensions() raises -> None:
 
 def test_resize_to_zero_dimension() raises -> None:
     var s = Image.solid(4, 4, 255, 0, 0)
-    s.resize(0, 4)
+    s = s.resize(0, 4)
     assert_equal(s.width, 0)
     assert_equal(s.height, 4)
     assert_equal(len(s._pixels), 0)
@@ -367,7 +368,7 @@ def test_resize_from_zero_width_stays_blank() raises -> None:
     # offset arithmetic entirely rather than dividing by/indexing an empty
     # buffer, and leave the destination zero-filled.
     var s = Image(0, 4)
-    s.resize(2, 2)
+    s = s.resize(2, 2)
     assert_equal(s.width, 2)
     assert_equal(s.height, 2)
     assert_equal(len(s._pixels), 2 * 2 * 4)
@@ -538,11 +539,20 @@ def test_a_moved_image_keeps_its_identity() raises -> None:
 
 
 def test_resizing_takes_a_fresh_identity() raises -> None:
-    # The pixels are replaced, so anything cached under the old id is stale.
+    # A new image, so nothing cached under the old id can stand in for it.
+    var s = Image.solid(2, 2, 255, 0, 0)
+    var resized = s.resize(4, 4)
+    assert_true(resized._id != s._id)
+
+
+def test_resize_leaves_the_original_unchanged() raises -> None:
     var s = Image.solid(2, 2, 255, 0, 0)
     var before = s._id
-    s.resize(4, 4)
-    assert_true(s._id != before)
+    _ = s.resize(4, 4)
+    assert_equal(s.width, 2)
+    assert_equal(s.height, 2)
+    assert_equal(s._id, before)
+    assert_equal(s.pixel(1, 1), Color(255, 0, 0))
 
 
 def main() raises:
