@@ -3,8 +3,8 @@
 #
 # Constant cost (~1.5s) no matter how many examples exist. Catches consumer-side
 # API drift — trait changes, `run[T]` instantiation, Context/Input/Canvas
-# signatures — which `mojo precompile` cannot see. The full example sweep and the
-# library type-check run on push.
+# signatures — which `mojo precompile` cannot see. The library type-check, the
+# full example sweep and the test suite run in CI (.github/workflows/ci.yml).
 set -u
 
 # A commit that stages only inert files (see _inert.sh) skips every check below.

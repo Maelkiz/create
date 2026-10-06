@@ -47,21 +47,21 @@ pixi run test                             # whole suite, concurrent
 pixi run test render                      # subpackage, file name sans test_, or path; several allowed
 pixi run test -j 4 canvas tween           # pin worker count (default nproc, max 8)
 pixi run precompile                       # type-check the library, output in build/
+pixi run build-examples                   # type-check every example and benchmark
 pixi run format                           # 80 columns, enforced by pre-commit
 pixi run setup                            # once per clone: git hooks + blame ignore-revs
 ```
 
-There is no CI. Two git hooks, active after `pixi run setup`, are the only automated checks:
+Two tiers of automated checks:
 
-| Hook | Runs |
+| Where | Runs |
 |---|---|
-| `pre-commit` | Formatting check on staged `.mojo` files, then builds `tests/core/test_smoke.mojo`. Constant cost |
-| `pre-push` | `mojo precompile`, every example and benchmark, the test suite |
+| `pre-commit` hook (after `pixi run setup`) | Formatting check on staged `.mojo` files, then builds `tests/core/test_smoke.mojo`. Constant cost |
+| CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)), every PR and push to `main` | Formatting, `mojo precompile`, every example and benchmark, the test suite — a GL test that skips fails the job |
 
-Both skip entirely when every staged or pushed path is inert (`*.md`, `LICENSE`, agent/editor
-config) — the allowlist is in `.githooks/_inert.sh`.
-
-`--no-verify` is only for WIP on a scratch branch that gets squashed, never on `main`.
+The hook skips entirely when every staged path is inert (`*.md`, `LICENSE`, agent/editor config) —
+the allowlist is in `.githooks/_inert.sh`. `main` is protected: changes land through a pull
+request once CI passes.
 
 Neither tier subsumes the other: building a consumer program type-checks only the `def` bodies it
 reaches (catches API drift, not an uncalled broken function); `mojo precompile` is the reverse.
@@ -406,7 +406,7 @@ frame body returns. Headless runs ignore the window dials, like `rumble`.
 ## Do
 
 - Use `@fieldwise_init` on program structs.
-- Run only the tests a change can reach (`pixi run test render`); pre-push runs the whole suite.
+- Run only the tests a change can reach (`pixi run test render`); CI runs the whole suite.
 - Make `canvas.background(...)` the first render call in `update`. With the autoclear off, call
   `canvas.autoclear(False)` and `canvas.background(...)` once, in `create`.
 - Use `Point2D` for new locations, `Vector2D` for displacements and scalars for extents;

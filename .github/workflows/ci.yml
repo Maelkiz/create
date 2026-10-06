@@ -1,0 +1,44 @@
+# The checks too slow for a commit hook. pre-commit covers formatting and the
+# smoke build locally; everything else runs here, on every pull request and
+# on main.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: format
+            run: pixi run format && git diff --exit-code
+          - name: precompile
+            run: pixi run precompile
+          - name: examples
+            run: pixi run build-examples
+          - name: tests
+            # GL tests skip without a context; here a skip means the Mesa
+            # setup broke, so it fails the job rather than passing silently.
+            run: pixi run test | tee test.log && ! grep -q SKIP test.log
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Mesa EGL
+        if: matrix.name == 'tests'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1-mesa-dri
+      - uses: prefix-dev/setup-pixi@v0.11.0
+        with:
+          cache: true
+          locked: true
+      - run: ${{ matrix.run }}
