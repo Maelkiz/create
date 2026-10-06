@@ -64,11 +64,19 @@ comptime _MM_NUM_AXIS = 0
 comptime _MM_AXIS = 16
 
 # FT_Var_Axis offsets (64-bit layout: ptr(8)+3×Fixed(8)+ULong(8)+UInt(4)+pad(4) = 48 bytes)
+comptime _AXIS_MIN = 8  # FT_Fixed minimum design value (16.16)
 comptime _AXIS_DEF = 16  # FT_Fixed default design value (16.16)
+comptime _AXIS_MAX = 24  # FT_Fixed maximum design value (16.16)
 comptime _AXIS_TAG = 32  # FT_ULong 4-char tag
 comptime _AXIS_SIZE = 48  # sizeof(FT_Var_Axis)
 
 comptime _TAG_WGHT = 0x77676874  # 'wght'
+comptime _TAG_ITAL = 0x6974616C  # 'ital'
+comptime _TAG_SLNT = 0x736C6E74  # 'slnt'
+
+comptime _SHEAR = 13933
+"""tan(12°) in 16.16 fixed point: the lean of an italic synthesised by
+shearing a face that has none of its own."""
 
 # FT_GlyphSlotRec offsets
 comptime _GLYPH_ADVANCE = 128  # FT_Vector: x = first FT_Pos (8 bytes)
@@ -162,16 +170,26 @@ struct _Face(Movable):
     `render`, which is why both setters return early when nothing changed:
     re-scaling a face or re-solving its variation axes per glyph would be paid
     on every character of every string.
+
+    Opened `slanted`, a face draws its file's italic: the `ital` axis at 1 or
+    the `slnt` axis at its forward end where the file has one, otherwise its
+    upright glyphs sheared. Fixed for the face's life, since an italic is a
+    different face as far as any glyph cache is concerned.
     """
 
     var _lib: Int  # FT_Library opaque pointer
     var _face: Int  # FT_Face opaque pointer
     var _size: Int  # last set pixel height
     var _weight: Int  # last set design-space weight (100–900)
+    var _italic_tag: Int  # 'ital' or 'slnt' when slanted by an axis, else 0
+    var _italic_coord: Int  # that axis's design value (16.16)
+    var sheared: Bool  # slanted by a transform, the file having no italic
     var ascender: Int  # pixels above baseline (positive)
     var descender: Int  # pixels below baseline (negative)
 
-    def __init__(out self, path: String, size: Int, weight: Int) raises:
+    def __init__(
+        out self, path: String, size: Int, weight: Int, slanted: Bool = False
+    ) raises:
         var ft = _DLHandle("libfreetype.so.6")
 
         var lib_buf = Array[UInt8, 8](fill=0)
@@ -194,8 +212,13 @@ struct _Face(Movable):
         self._face = _read_ptr(Int(face_buf.unsafe_ptr()))
         self._size = 0
         self._weight = 0
+        self._italic_tag = 0
+        self._italic_coord = 0
+        self.sheared = False
         self.ascender = 0
         self.descender = 0
+        if slanted:
+            self._slant(ft)
         self._set_size(ft, size)
         self._set_weight(weight)
 
@@ -221,6 +244,44 @@ struct _Face(Movable):
         self.ascender = _read_ptr(m + _METRICS_ASC) >> 6
         self.descender = _read_ptr(m + _METRICS_DESC) >> 6
 
+    def _slant(mut self, ft: _DLHandle) raises:
+        """Find this file's italic axis, or shear the face if it has none.
+
+        `ital` is a switch, so its maximum is the italic; `slnt` is an angle
+        counter-clockwise, so its minimum leans furthest forward. The axis
+        takes effect in `_set_weight`, which sets every coordinate at once.
+        """
+        var master_buf = Array[UInt8, 8](fill=0)
+        if (
+            ft.call["FT_Get_MM_Var", Int32](self._face, master_buf.unsafe_ptr())
+            == 0
+        ):
+            var master = _read_ptr(Int(master_buf.unsafe_ptr()))
+            var num_axis = _read_u32(master + _MM_NUM_AXIS)
+            var axis_ptr = _read_ptr(master + _MM_AXIS)
+            for i in range(num_axis):
+                var a = axis_ptr + i * _AXIS_SIZE
+                var tag = _read_ptr(a + _AXIS_TAG)
+                if tag == _TAG_ITAL:
+                    self._italic_tag = tag
+                    self._italic_coord = Int(Int64(_read_ptr(a + _AXIS_MAX)))
+                    break
+                if tag == _TAG_SLNT:
+                    self._italic_tag = tag
+                    self._italic_coord = Int(Int64(_read_ptr(a + _AXIS_MIN)))
+            _ = ft.call["FT_Done_MM_Var", Int32](self._lib, master)
+        if self._italic_tag != 0:
+            return
+        # FT_Matrix {xx, xy, yx, yy}, FT_Fixed each: x' = x + tan(12°)·y.
+        var matrix = Array[Int64, 4](fill=0)
+        matrix[0] = 1 << 16
+        matrix[1] = _SHEAR
+        matrix[3] = 1 << 16
+        ft.call["FT_Set_Transform", NoneType](
+            self._face, matrix.unsafe_ptr(), Int(0)
+        )
+        self.sheared = True
+
     def _set_weight(mut self, weight: Int) raises:
         if weight == self._weight:
             return
@@ -240,9 +301,11 @@ struct _Face(Movable):
         for i in range(num_axis):
             var a = axis_ptr + i * _AXIS_SIZE
             var tag = _read_ptr(a + _AXIS_TAG)
-            var val = weight << 16 if tag == _TAG_WGHT else _read_ptr(
-                a + _AXIS_DEF
-            )
+            var val = _read_ptr(a + _AXIS_DEF)
+            if tag == _TAG_WGHT:
+                val = weight << 16
+            elif tag == self._italic_tag:
+                val = self._italic_coord
             var v = val
             for b in range(8):
                 coords[i * 8 + b] = UInt8(v & 0xFF)
