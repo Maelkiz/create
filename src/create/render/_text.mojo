@@ -242,8 +242,8 @@ struct TextRenderer(Movable):
         elif not align._left():
             pen_x -= tw // 2
 
-        var asc = self._font[0].ascender
-        var desc = self._font[0].descender
+        var asc = self._font[0].ascender()
+        var desc = self._font[0].descender()
         var baseline_y = pen_y
         if align._top():
             baseline_y += asc

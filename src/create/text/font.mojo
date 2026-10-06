@@ -1,4 +1,6 @@
-from std.ffi import _DLHandle
+from std.atomic import Atomic
+from std.ffi import _DLHandle, _Global
+from std.memory import ArcPointer
 from std.math import abs
 from std.reflection import source_location
 
@@ -138,12 +140,23 @@ struct _GlyphInfo(Movable):
         self.advance_x = advance_x
 
 
-struct Font(Movable):
-    """One loaded face, rendered through freetype over the C ABI.
+def _new_font_ids() -> Atomic[Int64]:
+    return Atomic[Int64](0)
 
-    A face is a heavy handle, not a per-frame value — `TextRenderer` loads the
-    packaged faces once and caches what they render; `canvas.font` swaps in
-    another and it survives the frame in `PersistentCanvasState`.
+
+comptime _FONT_IDS = _Global["create_font_ids", _new_font_ids]
+"""Process-wide counter behind `Font._id`, global for the same reason as
+`Image`'s: uniqueness between fonts, whichever renderer draws them."""
+
+
+def _next_font_id() raises -> Int:
+    """The next never-yet-used font identity, from 1."""
+    return Int(_FONT_IDS.get_or_create_ptr()[].fetch_add(1)) + 1
+
+
+struct _Face(Movable):
+    """One open FreeType face and the library instance it was opened with,
+    closed when dropped. Shared by every copy of the `Font` that opened it.
 
     Size and weight are sticky state on the face rather than arguments to
     `render`, which is why both setters return early when nothing changed:
@@ -158,7 +171,7 @@ struct Font(Movable):
     var ascender: Int  # pixels above baseline (positive)
     var descender: Int  # pixels below baseline (negative)
 
-    def __init__(out self, path: String, size: Int, weight: Int = 400) raises:
+    def __init__(out self, path: String, size: Int, weight: Int) raises:
         var ft = _DLHandle("libfreetype.so.6")
 
         var lib_buf = Array[UInt8, 8](fill=0)
@@ -185,6 +198,16 @@ struct Font(Movable):
         self.descender = 0
         self._set_size(ft, size)
         self._set_weight(weight)
+
+    def __del__(deinit self):
+        """Close the face, then the library it belongs to. Nothing can be
+        done about a failure this late, so none is raised."""
+        try:
+            var ft = _DLHandle("libfreetype.so.6")
+            _ = ft.call["FT_Done_Face", Int32](self._face)
+            _ = ft.call["FT_Done_FreeType", Int32](self._lib)
+        except:
+            pass
 
     def _set_size(mut self, ft: _DLHandle, size: Int) raises:
         if size == self._size:
@@ -290,3 +313,69 @@ struct Font(Movable):
                     width,
                 )
         return g^
+
+
+struct Font(Copyable, Movable, Writable):
+    """A typeface loaded from a file: an asset, like an `Image`.
+
+    `Font.load(path)` opens it once; copies share the open face, so a font
+    is cheap to keep in a field, a `Style` or several of each. The face is
+    closed when the last copy goes. Size and weight are not part of a font —
+    they come from the style each time text is drawn.
+    """
+
+    var _face: ArcPointer[_Face]
+    var _id: Int
+    """This font's identity, unique for the life of the process, shared by
+    its copies: what a renderer keys its cached glyphs by."""
+    var path: String
+    """The file it was loaded from."""
+
+    @staticmethod
+    def load(path: String) raises -> Font:
+        """Open the face at `path`. Raises if it cannot be read as one.
+
+        Resolve a path next to the program's source with `source_path`, as
+        for images and sounds.
+        """
+        return Font(
+            ArcPointer(_Face(path, 16, FontWeight.REGULAR)),
+            _next_font_id(),
+            path,
+        )
+
+    def __init__(
+        out self, var face: ArcPointer[_Face], id: Int, var path: String
+    ):
+        self._face = face^
+        self._id = id
+        self.path = path^
+
+    def __init__(out self, path: String, size: Int, weight: Int = 400) raises:
+        """Deprecated: `Font.load(path)`. Size and weight come from the
+        style, so these only preset the face."""
+        self = Font.load(path)
+        self._face[]._set_size(_DLHandle("libfreetype.so.6"), size)
+        self._face[]._set_weight(weight)
+
+    def write_to[W: Writer](self, mut writer: W):
+        writer.write('Font.load("', self.path, '")')
+
+    def ascender(self) -> Int:
+        """Pixels above the baseline at the size last rendered."""
+        return self._face[].ascender
+
+    def descender(self) -> Int:
+        """Pixels below the baseline at the size last rendered, negative."""
+        return self._face[].descender
+
+    def has_glyph(self, codepoint: Int) raises -> Bool:
+        """Whether this face can render `codepoint`."""
+        return self._face[].has_glyph(codepoint)
+
+    def _set_weight(mut self, weight: Int) raises:
+        self._face[]._set_weight(weight)
+
+    def render(mut self, codepoint: Int, size: Int) raises -> _GlyphInfo:
+        """Rasterise one glyph at `size` pixels; see `_Face.render`."""
+        return self._face[].render(codepoint, size)
