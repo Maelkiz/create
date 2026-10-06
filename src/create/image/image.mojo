@@ -4,6 +4,7 @@ from std.memory import unsafe_memcpy
 
 from create._bytes import le_uint, sign_extend_32
 from create.color.color import Color
+from .pixel_buffer import PixelBuffer
 
 
 def _new_image_ids() -> Atomic[Int64]:
@@ -105,6 +106,14 @@ struct Image(Movable):
         self.width = width
         self.height = height
         self._pixels = List[UInt8](length=width * height * 4, fill=0)
+        self._id = _next_image_id()
+        self._version = 0
+
+    def __init__(out self, var pixels: PixelBuffer) raises:
+        """An image of `pixels`, which it takes over without copying."""
+        self.width = pixels.width
+        self.height = pixels.height
+        self._pixels = pixels^._take_data()
         self._id = _next_image_id()
         self._version = 0
 
