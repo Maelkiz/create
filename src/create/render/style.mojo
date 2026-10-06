@@ -50,8 +50,7 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
     shadow ready but off. `fill_gradient` is the keyword for `fill`'s
     `Gradient` overload, since one keyword can't take both: given beside
     `fill`, the gradient paints and the colour is kept for when it is
-    cleared. Every part left unset is what a fresh frame starts with. The font is not part of a style: it is a loaded resource,
-    set with `canvas.font` and kept across frames.
+    cleared. Every part left unset is what a fresh frame starts with.
     """
 
     var fill_color: Color

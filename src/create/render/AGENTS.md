@@ -303,6 +303,10 @@ nothing is interned. Faces live in `create.text`; `TextRenderer` lays out and ca
   blur 10, font slot 10. Size, weight and blur are clamped into theirs (`_MAX_SIZE` 4095 px,
   `_MAX_WEIGHT`, `_MAX_BLUR` 1023 px) where they enter. A slot is handed to each face on first
   sight (`_slot`, by `Font._id`); the renderer holds the face while its slot is live.
+- **Italic is a face, not a key bit:** `_face(style)` swaps in `Font._italic()`, the same font
+  drawing its italic `_Face` under an id of its own, so it takes a slot like any other font and
+  the key has no italic field. The italic `_Face` is opened on first use and shared by every copy
+  (`_FontFaces` in `create.text`).
 - **Never stale by switching:** a key names its face, so switching fonts keeps every face's masks
   and the GL atlas. Only running out of `_FONT_SLOTS` (1024) starts over: glyphs and slots are
   cleared and `atlas_generation` is bumped, which the atlas watches. `_GLYPH_CACHE_LIMIT` drops the
@@ -310,7 +314,8 @@ nothing is interned. Faces live in `create.text`; `TextRenderer` lays out and ca
 - **Metrics:** the layout scales the face to the size it lays out (`Font._set_size`) before reading
   `ascender`/`descender`, since with every glyph cached nothing else did.
 - The fallback face is consulted per glyph, by `has_glyph` on the style's face; its masks are
-  keyed under the style's face's slot, since that face decided to fall back.
+  keyed under the style's face's slot, since that face decided to fall back. Italic text falls
+  back to the fallback's italic.
 
 ## Outlines
 

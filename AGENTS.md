@@ -119,7 +119,7 @@ A public value type implements `Writable` and prints as it would be written in s
 by the constructor's keywords where it has them (`Circle(position=Point2D(0.0, 0.0), r=5.0)`) and by
 public field names where it doesn't (`Time`, `Tween`). Private fields are left out. Resource handles
 (`Image`, `PixelBuffer`, `Sound`, `Audio`) and shared assets (`Animation`) are not printable; a `Font`
-prints as it is loaded, `Font.load("path")`.
+prints as it is loaded, `Font.load("path")` (with `, italic_path="..."` when it has one).
 
 ### Imports and public surface
 
@@ -190,11 +190,18 @@ outline or shadow switches it on unless its `*_enabled` keyword says otherwise. 
 a field built in `create`.
 
 **Fonts** are part of the style: `canvas.font(f)`, `Style(font=f)` or `with canvas.style(font=f):`,
-beside `font_size` and `font_weight`. `f` is a `Font.load(source_path("..."))` kept as a field — a
+beside `font_size`, `font_weight` and `font_italic`. `f` is a `Font.load(source_path("..."))` kept as a field — a
 shared asset like an `Image`, cheap to copy, closed when its last copy goes. With none set, text is
 packaged Noto Sans, and a codepoint the face lacks falls back to Noto Sans Symbols. Each `text`
 call keeps its face, so several share a frame; like every style setter, `canvas.font` resets
 next frame. Switching faces costs nothing: cached glyphs are keyed by face.
+
+**Italic** is `canvas.font_italic(True)` (or the `font_italic=` keyword), and always slants, from
+the best source the font has: the `italic_path` file of `Font.load(path, italic_path=...)` (the
+packaged Noto Sans ships its italic this way), else the file's own `ital` or `slnt` axis, else its
+upright glyphs sheared 12°. Fallback glyphs follow, so Noto Sans Symbols comes out sheared. Weight
+reaches a variable italic like an upright. A shear's overhang is not measured: `text_width` is the
+advance, as in CSS.
 
 **Gradients** fill regions and backgrounds: `canvas.fill(gradient)` and `canvas.background(gradient)`
 are overloads beside the colour ones, and the `Style`/`canvas.style` keyword is `fill_gradient=`,
