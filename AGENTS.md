@@ -49,6 +49,7 @@ pixi run test render                      # subpackage, file name sans test_, or
 pixi run test -j 4 canvas tween           # pin worker count (default nproc, max 8)
 pixi run precompile                       # type-check the library, output in build/
 pixi run build-examples                   # type-check every example and benchmark
+pixi run check-standalone                 # a `mojo build` program, run outside the environment
 pixi run format                           # 80 columns, enforced by pre-commit
 pixi run setup                            # once per clone: git hooks + blame ignore-revs
 ```
@@ -58,15 +59,16 @@ Two tiers of automated checks:
 | Where | Runs |
 |---|---|
 | `pre-commit` hook (after `pixi run setup`) | Formatting check on staged `.mojo` files, then builds `tests/core/test_smoke.mojo`. Constant cost |
-| CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)), every PR and push to `main` | Formatting, `mojo precompile`, every example and benchmark, the test suite — a GL test that skips fails the job. Examples and tests run again on Apple silicon (`macos-examples`, `macos-tests`), in parallel with the Linux jobs |
+| CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)), every PR and push to `main` | Formatting, `mojo precompile`, every example and benchmark, a `mojo build` program run outside the environment (`pixi run check-standalone`), the test suite — a GL test that skips fails the job. All but formatting and `precompile` run again on Apple silicon (`macos-examples`, `macos-tests`), in parallel with the Linux jobs |
 
 Both skip their checks when every changed path is inert (`*.md`, `LICENSE`, agent/editor config) —
 the allowlist is in `.githooks/_inert.sh`, read by the hook and the workflow alike.
 
 **Workflow.** `main` is protected by a ruleset: no direct pushes, no force pushes, no deletion,
 and a linear history. Every change lands as a squash-merged pull request once the required check
-`ci` passes — it passes when `format`, `precompile`, `examples`, `tests`, `macos-examples` and
-`macos-tests` all passed, or were skipped for an inert change; no approval is required.
+`ci` passes — it passes when `linux-format`, `linux-precompile`, `linux-examples`, `linux-tests`,
+`macos-examples` and `macos-tests` all passed, or were skipped for an inert change; no approval is
+required.
 
 ```bash
 git switch -c some-change                 # from an up-to-date main

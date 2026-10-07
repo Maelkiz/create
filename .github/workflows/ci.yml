@@ -60,13 +60,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: format
+          - name: linux-format
             run: pixi run format && git diff --exit-code
-          - name: precompile
+          - name: linux-precompile
             run: pixi run precompile
-          - name: examples
-            run: pixi run build-examples
-          - name: tests
+          # Examples, then a built program run outside the environment.
+          - name: linux-examples
+            run: pixi run build-examples && pixi run check-standalone
+          - name: linux-tests
             # GL tests skip without a context; here a skip means the Mesa
             # setup broke, so it fails the job rather than passing silently.
             run: pixi run test | tee test.log && ! grep -q SKIP test.log
@@ -76,14 +77,14 @@ jobs:
           # runner's desktop session supports, so a SKIP fails here too.
           - name: macos-examples
             runner: macos-15
-            run: pixi run build-examples
+            run: pixi run build-examples && pixi run check-standalone
           - name: macos-tests
             runner: macos-15
             run: pixi run test | tee test.log && ! grep -q SKIP test.log
     steps:
       - uses: actions/checkout@v7
       - name: Install Mesa EGL
-        if: matrix.name == 'tests'
+        if: matrix.name == 'linux-tests'
         run: |
           sudo apt-get update
           sudo apt-get install -y libegl1 libgl1-mesa-dri
@@ -97,7 +98,7 @@ jobs:
       # content-keyed, so the latest cache for this toolchain serves any
       # commit; pull requests read main's.
       - name: Restore the Mojo compile cache
-        if: matrix.name != 'format'
+        if: matrix.name != 'linux-format'
         uses: actions/cache/restore@v6
         with:
           path: ${{ env.MOJO_CACHE }}
@@ -106,24 +107,25 @@ jobs:
       # Every entry is marked unread, so those this run doesn't read can be
       # dropped before saving and the cache doesn't grow with each commit.
       - name: Mark the cache entries unread
-        if: matrix.name != 'format'
+        if: matrix.name != 'linux-format'
         run: |
           mkdir -p "$MOJO_CACHE"
           find "$MOJO_CACHE" -type f -exec touch -a -t 200001010000 {} +
           touch "$RUNNER_TEMP/cache-marker"
       - run: ${{ matrix.run }}
       - name: Drop the entries this run didn't read
-        if: matrix.name != 'format'
+        if: matrix.name != 'linux-format'
         run: find "$MOJO_CACHE" -type f ! -anewer "$RUNNER_TEMP/cache-marker" -delete
       - name: Save the Mojo compile cache
-        if: matrix.name != 'format'
+        if: matrix.name != 'linux-format'
         uses: actions/cache/save@v6
         with:
           path: ${{ env.MOJO_CACHE }}
           key: mojo-${{ matrix.name }}-${{ hashFiles('pixi.lock') }}-${{ github.sha }}
 
   # The required check. A skipped matrix job reports under its unexpanded
-  # name, not as format/precompile/..., so those can't be required directly.
+  # name, not as linux-format/linux-precompile/..., so those can't be
+  # required directly.
   ci:
     needs: [changes, check]
     if: always()
