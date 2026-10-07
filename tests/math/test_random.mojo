@@ -80,7 +80,8 @@ def test_float_golden_vectors() raises -> None:
 def test_entropy_seeded_default_ctor_differs() raises -> None:
     var a = Random()
     var b = Random()
-    # Astronomically unlikely to collide on the nanosecond timer seed
+    # Made back to back: the clock alone can repeat (Apple silicon ticks
+    # every ~42 ns), so this checks the per-generator count in the seed
     assert_equal(a.float() == b.float(), False)
 
 

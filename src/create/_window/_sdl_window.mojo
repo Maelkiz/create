@@ -133,7 +133,7 @@ struct _SDLWindow:
         self.sdl.set_window_title(self.handle, title)
 
     def set_resizable(mut self, enabled: Bool) raises:
-        self.sdl.set_window_resizable(self.handle, enabled)
+        _ = self.sdl.set_window_resizable(self.handle, enabled)
 
     def set_mode(
         mut self, fullscreen: Bool, borderless: Bool, maximized: Bool
@@ -146,12 +146,12 @@ struct _SDLWindow:
         so a refusal leaves the window as it is rather than raising; the
         loop reads the size it ends up with each frame either way."""
         self.sdl.set_window_fullscreen(self.handle, False)
-        self.sdl.set_window_bordered(self.handle, True)
+        _ = self.sdl.set_window_bordered(self.handle, True)
         _ = self.sdl.restore_window(self.handle)
         if fullscreen:
             self.sdl.set_window_fullscreen(self.handle, True)
         elif borderless:
-            self.sdl.set_window_bordered(self.handle, False)
+            _ = self.sdl.set_window_bordered(self.handle, False)
         elif maximized:
             _ = self.sdl.maximize_window(self.handle)
 

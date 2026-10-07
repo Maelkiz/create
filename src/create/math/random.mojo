@@ -1,4 +1,14 @@
+from std.atomic import Atomic
+from std.ffi import _Global
 from std.time import perf_counter_ns
+
+
+def _new_random_count() -> Atomic[UInt64]:
+    return Atomic[UInt64](0)
+
+
+comptime _RANDOM_COUNT = _Global["create_random_count", _new_random_count]
+"""Process-wide count of clock-seeded generators, mixed into each seed."""
 
 
 struct Random(Movable):
@@ -17,9 +27,16 @@ struct Random(Movable):
     var _s1: UInt64
 
     def __init__(out self):
-        # Seeded from nanosecond timer — not cryptographically random,
-        # but collision probability is negligible for normal use.
-        self = Self(UInt64(perf_counter_ns()))
+        # The clock alone can repeat: on Apple silicon it ticks every ~42 ns,
+        # so two generators made back to back would share a seed. The count
+        # of generators made so far, spread by the golden-ratio constant,
+        # keeps every one in the process distinct.
+        var count: UInt64 = 0
+        try:
+            count = _RANDOM_COUNT.get_or_create_ptr()[].fetch_add(1)
+        except:
+            pass
+        self = Self(UInt64(perf_counter_ns()) + count * 0x9E3779B97F4A7C15)
 
     def __init__(out self, seed: UInt64):
         # SplitMix64 to initialize state from seed — avoids bad zero states

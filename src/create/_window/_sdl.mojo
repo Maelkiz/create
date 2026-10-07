@@ -391,13 +391,14 @@ struct SDL:
         ):
             raise Error("SDL_SetWindowTitle failed: " + self.get_error())
 
-    def set_window_resizable(self, window: Int, enabled: Bool) raises:
-        if not self.lib.call["SDL_SetWindowResizable", Bool](window, enabled):
-            raise Error("SDL_SetWindowResizable failed: " + self.get_error())
+    def set_window_resizable(self, window: Int, enabled: Bool) -> Bool:
+        """A request, like `maximize_window`: since SDL 3.4.18 a driver that
+        can't change it (dummy, offscreen) fails rather than doing nothing."""
+        return self.lib.call["SDL_SetWindowResizable", Bool](window, enabled)
 
-    def set_window_bordered(self, window: Int, enabled: Bool) raises:
-        if not self.lib.call["SDL_SetWindowBordered", Bool](window, enabled):
-            raise Error("SDL_SetWindowBordered failed: " + self.get_error())
+    def set_window_bordered(self, window: Int, enabled: Bool) -> Bool:
+        """A request, like `set_window_resizable`, and for the same reason."""
+        return self.lib.call["SDL_SetWindowBordered", Bool](window, enabled)
 
     def maximize_window(self, window: Int) -> Bool:
         """A request the window manager may ignore, and some video drivers
