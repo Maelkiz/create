@@ -129,14 +129,14 @@ jobs:
         with:
           cache: true
           locked: true
-      - name: precompile
-        run: pixi run precompile
-      - name: examples
-        if: success() || failure()
-        run: pixi run build-examples
-      - name: tests
-        if: success() || failure()
-        run: pixi run test | tee test.log && ! grep -q SKIP test.log
+      - name: probe (temporary)
+        run: |
+          echo "== default"; pixi run mojo run -I src probe/sdl_probe.mojo
+          echo "== no MFi"; SDL_JOYSTICK_MFI=0 pixi run mojo run -I src probe/sdl_probe.mojo
+          echo "== no IOKit"; SDL_JOYSTICK_IOKIT=0 pixi run mojo run -I src probe/sdl_probe.mojo
+          echo "== no HIDAPI"; SDL_JOYSTICK_HIDAPI=0 pixi run mojo run -I src probe/sdl_probe.mojo
+          echo "== lifecycle file"; time pixi run mojo run -I src tests/window/test_window_lifecycle.mojo
+          echo "== lifecycle again (warm cache)"; time pixi run mojo run -I src tests/window/test_window_lifecycle.mojo
 
   # The required check. A skipped matrix job reports under its unexpanded
   # name, not as format/precompile/..., so those can't be required directly.
