@@ -44,6 +44,7 @@ comptime SDL_WINDOW_RESIZABLE: UInt64 = 0x0000000000000020
 comptime SDL_WINDOW_MAXIMIZED: UInt64 = 0x0000000000000080
 comptime SDL_WINDOW_OPENGL: UInt64 = 0x0000000000000002
 comptime SDL_WINDOW_HIDDEN: UInt64 = 0x0000000000000008
+comptime SDL_WINDOW_HIGH_PIXEL_DENSITY: UInt64 = 0x0000000000002000
 
 # SDL_GLAttr enum values (positional, per SDL_video.h).
 comptime SDL_GL_DOUBLEBUFFER: Int32 = 5
@@ -270,7 +271,12 @@ struct SDL:
         maximized: Bool = False,
         hidden: Bool = False,
     ) raises -> Int:
-        var flags: UInt64 = 0
+        """Every window asks for full pixel density: without it a Retina or
+        scaled Wayland display hands GL a drawable at the logical size and
+        upscales it, blurred. The GL loop sizes its viewport from
+        `drawable_size()`, so it draws at the display's density; a pixel
+        buffer `Window` keeps its logical size, stretched over the window."""
+        var flags: UInt64 = SDL_WINDOW_HIGH_PIXEL_DENSITY
         if hidden:
             flags |= SDL_WINDOW_HIDDEN
         if resizable:

@@ -9,14 +9,18 @@ The name is the file's stem, `libpng16`, and the platform adds its suffix:
 `.so` on Linux, `.dylib` on macOS. Both are the unversioned names the
 conda-forge packages ship as symlinks to the versioned file.
 
-Where the library is found differs by platform. On Linux the `mojo`
-executable's `RPATH` (`$ORIGIN/../lib`) covers `dlopen` as well, so a bare
-name finds the pixi environment's copy. macOS applies an executable's
+Where the library is found differs by platform. On Linux an executable's
+run path covers `dlopen` as well: `mojo`'s (`$ORIGIN/../lib`) and a `mojo
+build` binary's (the environment's `lib`, absolute) both find the pixi
+environment's copy from a bare name. macOS applies an executable's
 `LC_RPATH` only to `@rpath/` names, so a bare name searches just the default
-fallback directories and misses the environment. So the environment's `lib`
-directory, from `CONDA_PREFIX` (set by `pixi run` and `pixi shell`), is
-tried first on every platform, and the bare name, left to the platform's own
-search, is the fallback — a built binary run outside the environment.
+fallback directories and misses the environment. So:
+
+1. The environment's `lib` directory, from `CONDA_PREFIX` (set by `pixi run`
+   and `pixi shell`), on every platform.
+2. On macOS, `@rpath/` and the name: a built binary run outside the
+   environment, through the run path `mojo build` gave it.
+3. The bare name, left to the platform's own search.
 """
 
 from std.ffi import _DLHandle
@@ -41,4 +45,9 @@ def load_library(stem: String) raises -> _DLHandle:
         var path = prefix + "/lib/" + name
         if exists(path):
             return _DLHandle(path)
+    comptime if CompilationTarget.is_macos():
+        try:
+            return _DLHandle("@rpath/" + name)
+        except:
+            pass
     return _DLHandle(name)

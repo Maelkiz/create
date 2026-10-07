@@ -11,6 +11,19 @@
 **Create** is a creative coding library for rapid prototyping and interactive graphics, inspired by Processing but built to scale — 
 from sketch to game, prototype to full application. It provides a clean, modular API while taking full advantage of Mojo's performance and language features.
 
+## Platforms
+
+| Platform | Status |
+|---|---|
+| Linux (x86-64) | Supported, used day to day |
+| Windows through WSL2 | Supported, used day to day |
+| macOS on Apple silicon | Built and tested in CI on every change; little use on a real desktop yet |
+
+Intel Macs and native Windows are not supported: Mojo doesn't run on either. Every dependency, Mojo included,
+comes from [pixi](https://pixi.sh), so `pixi run` is all a supported machine needs. A program built with
+`mojo build` finds those libraries itself, from any directory, while the pixi environment it was built in
+stays where it is.
+
 ## The shape of a program
 
 ```mojo
