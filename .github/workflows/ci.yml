@@ -53,7 +53,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     name: ${{ matrix.name }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner || 'ubuntu-latest' }}
     env:
       MOJO_CACHE: .pixi/envs/default/share/max/cache/.mojo_cache
     strategy:
@@ -69,6 +69,16 @@ jobs:
           - name: tests
             # GL tests skip without a context; here a skip means the Mesa
             # setup broke, so it fails the job rather than passing silently.
+            run: pixi run test | tee test.log && ! grep -q SKIP test.log
+          # Apple silicon. Format and precompile are platform-independent
+          # enough that Linux covers them (and `pixi run test` precompiles
+          # anyway). Headless GL runs in a hidden Cocoa window, which the
+          # runner's desktop session supports, so a SKIP fails here too.
+          - name: macos-examples
+            runner: macos-15
+            run: pixi run build-examples
+          - name: macos-tests
+            runner: macos-15
             run: pixi run test | tee test.log && ! grep -q SKIP test.log
     steps:
       - uses: actions/checkout@v7
@@ -99,7 +109,7 @@ jobs:
         if: matrix.name != 'format'
         run: |
           mkdir -p "$MOJO_CACHE"
-          find "$MOJO_CACHE" -type f -exec touch -a -d 2000-01-01 {} +
+          find "$MOJO_CACHE" -type f -exec touch -a -t 200001010000 {} +
           touch "$RUNNER_TEMP/cache-marker"
       - run: ${{ matrix.run }}
       - name: Drop the entries this run didn't read
@@ -111,32 +121,6 @@ jobs:
         with:
           path: ${{ env.MOJO_CACHE }}
           key: mojo-${{ matrix.name }}-${{ hashFiles('pixi.lock') }}-${{ github.sha }}
-
-  # macOS (Apple silicon) support is new and untested by hand, so this job is
-  # informational: `ci` doesn't need it, and a red macOS run never blocks a
-  # merge. Each step runs even when an earlier one failed, so one run shows
-  # everything that breaks. As on Linux, a GL test that skips fails the job:
-  # headless GL here runs in a hidden Cocoa window, which the runner's
-  # desktop session supports. No compile cache: the marking steps above use
-  # GNU-only `touch`/`find` flags.
-  macos:
-    needs: changes
-    if: needs.changes.outputs.code == 'true'
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: prefix-dev/setup-pixi@v0.11.0
-        with:
-          cache: true
-          locked: true
-      - name: probe (temporary)
-        run: |
-          echo "== default"; pixi run mojo run -I src probe/sdl_probe.mojo
-          echo "== no MFi"; SDL_JOYSTICK_MFI=0 pixi run mojo run -I src probe/sdl_probe.mojo
-          echo "== no IOKit"; SDL_JOYSTICK_IOKIT=0 pixi run mojo run -I src probe/sdl_probe.mojo
-          echo "== no HIDAPI"; SDL_JOYSTICK_HIDAPI=0 pixi run mojo run -I src probe/sdl_probe.mojo
-          echo "== lifecycle file"; time pixi run mojo run -I src tests/window/test_window_lifecycle.mojo
-          echo "== lifecycle again (warm cache)"; time pixi run mojo run -I src tests/window/test_window_lifecycle.mojo
 
   # The required check. A skipped matrix job reports under its unexpanded
   # name, not as format/precompile/..., so those can't be required directly.
