@@ -14,6 +14,7 @@ int's worth of trailing padding).
 from std.ffi import _DLHandle
 
 from create._bytes import cstr as _cstr
+from create._library import load_library
 
 comptime SFM_READ: Int32 = 0x10
 comptime _SF_INFO_SIZE = 32
@@ -26,7 +27,7 @@ struct SndFile:
     var lib: _DLHandle
 
     def __init__(out self) raises:
-        self.lib = _DLHandle("libsndfile.so")
+        self.lib = load_library("libsndfile")
 
     def load(self, path: String) raises -> Tuple[List[Int16], Int32, Int32]:
         """Decode an audio file to interleaved S16 PCM. Returns (samples, channels, freq).

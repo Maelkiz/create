@@ -3,6 +3,7 @@ from std.ffi import _DLHandle, _Global
 from std.memory import ArcPointer, unsafe_memcpy
 
 from create._bytes import le_uint, sign_extend_32
+from create._library import load_library
 from create.color.color import Color
 from .pixel_buffer import PixelBuffer
 
@@ -216,7 +217,7 @@ struct Image(Copyable, Movable):
 
     @staticmethod
     def _load_png(data: List[UInt8]) raises -> Image:
-        var lib = _DLHandle("libpng16.so")
+        var lib = load_library("libpng16")
         var img = Array[UInt8, 104](fill=0)
         img[8] = 1  # PNG_IMAGE_VERSION
 
@@ -246,7 +247,7 @@ struct Image(Copyable, Movable):
         var w = dims[0]
         var h = dims[1]
 
-        var lib = _DLHandle("libturbojpeg.so")
+        var lib = load_library("libturbojpeg")
         var handle = lib.call["tjInitDecompress", Int]()
         if handle == 0:
             raise Error("Failed to init JPEG decompressor")

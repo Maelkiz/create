@@ -14,6 +14,7 @@ not a framebuffer.
 from std.ffi import _DLHandle
 
 from create._bytes import cstr
+from create._library import load_library
 
 comptime _PNG_IMAGE_VERSION = 1
 
@@ -79,7 +80,7 @@ def write_png(
             + String(height)
         )
 
-    var lib = _DLHandle("libpng16.so")
+    var lib = load_library("libpng16")
     var img = List[UInt8](length=_PNG_IMAGE_SIZE, fill=0)
     _put_u32(img, 8, _PNG_IMAGE_VERSION)
     _put_u32(img, 12, width)

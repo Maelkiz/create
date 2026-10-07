@@ -1,11 +1,12 @@
 from std.atomic import Atomic
 from std.collections import Optional
 from std.ffi import _DLHandle, _Global
-from std.memory import ArcPointer
+from std.memory import ArcPointer, unsafe_memcpy
 from std.math import abs
 from std.reflection import source_location
 
 from create._bytes import cstr, le_uint, sign_extend_32
+from create._library import load_library
 
 # The packaged faces, loaded lazily on the first text render: Noto Sans for
 # text, Noto Sans Italic for its italic, and Noto Sans Symbols for codepoints
@@ -103,14 +104,18 @@ comptime _FT_RENDER_MODE_NORMAL = 0
 
 
 # These wrap `le_uint` rather than being replaced by it: reading a C struct
-# field means copying it out of foreign memory first, and a leaf module has no
-# business linking libc for one caller's sake. The copy is what differs from
-# the image decoders; the assembly is not, so only that is shared.
+# field means copying it out of foreign memory first. The copy is what differs
+# from the image decoders; the assembly is not, so only that is shared.
+
+
+def _foreign(addr: Int) -> Pointer[UInt8, MutUntrackedOrigin]:
+    """The bytes FreeType owns at `addr`."""
+    return Pointer[UInt8, MutUntrackedOrigin](unsafe_from_address=addr)
 
 
 def _read_u32(addr: Int) raises -> Int:
     var buf = Array[UInt8, 4](fill=0)
-    _ = _DLHandle("libc.so.6").call["memcpy", Int](buf.unsafe_ptr(), addr, 4)
+    unsafe_memcpy(dest=buf.unsafe_ptr(), src=_foreign(addr), count=4)
     return le_uint(buf.unsafe_ptr(), 0, 4)
 
 
@@ -120,7 +125,7 @@ def _read_i32(addr: Int) raises -> Int:
 
 def _read_ptr(addr: Int) raises -> Int:
     var buf = Array[UInt8, 8](fill=0)
-    _ = _DLHandle("libc.so.6").call["memcpy", Int](buf.unsafe_ptr(), addr, 8)
+    unsafe_memcpy(dest=buf.unsafe_ptr(), src=_foreign(addr), count=8)
     return le_uint(buf.unsafe_ptr(), 0, 8)
 
 
@@ -198,7 +203,7 @@ struct _Face(Movable):
     def __init__(
         out self, path: String, size: Int, weight: Int, slanted: Bool = False
     ) raises:
-        var ft = _DLHandle("libfreetype.so.6")
+        var ft = load_library("libfreetype")
 
         var lib_buf = Array[UInt8, 8](fill=0)
         if ft.call["FT_Init_FreeType", Int32](lib_buf.unsafe_ptr()) != 0:
@@ -234,7 +239,7 @@ struct _Face(Movable):
         """Close the face, then the library it belongs to. Nothing can be
         done about a failure this late, so none is raised."""
         try:
-            var ft = _DLHandle("libfreetype.so.6")
+            var ft = load_library("libfreetype")
             _ = ft.call["FT_Done_Face", Int32](self._face)
             _ = ft.call["FT_Done_FreeType", Int32](self._lib)
         except:
@@ -293,7 +298,7 @@ struct _Face(Movable):
     def _set_weight(mut self, weight: Int) raises:
         if weight == self._weight:
             return
-        var ft = _DLHandle("libfreetype.so.6")
+        var ft = load_library("libfreetype")
         var master_buf = Array[UInt8, 8](fill=0)
         if (
             ft.call["FT_Get_MM_Var", Int32](self._face, master_buf.unsafe_ptr())
@@ -328,7 +333,7 @@ struct _Face(Movable):
     def has_glyph(self, codepoint: Int) raises -> Bool:
         """Whether this face can render this codepoint — how `TextRenderer`
         decides to fall back to the symbols face."""
-        var ft = _DLHandle("libfreetype.so.6")
+        var ft = load_library("libfreetype")
         return (
             ft.call["FT_Get_Char_Index", UInt32](self._face, Int(codepoint))
             != 0
@@ -341,7 +346,7 @@ struct _Face(Movable):
         still advances the pen, so a missing character leaves a gap rather than
         collapsing the line or raising mid-string.
         """
-        var ft = _DLHandle("libfreetype.so.6")
+        var ft = load_library("libfreetype")
         self._set_size(ft, size)
 
         if (
@@ -376,12 +381,11 @@ struct _Face(Movable):
         var g = _GlyphInfo(width, rows, bmp_left, bmp_top, advance_x)
         if buf_ptr != 0 and width > 0 and rows > 0:
             var stride = abs(pitch)
-            var libc = _DLHandle("libc.so.6")
             for row in range(rows):
-                _ = libc.call["memcpy", Int](
-                    Int(g.pixels.unsafe_ptr()) + row * width,
-                    buf_ptr + row * stride,
-                    width,
+                unsafe_memcpy(
+                    dest=g.pixels.unsafe_ptr().unsafe_offset(row * width),
+                    src=_foreign(buf_ptr + row * stride),
+                    count=width,
                 )
         return g^
 
@@ -509,7 +513,7 @@ struct Font(Copyable, ImplicitlyCopyable, Movable, Writable):
         """Scale the face to `size` pixels, so `ascender`/`descender` are
         that size's. Free when it already is."""
         self._faces[].face(self._draws_italic)._set_size(
-            _DLHandle("libfreetype.so.6"), size
+            load_library("libfreetype"), size
         )
 
     def render(mut self, codepoint: Int, size: Int) raises -> _GlyphInfo:

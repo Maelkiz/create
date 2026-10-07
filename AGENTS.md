@@ -32,6 +32,7 @@ it makes the library better.
 | `text` | `src/create/text/` | `Font` (FreeType faces, glyph rasterisation), `FontWeight`, the packaged Noto faces |
 | `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |
 | `_bytes` | `src/create/_bytes.mojo` | Internal leaf: little-endian integer decoding |
+| `_library` | `src/create/_library.mojo` | Internal leaf: `load_library`, every FFI binding's way to open a shared library (`.so`/`.dylib`, the pixi environment first) |
 | `_window` | `src/create/_window/` | Internal platform layer: `Window`, `GLWindow`, typed `Event`s, SDL3 video bindings |
 
 Package internals are documented in scoped files: [src/create/render/AGENTS.md](src/create/render/AGENTS.md),
@@ -58,6 +59,7 @@ Two tiers of automated checks:
 |---|---|
 | `pre-commit` hook (after `pixi run setup`) | Formatting check on staged `.mojo` files, then builds `tests/core/test_smoke.mojo`. Constant cost |
 | CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)), every PR and push to `main` | Formatting, `mojo precompile`, every example and benchmark, the test suite — a GL test that skips fails the job |
+| CI `macos` job, alongside | `precompile`, examples and tests on Apple silicon. Informational: not part of `ci`, so it never blocks a merge |
 
 Both skip their checks when every changed path is inert (`*.md`, `LICENSE`, agent/editor config) —
 the allowlist is in `.githooks/_inert.sh`, read by the hook and the workflow alike.
@@ -152,20 +154,24 @@ A program writes `from create import *`. Otherwise import by name from the ownin
 ### Layering
 
 - **`render` never imports `core`** (it would be a cycle). `render` depends only on `math`, `color`,
-  `image`, `text` and `_bytes`, so it works without a run loop. So the mapping dials reach `render` as
+  `image`, `text`, `_bytes` and `_library`, so it works without a run loop. So the mapping dials reach `render` as
   plain values: `context._set_viewport(state, …)` in `core` passes the design size and autoscale
   in, and `context._new_canvas(state^)` builds the frame. Frame-wide drawing settings live on
   `PersistentCanvasState` itself.
 - **`color`** depends only on `math`; `image` and `render` both import it. It sits below `image` so
   that `Image.pixel` can return a `Color` without a `render`↔`image` cycle.
-- **`text`** depends only on `_bytes`. `render`→`text` is nominal, like `render`→`image`: `Style`,
+- **`text`** depends only on `_bytes` and `_library`. `render`→`text` is nominal, like `render`→`image`: `Style`,
   `canvas.font` and text layout name `Font`, and `_raster.blit_glyph` takes `_GlyphInfo` by its
   internal path.
 - **`input`** depends only on `math`; `core` imports it. `Input` is plain state: `core`'s
   `apply_events` folds each window event in through one `_`-prefixed method per kind (`_key_down`,
   `_mouse_button_down`, …), so `input` never sees an `Event` and `_window` stays `core`'s alone.
 - **`_bytes`** is a leaf imported by `image`, `text` and `render`, re-exported by nothing.
-- **`_window`** imports nothing from `create`; `core` is its only consumer; nothing re-exports it.
+- **`_library`** is a leaf imported by every package with FFI bindings, `_window` included. A
+  binding opens its library with `load_library("libname")`, never `_DLHandle("libname.so")`: the
+  platform suffix and search path are decided there.
+- **`_window`** imports nothing from `create` but `_library`; `core` is its only consumer; nothing
+  re-exports it.
 - **`render`→`image` is nominal:** only `canvas.image`'s overloads and `canvas.snapshot` name
   `Image`/`Animator`.
   A `render` function that needs pixels takes a pointer plus width/height, not an image type.
