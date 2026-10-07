@@ -14,6 +14,13 @@ on:
   push:
     branches: [main]
 
+# An explicit `shell: bash` runs steps with `-o pipefail`, which the default
+# shell lacks: without it `pixi run test | tee test.log` exits as tee does, and
+# a failing test passes the job.
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -108,9 +115,10 @@ jobs:
   # macOS (Apple silicon) support is new and untested by hand, so this job is
   # informational: `ci` doesn't need it, and a red macOS run never blocks a
   # merge. Each step runs even when an earlier one failed, so one run shows
-  # everything that breaks. GL tests may skip here (the offscreen driver
-  # needs EGL, which macOS lacks), so unlike the Linux job a SKIP passes. No
-  # compile cache: the marking steps above use GNU-only `touch`/`find` flags.
+  # everything that breaks. As on Linux, a GL test that skips fails the job:
+  # headless GL here runs in a hidden Cocoa window, which the runner's
+  # desktop session supports. No compile cache: the marking steps above use
+  # GNU-only `touch`/`find` flags.
   macos:
     needs: changes
     if: needs.changes.outputs.code == 'true'
@@ -128,7 +136,7 @@ jobs:
         run: pixi run build-examples
       - name: tests
         if: success() || failure()
-        run: pixi run test
+        run: pixi run test | tee test.log && ! grep -q SKIP test.log
 
   # The required check. A skipped matrix job reports under its unexpanded
   # name, not as format/precompile/..., so those can't be required directly.
