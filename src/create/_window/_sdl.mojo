@@ -440,9 +440,10 @@ struct SDL:
     def gl_destroy_context(self, context: Int) raises:
         self.lib.call["SDL_GL_DestroyContext"](context)
 
-    def gl_set_swap_interval(self, interval: Int) raises:
-        if not self.lib.call["SDL_GL_SetSwapInterval", Bool](Int32(interval)):
-            raise Error("SDL_GL_SetSwapInterval failed: " + self.get_error())
+    def gl_set_swap_interval(self, interval: Int) -> Bool:
+        """A request, like `maximize_window`: some GL drivers can't change
+        it (WSLg's, for one) and fail rather than ignore it."""
+        return self.lib.call["SDL_GL_SetSwapInterval", Bool](Int32(interval))
 
     def gl_get_proc_address(self, name: String) raises -> Int:
         return self.lib.call["SDL_GL_GetProcAddress", Int](name.unsafe_ptr())

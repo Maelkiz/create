@@ -168,13 +168,14 @@ struct GLWindow(NativeWindow):
     ) raises:
         self._native.set_mode(fullscreen, borderless, maximized)
 
-    def set_swap_interval(mut self, interval: Int) raises:
+    def set_swap_interval(mut self, interval: Int) -> Bool:
         """0 = no vsync, 1 = vsync, -1 = adaptive vsync (if supported).
+        False when the driver refused, and the interval is whatever it was.
 
         Note this is a *global* SDL GL setting (`SDL_GL_SetSwapInterval`
         takes no window/context argument), unlike `Window.set_vsync`.
         """
-        self._native.sdl.gl_set_swap_interval(interval)
+        return self._native.sdl.gl_set_swap_interval(interval)
 
     def rumble_gamepad(
         self,
