@@ -32,7 +32,8 @@ looks like a compiler fault rather than the ordinary mistake it is:
 """
 
 from std.ffi import _DLHandle
-from std.sys.info import CompilationTarget
+
+from create._library import load_library
 
 
 # ---------------------------------------------------------------- constants
@@ -226,10 +227,7 @@ comptime _ReadPixels = def(
 
 def _sdl() raises -> _DLHandle:
     """SDL3, for its GL loader alone. Refcounted, so this handle is additive."""
-    comptime if CompilationTarget.is_macos():
-        return _DLHandle("libSDL3.dylib")
-    else:
-        return _DLHandle("libSDL3.so")
+    return load_library("libSDL3")
 
 
 def _proc_address(lib: _DLHandle, name: String) raises -> Int:

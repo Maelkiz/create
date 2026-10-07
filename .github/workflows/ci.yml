@@ -105,6 +105,31 @@ jobs:
           path: ${{ env.MOJO_CACHE }}
           key: mojo-${{ matrix.name }}-${{ hashFiles('pixi.lock') }}-${{ github.sha }}
 
+  # macOS (Apple silicon) support is new and untested by hand, so this job is
+  # informational: `ci` doesn't need it, and a red macOS run never blocks a
+  # merge. Each step runs even when an earlier one failed, so one run shows
+  # everything that breaks. GL tests may skip here (the offscreen driver
+  # needs EGL, which macOS lacks), so unlike the Linux job a SKIP passes. No
+  # compile cache: the marking steps above use GNU-only `touch`/`find` flags.
+  macos:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.11.0
+        with:
+          cache: true
+          locked: true
+      - name: precompile
+        run: pixi run precompile
+      - name: examples
+        if: success() || failure()
+        run: pixi run build-examples
+      - name: tests
+        if: success() || failure()
+        run: pixi run test
+
   # The required check. A skipped matrix job reports under its unexpanded
   # name, not as format/precompile/..., so those can't be required directly.
   ci:
