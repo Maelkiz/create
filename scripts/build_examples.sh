@@ -22,12 +22,15 @@ fi
 jobs=$(nproc 2>/dev/null || echo 4)
 [ "$jobs" -gt 8 ] && jobs=8
 export OUT="$out"
-echo "$entrypoints" | xargs -P "$jobs" -I{} sh -c '
-    if mojo build -I src --emit llvm "{}" -o "$OUT/$(echo {} | tr / _).ll" \
-        > "$OUT/$(echo {} | tr / _).log" 2>&1; then
-        echo "PASS {}"
+# Each path reaches the worker as $1 rather than through -I: BSD xargs (macOS)
+# caps a command assembled by -I at 255 bytes, and this one is longer.
+echo "$entrypoints" | xargs -n 1 -P "$jobs" sh -c '
+    name=$(echo "$1" | tr / _)
+    if mojo build -I src --emit llvm "$1" -o "$OUT/$name.ll" \
+        > "$OUT/$name.log" 2>&1; then
+        echo "PASS $1"
     else
-        echo "FAIL {}"
-        cat "$OUT/$(echo {} | tr / _).log"
+        echo "FAIL $1"
+        cat "$OUT/$name.log"
         exit 1
-    fi'
+    fi' sh

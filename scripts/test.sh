@@ -74,15 +74,25 @@ then
     exit 1
 fi
 
-echo "$files" | xargs -P "$jobs" -I{} sh -c '
-    log="$LOGS/$(echo "{}" | tr / _).log"
-    if mojo run -I "$LOGS" "{}" > "$log" 2>&1; then
+# Each path reaches the worker as $1 rather than through -I: BSD xargs (macOS)
+# caps a command assembled by -I at 255 bytes, and this one is longer.
+if ! echo "$files" | xargs -n 1 -P "$jobs" sh -c '
+    log="$LOGS/$(echo "$1" | tr / _).log"
+    if mojo run -I "$LOGS" "$1" > "$log" 2>&1; then
+        skips=$(grep "SKIP" "$log" | sed "s/^/    /")
         # One write, so a concurrent worker cannot land between the lines.
-        printf "%s\n" "PASS {}$(grep "SKIP" "$log" | sed "s/^/\n    /")"
+        printf "PASS %s%s\n" "$1" "${skips:+
+$skips}"
     else
-        echo "FAIL {}"
+        echo "FAIL $1"
         touch "$log.failed"
-    fi'
+    fi' sh
+then
+    # A worker never fails (a failing test is a .failed file), so this is
+    # xargs itself: nothing reliable ran.
+    echo "The test runner failed; the results above are incomplete."
+    exit 1
+fi
 
 failed=$(ls "$logs" | grep '\.failed$' || true)
 [ -z "$failed" ] && { echo "All test files passed."; exit 0; }
