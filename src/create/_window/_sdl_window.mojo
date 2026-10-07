@@ -89,7 +89,9 @@ struct _SDLWindow:
     ) raises:
         """`gl_attributes` are `SDL_GL_*` pairs, set before the window is
         created because SDL reads them then. `offscreen` as for
-        `SDL.init_subsystems`."""
+        `SDL.init_subsystems`; its window is created hidden, which the
+        offscreen driver never shows anyway and which is what keeps it off
+        the screen on macOS."""
         self.sdl = SDL()
         self.sdl.init_subsystems(offscreen)
         try:
@@ -104,6 +106,7 @@ struct _SDLWindow:
                 fullscreen=fullscreen,
                 borderless=borderless,
                 maximized=maximized,
+                hidden=offscreen,
             )
         except e:
             self.sdl.quit_subsystems()

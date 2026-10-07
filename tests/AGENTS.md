@@ -35,7 +35,9 @@ namespace any scratch path under `/tmp` per file.
 GL tests skip without a context. Their windows are `GLWindow(..., offscreen=True)` (as is
 `run_headless`'s GPU path): SDL's offscreen driver, never shown and needing no display, with its
 context from EGL — the host's GPU driver where there is one, Mesa's software GL elsewhere, which is
-enough for library-logic bugs but blind to driver-specific ones. If GL tests skip on a machine with a
+enough for library-logic bugs but blind to driver-specific ones. macOS has no EGL, so there the
+window is a hidden Cocoa one instead: still never shown, but it needs a logged-in desktop session (a
+Mac reached only over SSH may skip). If GL tests skip on a machine with a
 working driver, suspect the environment's libraries shadowing the host driver's:
 `scripts/activate.sh` preloads the system libdrm for that reason. Window tests that open a window
 pin `SDL_VIDEODRIVER=dummy` in their own `main`.

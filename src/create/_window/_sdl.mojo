@@ -23,6 +23,7 @@ actually trips over it.
 """
 
 from std.ffi import _DLHandle
+from std.sys.info import CompilationTarget
 
 from create._library import load_library
 
@@ -42,6 +43,7 @@ comptime SDL_WINDOW_BORDERLESS: UInt64 = 0x0000000000000010
 comptime SDL_WINDOW_RESIZABLE: UInt64 = 0x0000000000000020
 comptime SDL_WINDOW_MAXIMIZED: UInt64 = 0x0000000000000080
 comptime SDL_WINDOW_OPENGL: UInt64 = 0x0000000000000002
+comptime SDL_WINDOW_HIDDEN: UInt64 = 0x0000000000000008
 
 # SDL_GLAttr enum values (positional, per SDL_video.h).
 comptime SDL_GL_DOUBLEBUFFER: Int32 = 5
@@ -162,7 +164,11 @@ struct SDL:
 
         `offscreen` starts video on SDL's offscreen driver: windows are never
         shown and GL contexts come from EGL, so no display server is needed.
-        SDL reads the driver only when video starts, so the hint is reset
+        Except on macOS, which has no EGL: there video starts on its usual
+        Cocoa driver and the window is created hidden (see `_SDLWindow`), as
+        macOS's GL draws for a window that is never shown. That needs a
+        logged-in desktop session, which a Mac reached only over SSH may
+        lack. SDL reads the driver only when video starts, so the hint is reset
         straight after — once every window has closed and video has shut
         down, the next window gets the usual driver. While video is already
         running it keeps the driver it started with, and `offscreen` changes
@@ -173,13 +179,14 @@ struct SDL:
         take a second on a desktop — on every GPU `run_headless`.
         """
         var hint = String("SDL_VIDEO_DRIVER")
-        if offscreen:
+        var offscreen_driver = offscreen and not CompilationTarget.is_macos()
+        if offscreen_driver:
             var driver = String("offscreen")
             _ = self.lib.call["SDL_SetHint", Bool](
                 hint.as_c_string_span().ptr(), driver.as_c_string_span().ptr()
             )
         var started = self.lib.call["SDL_Init", Bool](SDL_INIT_VIDEO)
-        if offscreen:
+        if offscreen_driver:
             _ = self.lib.call["SDL_ResetHint", Bool](
                 hint.as_c_string_span().ptr()
             )
@@ -261,8 +268,11 @@ struct SDL:
         fullscreen: Bool = False,
         borderless: Bool = False,
         maximized: Bool = False,
+        hidden: Bool = False,
     ) raises -> Int:
         var flags: UInt64 = 0
+        if hidden:
+            flags |= SDL_WINDOW_HIDDEN
         if resizable:
             flags |= SDL_WINDOW_RESIZABLE
         if opengl:
