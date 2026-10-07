@@ -153,7 +153,10 @@ def run_gl[
     the window by `autoscale`.
     """
     var win = _open_window(title, mode, width, height, resizable)
-    win.set_swap_interval(1 if vsync else 0)
+    # A driver that can't change it (WSLg's) keeps its own interval, which
+    # may be none: frames then run as fast as they draw unless
+    # `context.max_frame_rate` caps them. Nothing else depends on vsync.
+    _ = win.set_swap_interval(1 if vsync else 0)
     # Built after the window because its GL resources need a current context;
     # the state now carries the viewport too, so it has to exist before
     # `_wait_for_dimensions` rather than inside the loop.
