@@ -12,6 +12,30 @@ struct _Header(Copyable, Movable):
     var names: List[String]
     var named: Bool
 
+    def index(self, column: String) raises -> Int:
+        """The index of the named column; raises if there is none."""
+        if not self.named:
+            raise Error(
+                'no column "'
+                + column
+                + '": the table has no header, reach columns by index'
+            )
+        for i in range(len(self.names)):
+            if self.names[i] == column:
+                return i
+        raise Error('no column "' + column + '"')
+
+    def checked(self, column: Int) raises -> Int:
+        """`column` itself if the header has it; raises otherwise."""
+        if column < 0 or column >= len(self.names):
+            raise Error(
+                "no column "
+                + String(column)
+                + ": the table has "
+                + String(len(self.names))
+            )
+        return column
+
 
 struct TableRow(Copyable, Movable):
     """One row of a `Table`, its cells reached by column name or index.
@@ -66,7 +90,7 @@ struct TableRow(Copyable, Movable):
 
     def set(mut self, column: Int, var value: String) raises:
         """Set the cell in column `column`, from 0."""
-        self._set(self._settable_index(column), value^)
+        self._set(self._header[].checked(column), value^)
 
     def set(mut self, column: String, value: Float64) raises:
         """Set the cell in the named column to a number."""
@@ -74,7 +98,7 @@ struct TableRow(Copyable, Movable):
 
     def set(mut self, column: Int, value: Float64) raises:
         """Set the cell in column `column`, from 0, to a number."""
-        self._set(self._settable_index(column), String(value))
+        self._set(self._header[].checked(column), String(value))
 
     def set(mut self, column: String, value: Int) raises:
         """Set the cell in the named column to a whole number."""
@@ -82,23 +106,12 @@ struct TableRow(Copyable, Movable):
 
     def set(mut self, column: Int, value: Int) raises:
         """Set the cell in column `column`, from 0, to a whole number."""
-        self._set(self._settable_index(column), String(value))
+        self._set(self._header[].checked(column), String(value))
 
     def _set(mut self, index: Int, var value: String):
         while len(self._cells) <= index:
             self._cells.append("")
         self._cells[index] = value^
-
-    def _settable_index(self, column: Int) raises -> Int:
-        var count = len(self._header[].names)
-        if column < 0 or column >= count:
-            raise Error(
-                "no column "
-                + String(column)
-                + ": the table has "
-                + String(count)
-            )
-        return column
 
     def _cell(self, index: Int) -> String:
         if index < len(self._cells):
@@ -106,17 +119,7 @@ struct TableRow(Copyable, Movable):
         return ""
 
     def _column_index(self, column: String) raises -> Int:
-        ref header = self._header[]
-        if not header.named:
-            raise Error(
-                'no column "'
-                + column
-                + '": the table has no header, reach columns by index'
-            )
-        for i in range(len(header.names)):
-            if header.names[i] == column:
-                return i
-        raise Error('no column "' + column + '"')
+        return self._header[].index(column)
 
     def _checked_index(self, column: Int) raises -> Int:
         var count = max(len(self._header[].names), len(self._cells))
@@ -308,6 +311,71 @@ struct Table(Copyable, Movable):
             )
         _ = self._rows.pop(index)
 
+    def find_row(self, column: String, value: String) raises -> Optional[Int]:
+        """The index of the first row whose cell in the named column is
+        exactly `value`, or `None`."""
+        return self._find_row(self._header[].index(column), value)
+
+    def find_row(self, column: Int, value: String) raises -> Optional[Int]:
+        """The index of the first row whose cell in column `column` is
+        exactly `value`, or `None`."""
+        return self._find_row(self._header[].checked(column), value)
+
+    def find_rows(self, column: String, value: String) raises -> List[Int]:
+        """The indices of every row whose cell in the named column is
+        exactly `value`, in order."""
+        return self._find_rows(self._header[].index(column), value)
+
+    def find_rows(self, column: Int, value: String) raises -> List[Int]:
+        """The indices of every row whose cell in column `column` is
+        exactly `value`, in order."""
+        return self._find_rows(self._header[].checked(column), value)
+
+    def sort(mut self, column: String, descending: Bool = False) raises:
+        """Order the rows by the named column, smallest first.
+
+        By number when every cell in the column is one, so `"10"` follows
+        `"9"`; by text otherwise. Stable: rows that tie keep their order.
+        """
+        self._sort(self._header[].index(column), descending)
+
+    def sort(mut self, column: Int, descending: Bool = False) raises:
+        """Order the rows by column `column`, from 0, as the named form."""
+        self._sort(self._header[].checked(column), descending)
+
+    def _find_row(self, index: Int, value: String) -> Optional[Int]:
+        for i in range(len(self._rows)):
+            if self._rows[i]._cell(index) == value:
+                return i
+        return None
+
+    def _find_rows(self, index: Int, value: String) -> List[Int]:
+        var found = List[Int]()
+        for i in range(len(self._rows)):
+            if self._rows[i]._cell(index) == value:
+                found.append(i)
+        return found^
+
+    def _sort(mut self, index: Int, descending: Bool):
+        var numbers = List[Float64](capacity=len(self._rows))
+        var texts = List[String](capacity=len(self._rows))
+        var numeric = True
+        for ref row in self._rows:
+            var text = row._cell(index)
+            if numeric:
+                try:
+                    numbers.append(atof(text.strip()))
+                except:
+                    numeric = False
+            texts.append(text^)
+        var order = _stable_order(
+            numbers, descending
+        ) if numeric else _stable_order(texts, descending)
+        var sorted = List[TableRow](capacity=len(self._rows))
+        for i in order:
+            sorted.append(self._rows[i].copy())
+        self._rows = sorted^
+
     def save(self, path: String, separator: String = "") raises:
         """Write the table as CSV or TSV, the header line first.
 
@@ -343,6 +411,51 @@ struct Table(Copyable, Movable):
         self._header = ArcPointer(header^)
         for ref row in self._rows:
             row._header = self._header
+
+
+def _stable_order[
+    T: Copyable & Comparable
+](keys: List[T], descending: Bool) -> List[Int]:
+    """The indices of `keys` in sorted order, ties in their original order.
+
+    A bottom-up merge sort: a merge takes from the left run unless the right
+    one is strictly first, which is what keeps ties in place either way.
+    """
+    var n = len(keys)
+    var order = List[Int](capacity=n)
+    for i in range(n):
+        order.append(i)
+    var scratch = order.copy()
+    var width = 1
+    while width < n:
+        var start = 0
+        while start < n:
+            var middle = min(start + width, n)
+            var end = min(start + 2 * width, n)
+            var left = start
+            var right = middle
+            for slot in range(start, end):
+                var take_right = right < end and (
+                    left >= middle
+                    or _precedes(
+                        keys[order[right]], keys[order[left]], descending
+                    )
+                )
+                if take_right:
+                    scratch[slot] = order[right]
+                    right += 1
+                else:
+                    scratch[slot] = order[left]
+                    left += 1
+            start = end
+        swap(order, scratch)
+        width *= 2
+    return order^
+
+
+def _precedes[T: Comparable](a: T, b: T, descending: Bool) -> Bool:
+    """Whether `a` sorts strictly before `b`."""
+    return a > b if descending else a < b
 
 
 def _write_record(

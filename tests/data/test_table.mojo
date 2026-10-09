@@ -270,5 +270,75 @@ def test_a_lone_empty_field_survives_saving() raises -> None:
     assert_equal(back.row(0).string("x"), "")
 
 
+def _names(t: Table) raises -> List[String]:
+    var names = List[String]()
+    for ref row in t.rows():
+        names.append(row.string("name"))
+    return names^
+
+
+def test_find_row() raises -> None:
+    var t = Table.load(FIXTURES + "scores.csv")
+    assert_equal(t.find_row("name", "Bob").value(), 1)
+    assert_equal(t.find_row("score", "95").value(), 1)  # the first match
+    assert_equal(t.find_row(0, "Cy").value(), 2)
+    assert_false(t.find_row("name", "Dee"))
+    with assert_raises(contains='no column "time"'):
+        _ = t.find_row("time", "1")
+
+
+def test_find_row_on_an_empty_table_still_checks_the_column() raises -> None:
+    var t = Table(["name"])
+    assert_false(t.find_row("name", "Ada"))
+    with assert_raises(contains='no column "time"'):
+        _ = t.find_row("time", "1")
+    with assert_raises(contains="no column 1"):
+        _ = t.find_rows(1, "1")
+
+
+def test_find_rows() raises -> None:
+    var t = Table.load(FIXTURES + "scores.csv")
+    assert_equal(t.find_rows("score", "95"), [1, 2])
+    assert_equal(len(t.find_rows("score", "1")), 0)
+
+
+def test_sort_is_numeric_when_the_column_is() raises -> None:
+    var t = Table.parse("name,score\na,9\nb,10\nc,-1.5\n")
+    t.sort("score")
+    assert_equal(_names(t), ["c", "a", "b"])
+
+
+def test_sort_is_by_text_when_any_cell_is_not_a_number() raises -> None:
+    var t = Table.parse("name,score\na,9\nb,10\nc,n/a\n")
+    t.sort("score")
+    assert_equal(_names(t), ["b", "a", "c"])
+
+
+def test_sort_is_stable_both_ways() raises -> None:
+    var t = Table.parse("name,score\na,2\nb,1\nc,2\nd,1\ne,3\nf,2\n")
+    t.sort("score")
+    assert_equal(_names(t), ["b", "d", "a", "c", "f", "e"])
+    t.sort("score", descending=True)
+    assert_equal(_names(t), ["e", "a", "c", "f", "b", "d"])
+
+
+def test_sort_descending_for_a_leaderboard() raises -> None:
+    var t = Table.load(FIXTURES + "scores.csv")
+    t.sort("score", descending=True)
+    assert_equal(_names(t), ["Ada", "Bob", "Cy"])
+    t.sort(0, descending=True)
+    assert_equal(_names(t), ["Cy", "Bob", "Ada"])
+
+
+def test_sort_handles_empty_and_single_row_tables() raises -> None:
+    var t = Table(["name"])
+    t.sort("name")
+    t.add_row(["a"])
+    t.sort("name")
+    assert_equal(_names(t), ["a"])
+    with assert_raises(contains='no column "x"'):
+        t.sort("x")
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
