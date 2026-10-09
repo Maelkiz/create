@@ -60,6 +60,46 @@ struct TableRow(Copyable, Movable):
         """The cell in column `column`, from 0, parsed as a whole number."""
         return self._int(self._checked_index(column), String(column))
 
+    def set(mut self, column: String, var value: String) raises:
+        """Set the cell in the named column."""
+        self._set(self._column_index(column), value^)
+
+    def set(mut self, column: Int, var value: String) raises:
+        """Set the cell in column `column`, from 0."""
+        self._set(self._settable_index(column), value^)
+
+    def set(mut self, column: String, value: Float64) raises:
+        """Set the cell in the named column to a number."""
+        self._set(self._column_index(column), String(value))
+
+    def set(mut self, column: Int, value: Float64) raises:
+        """Set the cell in column `column`, from 0, to a number."""
+        self._set(self._settable_index(column), String(value))
+
+    def set(mut self, column: String, value: Int) raises:
+        """Set the cell in the named column to a whole number."""
+        self._set(self._column_index(column), String(value))
+
+    def set(mut self, column: Int, value: Int) raises:
+        """Set the cell in column `column`, from 0, to a whole number."""
+        self._set(self._settable_index(column), String(value))
+
+    def _set(mut self, index: Int, var value: String):
+        while len(self._cells) <= index:
+            self._cells.append("")
+        self._cells[index] = value^
+
+    def _settable_index(self, column: Int) raises -> Int:
+        var count = len(self._header[].names)
+        if column < 0 or column >= count:
+            raise Error(
+                "no column "
+                + String(column)
+                + ": the table has "
+                + String(count)
+            )
+        return column
+
     def _cell(self, index: Int) -> String:
         if index < len(self._cells):
             return self._cells[index]
@@ -146,6 +186,11 @@ struct Table(Copyable, Movable):
         for i in range(start, len(records)):
             self._rows.append(TableRow(records[i].copy(), self._header))
 
+    def __init__(out self, var columns: List[String]):
+        """An empty table with these column names, to fill with `add_row`."""
+        self._header = ArcPointer(_Header(columns^, True))
+        self._rows = []
+
     @staticmethod
     def load(
         path: String, header: Bool = True, separator: String = ""
@@ -198,9 +243,132 @@ struct Table(Copyable, Movable):
         """Row `index`, from 0 to `row_count() - 1`, by reference."""
         return self._rows[index]
 
-    def rows(ref self) -> ref[self._rows] List[TableRow]:
-        """Every row, in order, by reference: `for ref row in t.rows()`."""
-        return self._rows
+    def rows(ref self) -> Span[TableRow, origin_of(self._rows)]:
+        """Every row, in order, by reference: `for ref row in t.rows()`.
+
+        Rows can be edited through it but not added or removed; that is
+        `add_row` and `remove_row`.
+        """
+        return Span(self._rows)
+
+    def add_row(mut self) -> ref[self._rows[0]] TableRow:
+        """Append an empty row and return it, to fill with `set`.
+
+        ```mojo
+        ref row = scores.add_row()
+        row.set("name", "Ada")
+        row.set("score", 120)
+        ```
+        """
+        self._rows.append(TableRow([], self._header))
+        return self._rows[len(self._rows) - 1]
+
+    def add_row(mut self, var cells: List[String]) raises:
+        """Append a row of cells, one per column in order.
+
+        A table with a header takes exactly one cell per column; one without
+        grows to fit a longer row.
+        """
+        var header = self._header[].copy()
+        if header.named and len(cells) != len(header.names):
+            raise Error(
+                "a row of "
+                + String(len(cells))
+                + " cells for "
+                + String(len(header.names))
+                + " columns"
+            )
+        if len(cells) > len(header.names):
+            header.names.resize(len(cells), "")
+            self._replace_header(header^)
+        self._rows.append(TableRow(cells^, self._header))
+
+    def add_column(mut self, name: String) raises:
+        """Append a column, empty in every row."""
+        var header = self._header[].copy()
+        if not header.named:
+            raise Error(
+                'cannot add column "'
+                + name
+                + '": the table has no header to name it in'
+            )
+        if name in header.names:
+            raise Error('column "' + name + '" already exists')
+        header.names.append(name)
+        self._replace_header(header^)
+
+    def remove_row(mut self, index: Int) raises:
+        """Remove row `index`; the rows after it move up by one."""
+        if index < 0 or index >= len(self._rows):
+            raise Error(
+                "no row "
+                + String(index)
+                + ": the table has "
+                + String(len(self._rows))
+            )
+        _ = self._rows.pop(index)
+
+    def save(self, path: String, separator: String = "") raises:
+        """Write the table as CSV or TSV, the header line first.
+
+        The separator follows `load`'s rule. A field is quoted only when it
+        holds the separator, a quote or a line break, so a file `load` read
+        is written back as it was.
+        """
+        var chosen = separator
+        if chosen == "":
+            chosen = "\t" if _is_tsv(path) else ","
+        var text = self._format(chosen)
+        with open(path, "w") as f:
+            f.write(text)
+
+    def _format(self, separator: String) raises -> String:
+        if separator.byte_length() != 1:
+            raise Error(
+                'separator must be a single character, not "' + separator + '"'
+            )
+        var out = String()
+        var width = len(self._header[].names)
+        if self._header[].named:
+            _write_record(out, self._header[].names, width, separator)
+        for ref row in self._rows:
+            _write_record(out, row._cells, width, separator)
+        return out^
+
+    def _replace_header(mut self, var header: _Header):
+        """Point the table and every row at a new header.
+
+        A header is never edited in place: a copied table shares it.
+        """
+        self._header = ArcPointer(header^)
+        for ref row in self._rows:
+            row._header = self._header
+
+
+def _write_record(
+    mut out: String, cells: List[String], width: Int, separator: String
+):
+    """Append one record, padded to `width` cells, and a line break.
+
+    A lone empty field is quoted, or the line would read back as blank and
+    be skipped.
+    """
+    var count = max(width, len(cells))
+    if count == 1 and (len(cells) == 0 or cells[0] == ""):
+        out += '""\n'
+        return
+    for i in range(count):
+        if i > 0:
+            out += separator
+        if i < len(cells):
+            out += _quoted_if_needed(cells[i], separator)
+    out += "\n"
+
+
+def _quoted_if_needed(field: String, separator: String) -> String:
+    if separator in field or '"' in field or "\n" in field or "\r" in field:
+        return '"' + field.replace('"', '""') + '"'
+    return field
 
 
 def _is_tsv(path: String) -> Bool:
