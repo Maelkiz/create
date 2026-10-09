@@ -356,6 +356,30 @@ struct JSON(Copyable, Movable, Sized, Writable):
     def _node(self) -> ref[self._document[].nodes[0]] _Node:
         return self._document[].nodes[self._index]
 
+    def save(self, path: String, indent: Int = 2) raises:
+        """Write the value to a JSON file, keys in their order.
+
+        Indented `indent` spaces a level, one item per line; 0 writes it
+        compact, as it prints. Raises for an infinite or NaN number, which
+        JSON has no way to write.
+        """
+        if indent < 0:
+            raise Error("indent must be 0 or more, not " + String(indent))
+        var bad = _non_finite_path(self._document[].nodes, self._index, "")
+        if bad:
+            raise Error(
+                "cannot save "
+                + path
+                + ": "
+                + (bad.value() if bad.value() != "" else "the value")
+                + " is not a finite number"
+            )
+        var text = String()
+        _write_value(text, self._document[].nodes, self._index, indent)
+        text += "\n"
+        with open(path, "w") as f:
+            f.write(text)
+
     def _is_node(self, value: JSON, index: Int) -> Bool:
         """Whether `value` is the node at `index` of this document."""
         return value._document is self._document and value._index == index
@@ -790,8 +814,17 @@ def _parse(text: String, source: String) raises -> JSON:
     return JSON(_document=ArcPointer(_Document(nodes^)), _index=root)
 
 
-def _write_value[W: Writer](mut writer: W, nodes: List[_Node], index: Int):
-    """Write a value as compact JSON text.
+def _write_value[
+    W: Writer
+](
+    mut writer: W,
+    nodes: List[_Node],
+    index: Int,
+    indent: Int = 0,
+    depth: Int = 0,
+):
+    """Write a value as JSON text: compact with `indent` 0, else one item
+    per line, nested `indent` spaces a level.
 
     A number with no JSON form (infinite or NaN) is written as `null`.
     """
@@ -809,22 +842,47 @@ def _write_value[W: Writer](mut writer: W, nodes: List[_Node], index: Int):
             writer.write(node.number)
     elif node.kind == JSONKind.STRING:
         _write_string(writer, node.text)
-    elif node.kind == JSONKind.ARRAY:
-        writer.write("[")
-        for i in range(len(node.children)):
-            if i > 0:
-                writer.write(",")
-            _write_value(writer, nodes, node.children[i])
-        writer.write("]")
     else:
-        writer.write("{")
+        var is_object = node.kind == JSONKind.OBJECT
+        writer.write("{" if is_object else "[")
         for i in range(len(node.children)):
             if i > 0:
                 writer.write(",")
-            _write_string(writer, node.keys[i])
-            writer.write(":")
-            _write_value(writer, nodes, node.children[i])
-        writer.write("}")
+            _write_break(writer, indent, depth + 1)
+            if is_object:
+                _write_string(writer, node.keys[i])
+                writer.write(": " if indent > 0 else ":")
+            _write_value(writer, nodes, node.children[i], indent, depth + 1)
+        if len(node.children) > 0:
+            _write_break(writer, indent, depth)
+        writer.write("}" if is_object else "]")
+
+
+def _write_break[W: Writer](mut writer: W, indent: Int, depth: Int):
+    """A line break and the indentation for `depth`, when indenting."""
+    if indent > 0:
+        writer.write("\n", " " * (indent * depth))
+
+
+def _non_finite_path(
+    nodes: List[_Node], index: Int, path: String
+) -> Optional[String]:
+    """The path to the first infinite or NaN number under `index`, if any."""
+    ref node = nodes[index]
+    if node.kind == JSONKind.NUMBER:
+        if not node.integral and (isnan(node.number) or isinf(node.number)):
+            return path
+        return None
+    for i in range(len(node.children)):
+        var step: String
+        if node.kind == JSONKind.OBJECT:
+            step = path + '["' + node.keys[i] + '"]'
+        else:
+            step = path + "[" + String(i) + "]"
+        var found = _non_finite_path(nodes, node.children[i], step)
+        if found:
+            return found
+    return None
 
 
 def _write_string[W: Writer](mut writer: W, text: String):
