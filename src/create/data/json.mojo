@@ -117,7 +117,10 @@ struct JSON(Copyable, Movable, Sized, Writable):
     ```
 
     Assigning a value copies it in, so a value set under two keys is two
-    values. Prints as compact JSON text.
+    values. Replacing a value leaves the old one in the document, unread,
+    until `copy()` or `save` drops it: a document rewritten every frame for
+    a long run stays small with `doc = doc.copy()` now and then. Prints as
+    compact JSON text.
     """
 
     var _document: ArcPointer[_Document]
