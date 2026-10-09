@@ -196,5 +196,136 @@ def test_root_preamble_reaches_json() raises -> None:
     assert_equal(RootJSON.parse("[1]")[0].int(), 1)
 
 
+def test_nested_assignment_lands_in_the_document() raises -> None:
+    var config = JSON.load(FIXTURES + "config.json")
+    config["player"]["speed"] = 3.0
+    config["enemies"][0]["hp"] = 9
+    config["player"]["name"] = "Ada"
+    assert_equal(config["player"]["speed"].float(), 3.0)
+    assert_equal(config["enemies"][0]["hp"].int(), 9)
+    assert_equal(config["player"]["name"].string(), "Ada")
+
+
+def test_editing_items_in_a_loop() raises -> None:
+    var config = JSON.load(FIXTURES + "config.json")
+    for enemy in config["enemies"].items():
+        enemy["hp"] = enemy["hp"].int() - 1
+    assert_equal(
+        String(config["enemies"]),
+        '[{"name":"slime","hp":3},{"name":"bat","hp":1}]',
+    )
+
+
+def test_a_value_read_from_a_document_aliases_it() raises -> None:
+    var config = JSON.load(FIXTURES + "config.json")
+    var player = config["player"]
+    player["speed"] = 4.0
+    assert_equal(config["player"]["speed"].float(), 4.0)
+
+
+def test_copy_is_independent() raises -> None:
+    var config = JSON.load(FIXTURES + "config.json")
+    var copied = config.copy()
+    copied["x"] = 1
+    copied["player"]["lives"] = 0
+    assert_false("x" in config)
+    assert_equal(config["player"]["lives"].int(), 3)
+    assert_equal(copied["player"]["lives"].int(), 0)
+    var player = config["player"].copy()
+    player["lives"] = 7
+    assert_equal(config["player"]["lives"].int(), 3)
+
+
+def test_a_value_set_twice_is_two_values() raises -> None:
+    var doc = JSON.object()
+    var point = JSON.object()
+    point["x"] = 1
+    doc["a"] = point
+    doc["b"] = point
+    doc["a"]["x"] = 2
+    assert_equal(doc["b"]["x"].int(), 1)
+    point["x"] = 5
+    assert_equal(doc["a"]["x"].int(), 2)
+    doc["c"] = doc["a"]  # within one document: copied too
+    doc["c"]["x"] = 3
+    assert_equal(doc["a"]["x"].int(), 2)
+
+
+def test_assigning_a_value_to_itself_changes_nothing() raises -> None:
+    var config = JSON.load(FIXTURES + "config.json")
+    var before = String(config)
+    config["player"] = config["player"]
+    config["enemies"][1] = config["enemies"][1]
+    assert_equal(String(config), before)
+
+
+def test_build_a_document() raises -> None:
+    var save = JSON.object()
+    save["level"] = 3
+    save["name"] = "Ada"
+    save["ratio"] = 0.5
+    save["done"] = False
+    save["none"] = JSON.null()
+    var path = JSON.array()
+    path.append(1.5)
+    path.append(JSON.object())
+    path[1]["y"] = 2
+    save["path"] = path
+    save["level"] = 4  # replaces in place, order kept
+    assert_equal(
+        String(save),
+        '{"level":4,"name":"Ada","ratio":0.5,"done":false,"none":null,'
+        + '"path":[1.5,{"y":2}]}',
+    )
+
+
+def test_get_falls_back_to_the_default() raises -> None:
+    var config = JSON.load(FIXTURES + "config.json")
+    assert_equal(config.get("volume", 1.0).float(), 0.8)
+    assert_equal(config.get("music", 0.5).float(), 0.5)
+    assert_equal(config.get("lives", 3).int(), 3)
+    with assert_raises(contains=".get() needs an object"):
+        _ = config["enemies"].get("x", 1)
+
+
+def test_remove() raises -> None:
+    var config = JSON.load(FIXTURES + "config.json")
+    config.remove("debug")
+    config["enemies"].remove(0)
+    assert_false("debug" in config)
+    assert_equal(len(config["enemies"]), 1)
+    assert_equal(config["enemies"][0]["name"].string(), "bat")
+    with assert_raises(contains='no key "debug"'):
+        config.remove("debug")
+    with assert_raises(contains="no item 1: the array has 1"):
+        config["enemies"].remove(1)
+
+
+def test_edits_check_the_kind_and_range() raises -> None:
+    var config = JSON.load(FIXTURES + "config.json")
+    with assert_raises(contains='["x"] = needs an object, not an array'):
+        config["enemies"]["x"] = 1
+    with assert_raises(contains="no item 5: the array has 2"):
+        config["enemies"][5] = 1
+    with assert_raises(contains=".append() needs an array"):
+        config.append(1)
+
+
+def test_copy_drops_what_edits_left_behind() raises -> None:
+    var doc = JSON.object()
+    for i in range(100):
+        doc["value"] = i
+    assert_equal(len(doc._document[].nodes), 101)
+    var copied = doc.copy()
+    assert_equal(len(copied._document[].nodes), 2)
+    assert_equal(copied["value"].int(), 99)
+
+
+def test_int_stays_exact_when_built() raises -> None:
+    var doc = JSON.object()
+    doc["seed"] = 9007199254740993
+    assert_equal(String(doc), '{"seed":9007199254740993}')
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
