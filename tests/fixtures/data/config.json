@@ -1,0 +1,11 @@
+{
+  "title": "Bouncing",
+  "debug": false,
+  "volume": 0.8,
+  "player": {"speed": 2.5, "lives": 3, "name": null},
+  "enemies": [
+    {"name": "slime", "hp": 4},
+    {"name": "bat", "hp": 2}
+  ],
+  "seed": 9007199254740993
+}
