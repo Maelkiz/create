@@ -90,7 +90,7 @@ struct _Document(Movable):
         self.nodes = nodes^
 
 
-struct JSON(Movable, Sized, Writable):
+struct JSON(Copyable, Movable, Sized, Writable):
     """A JSON value: an object, array, string, number, bool or null.
 
     Loaded or parsed, a document is read through `[]` by key or index, and
@@ -104,7 +104,23 @@ struct JSON(Movable, Sized, Writable):
         canvas.text(enemy["name"].string(), (0, y))
     ```
 
-    Prints as compact JSON text.
+    A handle edits the document it points into, nested assignment and
+    loops included, so a value read from a document **aliases** it, as in
+    Processing, JavaScript and Python. `copy()` gives an independent one:
+
+    ```mojo
+    config["player"]["speed"] = 3.0
+    for enemy in config["enemies"].items():
+        enemy["hp"] = enemy["hp"].int() - 1
+    var player = config["player"]          # still part of config
+    var snapshot = config.copy()           # a document of its own
+    ```
+
+    Assigning a value copies it in, so a value set under two keys is two
+    values. Replacing a value leaves the old one in the document, unread,
+    until `copy()` or `save` drops it: a document rewritten every frame for
+    a long run stays small with `doc = doc.copy()` now and then. Prints as
+    compact JSON text.
     """
 
     var _document: ArcPointer[_Document]
@@ -113,6 +129,62 @@ struct JSON(Movable, Sized, Writable):
     def __init__(out self, *, _document: ArcPointer[_Document], _index: Int):
         self._document = _document
         self._index = _index
+
+    def __init__(out self, *, var _node: _Node):
+        self._document = ArcPointer(_Document([_node^]))
+        self._index = 0
+
+    @implicit
+    def __init__(out self, value: Float64):
+        """A number."""
+        var node = _Node.scalar(JSONKind.NUMBER)
+        node.number = value
+        self = JSON(_node=node^)
+
+    @implicit
+    def __init__(out self, value: Int):
+        """A whole number, kept exact."""
+        var node = _Node.scalar(JSONKind.NUMBER)
+        node.number = Float64(value)
+        node.integer = value
+        node.integral = True
+        self = JSON(_node=node^)
+
+    @implicit
+    def __init__(out self, value: String):
+        """A string."""
+        var node = _Node.scalar(JSONKind.STRING)
+        node.text = value
+        self = JSON(_node=node^)
+
+    @implicit
+    def __init__(out self, value: Bool):
+        """A bool."""
+        var node = _Node.scalar(JSONKind.BOOL)
+        node.flag = value
+        self = JSON(_node=node^)
+
+    def __init__(out self, *, copy: Self):
+        """A deep copy: a document of its own holding only this value."""
+        var nodes = List[_Node]()
+        _ = _extract(copy._document[].nodes, copy._index, nodes)
+        self._document = ArcPointer(_Document(nodes^))
+        self._index = 0
+
+    @staticmethod
+    def object() -> JSON:
+        """An empty object, to fill with `json[key] = value`."""
+        return JSON(_node=_Node.scalar(JSONKind.OBJECT))
+
+    @staticmethod
+    def array() -> JSON:
+        """An empty array, to fill with `append`."""
+        return JSON(_node=_Node.scalar(JSONKind.ARRAY))
+
+    @staticmethod
+    def null() -> JSON:
+        """`null`."""
+        return JSON(_node=_Node.scalar(JSONKind.NULL))
 
     @staticmethod
     def load(path: String) raises -> JSON:
@@ -162,6 +234,75 @@ struct JSON(Movable, Sized, Writable):
                 + String(len(node.children))
             )
         return self._at(node.children[index])
+
+    def __setitem__(self, key: String, value: JSON) raises:
+        """Set `key` in an object to a copy of `value`, adding the key last
+        if it is new."""
+        ref node = self._expect(JSONKind.OBJECT, '["' + key + '"] =')
+        var slot = -1
+        for i in range(len(node.keys)):
+            if node.keys[i] == key:
+                slot = i
+        if slot >= 0 and self._is_node(value, node.children[slot]):
+            return  # the write-back of a nested assignment
+        var child = self._graft(value)
+        ref target = self._node()  # the graft may have moved the nodes
+        if slot >= 0:
+            target.children[slot] = child
+        else:
+            target.keys.append(key)
+            target.children.append(child)
+
+    def __setitem__(self, index: Int, value: JSON) raises:
+        """Set item `index` of an array to a copy of `value`."""
+        ref node = self._expect(JSONKind.ARRAY, "[" + String(index) + "] =")
+        if index < 0 or index >= len(node.children):
+            raise Error(
+                "no item "
+                + String(index)
+                + ": the array has "
+                + String(len(node.children))
+            )
+        if self._is_node(value, node.children[index]):
+            return  # the write-back of a nested assignment
+        var child = self._graft(value)
+        self._node().children[index] = child
+
+    def get(self, key: String, default: JSON) raises -> JSON:
+        """The value under `key` in an object, or `default` if it has none."""
+        ref node = self._expect(JSONKind.OBJECT, ".get()")
+        for i in range(len(node.keys)):
+            if node.keys[i] == key:
+                return self._at(node.children[i])
+        return default.copy()
+
+    def append(self, value: JSON) raises:
+        """Add a copy of `value` to the end of an array."""
+        _ = self._expect(JSONKind.ARRAY, ".append()")
+        var child = self._graft(value)
+        self._node().children.append(child)
+
+    def remove(self, key: String) raises:
+        """Remove `key` from an object; raises if it has none."""
+        ref node = self._expect(JSONKind.OBJECT, ".remove()")
+        for i in range(len(node.keys)):
+            if node.keys[i] == key:
+                _ = node.keys.pop(i)
+                _ = node.children.pop(i)
+                return
+        raise Error('no key "' + key + '"')
+
+    def remove(self, index: Int) raises:
+        """Remove item `index` from an array; later items move up by one."""
+        ref node = self._expect(JSONKind.ARRAY, ".remove()")
+        if index < 0 or index >= len(node.children):
+            raise Error(
+                "no item "
+                + String(index)
+                + ": the array has "
+                + String(len(node.children))
+            )
+        _ = node.children.pop(index)
 
     def keys(self) raises -> List[String]:
         """An object's keys, in the order the document has them."""
@@ -217,6 +358,51 @@ struct JSON(Movable, Sized, Writable):
 
     def _node(self) -> ref[self._document[].nodes[0]] _Node:
         return self._document[].nodes[self._index]
+
+    def save(self, path: String, indent: Int = 2) raises:
+        """Write the value to a JSON file, keys in their order.
+
+        Indented `indent` spaces a level, one item per line; 0 writes it
+        compact, as it prints. Raises for an infinite or NaN number, which
+        JSON has no way to write.
+        """
+        if indent < 0:
+            raise Error("indent must be 0 or more, not " + String(indent))
+        var bad = _non_finite_path(self._document[].nodes, self._index, "")
+        if bad:
+            raise Error(
+                "cannot save "
+                + path
+                + ": "
+                + (bad.value() if bad.value() != "" else "the value")
+                + " is not a finite number"
+            )
+        var text = String()
+        _write_value(text, self._document[].nodes, self._index, indent)
+        text += "\n"
+        with open(path, "w") as f:
+            f.write(text)
+
+    def _is_node(self, value: JSON, index: Int) -> Bool:
+        """Whether `value` is the node at `index` of this document."""
+        return value._document is self._document and value._index == index
+
+    def _graft(self, value: JSON) -> Int:
+        """Copy `value`'s subtree onto the end of this document; return the
+        index of its root.
+
+        Extracted first, so a value from this same document is read whole
+        before the list it lives in grows.
+        """
+        var subtree = List[_Node]()
+        _ = _extract(value._document[].nodes, value._index, subtree)
+        ref nodes = self._document[].nodes
+        var offset = len(nodes)
+        for ref node in subtree:
+            for ref child in node.children:
+                child += offset
+        nodes.extend(subtree^)
+        return offset
 
     def _at(self, index: Int) -> JSON:
         return JSON(_document=self._document, _index=index)
@@ -574,6 +760,31 @@ def _to_float(text: String) raises -> Float64:
     return atof(("-" if negative else "") + digits + "e" + String(exponent))
 
 
+def _extract(nodes: List[_Node], index: Int, mut out: List[_Node]) -> Int:
+    """Copy the subtree under `index` onto the end of `out`, children
+    renumbered; return the index of its root there.
+
+    Only what the subtree reaches is copied, so the nodes an edit left
+    behind are dropped. A worklist rather than recursion, so a document
+    nested by code, deeper than `parse` allows, copies too.
+    """
+    var root = len(out)
+    out.append(nodes[index].copy())
+    var sources: List[Int] = [index]
+    var targets: List[Int] = [root]
+    while len(sources) > 0:
+        var source = sources.pop()
+        var target = targets.pop()
+        var children = List[Int](capacity=len(nodes[source].children))
+        for child in nodes[source].children:
+            children.append(len(out))
+            sources.append(child)
+            targets.append(len(out))
+            out.append(nodes[child].copy())
+        out[target].children = children^
+    return root
+
+
 def _is_digit(c: UInt8) -> Bool:
     return c >= UInt8(ord("0")) and c <= UInt8(ord("9"))
 
@@ -606,8 +817,17 @@ def _parse(text: String, source: String) raises -> JSON:
     return JSON(_document=ArcPointer(_Document(nodes^)), _index=root)
 
 
-def _write_value[W: Writer](mut writer: W, nodes: List[_Node], index: Int):
-    """Write a value as compact JSON text.
+def _write_value[
+    W: Writer
+](
+    mut writer: W,
+    nodes: List[_Node],
+    index: Int,
+    indent: Int = 0,
+    depth: Int = 0,
+):
+    """Write a value as JSON text: compact with `indent` 0, else one item
+    per line, nested `indent` spaces a level.
 
     A number with no JSON form (infinite or NaN) is written as `null`.
     """
@@ -625,22 +845,47 @@ def _write_value[W: Writer](mut writer: W, nodes: List[_Node], index: Int):
             writer.write(node.number)
     elif node.kind == JSONKind.STRING:
         _write_string(writer, node.text)
-    elif node.kind == JSONKind.ARRAY:
-        writer.write("[")
-        for i in range(len(node.children)):
-            if i > 0:
-                writer.write(",")
-            _write_value(writer, nodes, node.children[i])
-        writer.write("]")
     else:
-        writer.write("{")
+        var is_object = node.kind == JSONKind.OBJECT
+        writer.write("{" if is_object else "[")
         for i in range(len(node.children)):
             if i > 0:
                 writer.write(",")
-            _write_string(writer, node.keys[i])
-            writer.write(":")
-            _write_value(writer, nodes, node.children[i])
-        writer.write("}")
+            _write_break(writer, indent, depth + 1)
+            if is_object:
+                _write_string(writer, node.keys[i])
+                writer.write(": " if indent > 0 else ":")
+            _write_value(writer, nodes, node.children[i], indent, depth + 1)
+        if len(node.children) > 0:
+            _write_break(writer, indent, depth)
+        writer.write("}" if is_object else "]")
+
+
+def _write_break[W: Writer](mut writer: W, indent: Int, depth: Int):
+    """A line break and the indentation for `depth`, when indenting."""
+    if indent > 0:
+        writer.write("\n", " " * (indent * depth))
+
+
+def _non_finite_path(
+    nodes: List[_Node], index: Int, path: String
+) -> Optional[String]:
+    """The path to the first infinite or NaN number under `index`, if any."""
+    ref node = nodes[index]
+    if node.kind == JSONKind.NUMBER:
+        if not node.integral and (isnan(node.number) or isinf(node.number)):
+            return path
+        return None
+    for i in range(len(node.children)):
+        var step: String
+        if node.kind == JSONKind.OBJECT:
+            step = path + '["' + node.keys[i] + '"]'
+        else:
+            step = path + "[" + String(i) + "]"
+        var found = _non_finite_path(nodes, node.children[i], step)
+        if found:
+            return found
+    return None
 
 
 def _write_string[W: Writer](mut writer: W, text: String):

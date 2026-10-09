@@ -22,7 +22,7 @@ it makes the library better.
 
 | Module | Path | Responsibility |
 |---|---|---|
-| root | `src/create/__init__.mojo` | The preamble: star-imports all eight subpackages below |
+| root | `src/create/__init__.mojo` | The preamble: star-imports all nine subpackages below |
 | `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path`, `DateTime` |
 | `input` | `src/create/input/` | `Input` (keyboard, mouse, gamepads, typed text), `Key`, `MouseButton`, `Gamepad`, `GamepadButton`, `EditableText` |
 | `render` | `src/create/render/` | `Canvas`, `Camera`, `Antialiasing`, style, text layout, the command buffer, both backends (CPU rasteriser, GL 3.3) |
@@ -31,6 +31,7 @@ it makes the library better.
 | `image` | `src/create/image/` | `Image` (BMP/PNG/JPEG), `PixelBuffer`, `Animation`, `Animator` |
 | `text` | `src/create/text/` | `Font` (FreeType faces, glyph rasterisation), `FontWeight`, the packaged Noto faces |
 | `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |
+| `data` | `src/create/data/` | `Table`/`TableRow` (CSV/TSV), `JSON`, `JSONKind` |
 | `_bytes` | `src/create/_bytes.mojo` | Internal leaf: little-endian integer decoding |
 | `_library` | `src/create/_library.mojo` | Internal leaf: `load_library`, every FFI binding's way to open a shared library (`.so`/`.dylib`, the pixi environment first) |
 | `_window` | `src/create/_window/` | Internal platform layer: `Window`, `GLWindow`, typed `Event`s, SDL3 video bindings |
@@ -116,7 +117,7 @@ signature on every scene, and those must vary. See [examples/scenes/src/main.moj
 **Parameter vs. field:** what the loop hands `create` and every `update` (`Context`, `Canvas`) is a
 parameter: `Context` is the run's state and outlives the frame, `Canvas` is where this frame is
 drawn. What the program drives on its own schedule (`Image`, `Font`, `Sound`, `Audio`,
-`Animator`, `Camera`, `Tween`, `Noise`, an offscreen `Canvas`) is a field it constructs in `create` — so adding one touches
+`Animator`, `Camera`, `Tween`, `Noise`, a `Table` or `JSON`, an offscreen `Canvas`) is a field it constructs in `create` — so adding one touches
 neither `Program` nor the run loop. `Time` and `Input` live on `Context`: the loop ticks
 `context.time` and folds events into `context.input` before `update`. Read them, don't write them —
 the loop carries both into the next frame.
@@ -138,14 +139,16 @@ A public value type implements `Writable` and prints as it would be written in s
 by the constructor's keywords where it has them (`Circle(position=Point2D(0.0, 0.0), r=5.0)`) and by
 public field names where it doesn't (`Time`, `Tween`). Private fields are left out. Resource handles
 (`Image`, `PixelBuffer`, `Sound`, `Audio`) and shared assets (`Animation`) are not printable; a `Font`
-prints as it is loaded, `Font.load("path")` (with `, italic_path="..."` when it has one).
+prints as it is loaded, `Font.load("path")` (with `, italic_path="..."` when it has one). `JSON`
+prints as compact JSON text, its own source form; `Table` and `TableRow` are containers and not
+printable.
 
 ### Imports and public surface
 
 A program writes `from create import *`. Otherwise import by name from the owning package
 (`from create.math import overlaps`); a single subpackage star is not a preamble.
 
-- The root has no names of its own — it star-imports the eight subpackages. Never add a name there;
+- The root has no names of its own — it star-imports the nine subpackages. Never add a name there;
   add it to the owning subpackage.
 - A subpackage exports only what it owns, never a lower layer's symbol.
 - Public surface is exactly what an `__init__.mojo` lists. A new declaration is internal unless it is
@@ -161,6 +164,8 @@ A program writes `from create import *`. Otherwise import by name from the ownin
   `PersistentCanvasState` itself.
 - **`color`** depends only on `math`; `image` and `render` both import it. It sits below `image` so
   that `Image.pixel` can return a `Color` without a `render`↔`image` cycle.
+- **`data`** imports nothing from `create`: files through the stdlib's `open()`, numbers through
+  `atof`. Nothing imports it but the root.
 - **`text`** depends only on `_bytes` and `_library`. `render`→`text` is nominal, like `render`→`image`: `Style`,
   `canvas.font` and text layout name `Font`, and `_raster.blit_glyph` takes `_GlyphInfo` by its
   internal path.
@@ -414,6 +419,8 @@ frame body returns. Headless runs ignore the window dials, like `rumble`.
 | `Time` / `DateTime` | `context.time` is the run's clock: ticked by the loop, zero at the first frame, synthetic in headless runs. `DateTime.now()` is the computer's local wall clock, read once into consistent fields (`year` … `millisecond`) — take one reading per frame rather than calling it per field |
 | `Random` / `Noise` | Both seeded, both in `[0, 1]`. `Random` is stateful (`mut`, `Movable`): each call is an independent sample. `Noise` is immutable (`Copyable`): `at(...)` is a pure function of its input, and nearby inputs give nearby values. `feature_size` divides space only; `at(position, time)` leaves `time` for the caller to scale. Averaged octaves cluster around 0.5 — stretch with `smoothstep` for contrast |
 | `Gradient` | Stops (0..1 positions, each a `Color`) across a fill or the background. **Placed by the shape's local bounding box**, before the transform, so it moves and turns with the shape and one `Style` suits every entity. `linear` runs along `direction` (a `Vector2D`, default `DOWN`, any length; its extreme corners land on 0 and 1, as in CSS); `radial` runs from `center` in the box's unit space (-1..1, y up) out to its edges, an ellipse on a long box. A sector's box is its whole circle. A zero `direction` or a zero-size box paints the first stop. Blends premultiplied (a fade to `TRANSPARENT` stays clean) and is dithered on both backends |
+| `Table` | Rows of text cells from CSV/TSV, like Processing's: `Table.load(path)` (first line names the columns unless `header=False`; separator a tab for `.tsv`/`.tab`, a comma otherwise, unless `separator=` names one), `Table.parse(text)`, `Table(columns)` to build. **Rows by reference**: `t.row(i)` and `for ref row in t.rows()` edit in place; `ref row = t.add_row()` returns the new one. Cells stay text until read: `row.string`/`float`/`int` by column name or index parse on each call and raise naming the column and cell. `sort(column, descending=)` is stable and numeric only when every cell in the column is a number, so one blank sorts the column as text. `save` quotes a field only when it must |
+| `JSON` | One type for every JSON value, read with `[]` by key or index and `float`/`int`/`string`/`bool`; `kind()` is a `JSONKind`. A value is a **handle into a shared document**: `[]` and `items()` copy nothing, edits land in the document (`config["player"]["speed"] = 3.0`, or `enemy["hp"] = ...` in a loop over `items()`), and so **`var p = config["player"]` aliases `config`**, as in Processing, JavaScript and Python — `.copy()` is a deep, independent one. Assigning copies a value in, so one value set under two keys is two values. `int()` is exact to 64 bits for a number written whole and raises on a fraction. Replacing a value leaves the old node behind until `copy()` or `save` drops it, so a document rewritten every frame for long is kept small with `doc = doc.copy()`. `save(path, indent=2)`; `indent=0` is the printed form. Infinite and NaN numbers raise from `save`, print as `null` |
 | `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(position, r)`, `context.input.mouse`); a displacement is a `Vector2D` (`translate(delta)`, velocities); an extent is a scalar (`w`, `h`, `r`). `Point2D` deliberately lacks `mag`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Only `Point2D` takes a bare tuple implicitly; a vector literal names its type (`p + Vector2D(1, 2)`), and `p - (1, 2)` is the displacement from `(1, 2)`, not a move. Named vectors are `comptime` constants: `Vector2D.ZERO`, `ONE`, `UP`, `DOWN`, `LEFT`, `RIGHT` (y up, so `DOWN` is `(0, -1)`) |
 | Down / pressed / released | Input state for keys, mouse and gamepad buttons alike. *Down* is held right now, true every frame (`key_down`, `mouse_down`, `pad.button_down`); *pressed*/*released* are edges, true only in the frame it went down or came up (`key_pressed`, `mouse_released`). Unlike Processing's `mousePressed`, *pressed* never means held |
 | `Gamepad` | `context.input.gamepad(i)`, a copy of player `i`'s pad (default 0). A pad takes the lowest free slot as it connects and keeps it until it disconnects; an empty slot reads `connected` False and all zero, so no check is needed first. Sticks are `Vector2D`s, **y up**, inside the unit circle, with a rescaled radial dead zone (`Gamepad.STICK_DEAD_ZONE`, 0.2) so a resting stick reads exactly zero; triggers 0..1. Face buttons are positional (`GamepadButton.SOUTH` is Xbox A and PlayStation Cross). `connected_this_frame`/`disconnected_this_frame` are the edges of `connected`, and `name` survives the frame a pad leaves in. `context.rumble(seconds, low_frequency=, high_frequency=, player=)` shakes a pad (both motors full by default; a new rumble replaces the running one); it is an output, so it lives on `Context`, not on the `Gamepad` copy. See [examples/gamepad.mojo](examples/gamepad.mojo) |
