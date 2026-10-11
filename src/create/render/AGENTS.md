@@ -26,8 +26,9 @@ and the layering rules.
 | `_transform.mojo`, `_image.mojo` | Shared by both replay paths (split out to avoid an import cycle, or so both agree on the numbers) |
 | `_gl_target.mojo` | Offscreen FBO of an exact size, for the parity test and headless GPU |
 
-Corner rounding's maths (`rect_corner_radius`, `triangle_corner_radius`, `corner_fillet`) lives in
-`create/math/_fillet.mojo`, so the geometry and both replays agree on it.
+Corner rounding's maths (the clamps, `corner_fillet`, `rounded_vertices`, `rounded_sector_vertices`)
+lives in `create/math/_fillet.mojo`, so the geometry's `contains`/`overlaps` and both replays agree
+on it.
 
 ## Canvas, commands and backends
 
@@ -135,8 +136,13 @@ local space and mapped per corner, so a non-uniform transform gives an elliptica
 
 `geom[5]` is 0 for a render call. A shadow sets it to its spread, and the tiling grows (or shrinks)
 the sector by exactly that first — round the tip and the arc's ends, into the missing wedge — rather
-than leaning on a corner radius, which a sector has none of. An outline-only sector's shadow ring
+than leaning on a corner radius, which a `CMD_SECTOR` has none of. An outline-only sector's shadow ring
 is the grown sector's outline band, thickened by twice the spread.
+
+A **rounded** sector never reaches `sector_quads`: `Canvas._sector_command` records it as a
+`CMD_POLYGON` through its outline (`rounded_sector_vertices`, each curve flattened as finely as a
+circle of its radius is drawn), via `rounded_sector_command`, which keeps the sector's circle in
+`geom[1..4]` with `geom[5]` set so `_fill_box` spans the circle as for a sharp sector.
 
 `canvas.arc` needs none of this: it records a `CMD_BEZIER` chain.
 
@@ -152,9 +158,9 @@ inside a slab flips some neighbouring pair, so only neighbours are searched. Eac
 (`_classify`), runs of one class merge, and each run is one trapezoid, every x taken from the
 edge's lower end so neighbouring quads share corners exactly.
 
-Layer 0 is the polygon (nonzero). The others are **bands**: points within `d` of some lines, a
-counter-clockwise rectangle along each line and a polygonised disc at each end, inside where the
-count is not zero. `Polygon._pieces()` cuts the edges at every crossing, each crossing found along
+Layer 0 is the polygon (nonzero). The others are **bands**: points within `d` of some lines,
+counter-clockwise pieces wound together, inside where the count is not zero. The seams' band is a
+rectangle along each seam and a polygonised disc at each end. `Polygon._pieces()` cuts the edges at every crossing, each crossing found along
 the lower-indexed edge so both edges share its point exactly, into the **rim** (outside along one
 side) and the **seams** (wound on both sides). The outer band (radius `grow`) and the inner band
 (`grow - t`) are the rim's; offsetting by `d` is the polygon with (outwards) or without (inwards)
@@ -162,11 +168,29 @@ its band. The seam band has radius `t/2`: fill is the inner offset off the seams
 of the outer offset, so a seam is stroked centred and as thick as the rim. A seam disc already
 inside an inner-band disc is left out.
 
+A rim band is only read on one side of the rim — an inward offset inside the polygon, an outward
+one outside — so it is built for that side alone (`_add_rim_band`), and the region it gives there is
+unchanged. A point on that side whose nearest rim point is a corner lies in the corner's normal
+cone, which opens onto the side only where the corner is reflex from it: so a corner gets nothing
+where it is convex from the side, and only a **pie** spanning its turn where it is reflex, and each
+piece only the half of its rectangle on the side. `_rim_corners` tells which by probing the polygon
+just inside each corner's narrower wedge; a corner that is not two pieces meeting keeps a whole
+disc. A half rectangle's base lies on the rim's own line, so the walk across a slab skips the
+stretches of no width between them rather than starting a run there.
+
 `geom[0]` is 0 for a render call and the spread for a shadow; an outline-only shadow's thickness
 `t + 2·spread` grows the seam band by the spread too, so the ring is the outline grown. Cost is
 slabs × the edges spanning them, bands included: every slab runs the polygon's whole width, so
-a crossing in one corner cuts quads everywhere — ~115 µs per outlined 5-tip star, ~195 µs per
-outlined pentagram, ~2.4 ms per outlined 40-tip star.
+a crossing in one corner cuts quads everywhere. Outlined, at `MEDIUM` on the CPU: ~160 µs per
+5-tip star, ~380 µs per pentagram, ~2 ms per 40-tip star. Filled only, a 5-tip star is ~30 µs.
+
+A **rounded** polygon (`Polygon.corner_radius`) is flattened by `Canvas._rounded` when recorded,
+through `rounded_vertices`, each fillet as finely as a circle of that radius is drawn at the
+current transform, so every replay, shadow and clip sees an ordinary polygon. Its fillets add
+vertices and so slabs: outlined, ~360 µs per rounded 5-tip star, ~460 µs per rounded pentagram,
+~20 ms per rounded 40-tip star. Drawing a simple polygon's outline from its inset loop instead of
+bands would be far cheaper, but the inset folds wherever a fillet is tighter than the outline or
+a tip or neck is thin, which a band never does; that needs a fold check and a band fallback.
 
 ## Clips
 
@@ -322,9 +346,11 @@ nothing is interned. Faces live in `create.text`; `TextRenderer` lays out and ca
 
 ## Outlines
 
-Outlines mean different things per shape, and `corner_radius` must preserve that: a rectangle's is
-an **inset ring** inside the fill; a triangle's is a **centred band**, half its width outside the
-edges and half inside.
+A rectangle's or triangle's rounding is its shape's `corner_radius`, carried on
+`RenderCommand.corner_radius` (a triangle fills every `geom` slot) and clamped at replay; a
+shadow's spread grows it. Outlines mean different things per shape, and the rounding must preserve
+that: a rectangle's is an **inset ring** inside the fill; a triangle's is a **centred band**, half
+its width outside the edges and half inside.
 
 **Every kind composites once.** Fill and outline never overlap, and neither do pieces of either, so
 a translucent shape or a non-`NORMAL` blend mode is as translucent everywhere.
