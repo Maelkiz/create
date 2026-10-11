@@ -95,21 +95,6 @@ def test_the_keyword_rounds_like_the_shape() raises -> None:
             assert_equal(a.pixel(x, y), b.pixel(x, y))
 
 
-def test_a_shape_rounds_like_the_style_did() raises -> None:
-    var shape = _canvas()
-    shape.triangle(
-        Triangle((-30.0, -30.0), (30.0, -30.0), (0.0, 30.0), corner_radius=6.0)
-    )
-    var style = _canvas()
-    style.corner_radius(6)
-    style.triangle((-30.0, -30.0), (30.0, -30.0), (0.0, 30.0))
-    var a = shape.snapshot()
-    var b = style.snapshot()
-    for y in range(a.height):
-        for x in range(a.width):
-            assert_equal(a.pixel(x, y), b.pixel(x, y))
-
-
 def test_a_rounded_clip_keeps_only_the_rounded_shape() raises -> None:
     var canvas = Canvas(100, 100, antialiasing=Antialiasing.OFF)
     with canvas.clip(Rectangle((0.0, 0.0), 60.0, 60.0, corner_radius=20.0)):

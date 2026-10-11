@@ -10,7 +10,6 @@ def test_default_style_matches_a_fresh_frame() raises -> None:
     assert_equal(s.outline_color, Color.BLACK)
     assert_equal(s.outline_thickness, 1)
     assert_true(s.outline_enabled)
-    assert_equal(s.corner_radius, 0)
     assert_equal(s.text_color, Color.BLACK)
     assert_equal(s.font_size, 16)
     assert_equal(s.font_weight, FontWeight.REGULAR)
@@ -35,7 +34,6 @@ def test_each_keyword_lands_in_its_field() raises -> None:
         outline=Color.BLUE,
         outline_thickness=3,
         outline_enabled=False,
-        corner_radius=5,
         text_color=Color.WHITE,
         font_size=32,
         font_weight=FontWeight.BOLD,
@@ -57,7 +55,6 @@ def test_each_keyword_lands_in_its_field() raises -> None:
     assert_equal(s.outline_color, Color.BLUE)
     assert_equal(s.outline_thickness, 3)
     assert_false(s.outline_enabled)
-    assert_equal(s.corner_radius, 5)
     assert_equal(s.text_color, Color.WHITE)
     assert_equal(s.font_size, 32)
     assert_equal(s.font_weight, FontWeight.BOLD)
@@ -101,7 +98,7 @@ def test_style_writes_constructor_keywords() raises -> None:
         (
             "Style(fill=Color(255, 255, 255, 255), fill_gradient=None,"
             " fill_enabled=False, outline=Color(0, 0, 0, 255),"
-            " outline_thickness=1, outline_enabled=True, corner_radius=0,"
+            " outline_thickness=1, outline_enabled=True,"
             " text_color=Color(0, 0, 0, 255), font=None, font_size=16,"
             " font_weight=400, font_italic=False, text_align=Align.CENTER,"
             " tint=Color(255, 255, 255, 255), opacity=1.0,"

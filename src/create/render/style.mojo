@@ -63,7 +63,6 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
     var outline_color: Color
     var outline_thickness: Int
     var outline_enabled: Bool
-    var corner_radius: Int
     var text_color: Color
     var font: Optional[Font]
     """The face text is drawn in; none for the packaged Noto Sans."""
@@ -91,7 +90,6 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         outline: Optional[Color] = None,
         outline_thickness: Optional[Int] = None,
         outline_enabled: Optional[Bool] = None,
-        corner_radius: Int = 0,
         text_color: Color = Color.BLACK,
         font: Optional[Font] = None,
         font_size: Int = 16,
@@ -117,7 +115,6 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.outline_color = outline.or_else(Color.BLACK)
         self.outline_thickness = outline_thickness.or_else(1)
         self.outline_enabled = outline_enabled.or_else(True)
-        self.corner_radius = corner_radius
         self.text_color = text_color
         self.font = font
         self.font_size = font_size
@@ -162,8 +159,6 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.outline_thickness,
             ", outline_enabled=",
             self.outline_enabled,
-            ", corner_radius=",
-            self.corner_radius,
             ", text_color=",
             self.text_color,
             ", font=",
