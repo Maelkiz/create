@@ -418,8 +418,7 @@ struct _Parity(Program):
             with canvas.style():
                 canvas.fill(Color(0xE0, 0x90, 0x40))
                 canvas.outline(Color.BLACK, thickness=4)
-                canvas.corner_radius(10)
-                canvas.rectangle((-70, 40), 44, 30)
+                canvas.rectangle((-70, 40), 44, 30, corner_radius=10)
         elif self.shape == _SHAPE_SHADOWED_RECT:
             # Outlined, so the silhouette has to cover the ring as one layer.
             with canvas.style(
@@ -428,11 +427,10 @@ struct _Parity(Program):
                         fill=Color(0x40, 0xC0, 0xE0),
                         outline=Color.BLACK,
                         outline_thickness=4,
-                        corner_radius=6,
                     )
                 )
             ):
-                canvas.rectangle((10, 20), 50, 30)
+                canvas.rectangle((10, 20), 50, 30, corner_radius=6)
         elif self.shape == _SHAPE_SHADOWED_CIRCLE:
             with canvas.style(
                 _shadowed(
@@ -490,11 +488,10 @@ struct _Parity(Program):
                     Style(
                         outline=Color(0xE0, 0x90, 0x40),
                         outline_thickness=12,
-                        corner_radius=14,
                     )
                 )
             ):
-                canvas.rectangle((-10, 10), 90, 70)
+                canvas.rectangle((-10, 10), 90, 70, corner_radius=14)
         elif self.shape == _SHAPE_BLURRED_CIRCLE:
             with canvas.style(
                 _blurred(
@@ -569,12 +566,11 @@ struct _Parity(Program):
                 Style(
                     outline=Color(0x30, 0x60, 0xC0),
                     outline_thickness=4,
-                    corner_radius=16,
                 )
             )
             s.shadow_spread = 3.0
             with canvas.style(s):
-                canvas.rectangle((-10, 5), 100, 70)
+                canvas.rectangle((-10, 5), 100, 70, corner_radius=16)
         elif self.shape == _SHAPE_BLURRED_INSET_ROUNDED_RECT:
             with canvas.style(
                 _inset(
@@ -582,12 +578,11 @@ struct _Parity(Program):
                         fill=Color(0xF0, 0xE0, 0xC0),
                         outline=Color(0x30, 0x60, 0xC0),
                         outline_thickness=4,
-                        corner_radius=16,
                     ),
                     8.0,
                 )
             ):
-                canvas.rectangle((-10, 5), 100, 70)
+                canvas.rectangle((-10, 5), 100, 70, corner_radius=16)
         elif self.shape == _SHAPE_INSET_CIRCLE:
             with canvas.style(
                 _inset(
@@ -620,12 +615,13 @@ struct _Parity(Program):
                     Style(
                         fill=Color(0xF0, 0xE0, 0xC0),
                         outline_enabled=False,
-                        corner_radius=10,
                     ),
                     8.0,
                 )
             ):
-                canvas.triangle((-60, -45), (50, -45), (-5, 50))
+                canvas.triangle(
+                    (-60, -45), (50, -45), (-5, 50), corner_radius=10
+                )
         elif self.shape == _SHAPE_BEZIER:
             with canvas.style():
                 canvas.outline(Color(0x80, 0xFF, 0x80), thickness=5)
@@ -789,7 +785,6 @@ struct _Parity(Program):
         elif self.shape == _SHAPE_GRADIENT_ROUNDED_RECT:
             with canvas.style():
                 canvas.outline(Color.BLACK, thickness=5)
-                canvas.corner_radius(18)
                 canvas.fill(
                     Gradient.linear(
                         Color(0xFF, 0xE0, 0x40),
@@ -797,7 +792,7 @@ struct _Parity(Program):
                         direction=Vector2D(1, 1),
                     )
                 )
-                canvas.rectangle((0, 0), 150, 100)
+                canvas.rectangle((0, 0), 150, 100, corner_radius=18)
         elif self.shape == _SHAPE_RADIAL_CIRCLE:
             with canvas.style(outline_enabled=False):
                 canvas.fill(
@@ -845,13 +840,14 @@ struct _Parity(Program):
                 canvas.triangle((-80, -60), (80, -50), (10, 65))
         elif self.shape == _SHAPE_GRADIENT_ROUNDED_TRIANGLE:
             with canvas.style(outline_enabled=False):
-                canvas.corner_radius(12)
                 canvas.fill(
                     Gradient.radial(
                         Color(0xA0, 0xFF, 0xA0), Color(0x20, 0x60, 0x20)
                     )
                 )
-                canvas.triangle((-80, -60), (80, -50), (10, 65))
+                canvas.triangle(
+                    (-80, -60), (80, -50), (10, 65), corner_radius=12
+                )
         elif self.shape == _SHAPE_GRADIENT_SECTOR:
             with canvas.style():
                 canvas.outline(Color.BLACK, thickness=3)
@@ -878,8 +874,7 @@ struct _Parity(Program):
             with canvas.style():
                 canvas.fill(Color(0x50, 0xA0, 0xD0))
                 canvas.outline(Color.BLACK, thickness=4)
-                canvas.corner_radius(9)
-                canvas.triangle((40, 5), (95, 15), (65, 70))
+                canvas.triangle((40, 5), (95, 15), (65, 70), corner_radius=9)
 
 
 def _mask(pixels: List[UInt8]) -> List[Bool]:

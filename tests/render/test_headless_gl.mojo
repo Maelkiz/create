@@ -105,8 +105,7 @@ struct GPURoundedRect(Program):
         canvas.background(Color(10, 20, 30))
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
-        canvas.corner_radius(8)
-        canvas.rectangle((0.0, 0.0), 40.0, 40.0)
+        canvas.rectangle((0.0, 0.0), 40.0, 40.0, corner_radius=8)
 
 
 def test_the_gpu_backend_rounds_rectangle_corners() raises -> None:
@@ -144,8 +143,7 @@ struct GPURoundedTriangle(Program):
         canvas.background(Color(10, 20, 30))
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
-        canvas.corner_radius(8)
-        canvas.triangle((-20, -20), (20, -20), (-20, 20))
+        canvas.triangle((-20, -20), (20, -20), (-20, 20), corner_radius=8)
 
 
 def test_the_gpu_backend_rounds_triangle_corners() raises -> None:

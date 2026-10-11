@@ -91,8 +91,7 @@ struct Scene[n: Int](Program):
             canvas.fill(Gradient.linear(Color.RED, Color.RED))
             canvas.rectangle((0, 0), 80, 80)
         elif Self.n == ROUNDED_RECT:
-            canvas.corner_radius(10)
-            canvas.rectangle((0, 0), 80, 80)
+            canvas.rectangle((0, 0), 80, 80, corner_radius=10)
         elif Self.n == BACKGROUND:
             canvas.background(_RED_TO_BLUE)
         elif Self.n == TRANSLUCENT_BACKGROUND:

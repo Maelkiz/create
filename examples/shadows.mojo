@@ -52,12 +52,11 @@ struct App(Program):
         with canvas.style(
             fill=Color.WHITE,
             outline_enabled=False,
-            corner_radius=18,
             shadow=Color(0x20, 0x30, 0x50, 70),
             shadow_offset=Vector2D(0, -10),
             shadow_blur=blur * 1.5,
         ):
-            canvas.rectangle((-330, 60), 380, 220)
+            canvas.rectangle((-330, 60), 380, 220, corner_radius=18)
         with canvas.style(text_color=Color(0x30, 0x40, 0x60), font_size=26):
             canvas.text("A card", (-330, 110))
         with canvas.style(text_color=Color(0x70, 0x78, 0x88), font_size=18):
@@ -68,13 +67,12 @@ struct App(Program):
         with canvas.style(
             fill=Color(0xF6, 0xF7, 0xF9),
             outline=Color(0xB8, 0xBE, 0xC8),
-            corner_radius=10,
             shadow=Color(0x20, 0x30, 0x50, 90),
             shadow_offset=Vector2D(3, -4),
             shadow_blur=blur / 2.0,
             shadow_inset=True,
         ):
-            canvas.rectangle((-330, -170), 380, 60)
+            canvas.rectangle((-330, -170), 380, 60, corner_radius=10)
         with canvas.style(
             text_color=Color(0x98, 0xA0, 0xAC),
             font_size=20,
@@ -87,16 +85,13 @@ struct App(Program):
         # the screen, as under a light overhead; on the right it turns with
         # the square.
         canvas.shadow(Color(0, 0, 0, 80), offset=Vector2D(14, -14), blur=blur)
-        with canvas.style(
-            fill=Color(0xF0, 0x90, 0x50),
-            outline_enabled=False,
-            corner_radius=14,
-        ):
+        var square = Rectangle((0, 0), 120, 120, corner_radius=14)
+        with canvas.style(fill=Color(0xF0, 0x90, 0x50), outline_enabled=False):
             with canvas.transform(translate(170, 110) @ rotate(self.angle)):
-                canvas.rectangle((0, 0), 120, 120)
+                canvas.rectangle(square)
             with canvas.style(shadow_follows_transform=True):
                 with canvas.transform(translate(430, 110) @ rotate(self.angle)):
-                    canvas.rectangle((0, 0), 120, 120)
+                    canvas.rectangle(square)
 
         # An image casts its alpha, not its box. Images move with a
         # transform but are never turned by one, so this one stands still.

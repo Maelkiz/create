@@ -1112,9 +1112,10 @@ def test_circles_and_triangles_take_inset_shadows_inside_only() raises -> None:
     cs.fill_enabled = False
     cmds.append(circle_command(_base(), cs, -25.0, 25.0, 20.0))
     var ts = _inset(Color.WHITE, Vector2D(6, -6))
-    ts.corner_radius = 4
     cmds.append(
-        triangle_command(_base(), ts, 5.0, -45.0, 45.0, -45.0, 25.0, -5.0)
+        triangle_command(
+            _base(), ts, 5.0, -45.0, 45.0, -45.0, 25.0, -5.0, corner_radius=4.0
+        )
     )
     var m = _replay(cmds)
     # Circle at device (25, 25): its left inner edge is shadowed, its

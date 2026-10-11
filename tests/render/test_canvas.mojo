@@ -291,13 +291,12 @@ struct SharpRect(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
-        canvas.corner_radius(0)
-        canvas.rectangle((0.0, 0.0), 40.0, 40.0)
+        canvas.rectangle((0.0, 0.0), 40.0, 40.0, corner_radius=0)
 
 
 def test_corner_radius_zero_matches_sharp_rect() raises -> None:
     # A 40x40 rect at the origin covers device pixels [30, 70) on both axes.
-    # corner_radius(0) must leave every corner square, not just mostly so.
+    # corner_radius=0 must leave every corner square, not just mostly so.
     var m = run_headless[SharpRect](100, 100)
     assert_equal(m.pixel(31, 31), Color.RED)
     assert_equal(m.pixel(68, 68), Color.RED)
@@ -315,8 +314,7 @@ struct RoundedRect(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
-        canvas.corner_radius(10)
-        canvas.rectangle((0.0, 0.0), 40.0, 40.0)
+        canvas.rectangle((0.0, 0.0), 40.0, 40.0, corner_radius=10)
 
 
 def test_rect_corner_radius_rounds_the_corner() raises -> None:
@@ -343,8 +341,7 @@ struct RoundedRectOutlined(Program):
         canvas.background(Color.BLACK)
         canvas.outline(Color.BLUE, thickness=2)
         canvas.fill(Color.RED)
-        canvas.corner_radius(10)
-        canvas.rectangle((0.0, 0.0), 40.0, 40.0)
+        canvas.rectangle((0.0, 0.0), 40.0, 40.0, corner_radius=10)
 
 
 def test_rect_corner_radius_outline_follows_the_arc() raises -> None:
@@ -384,8 +381,7 @@ struct ScaledRoundedRect(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
-        canvas.corner_radius(5)
-        canvas.rectangle((0.0, 0.0), 20.0, 20.0)
+        canvas.rectangle((0.0, 0.0), 20.0, 20.0, corner_radius=5)
 
 
 def test_corner_radius_scales_to_pixels() raises -> None:
@@ -411,9 +407,8 @@ struct RotatedRoundedRect(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.YELLOW)
-        canvas.corner_radius(6)
         with canvas.transform(rotate(pi / 4.0)):
-            canvas.rectangle((0.0, 0.0), 20.0, 20.0)
+            canvas.rectangle((0.0, 0.0), 20.0, 20.0, corner_radius=6)
 
 
 def test_rect_corner_radius_under_rotation() raises -> None:
@@ -442,13 +437,14 @@ struct SharpTriangle(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
-        canvas.corner_radius(0)
         # Right angle at world (-20, -20), legs of length 20 along +x and +y.
-        canvas.triangle((-20.0, -20.0), (0.0, -20.0), (-20.0, 0.0))
+        canvas.triangle(
+            (-20.0, -20.0), (0.0, -20.0), (-20.0, 0.0), corner_radius=0
+        )
 
 
 def test_corner_radius_zero_matches_sharp_triangle() raises -> None:
-    # The right-angle vertex maps to device pixel (30, 70). corner_radius(0)
+    # The right-angle vertex maps to device pixel (30, 70). corner_radius=0
     # must leave it square, same as the untouched sharp path.
     var m = run_headless[SharpTriangle](100, 100, antialiasing=Antialiasing.OFF)
     assert_equal(m.pixel(30, 70), Color.RED)
@@ -469,7 +465,6 @@ struct RoundedTriangle(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
-        canvas.corner_radius(5)
         # Right angle at world (-20, -20), legs of length 20 along +x and +y —
         # same corner shape as corner_fillet's own known right-angle test.
         # The other two vertices are 45 degrees, which clamp the requested
@@ -477,7 +472,9 @@ struct RoundedTriangle(Program):
         # triangle_corner_radius), so the right angle's own fillet centre
         # ends up at world (-15.86, -15.86), device pixel (34, 66) — offset
         # from the vertex by the clamped radius, not the requested one.
-        canvas.triangle((-20.0, -20.0), (0.0, -20.0), (-20.0, 0.0))
+        canvas.triangle(
+            (-20.0, -20.0), (0.0, -20.0), (-20.0, 0.0), corner_radius=5
+        )
 
 
 def test_triangle_corner_radius_rounds_the_corner() raises -> None:
@@ -506,8 +503,9 @@ struct RoundedTriangleOutlined(Program):
         canvas.background(Color.BLACK)
         canvas.outline(Color.BLUE, thickness=4)
         canvas.fill(Color.RED)
-        canvas.corner_radius(5)
-        canvas.triangle((-20.0, -20.0), (0.0, -20.0), (-20.0, 0.0))
+        canvas.triangle(
+            (-20.0, -20.0), (0.0, -20.0), (-20.0, 0.0), corner_radius=5
+        )
 
 
 def test_triangle_corner_radius_outline_is_centred() raises -> None:
@@ -547,8 +545,9 @@ struct ThinRoundedTriangle(Program):
         # A requested radius far larger than this sliver triangle could ever
         # support — triangle_corner_radius must clamp it, not let the
         # fillets balloon past the triangle's own edges.
-        canvas.corner_radius(1000)
-        canvas.triangle((0.0, 20.0), (-30.0, -20.0), (30.0, -21.0))
+        canvas.triangle(
+            (0.0, 20.0), (-30.0, -20.0), (30.0, -21.0), corner_radius=1000
+        )
 
 
 def test_triangle_corner_radius_clamps_to_incircle() raises -> None:
@@ -576,9 +575,10 @@ struct RotatedRoundedTriangle(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.YELLOW)
-        canvas.corner_radius(6)
         with canvas.transform(rotate(pi / 4.0)):
-            canvas.triangle((-20.0, -20.0), (0.0, -20.0), (-20.0, 0.0))
+            canvas.triangle(
+                (-20.0, -20.0), (0.0, -20.0), (-20.0, 0.0), corner_radius=6
+            )
 
 
 def test_triangle_corner_radius_under_rotation() raises -> None:
