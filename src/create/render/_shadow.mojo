@@ -45,7 +45,7 @@ from ._command import (
     RenderCommand,
     _GEOM_SLOTS,
 )
-from ._fillet import rect_corner_radius, triangle_corner_radius
+from create.math._fillet import rect_corner_radius, triangle_corner_radius
 from ._transform import outline_thickness_px, pixel_scale
 
 
