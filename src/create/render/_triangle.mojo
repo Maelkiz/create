@@ -36,7 +36,7 @@ from create.math.point2d import Point2D
 
 from ._command import RenderCommand
 from ._curve import MITER_LIMIT, stroke_quads
-from ._fillet import triangle_corner_radius
+from create.math._fillet import triangle_corner_radius
 from ._tessellate import _arc_segments
 from ._transform import outline_thickness_px, pixel_scale
 

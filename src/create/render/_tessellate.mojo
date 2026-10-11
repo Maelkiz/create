@@ -34,7 +34,11 @@ from ._curve import bezier_device_points, stroke_quads
 from ._sector import sector_quads
 from ._polygon import polygon_quads
 from ._triangle import triangle_pieces
-from ._fillet import corner_fillet, rect_corner_radius, triangle_corner_radius
+from create.math._fillet import (
+    corner_fillet,
+    rect_corner_radius,
+    triangle_corner_radius,
+)
 from ._shadow import (
     SIL_RECT,
     SIL_TRIANGLE,

@@ -70,7 +70,7 @@ from ._shadow import (
     shadow_command,
     shadow_transform,
 )
-from ._fillet import rect_corner_radius, triangle_corner_radius
+from create.math._fillet import rect_corner_radius, triangle_corner_radius
 from ._tessellate import _arc_segments
 from ._triangle import triangle_pieces
 from ._png import write_png
