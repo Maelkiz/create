@@ -47,19 +47,16 @@ def _draw(mut canvas: Canvas, kind: Int) raises:
     if kind == 0:
         canvas.rectangle((0, 0), 40, 40)
     elif kind == 1:
-        canvas.corner_radius(8)
-        canvas.rectangle((0, 0), 40, 40)
+        canvas.rectangle((0, 0), 40, 40, corner_radius=8)
     elif kind == 2:
         with canvas.transform(rotate(0.4)):
             canvas.rectangle((0, 0), 40, 40)
     elif kind == 3:
-        canvas.corner_radius(8)
         with canvas.transform(rotate(0.4)):
-            canvas.rectangle((0, 0), 40, 40)
+            canvas.rectangle((0, 0), 40, 40, corner_radius=8)
     elif kind == 4:
-        canvas.corner_radius(8)
         with canvas.transform(scale(2.0, 1.0)):
-            canvas.rectangle((0, 0), 30, 40)
+            canvas.rectangle((0, 0), 30, 40, corner_radius=8)
     elif kind == 5:
         canvas.fill(Gradient.linear(Color.RED, Color.RED))
         canvas.rectangle((0, 0), 40, 40)
@@ -78,12 +75,10 @@ def _draw(mut canvas: Canvas, kind: Int) raises:
         # Corners far past the miter limit: bevelled.
         canvas.triangle((-40, -6), (40, -6), (40, 6))
     elif kind == 11:
-        canvas.corner_radius(6)
-        canvas.triangle((-25, -20), (25, -20), (0, 25))
+        canvas.triangle((-25, -20), (25, -20), (0, 25), corner_radius=6)
     elif kind == 12:
-        canvas.corner_radius(3)
         canvas.outline(Color.RED, 10)
-        canvas.triangle((-30, -25), (30, -25), (0, 25))
+        canvas.triangle((-30, -25), (30, -25), (0, 25), corner_radius=3)
     elif kind == 13:
         var shear = identity[3]()
         shear[0, 1] = 0.6
@@ -183,10 +178,9 @@ struct WideRect(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
-        canvas.corner_radius(4)
         # Stretched, so the general path; 20 units wide is 40 pixels.
         with canvas.transform(scale(2.0, 1.0)):
-            canvas.rectangle((0, 0), 20, 20)
+            canvas.rectangle((0, 0), 20, 20, corner_radius=4)
 
 
 def test_a_transformed_rectangle_covers_its_pixels_by_their_centres() raises -> (

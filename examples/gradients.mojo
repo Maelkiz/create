@@ -41,7 +41,6 @@ struct App(Program):
                 Color.hex(0xFFE29A), Color.hex(0xFF7A59)
             ),
             outline_enabled=False,
-            corner_radius=18,
             shadow=Color(0, 0, 0, 90),
             shadow_offset=Vector2D(0, -10),
             shadow_blur=16,
@@ -96,7 +95,7 @@ struct App(Program):
         # The card turns, and its gradient turns with it.
         with canvas.style(self.card):
             with canvas.transform(translate(-250, -140) @ rotate(self.angle)):
-                canvas.rectangle((0, 0), 220, 130)
+                canvas.rectangle((0, 0), 220, 130, corner_radius=18)
 
         # A fade to transparent: a glow over whatever is behind it.
         with canvas.style(fill=Color.hex(0x3A86FF), outline_enabled=False):

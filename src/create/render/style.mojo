@@ -37,11 +37,13 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
     var card = Style(
         fill=Color.WHITE,
         outline_enabled=False,
-        corner_radius=12,
         shadow=Color(0, 0, 0, 80),
         shadow_blur=16,
     )
     ```
+
+    A corner radius is not part of a style: it changes the shape, so it
+    belongs to the shape (`Rectangle(..., corner_radius=12)`).
 
     The constructor's keywords are named after the canvas setters and act
     like them: naming any part of the fill, outline or shadow switches it
