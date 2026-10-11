@@ -5,7 +5,7 @@ from std.testing import (
     assert_false,
     assert_almost_equal,
 )
-from std.math import cos, pi, sin, sqrt
+from std.math import cos, pi, sin, sqrt, tau
 from create.math._fillet import corner_fillet
 from create.math.geometry import (
     Rectangle,
@@ -13,6 +13,7 @@ from create.math.geometry import (
     Line,
     Triangle,
     Polygon,
+    Sector,
     overlaps,
 )
 from create.math.point2d import Point2D
@@ -319,6 +320,114 @@ def test_a_rounded_polygon_compares_and_prints_its_radius() raises -> None:
     assert_equal(
         String(Polygon(Point2D(0.0, 0.0), Point2D(1.0, 0.0))),
         "Polygon(vertices=[Point2D(0.0, 0.0), Point2D(1.0, 0.0)])",
+    )
+
+
+# Sector
+
+
+def _rounded_quarter() -> Sector:
+    return Sector((0.0, 0.0), 50.0, 0.0, pi / 2.0, corner_radius=8.0)
+
+
+def test_a_rounded_sector_loses_its_tip_and_arc_ends() raises -> None:
+    var s = _rounded_quarter()
+    var sharp = Sector((0.0, 0.0), 50.0, 0.0, pi / 2.0)
+    # The tip.
+    assert_true(sharp.contains(Point2D(0.5, 0.5)))
+    assert_false(s.contains(Point2D(0.5, 0.5)))
+    # The corner where the start radius meets the arc.
+    assert_true(sharp.contains(Point2D(49.5, 0.5)))
+    assert_false(s.contains(Point2D(49.5, 0.5)))
+    # And the end radius.
+    assert_false(s.contains(Point2D(0.5, 49.5)))
+    # The middle, the arc's middle and the radii away from the corners.
+    assert_true(s.contains(Point2D(20.0, 20.0)))
+    var on_arc = 49.9 / sqrt(2.0)
+    assert_true(s.contains(Point2D(on_arc, on_arc)))
+    assert_true(s.contains(Point2D(25.0, 0.1)))
+
+
+def test_a_rounded_sector_stays_inside_the_sharp_one() raises -> None:
+    var s = _rounded_quarter()
+    var sharp = Sector((0.0, 0.0), 50.0, 0.0, pi / 2.0)
+    for v in s._outline().vertices:
+        assert_true(sharp.contains(v))
+    assert_true(s.area() < sharp.area())
+
+
+def test_a_rounded_wide_sector_fills_its_notch() raises -> None:
+    var s = Sector((0.0, 0.0), 50.0, 0.0, 3.0 * pi / 2.0, corner_radius=8.0)
+    var sharp = Sector((0.0, 0.0), 50.0, 0.0, 3.0 * pi / 2.0)
+    # In the missing wedge, just past the tip.
+    var p = Point2D(0.5 * cos(-pi / 4.0), 0.5 * sin(-pi / 4.0))
+    assert_false(sharp.contains(p))
+    assert_true(s.contains(p))
+    assert_true(s.area() > sharp.area() - 200.0)
+
+
+def test_a_clockwise_sector_rounds_the_same() raises -> None:
+    var ccw = _rounded_quarter()
+    var cw = Sector((0.0, 0.0), 50.0, pi / 2.0, -pi / 2.0, corner_radius=8.0)
+    for p in [
+        Point2D(0.5, 0.5),
+        Point2D(49.5, 0.5),
+        Point2D(20.0, 20.0),
+        Point2D(25.0, 0.1),
+    ]:
+        assert_equal(cw.contains(p), ccw.contains(p))
+    assert_almost_equal(cw.area(), ccw.area(), atol=1e-6)
+
+
+def test_a_half_turn_sector_rounds_only_its_arc_ends() raises -> None:
+    var s = Sector((0.0, 0.0), 50.0, 0.0, pi, corner_radius=8.0)
+    # The tip runs straight on: nothing to round.
+    assert_true(s.contains(Point2D(0.0, 0.2)))
+    assert_false(s.contains(Point2D(49.5, 0.5)))
+    assert_false(s.contains(Point2D(-49.5, 0.5)))
+
+
+def test_a_whole_disc_has_no_corners() raises -> None:
+    var s = Sector((0.0, 0.0), 10.0, 0.0, tau, corner_radius=5.0)
+    assert_true(s.contains(Point2D(9.9, 0.0)))
+    assert_almost_equal(s.area(), pi * 100.0, atol=1e-9)
+
+
+def test_a_rounded_sector_corner_radius_clamps() raises -> None:
+    # Far too large: clamped, still a rounded slice holding its middle.
+    var s = Sector((0.0, 0.0), 50.0, 0.0, pi / 2.0, corner_radius=1000.0)
+    assert_true(s.contains(Point2D(18.0, 18.0)))
+    assert_false(s.contains(Point2D(49.0, 2.0)))
+    var sharp = Sector((0.0, 0.0), 50.0, 0.0, pi / 2.0)
+    for v in s._outline().vertices:
+        assert_true(sharp.contains(v))
+
+
+def test_a_rounded_sector_tests_against_other_shapes() raises -> None:
+    var s = _rounded_quarter()
+    var at_tip = Circle((0.4, 0.4), 0.4)
+    assert_false(overlaps(s, at_tip))
+    assert_false(overlaps(at_tip, s))
+    assert_true(overlaps(Sector((0.0, 0.0), 50.0, 0.0, pi / 2.0), at_tip))
+    var corner = Rectangle((49.4, 0.6), 0.8, 0.8)
+    assert_false(overlaps(s, corner))
+    assert_false(overlaps(corner, s))
+    assert_true(Rectangle((25.0, 25.0), 50.0, 50.0).contains(s))
+    assert_false(s.contains(Rectangle((25.0, 25.0), 50.0, 50.0)))
+    assert_false(Line((-1.0, 1.0), (1.0, -1.0)).intersects(s))
+    assert_true(overlaps(s, Sector((40.0, 40.0), 10.0, pi, pi / 2.0)))
+
+
+def test_a_rounded_sector_compares_and_prints_its_radius() raises -> None:
+    var sharp = Sector((0.0, 0.0), 1.0, 0.0, 1.0)
+    var rounded = Sector((0.0, 0.0), 1.0, 0.0, 1.0, corner_radius=0.25)
+    assert_true(sharp != rounded)
+    assert_equal(
+        String(rounded),
+        (
+            "Sector(position=Point2D(0.0, 0.0), r=1.0, start_angle=0.0,"
+            " sweep_angle=1.0, corner_radius=0.25)"
+        ),
     )
 
 

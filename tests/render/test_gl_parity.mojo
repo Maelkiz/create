@@ -157,7 +157,9 @@ comptime _SHAPE_GRADIENT_STAR = 61
 comptime _SHAPE_ITALIC_TEXT = 62
 comptime _SHAPE_ROUNDED_STAR = 63
 comptime _SHAPE_ROUNDED_PENTAGRAM = 64
-comptime _SHAPE_COUNT = 65
+comptime _SHAPE_ROUNDED_PAC_MAN = 65
+comptime _SHAPE_GRADIENT_ROUNDED_SECTOR = 66
+comptime _SHAPE_COUNT = 67
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -297,6 +299,10 @@ def _shape_name(shape: Int) -> String:
         return "translucent rounded star"
     elif shape == _SHAPE_ROUNDED_PENTAGRAM:
         return "rounded pentagram"
+    elif shape == _SHAPE_ROUNDED_PAC_MAN:
+        return "translucent rounded pac-man sector"
+    elif shape == _SHAPE_GRADIENT_ROUNDED_SECTOR:
+        return "gradient rounded sector"
     elif shape == _SHAPE_SHADOWED_STAR:
         return "shadowed star"
     elif shape == _SHAPE_BLURRED_POLYGON_RING:
@@ -881,6 +887,23 @@ struct _Parity(Program):
                     )
                 )
                 canvas.sector((0, 0), 65.0, 0.4, 4.8)
+        elif self.shape == _SHAPE_ROUNDED_PAC_MAN:
+            # Past a half turn: a concave tip, its notch filled.
+            with canvas.style():
+                canvas.fill(Color(0xFF, 0xC0, 0x20, 0x80))
+                canvas.outline(Color(0x20, 0x40, 0xFF, 0x80), thickness=6)
+                canvas.sector((0, 0), 80.0, 0.6, 5.1, corner_radius=14)
+        elif self.shape == _SHAPE_GRADIENT_ROUNDED_SECTOR:
+            with canvas.style():
+                canvas.outline(Color.BLACK, thickness=3)
+                canvas.fill(
+                    Gradient.linear(
+                        Color(0x40, 0xFF, 0x40),
+                        Color(0x20, 0x20, 0xC0),
+                        direction=Vector2D.RIGHT,
+                    )
+                )
+                canvas.sector((0, 0), 65.0, 0.4, 1.8, corner_radius=12)
         elif self.shape == _SHAPE_GRADIENT_STAR:
             with canvas.style(outline_enabled=False):
                 canvas.fill(

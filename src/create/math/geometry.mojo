@@ -14,7 +14,9 @@ from std.math import (
 )
 from ._fillet import (
     rect_corner_radius,
+    rounded_sector_vertices,
     rounded_vertices,
+    sector_corner_radii,
     triangle_corner_radius,
 )
 from .bezier import Bezier
@@ -606,6 +608,8 @@ struct Circle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         # so it holds the sector when it holds the tip and the arc's point
         # furthest from its centre. That point comes through `cos` and
         # `sin`, so it gets an arc's slack, as in `Sector.contains`.
+        if s._is_rounded():
+            return self.contains(s._outline())
         if not self.contains(s.position):
             return False
         var far = s.arc()._furthest_along(s.position - self.position)
@@ -713,6 +717,8 @@ struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return a.intersects(self)
 
     def intersects(self, s: Sector) -> Bool:
+        if s._is_rounded():
+            return self.intersects(s._outline())
         if s.contains(self.start) or s.contains(self.end):
             return True
         return s._boundary_meets(self)
@@ -1066,6 +1072,8 @@ struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return False
 
     def intersects(self, s: Sector) -> Bool:
+        if s._is_rounded():
+            return self.intersects(s._outline())
         if s.contains(self.at(0.0)) or s.contains(self.at(1.0)):
             return True
         return s._boundary_meets(self)
@@ -1101,12 +1109,23 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     half turn is not convex. A zero `r` collapses the sector to its tip, and
     a zero sweep to the one radius at `start_angle`. `r` is assumed
     non-negative.
+
+    `corner_radius` rounds the tip and both ends of the arc, as
+    `canvas.sector` draws them, and every test here sees the rounded shape.
+    An end rounds against the arc, tangent to it from inside. Each corner is
+    clamped to half of what lies beside it, as a polygon's is; past a half
+    turn the tip is concave and its rounding fills the notch. A whole disc
+    has no corners. The tests use the rounded outline with each curve
+    flattened, so a point within about 0.1% of the radii of the boundary
+    may fall either way.
     """
 
     var position: Point2D
     var r: Float64
     var start_angle: Float64
     var sweep_angle: Float64
+    var corner_radius: Float64
+    """How far each corner is rounded; 0 is sharp."""
 
     def __init__(
         out self,
@@ -1114,11 +1133,14 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         r: Float64,
         start_angle: Float64,
         sweep_angle: Float64,
+        *,
+        corner_radius: Float64 = 0.0,
     ):
         self.position = position
         self.r = r
         self.start_angle = start_angle
         self.sweep_angle = sweep_angle
+        self.corner_radius = corner_radius
 
     def __init__(
         out self,
@@ -1126,8 +1148,16 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         r: Int,
         start_angle: Float64,
         sweep_angle: Float64,
+        *,
+        corner_radius: Float64 = 0.0,
     ):
-        self = Sector(position, Float64(r), start_angle, sweep_angle)
+        self = Sector(
+            position,
+            Float64(r),
+            start_angle,
+            sweep_angle,
+            corner_radius=corner_radius,
+        )
 
     def __eq__(self, other: Sector) -> Bool:
         return (
@@ -1135,6 +1165,7 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             and self.r == other.r
             and self.start_angle == other.start_angle
             and self.sweep_angle == other.sweep_angle
+            and self.corner_radius == other.corner_radius
         )
 
     def __ne__(self, other: Sector) -> Bool:
@@ -1150,8 +1181,10 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             self.start_angle,
             ", sweep_angle=",
             self.sweep_angle,
-            ")",
         )
+        if self.corner_radius != 0.0:
+            writer.write(", corner_radius=", self.corner_radius)
+        writer.write(")")
 
     def end_angle(self) -> Float64:
         """`start_angle + sweep_angle`: where the sector ends, as an angle."""
@@ -1161,6 +1194,8 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return self.position
 
     def area(self) -> Float64:
+        if self._is_rounded():
+            return self._outline().area()
         return 0.5 * self.r * self.r * abs(self.arc()._sweep())
 
     def arc(self) -> Arc:
@@ -1170,6 +1205,8 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def bounds(self) -> Rectangle:
         """The tightest axis-aligned rectangle around the sector: its arc's,
         widened to take in the tip."""
+        if self._is_rounded():
+            return self._outline().bounds()
         var b = self.arc().bounds()
         var lo = Point2D(
             min(b.left(), self.position.x), min(b.bottom(), self.position.y)
@@ -1180,6 +1217,8 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return Rectangle(lo.lerp(hi, 0.5), hi.x - lo.x, hi.y - lo.y)
 
     def closest_point(self, p: Point2D) -> Point2D:
+        if self._is_rounded():
+            return self._outline().closest_point(p)
         if self.contains(p):
             return p
         # Outside, the nearest point is on the boundary: one of the two
@@ -1196,6 +1235,8 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def contains(self, p: Point2D) -> Bool:
         # The arc is found through `cos` and `sin`, as is its sweep, so both
         # boundaries get an arc's slack: the sector holds its own edge.
+        if self._is_rounded():
+            return self._outline().contains(p)
         var reach = self.r * (1.0 + _RADIUS_EPSILON)
         if _dist_sq(p, self.position) > reach * reach:
             return False
@@ -1204,21 +1245,32 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     # A sector has no holes, so it holds a shape exactly when it holds the
     # shape's outline: a `Rectangle`, `Triangle` or `Polygon` edge by edge,
     # a `Circle` as a whole-turn `Arc`, another `Sector` as its two radii
-    # and its arc.
+    # and its arc. A rounded sector, or a rounded shape it is given, is
+    # tested as its outline polygon.
     def contains(self, r: Rectangle) -> Bool:
+        if self._is_rounded():
+            return self._outline().contains(r)
         if r._radius() > 0.0:
             return self.contains(r._outline())
         return self._contains_polygon(r._points())
 
     def contains(self, t: Triangle) -> Bool:
+        if self._is_rounded():
+            return self._outline().contains(t)
         if t._radius() > 0.0:
             return self.contains(t._outline())
         return self._contains_polygon(t._points())
 
     def contains(self, c: Circle) -> Bool:
+        if self._is_rounded():
+            return self._outline().contains(c)
         return self._contains_arc(Arc(c.position, c.r, 0.0, tau))
 
     def contains(self, other: Sector) -> Bool:
+        if self._is_rounded():
+            return self._outline().contains(other)
+        if other._is_rounded():
+            return self.contains(other._outline())
         for radius in other._radii():
             if not self.contains(radius):
                 return False
@@ -1232,6 +1284,8 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     # when it holds the middle of every piece. A piece that only touches
     # the boundary is inside, within the slack of `contains(Point2D)`.
     def contains(self, l: Line) -> Bool:
+        if self._is_rounded():
+            return self._outline().contains(l)
         if not (self.contains(l.start) and self.contains(l.end)):
             return False
         var cuts = List[Float64]()
@@ -1265,12 +1319,36 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return True
 
     def contains(self, p: Polygon) -> Bool:
+        if self._is_rounded():
+            return self._outline().contains(p)
         if p._is_rounded():
             return self.contains(p._outline())
         for i in range(len(p.vertices)):
             if not self.contains(p._edge(i)):
                 return False
         return True
+
+    def _is_rounded(self) -> Bool:
+        if self.corner_radius <= 0.0:
+            return False
+        var radii = sector_corner_radii(
+            self.r, self.sweep_angle, self.corner_radius
+        )
+        return radii[0] > 0.0 or radii[1] > 0.0
+
+    def _outline(self) -> Polygon:
+        """The rounded sector as a polygon, each curve flattened."""
+        return Polygon(
+            rounded_sector_vertices(
+                self.position,
+                self.r,
+                self.start_angle,
+                self.sweep_angle,
+                self.corner_radius,
+                _FILLET_STEP,
+                _FILLET_STEP,
+            )
+        )
 
     def _contains_polygon[N: Int](self, pts: Array[Point2D, N]) -> Bool:
         for i in range(N):
@@ -1479,6 +1557,8 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def contains(self, s: Sector) -> Bool:
         if self._radius() > 0.0:
             return self._outline().contains(s)
+        if s._is_rounded():
+            return self.contains(s._outline())
         # A sector is its tip fanned out to its arc, and a triangle is
         # convex, so it holds the sector when it holds the tip and, for
         # each edge, the arc's point furthest across it. Both ways across
@@ -1807,6 +1887,8 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
     def contains(self, s: Sector) -> Bool:
         if self._is_rounded():
             return self._outline().contains(s)
+        if s._is_rounded():
+            return self.contains(s._outline())
         var radii = s._radii()
         var outline: List[Line] = [radii[0], radii[1]]
         for radius in outline:
@@ -2178,6 +2260,7 @@ def _polygon_overlaps_sector[N: Int](pts: Array[Point2D, N], s: Sector) -> Bool:
 
 
 def overlaps(a: Sector, b: Circle) -> Bool:
+    # `closest_point` already sees a rounded sector's rounding.
     return b.contains(a.closest_point(b.position))
 
 
@@ -2186,6 +2269,8 @@ def overlaps(a: Circle, b: Sector) -> Bool:
 
 
 def overlaps(a: Sector, b: Rectangle) -> Bool:
+    if a._is_rounded():
+        return overlaps(a._outline(), b)
     if b._radius() > 0.0:
         return overlaps(a, b._outline())
     return b.contains(a.position) or _polygon_overlaps_sector(b._points(), a)
@@ -2196,6 +2281,8 @@ def overlaps(a: Rectangle, b: Sector) -> Bool:
 
 
 def overlaps(a: Sector, b: Triangle) -> Bool:
+    if a._is_rounded():
+        return overlaps(a._outline(), b)
     if b._radius() > 0.0:
         return overlaps(a, b._outline())
     return b.contains(a.position) or _polygon_overlaps_sector(b._points(), a)
@@ -2206,6 +2293,10 @@ def overlaps(a: Triangle, b: Sector) -> Bool:
 
 
 def overlaps(a: Sector, b: Sector) -> Bool:
+    if a._is_rounded():
+        return overlaps(a._outline(), b)
+    if b._is_rounded():
+        return overlaps(a, b._outline())
     if a.contains(b.position) or b.contains(a.position):
         return True
     for radius in a._radii():
@@ -2263,6 +2354,8 @@ def overlaps(a: Triangle, b: Polygon) -> Bool:
 def overlaps(a: Polygon, b: Sector) -> Bool:
     if a._is_rounded():
         return overlaps(a._outline(), b)
+    if b._is_rounded():
+        return overlaps(a, b._outline())
     if a.contains(b.position):
         return True
     for v in a.vertices:
