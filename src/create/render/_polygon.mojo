@@ -24,6 +24,19 @@ is in the band where its count is not zero. The band pieces are cut into
 the slabs with the edges, which keeps every trapezoid inside or outside
 each piece whole.
 
+The rim's bands are only ever read on one side of the rim: an inset is the
+polygon *without* its band, so only the band's points inside count, and an
+outset the polygon *with* it, so only those outside. A point on that side
+whose nearest rim point is a corner lies in the corner's normal cone, the
+wedge between its two pieces' normals, and that cone opens onto the side
+only where the corner is reflex from it. So a rim corner needs no disc
+where it is convex from that side, and only that wedge of one, a *pie*,
+where it is reflex; and a piece needs only the half of its rectangle on
+that side. A pie spans the corner's turn, so a polygon of many shallow
+corners -- a rounded one -- adds a few edges per corner rather than a
+whole disc. A half rectangle's base lies on the rim's own line, so the
+walk across a slab passes over the stretches of no width between them.
+
 A shadow's spread offsets the whole polygon first (`geom[0]`, zero for a
 render call): outwards it is the polygon or its rim's band, inwards the
 polygon without it. The fill is the polygon offset by the outline's width
@@ -32,11 +45,12 @@ polygon. A shadow ring's thickness is the outline's plus twice the spread,
 so its seams' band grows by the spread as well.
 """
 
-from std.math import cos, max, min, nan, sin, sqrt, tau
+from std.math import atan2, ceil, cos, max, min, nan, pi, sin, sqrt, tau
 
 from create.math.geometry import Line, Polygon
 from create.math.matrix import Matrix, apply as mat_apply
 from create.math.point2d import Point2D
+from create.math.vector2d import Vector2D
 
 from ._command import RenderCommand
 from ._curve import PlacedMask, quads_shadow_mask
@@ -140,19 +154,43 @@ def polygon_quads(
         pieces = Polygon(vertices^)._pieces()
     ref rim = pieces[0]
     ref seams = pieces[1]
-    var corners = _ends(rim)
+    var shape = Polygon(c.points.copy())
+    var rim_corners = _rim_corners(rim, shape)
+    # Corners that get a whole disc in a rim band, whichever side it is on.
+    var discs = List[Point2D]()
     if outer != 0.0:
         layers.outer = layers.next()
-        _add_band(edges, rim, corners, abs(outer), sf, layers.outer)
+        _add_rim_band(
+            edges,
+            shape,
+            rim,
+            rim_corners,
+            abs(outer),
+            outer > 0.0,
+            sf,
+            layers.outer,
+        )
     if t > 0.0 and inner != 0.0:
         layers.inner = layers.next()
-        _add_band(edges, rim, corners, abs(inner), sf, layers.inner)
+        _add_rim_band(
+            edges,
+            shape,
+            rim,
+            rim_corners,
+            abs(inner),
+            inner > 0.0,
+            sf,
+            layers.inner,
+        )
+        for corner in rim_corners:
+            if not corner.known:
+                discs.append(corner.position)
     if t > 0.0 and len(seams) > 0:
         layers.seams = layers.next()
         var ends = List[Point2D]()
         for p in _ends(seams):
             # Inside a disc of the fill's own band, a seam's adds nothing.
-            if not (inner <= -t / 2.0 and p in corners):
+            if not (inner <= -t / 2.0 and p in discs):
                 ends.append(p)
         _add_band(edges, seams, ends, t / 2.0, sf, layers.seams)
 
@@ -220,12 +258,18 @@ def polygon_quads(
             y_hi = lowest
 
         # Walk in from the left, where every count is zero. The stretch
-        # after edge `i` runs to edge `i + 1`; runs of one class merge.
+        # after edge `i` runs to edge `i + 1`; runs of one class merge. A
+        # stretch with no width -- a band's edge along the rim's, two pieces
+        # meeting at a corner -- paints nothing, so it changes no run.
         var counts = Array[Int, 4](fill=0)
         var run_class = _NOTHING
         var run_start = 0
         for i in range(len(active)):
             counts[active[i].layer] -= active[i].sign
+            if i + 1 < len(active) and middles[i + 1] - middles[i] <= 1e-9 * (
+                1.0 + abs(middles[i])
+            ):
+                continue
             var cls = _classify(counts, outer, inner, layers, t > 0.0)
             if cls == run_class:
                 continue
@@ -392,6 +436,134 @@ def _add_band(
             Point2D(a.x - nx, a.y - ny),
         ]
         _add_loop(edges, rectangle, layer)
+
+
+@fieldwise_init
+struct _RimCorner(Copyable, ImplicitlyCopyable, Movable):
+    """Where two rim pieces meet, seen from the corner: `a` and `b` are the
+    unit directions along them, `inside_between` whether the polygon fills
+    the narrower wedge between them. `known` is false where the corner is
+    not two pieces meeting at an angle, and it takes a whole disc."""
+
+    var position: Point2D
+    var a: Vector2D
+    var b: Vector2D
+    var inside_between: Bool
+    var known: Bool
+
+
+def _rim_corners(rim: List[Line], shape: Polygon) -> List[_RimCorner]:
+    """Every end of `rim`, with how the polygon lies about it."""
+    var corners = List[_RimCorner]()
+    for p in _ends(rim):
+        var directions = List[Vector2D]()
+        var shortest = Float64.MAX
+        for l in rim:
+            if l.start == p:
+                directions.append(l.end - p)
+            elif l.end == p:
+                directions.append(l.start - p)
+            else:
+                continue
+            shortest = min(shortest, directions[len(directions) - 1].mag())
+        var none = Vector2D(0.0, 0.0)
+        if len(directions) != 2 or shortest <= 0.0:
+            corners.append(_RimCorner(p, none, none, False, False))
+            continue
+        var a = directions[0].normalize()
+        var b = directions[1].normalize()
+        var between = a + b
+        if between.mag() < 1e-9:
+            # Straight on: the rectangles meet flush on both sides.
+            corners.append(_RimCorner(p, a, b, False, True))
+            continue
+        var probe = p + between.normalize() * (shortest * 1e-4)
+        corners.append(_RimCorner(p, a, b, shape.contains(probe), True))
+    return corners^
+
+
+def _add_rim_band(
+    mut edges: List[_Edge],
+    shape: Polygon,
+    rim: List[Line],
+    corners: List[_RimCorner],
+    d: Float64,
+    outside: Bool,
+    sf: Float64,
+    layer: Int,
+):
+    """The band within `d` of the rim, exact on one side of it -- outside
+    the polygon if `outside`, else inside -- and nowhere else that matters:
+    along each piece the half of its rectangle on that side, and at each
+    corner nothing, a pie, or (where unknown) a whole disc."""
+    var ends = List[Point2D]()
+    for corner in corners:
+        if not corner.known:
+            ends.append(corner.position)
+    # Whole discs where a corner is unknown.
+    _add_band(edges, List[Line](), ends, d, sf, layer)
+    # Along each piece, the half of its rectangle on the side.
+    for l in rim:
+        var along = l.end - l.start
+        var length = along.mag()
+        if length == 0.0:
+            continue
+        var n = Vector2D(along.y, -along.x) * (d / length)
+        var middle = l.start + along * 0.5
+        var probe = middle + n * (1e-4 * min(length, d) / d)
+        if shape.contains(probe) == outside:
+            n = -n
+        var half: List[Point2D] = [l.start, l.end, l.end + n, l.start + n]
+        if _signed_area2(half) < 0.0:
+            half.reverse()
+        _add_loop(edges, half, layer)
+    var segments = circle_segments(d * sf)
+    var pie = List[Point2D]()
+    for corner in corners:
+        if not corner.known:
+            continue
+        var straight = (corner.a + corner.b).mag() < 1e-9
+        # The side fills the narrower wedge: covered by the rectangles.
+        if straight or corner.inside_between != outside:
+            continue
+        # Normals turned away from the other piece, into the wider wedge.
+        var na = Vector2D(-corner.a.y, corner.a.x)
+        if na.dot(corner.b) > 0.0:
+            na = -na
+        var nb = Vector2D(-corner.b.y, corner.b.x)
+        if nb.dot(corner.a) > 0.0:
+            nb = -nb
+        var start = atan2(na.y, na.x)
+        var sweep = atan2(nb.y, nb.x) - start
+        if sweep > pi:
+            sweep -= tau
+        elif sweep < -pi:
+            sweep += tau
+        var steps = max(Int(ceil(Float64(segments) * abs(sweep) / tau)), 1)
+        pie.clear()
+        pie.append(corner.position)
+        for k in range(steps + 1):
+            var angle = start + sweep * Float64(k) / Float64(steps)
+            pie.append(
+                Point2D(
+                    corner.position.x + d * cos(angle),
+                    corner.position.y + d * sin(angle),
+                )
+            )
+        # Wound counter-clockwise, like every band piece.
+        if sweep < 0.0:
+            pie.reverse()
+        _add_loop(edges, pie, layer)
+
+
+def _signed_area2(points: List[Point2D]) -> Float64:
+    var n = len(points)
+    var sum = 0.0
+    for i in range(n):
+        var a = points[i]
+        var b = points[(i + 1) % n]
+        sum += a.x * b.y - b.x * a.y
+    return sum
 
 
 def _crossing(p: _Edge, q: _Edge) -> Float64:
