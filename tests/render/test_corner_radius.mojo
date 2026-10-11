@@ -1,5 +1,6 @@
-"""A shape's own `corner_radius`, drawn: what `canvas.rectangle` and
-`canvas.triangle` paint agrees with what the shape's `contains` holds.
+"""A shape's own `corner_radius`, drawn: what `canvas.rectangle`,
+`canvas.triangle` and `canvas.polygon` paint agrees with what the shape's
+`contains` holds.
 
 A 100 x 100 offscreen canvas: screen x and y in -50..50, y up.
 """
@@ -81,6 +82,40 @@ def test_a_rounded_triangle_paints_what_it_contains() raises -> None:
                 assert_equal(painted, inside, String(p))
             checked += 1
     assert_true(checked > 2200)
+
+
+def test_a_rounded_star_paints_what_it_contains() raises -> None:
+    var star = Polygon.star((0.0, 0.0), 48.0, 20.0, 5, corner_radius=6.0)
+    var canvas = _canvas()
+    canvas.polygon(star)
+    var shot = canvas.snapshot()
+    # Fillets are flattened, finer in the geometry than on screen.
+    var offsets: List[Vector2D] = [
+        Vector2D(0.5, 0.0),
+        Vector2D(-0.5, 0.0),
+        Vector2D(0.0, 0.5),
+        Vector2D(0.0, -0.5),
+        Vector2D(0.35, 0.35),
+        Vector2D(-0.35, 0.35),
+        Vector2D(0.35, -0.35),
+        Vector2D(-0.35, -0.35),
+    ]
+    var checked = 0
+    for j in range(0, 100, 2):
+        for i in range(0, 100, 2):
+            var p = _pixel_centre(i, j)
+            var inside = star.contains(p)
+            var near = False
+            for d in offsets:
+                if star.contains(p + d) != inside:
+                    near = True
+            if near:
+                continue
+            var painted = shot.pixel(i, 99 - j) == Color.RED
+            if painted != inside:
+                assert_equal(painted, inside, String(p))
+            checked += 1
+    assert_true(checked > 2000)
 
 
 def test_the_keyword_rounds_like_the_shape() raises -> None:

@@ -5,7 +5,7 @@ from std.testing import (
     assert_false,
     assert_almost_equal,
 )
-from std.math import pi, sqrt
+from std.math import cos, pi, sin, sqrt
 from create.math._fillet import corner_fillet
 from create.math.geometry import (
     Rectangle,
@@ -233,6 +233,92 @@ def test_a_rounded_triangle_compares_and_prints_its_radius() raises -> None:
             "Triangle(a=Point2D(0.0, 0.0), b=Point2D(1.0, 0.0), c=Point2D(0.0,"
             " 1.0), corner_radius=0.5)"
         ),
+    )
+
+
+# Polygon
+
+
+def _rounded_square_polygon() -> Polygon:
+    return Polygon(
+        Point2D(-10.0, -10.0),
+        Point2D(10.0, -10.0),
+        Point2D(10.0, 10.0),
+        Point2D(-10.0, 10.0),
+        corner_radius=5.0,
+    )
+
+
+def test_a_rounded_polygon_rounds_like_a_rounded_rectangle() raises -> None:
+    var p = _rounded_square_polygon()
+    assert_false(p.contains(Point2D(9.0, 9.0)))
+    assert_true(p.contains(Point2D(10.0, 0.0)))
+    assert_true(p.contains(Point2D(6.0, 6.0)))
+    assert_almost_equal(p.area(), _rounded_square().area(), atol=0.5)
+
+
+def test_a_rounded_star_loses_its_tips() raises -> None:
+    var star = Polygon.star((0.0, 0.0), 50.0, 20.0, 5, corner_radius=5.0)
+    var sharp = Polygon.star((0.0, 0.0), 50.0, 20.0, 5)
+    # Just inside the top tip.
+    assert_true(sharp.contains(Point2D(0.0, 49.0)))
+    assert_false(star.contains(Point2D(0.0, 49.0)))
+    assert_true(star.contains(Point2D(0.0, 30.0)))
+
+
+def test_a_rounded_star_fills_its_notches() raises -> None:
+    var star = Polygon.star((0.0, 0.0), 50.0, 20.0, 5, corner_radius=5.0)
+    var sharp = Polygon.star((0.0, 0.0), 50.0, 20.0, 5)
+    # Just outside the inner corner between the first two tips.
+    var angle = pi / 2.0 + pi / 5.0
+    var p = Point2D(20.5 * cos(angle), 20.5 * sin(angle))
+    assert_false(sharp.contains(p))
+    assert_true(star.contains(p))
+
+
+def test_each_corner_clamps_on_its_own() raises -> None:
+    # A long thin bar: the radius is clamped by the short edges, not lost.
+    var bar = Polygon(
+        Point2D(-50.0, -5.0),
+        Point2D(50.0, -5.0),
+        Point2D(50.0, 5.0),
+        Point2D(-50.0, 5.0),
+        corner_radius=100.0,
+    )
+    assert_false(bar.contains(Point2D(49.5, 4.5)))
+    assert_true(bar.contains(Point2D(0.0, 4.9)))
+    assert_true(bar.contains(Point2D(49.9, 0.0)))
+
+
+def test_a_rounded_polygon_tests_against_other_shapes() raises -> None:
+    var p = _rounded_square_polygon()
+    assert_false(overlaps(p, Circle((9.5, 9.5), 0.5)))
+    assert_false(overlaps(Circle((9.5, 9.5), 0.5), p))
+    var corner = Triangle((9.5, 9.5), (10.0, 9.5), (9.5, 10.0))
+    assert_false(overlaps(p, corner))
+    assert_false(overlaps(corner, p))
+    assert_false(Line((9.0, 11.0), (11.0, 9.0)).intersects(p))
+    assert_true(overlaps(p, _rounded_square()))
+    assert_true(Rectangle((0.0, 0.0), 20.0, 20.0).contains(p))
+    assert_false(p.contains(Rectangle((0.0, 0.0), 19.0, 19.0)))
+
+
+def test_a_rounded_polygon_compares_and_prints_its_radius() raises -> None:
+    var sharp = Polygon.regular((0.0, 0.0), 10.0, 4)
+    var rounded = Polygon.regular((0.0, 0.0), 10.0, 4, corner_radius=2.0)
+    assert_true(sharp != rounded)
+    assert_equal(
+        String(
+            Polygon(Point2D(0.0, 0.0), Point2D(1.0, 0.0), corner_radius=0.5)
+        ),
+        (
+            "Polygon(vertices=[Point2D(0.0, 0.0), Point2D(1.0, 0.0)],"
+            " corner_radius=0.5)"
+        ),
+    )
+    assert_equal(
+        String(Polygon(Point2D(0.0, 0.0), Point2D(1.0, 0.0))),
+        "Polygon(vertices=[Point2D(0.0, 0.0), Point2D(1.0, 0.0)])",
     )
 
 

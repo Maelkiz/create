@@ -1,5 +1,5 @@
 from std.collections import Optional
-from std.math import floor
+from std.math import floor, tau
 from std.utils.numerics import isnan, nan
 
 from create.color.color import Color
@@ -55,6 +55,8 @@ from .style import Style, _KEEP
 from ._clip import clip_style
 from ._command import RenderCommand
 from ._transform import pixel_scale
+from ._tessellate import circle_segments
+from create.math._fillet import rounded_vertices
 
 
 comptime _AUTOCLEAR_COLOR = Color(200)
@@ -675,7 +677,11 @@ struct Canvas(Movable):
         as for `canvas.polygon`."""
         return ClipGuard[origin_of(self)](
             self,
-            polygon_command(self._transform, clip_style(), p.vertices.copy()),
+            polygon_command(
+                self._transform,
+                clip_style(),
+                self._rounded(p.vertices, p.corner_radius),
+            ),
             invert,
         )
 
@@ -1133,20 +1139,44 @@ struct Canvas(Movable):
         running through the inside — a pentagram's inner pentagon — so every
         edge is stroked as thick; a translucent polygon composites once. It
         casts no inset shadow; a blurred drop shadow costs what a `bezier`'s
-        does. Fewer than
-        three vertices draw nothing.
+        does. Fewer than three vertices draw nothing.
+
+        `p.corner_radius` rounds every corner, as `Polygon` describes; each
+        rounded corner adds vertices, and so cost.
         """
         self._state.backend.record(
-            polygon_command(self._transform, self._style, p.vertices.copy())
+            polygon_command(
+                self._transform,
+                self._style,
+                self._rounded(p.vertices, p.corner_radius),
+            )
         )
 
-    def polygon(mut self, *vertices: Point2D):
+    def polygon(mut self, *vertices: Point2D, corner_radius: Float64 = 0.0):
         var points = List[Point2D](capacity=len(vertices))
         for v in vertices:
             points.append(v)
         self._state.backend.record(
-            polygon_command(self._transform, self._style, points^)
+            polygon_command(
+                self._transform,
+                self._style,
+                self._rounded(points, corner_radius),
+            )
         )
+
+    def _rounded(
+        self, vertices: List[Point2D], corner_radius: Float64
+    ) -> List[Point2D]:
+        """`vertices` with every corner rounded by `corner_radius`, the
+        fillets flattened now, in local space, as finely as a circle of that
+        radius is drawn at the current transform. Recorded this way, a
+        rounded polygon is an ordinary one to every replay, its shadow and
+        clip included."""
+        if corner_radius <= 0.0:
+            return vertices.copy()
+        var radius_px = corner_radius * pixel_scale(self._transform, self.scale)
+        var step = tau / Float64(circle_segments(radius_px))
+        return rounded_vertices(vertices, corner_radius, step)
 
     def line(mut self, start: Point2D, end: Point2D):
         # Recorded only when it would render: an outline-less line is the one
