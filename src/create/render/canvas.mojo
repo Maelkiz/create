@@ -611,6 +611,7 @@ struct Canvas(Movable):
                 r.position.y,
                 r.w,
                 r.h,
+                r.corner_radius,
             ),
             invert,
         )
@@ -645,6 +646,7 @@ struct Canvas(Movable):
                 t.b.y,
                 t.c.x,
                 t.c.y,
+                t.corner_radius,
             ),
             invert,
         )
@@ -1032,18 +1034,43 @@ struct Canvas(Movable):
             return
         self._state.backend.request_screenshot(path)
 
-    def rectangle(mut self, position: Point2D, w: Float64, h: Float64):
+    def rectangle(
+        mut self,
+        position: Point2D,
+        w: Float64,
+        h: Float64,
+        *,
+        corner_radius: Float64 = 0.0,
+    ):
+        """Draw the `w` by `h` rectangle centred on `position`, its corners
+        rounded by `corner_radius` (clamped to half the shorter side), as
+        `Rectangle` describes it."""
         self._state.backend.record(
             rect_command(
-                self._transform, self._style, position.x, position.y, w, h
+                self._transform,
+                self._style,
+                position.x,
+                position.y,
+                w,
+                h,
+                corner_radius,
             )
         )
 
-    def rectangle(mut self, position: Point2D, w: Int, h: Int):
-        self.rectangle(position, Float64(w), Float64(h))
+    def rectangle(
+        mut self,
+        position: Point2D,
+        w: Int,
+        h: Int,
+        *,
+        corner_radius: Float64 = 0.0,
+    ):
+        self.rectangle(
+            position, Float64(w), Float64(h), corner_radius=corner_radius
+        )
 
     def rectangle(mut self, r: Rectangle):
-        self.rectangle(r.position, r.w, r.h)
+        self.rectangle(r.position, r.w, r.h, corner_radius=r.corner_radius)
 
     def circle(mut self, position: Point2D, r: Float64):
         self._state.backend.record(
@@ -1252,15 +1279,32 @@ struct Canvas(Movable):
             bezier_chain_command(self._transform, self._style, points^)
         )
 
-    def triangle(mut self, a: Point2D, b: Point2D, c: Point2D):
+    def triangle(
+        mut self,
+        a: Point2D,
+        b: Point2D,
+        c: Point2D,
+        *,
+        corner_radius: Float64 = 0.0,
+    ):
+        """Draw the triangle through `a`, `b` and `c`, its corners rounded
+        by `corner_radius`, as `Triangle` describes it."""
         self._state.backend.record(
             triangle_command(
-                self._transform, self._style, a.x, a.y, b.x, b.y, c.x, c.y
+                self._transform,
+                self._style,
+                a.x,
+                a.y,
+                b.x,
+                b.y,
+                c.x,
+                c.y,
+                corner_radius,
             )
         )
 
     def triangle(mut self, t: Triangle):
-        self.triangle(t.a, t.b, t.c)
+        self.triangle(t.a, t.b, t.c, corner_radius=t.corner_radius)
 
     def image(mut self, s: Image, position: Point2D):
         """Render `s` at its own pixel size.

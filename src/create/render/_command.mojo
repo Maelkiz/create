@@ -245,10 +245,12 @@ def rect_command(
     y: Float64,
     w: Float64,
     h: Float64,
+    corner_radius: Float64 = 0.0,
 ) -> RenderCommand:
-    """A rectangle centred at `(x, y)`, `w` by `h`, in local units."""
+    """A rectangle centred at `(x, y)`, `w` by `h`, in local units, its
+    corners rounded by `corner_radius`."""
     var c = RenderCommand(CMD_RECT, transform, style, x, y, w, h)
-    c.corner_radius = Float64(style.corner_radius)
+    c.corner_radius = max(corner_radius, Float64(style.corner_radius))
     return c^
 
 
@@ -294,11 +296,12 @@ def triangle_command(
     y2: Float64,
     x3: Float64,
     y3: Float64,
+    corner_radius: Float64 = 0.0,
 ) -> RenderCommand:
     var c = RenderCommand(
         CMD_TRIANGLE, transform, style, x1, y1, x2, y2, x3, y3
     )
-    c.corner_radius = Float64(style.corner_radius)
+    c.corner_radius = max(corner_radius, Float64(style.corner_radius))
     return c^
 
 
