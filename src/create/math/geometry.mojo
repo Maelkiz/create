@@ -12,7 +12,11 @@ from std.math import (
     pi,
     tau,
 )
-from ._fillet import rect_corner_radius, triangle_corner_radius
+from ._fillet import (
+    rect_corner_radius,
+    rounded_vertices,
+    triangle_corner_radius,
+)
 from .bezier import Bezier
 from .point2d import Point2D
 from .vector2d import Vector2D
@@ -483,6 +487,8 @@ struct Rectangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def contains(self, p: Polygon) -> Bool:
         if self._radius() > 0.0:
             return self._outline().contains(p)
+        if p._is_rounded():
+            return self.contains(p._outline())
         for v in p.vertices:
             if not self.contains(v):
                 return False
@@ -607,6 +613,8 @@ struct Circle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return _dist_sq(far, self.position) <= reach * reach
 
     def contains(self, p: Polygon) -> Bool:
+        if p._is_rounded():
+            return self.contains(p._outline())
         for v in p.vertices:
             if not self.contains(v):
                 return False
@@ -710,6 +718,8 @@ struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return s._boundary_meets(self)
 
     def intersects(self, p: Polygon) -> Bool:
+        if p._is_rounded():
+            return self.intersects(p._outline())
         if p.contains(self.start) or p.contains(self.end):
             return True
         return p._boundary_meets(self)
@@ -1061,6 +1071,8 @@ struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return s._boundary_meets(self)
 
     def intersects(self, p: Polygon) -> Bool:
+        if p._is_rounded():
+            return self.intersects(p._outline())
         if p.contains(self.at(0.0)) or p.contains(self.at(1.0)):
             return True
         return p._boundary_meets(self)
@@ -1253,6 +1265,8 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return True
 
     def contains(self, p: Polygon) -> Bool:
+        if p._is_rounded():
+            return self.contains(p._outline())
         for i in range(len(p.vertices)):
             if not self.contains(p._edge(i)):
                 return False
@@ -1486,6 +1500,8 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def contains(self, p: Polygon) -> Bool:
         if self._radius() > 0.0:
             return self._outline().contains(p)
+        if p._is_rounded():
+            return self.contains(p._outline())
         for v in p.vertices:
             if not self.contains(v):
                 return False
@@ -1562,17 +1578,31 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
     Like a `Triangle`'s, the fields are the vertices and `center()` (the
     centroid) is derived; `move_to` moves the centroid. The centroid and
     `area` are those of a simple polygon -- one whose edges do not cross.
+
+    `corner_radius` rounds every corner, as `canvas.polygon` draws it, and
+    every test here sees the rounded shape. Each corner is clamped on its
+    own so its rounding takes at most half of either edge beside it: a
+    sharp tip rounds less without holding back the rest. A concave corner
+    rounds too, filling its notch. The tests use the rounded outline with
+    each fillet flattened, so a point within about 0.1% of the radius of a
+    fillet may fall either way.
     """
 
     var vertices: List[Point2D]
+    var corner_radius: Float64
+    """How far each corner is rounded; 0 is sharp."""
 
-    def __init__(out self, *vertices: Point2D):
+    def __init__(out self, *vertices: Point2D, corner_radius: Float64 = 0.0):
         self.vertices = List[Point2D](capacity=len(vertices))
         for v in vertices:
             self.vertices.append(v)
+        self.corner_radius = corner_radius
 
-    def __init__(out self, var vertices: List[Point2D]):
+    def __init__(
+        out self, var vertices: List[Point2D], *, corner_radius: Float64 = 0.0
+    ):
         self.vertices = vertices^
+        self.corner_radius = corner_radius
 
     @staticmethod
     def regular(
@@ -1580,6 +1610,8 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
         r: Float64,
         sides: Int,
         start_angle: Float64 = tau / 4.0,
+        *,
+        corner_radius: Float64 = 0.0,
     ) -> Polygon:
         """A regular polygon of `sides` vertices on the circle around
         `position` with radius `r`, the first at `start_angle` (radians
@@ -1589,7 +1621,7 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
         for i in range(sides):
             var angle = start_angle + tau * Float64(i) / Float64(sides)
             vertices.append(position + _unit(angle) * r)
-        return Polygon(vertices^)
+        return Polygon(vertices^, corner_radius=corner_radius)
 
     @staticmethod
     def star(
@@ -1598,6 +1630,8 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
         inner_r: Float64,
         tips: Int,
         start_angle: Float64 = tau / 4.0,
+        *,
+        corner_radius: Float64 = 0.0,
     ) -> Polygon:
         """A star of `tips` points about `position`: its tips on radius `r`,
         the first at `start_angle` (straight up by default), and between
@@ -1609,10 +1643,13 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
             vertices.append(
                 position + _unit(angle) * (r if i % 2 == 0 else inner_r)
             )
-        return Polygon(vertices^)
+        return Polygon(vertices^, corner_radius=corner_radius)
 
     def __eq__(self, other: Polygon) -> Bool:
-        return self.vertices == other.vertices
+        return (
+            self.vertices == other.vertices
+            and self.corner_radius == other.corner_radius
+        )
 
     def __ne__(self, other: Polygon) -> Bool:
         return not (self == other)
@@ -1623,11 +1660,16 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
             if i > 0:
                 writer.write(", ")
             writer.write(self.vertices[i])
-        writer.write("])")
+        writer.write("]")
+        if self.corner_radius != 0.0:
+            writer.write(", corner_radius=", self.corner_radius)
+        writer.write(")")
 
     def center(self) -> Point2D:
         """The centroid of the enclosed area; with no area, the mean of the
         vertices (the origin for none)."""
+        if self._is_rounded():
+            return self._outline().center()
         var n = len(self.vertices)
         if n == 0:
             return Point2D(0.0, 0.0)
@@ -1661,11 +1703,15 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
         return sum
 
     def area(self) -> Float64:
+        if self._is_rounded():
+            return self._outline().area()
         return abs(self._signed_area2()) / 2.0
 
     def bounds(self) -> Rectangle:
-        """The tightest axis-aligned rectangle around the vertices; a
+        """The tightest axis-aligned rectangle around the polygon; a
         zero-size one at the origin for none."""
+        if self._is_rounded():
+            return self._outline().bounds()
         if len(self.vertices) == 0:
             return Rectangle(Point2D(0.0, 0.0), 0.0, 0.0)
         var lo = self.vertices[0]
@@ -1678,6 +1724,8 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
     def closest_point(self, p: Point2D) -> Point2D:
         """`p` itself when inside, else the nearest point on an edge. A
         polygon with no vertices has no points, and returns `p`."""
+        if self._is_rounded():
+            return self._outline().closest_point(p)
         if len(self.vertices) == 0 or self.contains(p):
             return p
         var best = self.vertices[0]
@@ -1689,6 +1737,8 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
         return best
 
     def contains(self, p: Point2D) -> Bool:
+        if self._is_rounded():
+            return self._outline().contains(p)
         for i in range(len(self.vertices)):
             var e = self._edge(i)
             if _point_on_segment(p, e.start, e.end):
@@ -1700,8 +1750,11 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
     # can enclose with its whole outline inside. So it holds a shape when
     # it holds the shape's outline -- cut where it crosses the lines of the
     # edges, the middle of every piece inside, as for `Sector` -- and no
-    # edge piece strictly inside the shape has the outside along it.
+    # edge piece strictly inside the shape has the outside along it. A
+    # rounded polygon does all this as its outline.
     def contains(self, l: Line) -> Bool:
+        if self._is_rounded():
+            return self._outline().contains(l)
         if not (self.contains(l.start) and self.contains(l.end)):
             return False
         var cuts = List[Float64]()
@@ -1713,6 +1766,8 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
         return True
 
     def contains(self, r: Rectangle) -> Bool:
+        if self._is_rounded():
+            return self._outline().contains(r)
         if r._radius() > 0.0:
             return self.contains(r._outline())
         var outline = _closed_outline(r._points())
@@ -1725,6 +1780,8 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
         return True
 
     def contains(self, t: Triangle) -> Bool:
+        if self._is_rounded():
+            return self._outline().contains(t)
         if t._radius() > 0.0:
             return self.contains(t._outline())
         var outline = _closed_outline(t._points())
@@ -1737,6 +1794,8 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
         return True
 
     def contains(self, c: Circle) -> Bool:
+        if self._is_rounded():
+            return self._outline().contains(c)
         var outline = Arc(c.position, c.r, 0.0, tau)
         if not self._contains_arc(outline):
             return False
@@ -1746,6 +1805,8 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
         return True
 
     def contains(self, s: Sector) -> Bool:
+        if self._is_rounded():
+            return self._outline().contains(s)
         var radii = s._radii()
         var outline: List[Line] = [radii[0], radii[1]]
         for radius in outline:
@@ -1759,6 +1820,10 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
         return True
 
     def contains(self, other: Polygon) -> Bool:
+        if self._is_rounded():
+            return self._outline().contains(other)
+        if other._is_rounded():
+            return self.contains(other._outline())
         var outline = other._edges()
         for edge in outline:
             if not self.contains(edge):
@@ -1774,6 +1839,15 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
     def translate(mut self, delta: Vector2D):
         for i in range(len(self.vertices)):
             self.vertices[i] = self.vertices[i] + delta
+
+    def _is_rounded(self) -> Bool:
+        return self.corner_radius > 0.0 and len(self.vertices) >= 3
+
+    def _outline(self) -> Polygon:
+        """The rounded polygon as a sharp one, each fillet flattened."""
+        return Polygon(
+            rounded_vertices(self.vertices, self.corner_radius, _FILLET_STEP)
+        )
 
     def _edge(self, i: Int) -> Line:
         """Edge `i`, from vertex `i` to the next, the last closing back to
@@ -2150,6 +2224,7 @@ def _edges_meet_polygon[N: Int](pts: Array[Point2D, N], p: Polygon) -> Bool:
 
 
 def overlaps(a: Polygon, b: Circle) -> Bool:
+    # `closest_point` already sees a rounded polygon's rounding.
     return b.contains(a.closest_point(b.position))
 
 
@@ -2158,6 +2233,8 @@ def overlaps(a: Circle, b: Polygon) -> Bool:
 
 
 def overlaps(a: Polygon, b: Rectangle) -> Bool:
+    if a._is_rounded():
+        return overlaps(a._outline(), b)
     if b._radius() > 0.0:
         return overlaps(a, b._outline())
     if _edges_meet_polygon(b._points(), a):
@@ -2170,6 +2247,8 @@ def overlaps(a: Rectangle, b: Polygon) -> Bool:
 
 
 def overlaps(a: Polygon, b: Triangle) -> Bool:
+    if a._is_rounded():
+        return overlaps(a._outline(), b)
     if b._radius() > 0.0:
         return overlaps(a, b._outline())
     if _edges_meet_polygon(b._points(), a):
@@ -2182,6 +2261,8 @@ def overlaps(a: Triangle, b: Polygon) -> Bool:
 
 
 def overlaps(a: Polygon, b: Sector) -> Bool:
+    if a._is_rounded():
+        return overlaps(a._outline(), b)
     if a.contains(b.position):
         return True
     for v in a.vertices:
@@ -2198,6 +2279,10 @@ def overlaps(a: Sector, b: Polygon) -> Bool:
 
 
 def overlaps(a: Polygon, b: Polygon) -> Bool:
+    if a._is_rounded():
+        return overlaps(a._outline(), b)
+    if b._is_rounded():
+        return overlaps(a, b._outline())
     for i in range(len(a.vertices)):
         if a._edge(i).intersects(b):
             return True

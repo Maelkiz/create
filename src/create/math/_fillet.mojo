@@ -1,4 +1,19 @@
-from std.math import acos, atan2, clamp, max, min, pi, sin, sqrt, tan
+from std.math import (
+    acos,
+    atan2,
+    ceil,
+    clamp,
+    cos,
+    max,
+    min,
+    pi,
+    sin,
+    sqrt,
+    tan,
+    tau,
+)
+
+from .point2d import Point2D
 
 
 def rect_corner_radius(radius: Float64, w: Float64, h: Float64) -> Float64:
@@ -111,3 +126,49 @@ def corner_fillet(
     var angle_in = atan2(tin_y - cy, tin_x - cx)
     var angle_out = atan2(tout_y - cy, tout_x - cx)
     return (cx, cy, tin_x, tin_y, tout_x, tout_y, angle_in, angle_out)
+
+
+def rounded_vertices(
+    vertices: List[Point2D], radius: Float64, max_step: Float64
+) -> List[Point2D]:
+    """The closed outline through `vertices` with every corner rounded by
+    `radius`, its fillets flattened into points at most `max_step` radians
+    apart.
+
+    Each corner is clamped on its own (`_vertex_max_radius`), so a sharp
+    tip rounds less without holding back the rest. A concave corner rounds
+    too: its fillet sits in the notch and fills it, since the circle tangent
+    to both edges lies on the side the edges open towards either way. A
+    corner with no room to round, a zero-length edge beside it or none at
+    all, stays the vertex it was.
+    """
+    var n = len(vertices)
+    if radius <= 0.0 or n < 3:
+        return vertices.copy()
+    var out = List[Point2D](capacity=n * 4)
+    for i in range(n):
+        var v = vertices[i]
+        var before = vertices[(i + n - 1) % n]
+        var after = vertices[(i + 1) % n]
+        var r = min(
+            radius,
+            _vertex_max_radius(v.x, v.y, before.x, before.y, after.x, after.y),
+        )
+        if r <= 0.0:
+            out.append(v)
+            continue
+        var f = corner_fillet(v.x, v.y, before.x, before.y, after.x, after.y, r)
+        # The arc facing the vertex, the shorter way round.
+        var sweep = f[7] - f[6]
+        if sweep > pi:
+            sweep -= tau
+        elif sweep < -pi:
+            sweep += tau
+        if abs(sweep) < 1e-9:
+            out.append(v)
+            continue
+        var steps = max(Int(ceil(abs(sweep) / max_step)), 1)
+        for k in range(steps + 1):
+            var a = f[6] + sweep * Float64(k) / Float64(steps)
+            out.append(Point2D(f[0] + r * cos(a), f[1] + r * sin(a)))
+    return out^
