@@ -172,7 +172,7 @@ def test_spread_grows_each_kind() raises -> None:
     var r = shadow_command(rect_command(identity[3](), s, 0, 0, 10, 6), 1.0)
     assert_equal(r.geom[2], 14.0)
     assert_equal(r.geom[3], 10.0)
-    assert_equal(r.style.corner_radius, 2)
+    assert_equal(r.corner_radius, 2.0)
     var c = shadow_command(circle_command(identity[3](), s, 0, 0, 5), 1.0)
     assert_equal(c.geom[2], 7.0)
     var l = shadow_command(line_command(identity[3](), s, 0, 0, 5, 0), 1.0)
@@ -197,7 +197,7 @@ def test_triangle_grows_every_edge_by_the_spread() raises -> None:
     # The right-angle vertex moves out one unit along both axes.
     assert_almost_equal(sh.geom[0], -1.0)
     assert_almost_equal(sh.geom[1], -1.0)
-    assert_equal(sh.style.corner_radius, 1)
+    assert_equal(sh.corner_radius, 1.0)
 
 
 def test_triangle_silhouette_reaches_the_outline_outer_edge() raises -> None:

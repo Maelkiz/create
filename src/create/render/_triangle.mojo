@@ -113,7 +113,7 @@ def triangle_pieces(
     ) / perimeter
     var r = min(
         triangle_corner_radius(
-            Float64(c.style.corner_radius),
+            c.corner_radius,
             xs[0],
             ys[0],
             xs[1],

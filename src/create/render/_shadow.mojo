@@ -15,8 +15,7 @@ with only the outline visible it is the ring.
 Minkowski sum with a disc of radius `d`: every edge moves out by `d` and every
 corner rounds by `d` more, centred on the original vertex. That is exactly
 what a larger `corner_radius` on the grown rectangle or triangle renders, so
-no new shape kind is needed. `corner_radius` is a whole number of world
-units, so the rounding is to the nearest unit; the edges themselves are exact.
+no new shape kind is needed, and the growth is exact.
 A sector or polygon has no corner radius, so it carries the growth itself
 (a sector's `geom[5]`, a polygon's `geom[0]`) and `sector_quads` or
 `polygon_quads` tiles the Minkowski sum exactly.
@@ -182,9 +181,7 @@ def shadow_command(c: RenderCommand, scale: Float64) -> RenderCommand:
         if c.kind == CMD_RECT:
             s.geom[2] = max(s.geom[2] + 2.0 * spread, 0.0)
             s.geom[3] = max(s.geom[3] + 2.0 * spread, 0.0)
-            s.style.corner_radius = max(
-                c.style.corner_radius + Int(round(spread)), 0
-            )
+            s.corner_radius = max(c.corner_radius + spread, 0.0)
         elif c.kind == CMD_CIRCLE:
             s.geom[2] = max(s.geom[2] + spread, 0.0)
         elif c.kind == CMD_SECTOR:
@@ -208,12 +205,12 @@ def shadow_command(c: RenderCommand, scale: Float64) -> RenderCommand:
     if c.kind == CMD_RECT:
         s.geom[2] = max(s.geom[2] + 2.0 * d, 0.0)
         s.geom[3] = max(s.geom[3] + 2.0 * d, 0.0)
-        s.style.corner_radius = max(c.style.corner_radius + Int(round(d)), 0)
+        s.corner_radius = max(c.corner_radius + d, 0.0)
     elif c.kind == CMD_CIRCLE:
         s.geom[2] = max(s.geom[2] + d, 0.0)
     elif c.kind == CMD_TRIANGLE:
         _grow_triangle(s.geom, d)
-        s.style.corner_radius = max(c.style.corner_radius + Int(round(d)), 0)
+        s.corner_radius = max(c.corner_radius + d, 0.0)
     elif c.kind == CMD_SECTOR:
         # Grown exactly, by `sector_quads`: no corner radius to lean on.
         s.geom[5] = d
@@ -418,9 +415,7 @@ struct BlurredSilhouette(Copyable, Movable):
             self.kind = SIL_RECT
             var hw = sh.geom[2] / 2.0
             var hh = sh.geom[3] / 2.0
-            var r = rect_corner_radius(
-                Float64(sh.style.corner_radius), sh.geom[2], sh.geom[3]
-            )
+            var r = rect_corner_radius(sh.corner_radius, sh.geom[2], sh.geom[3])
             if sh.kind == CMD_CIRCLE:
                 hw = sh.geom[2]
                 hh = hw
@@ -616,7 +611,7 @@ struct InsetRegion(Copyable, Movable):
         moved in by `inset` local units."""
         self.geom = c.geom.copy()
         self.empty = False
-        var requested = Float64(c.style.corner_radius)
+        var requested = c.corner_radius
         if c.kind == CMD_TRIANGLE:
             self.kind = SIL_TRIANGLE
             self.radius = triangle_corner_radius(

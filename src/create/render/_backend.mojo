@@ -1502,9 +1502,7 @@ struct Backend(Movable):
         var lx1 = x + c.geom[2] / 2.0
         var ly1 = y + c.geom[3] / 2.0
 
-        var r_local = rect_corner_radius(
-            Float64(c.style.corner_radius), c.geom[2], c.geom[3]
-        )
+        var r_local = rect_corner_radius(c.corner_radius, c.geom[2], c.geom[3])
 
         if uniform(m) and r_local <= 0.0:
             # Axis-aligned and sharp: map the two opposite corners and order
@@ -2041,7 +2039,7 @@ struct Backend(Movable):
         var p3 = mat_apply(m, lx3, ly3)
 
         var r_local = triangle_corner_radius(
-            Float64(c.style.corner_radius), lx1, ly1, lx2, ly2, lx3, ly3
+            c.corner_radius, lx1, ly1, lx2, ly2, lx3, ly3
         )
 
         var fill_visible = c.style._fill_visible()

@@ -80,6 +80,10 @@ struct RenderCommand(Copyable, Movable):
     var style: Style
     """Resolved at record time. A later `canvas.fill()` cannot reach back and
     change what an already-recorded command paints."""
+    var corner_radius: Float64
+    """`CMD_RECT` and `CMD_TRIANGLE`: the requested corner radius in local
+    units, before the replay clamps it to what the shape can hold. 0 is
+    sharp. A field of its own because a triangle fills every `geom` slot."""
     var text: String
     """`CMD_TEXT` only, and owned — layout happens at replay, in the backend
     that holds the fonts, so the string has to outlive the rendering call."""
@@ -130,6 +134,7 @@ struct RenderCommand(Copyable, Movable):
         self.geom[5] = g5
         self.transform = transform
         self.style = style
+        self.corner_radius = 0.0
         var image_tint = Color.WHITE
         if self.style.tint != Color.WHITE or self.style.opacity != 1.0:
             var tint = self.style.tint
@@ -242,7 +247,9 @@ def rect_command(
     h: Float64,
 ) -> RenderCommand:
     """A rectangle centred at `(x, y)`, `w` by `h`, in local units."""
-    return RenderCommand(CMD_RECT, transform, style, x, y, w, h)
+    var c = RenderCommand(CMD_RECT, transform, style, x, y, w, h)
+    c.corner_radius = Float64(style.corner_radius)
+    return c^
 
 
 def circle_command(
@@ -288,7 +295,11 @@ def triangle_command(
     x3: Float64,
     y3: Float64,
 ) -> RenderCommand:
-    return RenderCommand(CMD_TRIANGLE, transform, style, x1, y1, x2, y2, x3, y3)
+    var c = RenderCommand(
+        CMD_TRIANGLE, transform, style, x1, y1, x2, y2, x3, y3
+    )
+    c.corner_radius = Float64(style.corner_radius)
+    return c^
 
 
 def bezier_command(

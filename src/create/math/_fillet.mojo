@@ -54,8 +54,8 @@ def triangle_corner_radius(
     """Clamp a requested corner radius so all three of a triangle's corners
     can round without self-intersecting.
 
-    One radius for the whole triangle, not one per corner: the style
-    property is a single `Int`, and a uniform fillet is what that reads as.
+    One radius for the whole triangle, not one per corner: the requested
+    radius is a single value, and a uniform fillet is what that reads as.
     The cost is that one thin vertex suppresses rounding on the whole
     triangle — the right failure direction, since no rounding is safer than
     a self-intersecting one. A degenerate (near-collinear) triangle drives

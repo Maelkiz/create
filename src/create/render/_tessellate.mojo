@@ -424,9 +424,7 @@ def emit_rect(
     var ly0 = c.geom[1] - c.geom[3] / 2.0
     var lx1 = c.geom[0] + c.geom[2] / 2.0
     var ly1 = c.geom[1] + c.geom[3] / 2.0
-    var r = rect_corner_radius(
-        Float64(c.style.corner_radius), c.geom[2], c.geom[3]
-    )
+    var r = rect_corner_radius(c.corner_radius, c.geom[2], c.geom[3])
 
     if r <= 0.0:
         if not c.style._outline_visible():
@@ -777,7 +775,7 @@ def emit_triangle(
     var m = c.transform
     var fill_visible = c.style._fill_visible()
     var outline_visible = c.style._outline_visible()
-    if c.style.corner_radius <= 0 and not outline_visible:
+    if c.corner_radius <= 0.0 and not outline_visible:
         if fill_visible:
             var p1 = mat_apply(m, c.geom[0], c.geom[1])
             var p2 = mat_apply(m, c.geom[2], c.geom[3])
