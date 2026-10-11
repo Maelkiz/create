@@ -455,7 +455,6 @@ struct Canvas(Movable):
         outline: Optional[Color] = None,
         outline_thickness: Optional[Int] = None,
         outline_enabled: Optional[Bool] = None,
-        corner_radius: Optional[Int] = None,
         text_color: Optional[Color] = None,
         font: Optional[Font] = None,
         font_size: Optional[Int] = None,
@@ -503,8 +502,6 @@ struct Canvas(Movable):
             self.fill_enabled(fill_enabled.value())
         if outline_enabled:
             self.outline_enabled(outline_enabled.value())
-        if corner_radius:
-            self.corner_radius(corner_radius.value())
         if text_color:
             self.text_color(text_color.value())
         if font:
@@ -1099,9 +1096,8 @@ struct Canvas(Movable):
         Angles are radians, counter-clockwise from the +x axis (y is up); a
         negative sweep runs clockwise, and a full turn or more is the whole
         disc. The outline is inset, as a circle's is: the fill stops where it
-        starts, and a translucent sector composites once. `corner_radius` does
-        not round a sector, and it casts no inset shadow; a blurred drop
-        shadow costs what a `bezier`'s does. A zero radius or sweep draws
+        starts, and a translucent sector composites once. It casts no inset
+        shadow; a blurred drop shadow costs what a `bezier`'s does. A zero radius or sweep draws
         nothing.
         """
         self._state.backend.record(
@@ -1135,9 +1131,9 @@ struct Canvas(Movable):
         area its edges wind round, whichever way they run. The outline is
         inset along the outside, as a sector's is, and centred on an edge
         running through the inside — a pentagram's inner pentagon — so every
-        edge is stroked as thick; a translucent polygon composites once.
-        `corner_radius` does not round a polygon, and it casts no inset
-        shadow; a blurred drop shadow costs what a `bezier`'s does. Fewer than
+        edge is stroked as thick; a translucent polygon composites once. It
+        casts no inset shadow; a blurred drop shadow costs what a `bezier`'s
+        does. Fewer than
         three vertices draw nothing.
         """
         self._state.backend.record(
@@ -1345,13 +1341,6 @@ struct Canvas(Movable):
 
     def image(mut self, a: Animator, position: Point2D, w: Int, h: Int):
         self.image(a.animation[].frame(a.frame_index), position, w, h)
-
-    def corner_radius(mut self, radius: Int):
-        """Round the corners of rectangles and triangles, in world units,
-        scaled by autoscale like every other coordinate. A radius wider than
-        a shape permits is clamped down at render time so corners never
-        self-intersect."""
-        self._style.corner_radius = radius
 
     def text_color(mut self, color: Color):
         """Paint glyphs in `color`. Separate from `fill`, so a shape colour and
