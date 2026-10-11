@@ -68,7 +68,7 @@ struct RenderCommand(Copyable, Movable):
     | `CMD_LETTERBOX` | `cx0` | `cy0` | `cx1` | `cy1` | — | — |
     | `CMD_BEZIER` | — | — | — | — | — | — |
     | `CMD_SECTOR` | `cx` | `cy` | `r` | `start` | `sweep` | — |
-    | `CMD_POLYGON` | `grow` | — | — | — | — | — |
+    | `CMD_POLYGON` | `grow` | box `cx` | box `cy` | box `hw` | box `hh` | box set |
 
     Build one with the free functions below rather than by hand, so no rendering
     call site has to remember that table.
@@ -184,6 +184,8 @@ def _fill_box(c: RenderCommand) -> Tuple[Point2D, Vector2D]:
         )
     if c.kind == CMD_CIRCLE or c.kind == CMD_SECTOR:
         return (Point2D(c.geom[0], c.geom[1]), Vector2D(c.geom[2], c.geom[2]))
+    if c.kind == CMD_POLYGON and c.geom[5] != 0.0:
+        return (Point2D(c.geom[1], c.geom[2]), Vector2D(c.geom[3], c.geom[4]))
     var lo_x = Float64.MAX
     var lo_y = Float64.MAX
     var hi_x = -Float64.MAX
@@ -331,6 +333,26 @@ def polygon_command(
     """A polygon through `vertices`, in order, closed back to the first."""
     var c = RenderCommand(CMD_POLYGON, transform, style)
     c.points = vertices^
+    return c^
+
+
+def rounded_sector_command(
+    transform: Matrix[3, 3],
+    style: Style,
+    var vertices: List[Point2D],
+    cx: Float64,
+    cy: Float64,
+    r: Float64,
+) -> RenderCommand:
+    """A rounded sector, recorded as the polygon through its flattened
+    outline `vertices`, its gradient still spanning its whole circle (at
+    `(cx, cy)`, radius `r`) as a sector's does."""
+    var c = polygon_command(transform, style, vertices^)
+    c.geom[1] = cx
+    c.geom[2] = cy
+    c.geom[3] = r
+    c.geom[4] = r
+    c.geom[5] = 1.0
     return c^
 
 

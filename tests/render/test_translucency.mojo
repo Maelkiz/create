@@ -16,7 +16,7 @@ from create import *
 from create.core.headless import run_headless
 from create.render.render_backend import RenderBackend
 
-comptime _KINDS = 20
+comptime _KINDS = 21
 
 
 def _name(kind: Int) -> String:
@@ -36,6 +36,7 @@ def _name(kind: Int) -> String:
         "thickly outlined rounded triangle",
         "sheared triangle",
         "sector",
+        "rounded wide sector",
         "polygon",
         "rounded star",
         "rounded pentagram",
@@ -89,15 +90,17 @@ def _draw(mut canvas: Canvas, kind: Int) raises:
     elif kind == 14:
         canvas.sector((0, 0), 30, 0.0, 2.0)
     elif kind == 15:
-        canvas.polygon((-20, -20), (20, -20), (20, 20), (-20, 20))
+        canvas.sector((0, 0), 30, 0.5, 4.5, corner_radius=6)
     elif kind == 16:
-        canvas.polygon(Polygon.star((0, 0), 30, 13, 5, corner_radius=4))
+        canvas.polygon((-20, -20), (20, -20), (20, 20), (-20, 20))
     elif kind == 17:
+        canvas.polygon(Polygon.star((0, 0), 30, 13, 5, corner_radius=4))
+    elif kind == 18:
         var tips = Polygon.regular((0, 0), 30, 5).vertices.copy()
         canvas.polygon(
             tips[0], tips[2], tips[4], tips[1], tips[3], corner_radius=3
         )
-    elif kind == 18:
+    elif kind == 19:
         canvas.font_size(40)
         canvas.text("WM", (0, 0))
     else:

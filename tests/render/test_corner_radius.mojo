@@ -1,10 +1,11 @@
 """A shape's own `corner_radius`, drawn: what `canvas.rectangle`,
-`canvas.triangle` and `canvas.polygon` paint agrees with what the shape's
-`contains` holds.
+`canvas.triangle`, `canvas.polygon` and `canvas.sector` paint agrees with
+what the shape's `contains` holds.
 
 A 100 x 100 offscreen canvas: screen x and y in -50..50, y up.
 """
 
+from std.math import pi
 from std.testing import TestSuite, assert_equal, assert_true
 
 from create import *
@@ -116,6 +117,68 @@ def test_a_rounded_star_paints_what_it_contains() raises -> None:
                 assert_equal(painted, inside, String(p))
             checked += 1
     assert_true(checked > 2000)
+
+
+def _assert_sector_paints_what_it_contains(s: Sector) raises:
+    var canvas = _canvas()
+    canvas.sector(s)
+    var shot = canvas.snapshot()
+    # Curves are flattened, finer in the geometry than on screen.
+    var offsets: List[Vector2D] = [
+        Vector2D(0.5, 0.0),
+        Vector2D(-0.5, 0.0),
+        Vector2D(0.0, 0.5),
+        Vector2D(0.0, -0.5),
+        Vector2D(0.35, 0.35),
+        Vector2D(-0.35, 0.35),
+        Vector2D(0.35, -0.35),
+        Vector2D(-0.35, -0.35),
+    ]
+    var checked = 0
+    for j in range(0, 100, 2):
+        for i in range(0, 100, 2):
+            var p = _pixel_centre(i, j)
+            var inside = s.contains(p)
+            var near = False
+            for d in offsets:
+                if s.contains(p + d) != inside:
+                    near = True
+            if near:
+                continue
+            var painted = shot.pixel(i, 99 - j) == Color.RED
+            if painted != inside:
+                assert_equal(painted, inside, String(s) + " at " + String(p))
+            checked += 1
+    assert_true(checked > 2000)
+
+
+def test_rounded_sectors_paint_what_they_contain() raises -> None:
+    _assert_sector_paints_what_it_contains(
+        Sector((-10.0, -15.0), 55.0, 0.3, pi / 3.0, corner_radius=7.0)
+    )
+    _assert_sector_paints_what_it_contains(
+        Sector((0.0, -10.0), 45.0, 0.0, pi, corner_radius=9.0)
+    )
+    _assert_sector_paints_what_it_contains(
+        Sector((0.0, 0.0), 45.0, 0.5, -3.0 * pi / 2.0, corner_radius=10.0)
+    )
+
+
+def test_a_rounded_sector_keeps_its_circle_for_a_gradient() raises -> None:
+    var gradient = Gradient.linear(
+        Color.RED, Color.BLUE, direction=Vector2D.RIGHT
+    )
+    var sharp = Canvas(100, 100, antialiasing=Antialiasing.OFF)
+    sharp.outline_enabled(False)
+    sharp.fill(gradient)
+    sharp.sector((0.0, 0.0), 45.0, 0.2, 1.2)
+    var rounded = Canvas(100, 100, antialiasing=Antialiasing.OFF)
+    rounded.outline_enabled(False)
+    rounded.fill(gradient)
+    rounded.sector((0.0, 0.0), 45.0, 0.2, 1.2, corner_radius=8.0)
+    # Away from the corners, the same colour: both span the whole circle.
+    for p in [Point2D(20.0, 15.0), Point2D(30.0, 25.0), Point2D(12.0, 30.0)]:
+        assert_equal(rounded.pixel(p), sharp.pixel(p))
 
 
 def test_the_keyword_rounds_like_the_shape() raises -> None:

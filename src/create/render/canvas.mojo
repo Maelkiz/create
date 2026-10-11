@@ -46,6 +46,7 @@ from ._command import (
     line_command,
     polygon_command,
     rect_command,
+    rounded_sector_command,
     sector_command,
     image_command,
     text_command,
@@ -56,7 +57,11 @@ from ._clip import clip_style
 from ._command import RenderCommand
 from ._transform import pixel_scale
 from ._tessellate import circle_segments
-from create.math._fillet import rounded_vertices
+from create.math._fillet import (
+    rounded_sector_vertices,
+    rounded_vertices,
+    sector_corner_radii,
+)
 
 
 comptime _AUTOCLEAR_COLOR = Color(200)
@@ -657,14 +662,13 @@ struct Canvas(Movable):
         with `invert`; see `clip(Rectangle)`."""
         return ClipGuard[origin_of(self)](
             self,
-            sector_command(
-                self._transform,
+            self._sector_command(
                 clip_style(),
-                s.position.x,
-                s.position.y,
+                s.position,
                 s.r,
                 s.start_angle,
                 s.sweep_angle,
+                s.corner_radius,
             ),
             invert,
         )
@@ -1094,6 +1098,8 @@ struct Canvas(Movable):
         r: Float64,
         start_angle: Float64,
         sweep_angle: Float64,
+        *,
+        corner_radius: Float64 = 0.0,
     ):
         """Draw the pie slice of the circle around `position` with radius
         `r`, from `start_angle` round by `sweep_angle`: a `Sector`, its tip at
@@ -1103,18 +1109,21 @@ struct Canvas(Movable):
         negative sweep runs clockwise, and a full turn or more is the whole
         disc. The outline is inset, as a circle's is: the fill stops where it
         starts, and a translucent sector composites once. It casts no inset
-        shadow; a blurred drop shadow costs what a `bezier`'s does. A zero radius or sweep draws
-        nothing.
+        shadow; a blurred drop shadow costs what a `bezier`'s does. A zero
+        radius or sweep draws nothing.
+
+        `corner_radius` rounds the tip and both ends of the arc, as `Sector`
+        describes. A rounded sector is drawn as a polygon, so it costs what
+        an outlined `polygon` of its flattened outline does.
         """
         self._state.backend.record(
-            sector_command(
-                self._transform,
+            self._sector_command(
                 self._style,
-                position.x,
-                position.y,
+                position,
                 r,
                 start_angle,
                 sweep_angle,
+                corner_radius,
             )
         )
 
@@ -1124,11 +1133,67 @@ struct Canvas(Movable):
         r: Int,
         start_angle: Float64,
         sweep_angle: Float64,
+        *,
+        corner_radius: Float64 = 0.0,
     ):
-        self.sector(position, Float64(r), start_angle, sweep_angle)
+        self.sector(
+            position,
+            Float64(r),
+            start_angle,
+            sweep_angle,
+            corner_radius=corner_radius,
+        )
 
     def sector(mut self, s: Sector):
-        self.sector(s.position, s.r, s.start_angle, s.sweep_angle)
+        self.sector(
+            s.position,
+            s.r,
+            s.start_angle,
+            s.sweep_angle,
+            corner_radius=s.corner_radius,
+        )
+
+    def _sector_command(
+        self,
+        style: Style,
+        position: Point2D,
+        r: Float64,
+        start_angle: Float64,
+        sweep_angle: Float64,
+        corner_radius: Float64,
+    ) -> RenderCommand:
+        """A sector's command: rounded, the polygon through its outline,
+        its curves flattened now as finely as circles of their radii are
+        drawn at the current transform; sharp, a sector's own."""
+        var radii = sector_corner_radii(r, sweep_angle, corner_radius)
+        if radii[0] <= 0.0 and radii[1] <= 0.0:
+            return sector_command(
+                self._transform,
+                style,
+                position.x,
+                position.y,
+                r,
+                start_angle,
+                sweep_angle,
+            )
+        var sf = pixel_scale(self._transform, self.scale)
+        var fillet = max(radii[0], radii[1])
+        return rounded_sector_command(
+            self._transform,
+            style,
+            rounded_sector_vertices(
+                position,
+                r,
+                start_angle,
+                sweep_angle,
+                corner_radius,
+                tau / Float64(circle_segments(fillet * sf)),
+                tau / Float64(circle_segments(r * sf)),
+            ),
+            position.x,
+            position.y,
+            r,
+        )
 
     def polygon(mut self, p: Polygon):
         """Draw the polygon through `p.vertices`, closed back to the first.

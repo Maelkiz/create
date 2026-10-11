@@ -157,18 +157,152 @@ def rounded_vertices(
         if r <= 0.0:
             out.append(v)
             continue
-        var f = corner_fillet(v.x, v.y, before.x, before.y, after.x, after.y, r)
-        # The arc facing the vertex, the shorter way round.
-        var sweep = f[7] - f[6]
-        if sweep > pi:
-            sweep -= tau
-        elif sweep < -pi:
-            sweep += tau
-        if abs(sweep) < 1e-9:
-            out.append(v)
-            continue
-        var steps = max(Int(ceil(abs(sweep) / max_step)), 1)
-        for k in range(steps + 1):
-            var a = f[6] + sweep * Float64(k) / Float64(steps)
-            out.append(Point2D(f[0] + r * cos(a), f[1] + r * sin(a)))
+        _append_corner(out, v, before, after, r, max_step)
+    return out^
+
+
+def _append_corner(
+    mut out: List[Point2D],
+    v: Point2D,
+    before: Point2D,
+    after: Point2D,
+    r: Float64,
+    max_step: Float64,
+):
+    """The fillet of radius `r` at the corner `v` between the lines to
+    `before` and `after`, from the first's side to the second's; `v` itself
+    where the lines run straight on."""
+    var f = corner_fillet(v.x, v.y, before.x, before.y, after.x, after.y, r)
+    # The arc facing the vertex, the shorter way round.
+    var sweep = _shorter(f[7] - f[6])
+    if abs(sweep) < 1e-9:
+        out.append(v)
+        return
+    _append_arc(out, Point2D(f[0], f[1]), r, f[6], sweep, max_step)
+
+
+def _shorter(sweep: Float64) -> Float64:
+    """`sweep` the shorter way round, in `[-pi, pi]`."""
+    if sweep > pi:
+        return sweep - tau
+    if sweep < -pi:
+        return sweep + tau
+    return sweep
+
+
+def _append_arc(
+    mut out: List[Point2D],
+    center: Point2D,
+    r: Float64,
+    start: Float64,
+    sweep: Float64,
+    max_step: Float64,
+):
+    """Points along the arc about `center`, both ends included, at most
+    `max_step` radians apart."""
+    var steps = max(Int(ceil(abs(sweep) / max_step)), 1)
+    for k in range(steps + 1):
+        var a = start + sweep * Float64(k) / Float64(steps)
+        out.append(Point2D(center.x + r * cos(a), center.y + r * sin(a)))
+
+
+def sector_corner_radii(
+    r: Float64, sweep: Float64, radius: Float64
+) -> Tuple[Float64, Float64]:
+    """How far a sector of radius `r` and signed `sweep` can round its tip
+    and each end of its arc for a requested `radius`, as `(tip, ends)`.
+
+    Each corner claims at most half of what lies beside it, as a polygon's
+    does: the tip half of each radius, an end the other half and half the
+    arc. A tip running straight on (a half turn) or a whole disc has no
+    corner to round.
+    """
+    var turn = abs(sweep)
+    if radius <= 0.0 or r <= 0.0 or turn >= tau or turn == 0.0:
+        return (0.0, 0.0)
+    # The narrower wedge between the two radii.
+    var wedge = min(turn, tau - turn)
+    var tip = 0.0
+    if abs(wedge - pi) > 1e-9:
+        tip = min(radius, tan(wedge / 2.0) * r / 2.0)
+    # An end's fillet touches its radius sqrt(r^2 - 2 r f) out from the tip,
+    # at least halfway for f <= 3r/8, and the arc atan(f / that) round from
+    # the end, at most half the sweep.
+    var ends = min(radius, 3.0 * r / 8.0)
+    var half = turn / 2.0
+    if half < pi / 2.0:
+        var t2 = tan(half) * tan(half)
+        ends = min(ends, r * (sqrt(t2 * t2 + t2) - t2))
+    return (max(tip, 0.0), max(ends, 0.0))
+
+
+def rounded_sector_vertices(
+    position: Point2D,
+    r: Float64,
+    start: Float64,
+    sweep: Float64,
+    radius: Float64,
+    fillet_step: Float64,
+    arc_step: Float64,
+) -> List[Point2D]:
+    """The outline of the sector at `position` with radius `r`, from
+    `start` round by `sweep`, its tip and both ends of its arc rounded by
+    `radius` (clamped by `sector_corner_radii`): the fillets at most
+    `fillet_step` radians between points, the arc at most `arc_step`.
+
+    The ends' fillets are tangent to their radius and, from inside, to the
+    sector's circle. The tip's is a polygon corner's, so past a half turn,
+    where the tip is concave, it fills the notch.
+    """
+    var radii = sector_corner_radii(r, sweep, radius)
+    var tip_r = radii[0]
+    var end_r = radii[1]
+    var side = 1.0 if sweep > 0.0 else -1.0
+    var u0 = (cos(start), sin(start))
+    var end_angle = start + sweep
+    var u1 = (cos(end_angle), sin(end_angle))
+    var out = List[Point2D]()
+    # The tip, from the end radius round to the start one.
+    var on_end = Point2D(position.x + r * u1[0], position.y + r * u1[1])
+    var on_start = Point2D(position.x + r * u0[0], position.y + r * u0[1])
+    if tip_r > 0.0:
+        _append_corner(out, position, on_end, on_start, tip_r, fillet_step)
+    else:
+        out.append(position)
+    # Out along the start radius, round the arc, back down the end radius.
+    var along = sqrt(max(r * r - 2.0 * r * end_r, 0.0))
+    var offset = atan2(end_r, along) if end_r > 0.0 else 0.0
+    if end_r > 0.0:
+        # Into the sector: the start radius turned towards the sweep.
+        var c = Point2D(
+            position.x + along * u0[0] - side * end_r * u0[1],
+            position.y + along * u0[1] + side * end_r * u0[0],
+        )
+        var on_line = atan2(
+            position.y + along * u0[1] - c.y, position.x + along * u0[0] - c.x
+        )
+        var on_arc = start + side * offset
+        _append_arc(
+            out, c, end_r, on_line, _shorter(on_arc - on_line), fillet_step
+        )
+    _append_arc(
+        out,
+        position,
+        r,
+        start + side * offset,
+        sweep - 2.0 * side * offset,
+        arc_step,
+    )
+    if end_r > 0.0:
+        var c = Point2D(
+            position.x + along * u1[0] + side * end_r * u1[1],
+            position.y + along * u1[1] - side * end_r * u1[0],
+        )
+        var on_arc = end_angle - side * offset
+        var on_line = atan2(
+            position.y + along * u1[1] - c.y, position.x + along * u1[0] - c.x
+        )
+        _append_arc(
+            out, c, end_r, on_arc, _shorter(on_line - on_arc), fillet_step
+        )
     return out^
