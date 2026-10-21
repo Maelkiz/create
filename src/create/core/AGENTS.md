@@ -44,7 +44,7 @@ the mapping dials reach `render` in one place.
 `apply_events` keeps only what needs the loop: mapping pointer positions into screen space and the
 Escape quit. Every write to `Input` goes through one of its `_`-prefixed methods (`_key_down`,
 `_mouse_button_down`, `_gamepad_axis_moved`, …), which own the bookkeeping — auto-repeat, edges,
-slots. `Input._set_mouse(x, y)` is the only writer of `mouse`/`mouse_x`/`mouse_y`.
+slots. `Input._set_mouse(x, y)` is the only writer of `mouse`.
 
 **Gamepads are opened in `_window`, read in `input`.** SDL sends no axis or button events for a pad
 until it is opened, so `_SDLWindow.events()` — the one event pump both windows own — tries

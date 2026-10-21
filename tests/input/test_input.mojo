@@ -24,8 +24,6 @@ def test_key_from_name() raises -> None:
 
 def test_initial_mouse_position() raises -> None:
     var input = Input()
-    assert_equal(input.mouse_x, 0)
-    assert_equal(input.mouse_y, 0)
     assert_equal(input.mouse.x, 0.0)
     assert_equal(input.mouse.y, 0.0)
 
@@ -434,34 +432,11 @@ def test_new_frame_leaves_held_state_alone() raises -> None:
     assert_true(input.mouse_down(1))
 
 
-def test_set_mouse_writes_all_three_fields() raises -> None:
+def test_set_mouse_records_the_position() raises -> None:
     var input = Input()
     input._set_mouse(12.5, -30.25)
     assert_equal(input.mouse.x, 12.5)
     assert_equal(input.mouse.y, -30.25)
-    assert_equal(input.mouse_x, 12)
-    assert_equal(input.mouse_y, -31)
-
-
-def test_set_mouse_floors_negative_coordinates() raises -> None:
-    # World space is centred, so half the screen is negative. Flooring and
-    # truncating disagree there: Int(-0.5) is 0, floor(-0.5) is -1.
-    var input = Input()
-    input._set_mouse(-0.5, -1.5)
-    assert_equal(input.mouse_x, -1)
-    assert_equal(input.mouse_y, -2)
-
-
-def test_set_mouse_int_fields_track_the_position() raises -> None:
-    # The regression this method exists to prevent: a code path that updated
-    # mouse_x/mouse_y while leaving `mouse` at its previous value.
-    var input = Input()
-    input._set_mouse(5.0, 5.0)
-    input._set_mouse(-40.75, 60.25)
-    assert_equal(input.mouse.x, -40.75)
-    assert_equal(input.mouse.y, 60.25)
-    assert_equal(input.mouse_x, -41)
-    assert_equal(input.mouse_y, 60)
 
 
 def test_mouse_is_a_position_and_the_wheel_a_displacement() raises -> None:
