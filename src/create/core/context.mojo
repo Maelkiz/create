@@ -181,7 +181,8 @@ struct Context(Copyable, Movable):
         return self._max_frame_rate
 
     def max_frame_rate(mut self, fps: Int) raises:
-        """Limit the loop to at most `fps` frames per second.
+        """Limit the loop to at most `fps` frames per second, or lift the
+        cap with `0`.
 
         A cap tighter than the display's own pacing (vsync, or the CPU
         backend's always-on vsync) slows the loop by sleeping at the end of
@@ -189,9 +190,9 @@ struct Context(Copyable, Movable):
         already waiting on the display. Not enforced by `run_headless`,
         which has no wall clock to cap against.
         """
-        if fps <= 0:
+        if fps < 0:
             raise Error(
-                "max_frame_rate fps must be positive, got " + String(fps)
+                "max_frame_rate fps must not be negative, got " + String(fps)
             )
         self._max_frame_rate = fps
 

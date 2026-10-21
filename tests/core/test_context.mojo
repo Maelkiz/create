@@ -46,11 +46,16 @@ def test_max_frame_rate_is_recorded_on_the_context() raises -> None:
     assert_equal(context.max_frame_rate(), 30)
 
 
-def test_max_frame_rate_rejects_non_positive_fps() raises -> None:
+def test_max_frame_rate_zero_lifts_the_cap() raises -> None:
     var context = Context()
-    with assert_raises(contains="fps must be positive"):
-        context.max_frame_rate(0)
-    with assert_raises(contains="fps must be positive"):
+    context.max_frame_rate(30)
+    context.max_frame_rate(0)
+    assert_equal(context.max_frame_rate(), 0)
+
+
+def test_max_frame_rate_rejects_negative_fps() raises -> None:
+    var context = Context()
+    with assert_raises(contains="fps must not be negative"):
         context.max_frame_rate(-5)
 
 
