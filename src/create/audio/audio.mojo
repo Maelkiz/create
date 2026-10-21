@@ -17,7 +17,7 @@ struct _Voice(Movable):
 
     var stream: Int
     var generation: Int
-    # This voice's own volume, from `set_volume`; it plays at this times
+    # This voice's own volume, from `volume(id, ...)`; it plays at this times
     # `Audio`'s volume.
     var gain: Float32
     var paused: Bool
@@ -75,7 +75,7 @@ struct Audio(Movable):
     def volume(mut self, volume: Float32) raises:
         """Set the volume every voice plays at, `0.0` silent and `1.0` as
         recorded. Applies at once, to the voices already playing as well as
-        later ones; each voice's own `set_volume` scales it."""
+        later ones; each voice's own `volume(id, ...)` scales it."""
         self._volume = volume
         for i in range(len(self._voices)):
             if self._voices[i].stream != 0:
@@ -168,14 +168,14 @@ struct Audio(Movable):
         self._sdl.pause_stream(self._voices[index].stream)
         self._voices[index].paused = True
 
-    def set_volume(mut self, id: Int, gain: Float32) raises:
-        """Set one live voice's own volume, which `volume()` scales: at a
-        volume of `0.5`, a gain of `0.5` plays at a quarter. No-op if stopped
+    def volume(mut self, id: Int, volume: Float32) raises:
+        """Set one live voice's own volume, which `volume()` scales: a voice
+        at `0.5` under a volume of `0.5` plays at a quarter. No-op if stopped
         or the id is stale."""
         if not self._valid(id):
             return
         var index = Self._decode(id)[0]
-        self._voices[index].gain = gain
+        self._voices[index].gain = volume
         self._apply_gain(index)
 
     def resume(mut self, id: Int) raises:

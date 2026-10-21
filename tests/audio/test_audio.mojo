@@ -100,7 +100,7 @@ def test_id_zero_is_never_valid() raises -> None:
     audio.stop(0)
     audio.pause(0)
     audio.resume(0)
-    audio.set_volume(0, 1.0)
+    audio.volume(0, 1.0)
     var id = audio.play(_tone())
     assert_false(audio.is_playing(0))
     assert_true(audio.is_playing(id))
@@ -122,7 +122,7 @@ def test_out_of_range_id_is_invalid() raises -> None:
     audio.stop(out_of_range)
     audio.pause(out_of_range)
     audio.resume(out_of_range)
-    audio.set_volume(out_of_range, 1.0)
+    audio.volume(out_of_range, 1.0)
     assert_true(audio.is_playing(id))
 
 
@@ -185,19 +185,19 @@ def test_many_concurrent_voices() raises -> None:
             assert_true(more[i] != ids[j])
 
 
-def test_set_volume_does_not_disturb_is_playing() raises -> None:
+def test_voice_volume_does_not_disturb_is_playing() raises -> None:
     var audio = Audio()
     var id = audio.play(_tone())
-    audio.set_volume(id, 0.3)
+    audio.volume(id, 0.3)
     assert_true(audio.is_playing(id))
 
 
-def test_set_volume_on_stale_id_is_a_no_op() raises -> None:
+def test_voice_volume_on_stale_id_is_a_no_op() raises -> None:
     var audio = Audio()
     var first = audio.play(_tone())
     audio.stop(first)
     var second = audio.play(_tone())
-    audio.set_volume(first, 0.5)
+    audio.volume(first, 0.5)
     assert_false(audio.is_playing(first))
     assert_true(audio.is_playing(second))
 
@@ -226,7 +226,7 @@ def test_volume_reaches_voices_already_playing() raises -> None:
 def test_voice_volume_is_scaled_by_the_volume() raises -> None:
     var audio = Audio()
     var id = audio.play(_tone())
-    audio.set_volume(id, 0.5)
+    audio.volume(id, 0.5)
     audio.volume(0.5)
     assert_equal(_gain(audio, id), Float32(0.25))
     audio.volume(1.0)
