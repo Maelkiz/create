@@ -6,7 +6,7 @@ A 100 x 100 offscreen canvas: screen x and y in -50..50, y up.
 """
 
 from std.math import pi
-from std.testing import TestSuite, assert_equal, assert_true
+from std.testing import TestSuite, assert_equal, assert_false, assert_true
 
 from create import *
 
@@ -201,6 +201,103 @@ def test_a_rounded_clip_keeps_only_the_rounded_shape() raises -> None:
     assert_equal(canvas.pixel((29.0, 29.0)), Color.TRANSPARENT)
     assert_equal(canvas.pixel((0.0, 29.0)), Color.RED)
     assert_equal(canvas.pixel((29.0, 0.0)), Color.RED)
+
+
+# The style's radius rounds what the canvas builds from numbers, and only that.
+
+
+def _same(mut a: Canvas, mut b: Canvas) raises -> Bool:
+    var x = a.snapshot()
+    var y = b.snapshot()
+    for j in range(x.height):
+        for i in range(x.width):
+            if x.pixel(i, j) != y.pixel(i, j):
+                return False
+    return True
+
+
+def test_the_style_rounds_shapes_built_from_numbers() raises -> None:
+    var styled = _canvas()
+    styled.corner_radius(8)
+    styled.rectangle((-20.0, 20.0), 40.0, 30.0)
+    styled.triangle((10.0, 5.0), (45.0, 5.0), (28.0, 40.0))
+    styled.polygon((-45.0, -45.0), (-5.0, -45.0), (-5.0, -10.0), (-45.0, -10.0))
+    styled.sector((25.0, -40.0), 30.0, 0.3, 1.2)
+    var shapes = _canvas()
+    shapes.draw(Rectangle((-20.0, 20.0), 40.0, 30.0, corner_radius=8))
+    shapes.draw(
+        Triangle((10.0, 5.0), (45.0, 5.0), (28.0, 40.0), corner_radius=8)
+    )
+    shapes.draw(
+        Polygon(
+            Point2D(-45.0, -45.0),
+            Point2D(-5.0, -45.0),
+            Point2D(-5.0, -10.0),
+            Point2D(-45.0, -10.0),
+            corner_radius=8,
+        )
+    )
+    shapes.draw(Sector((25.0, -40.0), 30.0, 0.3, 1.2, corner_radius=8))
+    assert_true(_same(styled, shapes))
+    # And the sharp ones differ, so the comparison means something.
+    var sharp = _canvas()
+    sharp.rectangle((-20.0, 20.0), 40.0, 30.0)
+    var rounded = _canvas()
+    rounded.corner_radius(8)
+    rounded.rectangle((-20.0, 20.0), 40.0, 30.0)
+    assert_false(_same(sharp, rounded))
+
+
+def test_a_named_radius_beats_the_style() raises -> None:
+    var named = _canvas()
+    named.corner_radius(12)
+    named.rectangle((0.0, 0.0), 60.0, 40.0, corner_radius=0)
+    named.rectangle((0.0, 0.0), 30.0, 20.0, corner_radius=3)
+    var shapes = _canvas()
+    shapes.draw(Rectangle((0.0, 0.0), 60.0, 40.0))
+    shapes.draw(Rectangle((0.0, 0.0), 30.0, 20.0, corner_radius=3))
+    assert_true(_same(named, shapes))
+
+
+def test_a_float_radius_reaches_every_keyword() raises -> None:
+    var r = 6.5
+    var named = _canvas()
+    named.rectangle((0.0, 0.0), 60.0, 40.0, corner_radius=r)
+    var styled = _canvas()
+    with styled.style(corner_radius=r):
+        styled.rectangle((0.0, 0.0), 60.0, 40.0)
+    var whole = _canvas()
+    with whole.style(
+        Style(fill=Color.RED, outline_enabled=False, corner_radius=r)
+    ):
+        whole.rectangle((0.0, 0.0), 60.0, 40.0)
+    assert_true(_same(named, styled))
+    assert_true(_same(named, whole))
+
+
+def test_draw_and_clip_ignore_the_style_radius() raises -> None:
+    var styled = _canvas()
+    styled.corner_radius(15)
+    styled.draw(Rectangle((0.0, 0.0), 60.0, 40.0))
+    var sharp = _canvas()
+    sharp.draw(Rectangle((0.0, 0.0), 60.0, 40.0))
+    assert_true(_same(styled, sharp))
+    var canvas = Canvas(100, 100, antialiasing=Antialiasing.OFF)
+    canvas.corner_radius(20)
+    with canvas.clip(Rectangle((0.0, 0.0), 60.0, 60.0)):
+        canvas.background(Color.RED)
+    # A sharp clip keeps its corner.
+    assert_equal(canvas.pixel((29.0, 29.0)), Color.RED)
+
+
+def test_a_style_block_radius_unwinds() raises -> None:
+    var canvas = _canvas()
+    with canvas.style(corner_radius=20):
+        canvas.rectangle((-25.0, 0.0), 40.0, 40.0)
+    canvas.rectangle((25.0, 0.0), 40.0, 40.0)
+    # Rounded inside the block, sharp after it.
+    assert_equal(canvas.pixel((-44.0, 19.0)), Color.TRANSPARENT)
+    assert_equal(canvas.pixel((44.0, 19.0)), Color.RED)
 
 
 def main() raises:

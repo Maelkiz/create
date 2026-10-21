@@ -164,7 +164,8 @@ comptime _SHAPE_ROTATED_IMAGE = 67
 comptime _SHAPE_BLURRED_ROTATED_IMAGE = 68
 comptime _SHAPE_ROTATED_TEXT = 69
 comptime _SHAPE_BLURRED_ROTATED_TEXT = 70
-comptime _SHAPE_COUNT = 71
+comptime _SHAPE_STYLE_ROUNDED_RECT = 71
+comptime _SHAPE_COUNT = 72
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -308,6 +309,8 @@ def _shape_name(shape: Int) -> String:
         return "translucent rounded pac-man sector"
     elif shape == _SHAPE_GRADIENT_ROUNDED_SECTOR:
         return "gradient rounded sector"
+    elif shape == _SHAPE_STYLE_ROUNDED_RECT:
+        return "rectangle rounded by the style"
     elif shape == _SHAPE_SHADOWED_STAR:
         return "shadowed star"
     elif shape == _SHAPE_BLURRED_POLYGON_RING:
@@ -915,6 +918,14 @@ struct _Parity(Program):
                     )
                 )
                 canvas.sector((0, 0), 65.0, 0.4, 1.8, corner_radius=12)
+        elif self.shape == _SHAPE_STYLE_ROUNDED_RECT:
+            with canvas.style(
+                fill=Color(0x40, 0xC0, 0xE0),
+                outline=Color.BLACK,
+                outline_thickness=4,
+                corner_radius=18,
+            ):
+                canvas.rectangle((0, 0), 140, 90)
         elif self.shape == _SHAPE_GRADIENT_STAR:
             with canvas.style(outline_enabled=False):
                 canvas.fill(

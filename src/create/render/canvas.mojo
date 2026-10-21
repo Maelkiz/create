@@ -447,6 +447,7 @@ struct Canvas(DrawTarget, Movable):
         outline: Optional[Color] = None,
         outline_thickness: _OptionalFloat64 = None,
         outline_enabled: Optional[Bool] = None,
+        corner_radius: _OptionalFloat64 = None,
         text_color: Optional[Color] = None,
         font: Optional[Font] = None,
         font_size: _OptionalFloat64 = None,
@@ -494,6 +495,8 @@ struct Canvas(DrawTarget, Movable):
             self.fill_enabled(fill_enabled.value())
         if outline_enabled:
             self.outline_enabled(outline_enabled.value())
+        if corner_radius:
+            self.corner_radius(corner_radius.value())
         if text_color:
             self.text_color(text_color.value())
         if font:
@@ -686,6 +689,15 @@ struct Canvas(DrawTarget, Movable):
         while off, so `outline_enabled(True)` brings back the same outline;
         `outline(...)` switches it on too."""
         self._style.outline_enabled = enabled
+
+    def corner_radius(mut self, radius: Float64):
+        """Round the shapes built from numbers by `rectangle`, `triangle`,
+        `polygon` and `sector`, in world units, unless a call names its own
+        `corner_radius`. A shape value carries its own radius, so
+        `draw(shape)` and `clip(shape)` ignore this one: what is drawn from
+        a shape is what its `contains` tests. Clamped per shape as the shape
+        describes."""
+        self._style.corner_radius = radius
 
     def clear(mut self):
         """Discard everything drawn so far, back to how the canvas started.
@@ -956,12 +968,19 @@ struct Canvas(DrawTarget, Movable):
         w: Float64,
         h: Float64,
         *,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = None,
     ):
         """Draw the `w` by `h` rectangle centred on `position`, its corners
-        rounded by `corner_radius` (clamped to half the shorter side), as
-        `Rectangle` describes it."""
-        self.draw(Rectangle(position, w, h, corner_radius=corner_radius))
+        rounded by `corner_radius`, or by the style's when not given (clamped
+        to half the shorter side), as `Rectangle` describes it."""
+        self.draw(
+            Rectangle(
+                position,
+                w,
+                h,
+                corner_radius=corner_radius.or_else(self._style.corner_radius),
+            )
+        )
 
     def rectangle(
         mut self,
@@ -969,7 +988,7 @@ struct Canvas(DrawTarget, Movable):
         w: Int,
         h: Int,
         *,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = None,
     ):
         self.rectangle(
             position, Float64(w), Float64(h), corner_radius=corner_radius
@@ -988,7 +1007,7 @@ struct Canvas(DrawTarget, Movable):
         start_angle: Float64,
         sweep_angle: Float64,
         *,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = None,
     ):
         """Draw the pie slice of the circle around `position` with radius
         `r`, from `start_angle` round by `sweep_angle`: a `Sector`, its tip at
@@ -1001,8 +1020,8 @@ struct Canvas(DrawTarget, Movable):
         shadow; a blurred drop shadow costs what a `bezier`'s does. A zero
         radius or sweep draws nothing.
 
-        `corner_radius` rounds the tip and both ends of the arc, as `Sector`
-        describes. A rounded sector is drawn as a polygon, so it costs what
+        `corner_radius`, or the style's when not given, rounds the tip and
+        both ends of the arc, as `Sector` describes. A rounded sector is drawn as a polygon, so it costs what
         an outlined `polygon` of its flattened outline does.
         """
         self.draw(
@@ -1011,7 +1030,7 @@ struct Canvas(DrawTarget, Movable):
                 r,
                 start_angle,
                 sweep_angle,
-                corner_radius=corner_radius,
+                corner_radius=corner_radius.or_else(self._style.corner_radius),
             )
         )
 
@@ -1022,7 +1041,7 @@ struct Canvas(DrawTarget, Movable):
         start_angle: Float64,
         sweep_angle: Float64,
         *,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = None,
     ):
         self.sector(
             position,
@@ -1032,7 +1051,9 @@ struct Canvas(DrawTarget, Movable):
             corner_radius=corner_radius,
         )
 
-    def polygon(mut self, *vertices: Point2D, corner_radius: Float64 = 0.0):
+    def polygon(
+        mut self, *vertices: Point2D, corner_radius: _OptionalFloat64 = None
+    ):
         """Draw the polygon through `vertices`, closed back to the first.
 
         Filled by the nonzero rule, so a self-crossing polygon fills every
@@ -1043,14 +1064,20 @@ struct Canvas(DrawTarget, Movable):
         casts no inset shadow; a blurred drop shadow costs what a `bezier`'s
         does. Fewer than three vertices draw nothing.
 
-        `corner_radius` rounds every corner, as `Polygon` describes; each
+        `corner_radius`, or the style's when not given, rounds every corner,
+        as `Polygon` describes; each
         rounded corner adds vertices, and so cost. A `Polygon` value is drawn
         with `draw`.
         """
         var points = List[Point2D](capacity=len(vertices))
         for v in vertices:
             points.append(v)
-        self.draw(Polygon(points^, corner_radius=corner_radius))
+        self.draw(
+            Polygon(
+                points^,
+                corner_radius=corner_radius.or_else(self._style.corner_radius),
+            )
+        )
 
     def line(mut self, start: Point2D, end: Point2D):
         self.draw(Line(start, end))
@@ -1136,11 +1163,19 @@ struct Canvas(DrawTarget, Movable):
         b: Point2D,
         c: Point2D,
         *,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = None,
     ):
         """Draw the triangle through `a`, `b` and `c`, its corners rounded
-        by `corner_radius`, as `Triangle` describes it."""
-        self.draw(Triangle(a, b, c, corner_radius=corner_radius))
+        by `corner_radius`, or by the style's when not given, as `Triangle`
+        describes it."""
+        self.draw(
+            Triangle(
+                a,
+                b,
+                c,
+                corner_radius=corner_radius.or_else(self._style.corner_radius),
+            )
+        )
 
     # The `DrawTarget` primitives: the one place a shape becomes a recorded
     # command, in the current style and transform. `draw(shape)` reaches
