@@ -24,7 +24,8 @@ and the layering rules.
 | `_coverage.mojo` | CPU antialiasing: `composite_coverage` turns a shape's runs recorded on a finer grid into per-pixel coverage, composited once |
 | `_clip.mojo` | `_Clip` (one `canvas.clip` level: region command, invert, parent) and `_ClipRows`, the CPU replay's per-row runs of a clip, each with its coverage |
 | `_blur.mojo` | Three-box-blur approximation of a Gaussian over an alpha mask, for text and image shadows; the blurred-mask cache limit and key |
-| `_transform.mojo`, `_image.mojo` | Shared by both replay paths (split out to avoid an import cycle, or so both agree on the numbers) |
+| `_transform.mojo` | Shared by both replay paths (split out to avoid an import cycle, so both agree on the numbers) |
+| `_image_mapping.mojo` | Where an image lands, for both replays: `upright` (the plain blit's device rect, `upright_rect`) or not (`image_mapping`, the device-to-texel inverse; `image_corners`, the GL quad) |
 | `_gl_target.mojo` | Offscreen FBO of an exact size, for the parity test and headless GPU |
 
 Corner rounding's maths (the clamps, `corner_fillet`, `rounded_vertices`, `rounded_sector_vertices`)
@@ -251,7 +252,8 @@ single-sampled, so the level can change without recreating the GL context.
 `canvas.antialiasing`) applies to the CPU replay of the
 shape kinds — rect, circle, line, Bézier, sector, polygon, triangle — through `Backend._shape`.
 Clear, text, images, letterbox and blurred or inset shadows are untouched; a hard shadow is a
-shape command, so it is antialiased like one.
+shape command, so it is antialiased like one. So a rotated image's edge is hard on the CPU and
+multisampled on the GPU.
 
 - **Record at `grid`×.** `_shape` replays the command through the kind's own rasteriser
   (`_shape_pixels`) onto a recording surface `grid` times wider and taller, with `mat_scale(grid)`
@@ -384,7 +386,9 @@ Both replays handle a command's shadow around the command itself, in the command
   `MODE_SHADOW_BOX`/`MODE_SHADOW_EDGES`), and text and images blur a mask (`_blur.mojo`): glyph
   masks are keyed by blur in the glyph cache and packed into the atlas; image masks are cached per
   `shadow_mask_key` in `Backend.shadow_masks` (CPU) and `GLRenderer.shadow_textures` (GPU), both
-  dropped whole at `SHADOW_MASK_LIMIT`.
+  dropped whole at `SHADOW_MASK_LIMIT` — while the image is upright. Under a rotation, shear or
+  mirror the mask depends on the whole transform, so `image_shadow_mask` builds it each frame,
+  uncached like a Bézier's (below).
   A Bézier's stroke and a sector's or polygon's quads are rasterised into a mask and blurred too
   (`quads_shadow_mask`, via `bezier_shadow_mask`/`sector_shadow_mask`/`polygon_shadow_mask`), but
   **uncached**: they have no stable id to key by, so each blurred Bézier, sector or polygon shadow
@@ -403,6 +407,15 @@ follows-transform composes `translate(offset)` before it (`shadow_transform`).
 
 Parity (`test_gl_parity.mojo`) needed no extra tolerance for blurred cases: both backends evaluate
 the same coverage formulas at pixel centres.
+
+## Images
+
+An image follows the transform like every render call. Upright (`upright`: an axis-aligned scale,
+either axis, unmirrored) it is a device rect, `upright_rect`, blitted row by row (`blit_image`);
+otherwise the CPU fills the mapped parallelogram's bounding box through the inverse mapping
+(`blit_image_mapped`, the texel coordinate stepped per column) and the GPU draws one quad through
+the four mapped corners. The CPU samples nearest-neighbour and the GPU linearly, so parity
+holds inside a solid image and its rim may differ.
 
 ## CPU rasteriser
 

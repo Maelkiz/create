@@ -45,6 +45,12 @@ from ._command import (
     _GEOM_SLOTS,
 )
 from create.math._fillet import rect_corner_radius, triangle_corner_radius
+from create.color.color import Color
+from ._blur import BlurredMask, blur_alpha
+from ._curve import PlacedMask
+from ._image_mapping import image_mapping
+from ._raster import blit_image_mapped
+from ._surface import MemorySurface
 from ._transform import outline_thickness_px, pixel_scale
 
 
@@ -217,6 +223,47 @@ def shadow_command(c: RenderCommand, scale: Float64) -> RenderCommand:
     elif c.kind == CMD_POLYGON:
         s.geom[0] = d
     return s^
+
+
+def image_shadow_mask[
+    so: Origin
+](
+    c: RenderCommand,
+    m: Matrix[3, 3],
+    src: Pointer[UInt8, so],
+    blur: Int,
+) -> PlacedMask:
+    """The silhouette of the image command `c`, its pixels at `src`, mapped
+    by a transform that does not keep it upright, rasterised into an alpha
+    mask and blurred by `blur` device pixels.
+
+    An upright image's mask is cached by size (`shadow_mask_key`); this one
+    depends on the whole transform, so like a Bézier's it is built afresh
+    each frame. The mask is the pixels `blit_image_mapped` covers on the
+    device, so a hard and a blurred shadow line up.
+    """
+    var mapping = image_mapping(
+        m, c.geom[0], c.geom[1], c.geom[2], c.geom[3], c.image_w, c.image_h
+    )
+    var width = mapping.x1 - mapping.x0
+    var height = mapping.y1 - mapping.y0
+    if width <= 0 or height <= 0:
+        return PlacedMask(BlurredMask(List[UInt8](), 0, 0, 0), 0, 0)
+    var scratch = MemorySurface(width, height)
+    blit_image_mapped(
+        scratch.surface(),
+        src,
+        c.image_w,
+        c.image_h,
+        mapping.translated(-mapping.x0, -mapping.y0),
+        Optional(Color.WHITE),
+    )
+    var alpha = List[UInt8](length=width * height, fill=0)
+    for i in range(width * height):
+        alpha[i] = scratch.data[i * 4 + 3]
+    var mask = blur_alpha(alpha, width, height, Float64(blur) / 2.0)
+    var pad = mask.pad
+    return PlacedMask(mask^, mapping.x0 - pad, mapping.y0 - pad)
 
 
 # --- Blur coverage -----------------------------------------------------------
