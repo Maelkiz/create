@@ -1108,6 +1108,8 @@ struct Arc(
         return p._boundary_meets(self)
 
     def draw_to[T: DrawTarget](self, mut target: T):
+        # Converted here, in local space: the transform maps Béziers
+        # exactly, so a non-uniform scale draws the arc of an ellipse.
         target._curves(self.beziers())
 
     def move_to(mut self, position: Point2D):
