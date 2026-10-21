@@ -1,5 +1,3 @@
-from std.memory import ArcPointer
-
 from ._sdl_audio import SDLAudio
 from .sound import Sound
 
@@ -10,8 +8,8 @@ comptime _INDEX_MASK: Int = 0xFFFFFFFF
 struct _Voice(Movable):
     """One playback slot. `stream == 0` means free.
 
-    `loop_sound` holds an `ArcPointer` to the playing `Sound` -- a refcount
-    bump, not a copy -- and is only populated for looping voices, since a
+    `loop_sound` holds a copy of the playing `Sound` -- sharing its samples,
+    not copying them -- and is only populated for looping voices, since a
     one-shot voice never needs its PCM again after the initial `put_data`.
     """
 
@@ -22,7 +20,7 @@ struct _Voice(Movable):
     var gain: Float32
     var paused: Bool
     var looping: Bool
-    var loop_sound: Optional[ArcPointer[Sound]]
+    var loop_sound: Optional[Sound]
 
     def __init__(out self):
         self.stream = 0
@@ -105,21 +103,16 @@ struct Audio(Movable):
             and self._voices[index].stream != 0
         )
 
-    def play(
-        mut self, sound: ArcPointer[Sound], loop: Bool = False
-    ) raises -> Int:
+    def play(mut self, sound: Sound, loop: Bool = False) raises -> Int:
         """Play a Sound. Returns a voice id usable with `stop`/`pause`/`resume`/
-        `is_playing`. Looping voices are refilled by `update`.
-
-        `sound` is an `ArcPointer` so a looping voice can keep the PCM alive
-        and shared -- callers hold their `Sound`s as `ArcPointer[Sound]`
-        fields and pass a cheap `.copy()` of the pointer here."""
+        `is_playing`. Looping voices are refilled by `update`, from a copy of
+        `sound` that shares its samples."""
         var stream = self._sdl.open_device_stream(
-            sound[].format, sound[].channels, sound[].sample_rate
+            sound.format, sound.channels, sound.sample_rate
         )
         self._sdl.set_gain(stream, self._volume)
         self._sdl.put_data(
-            stream, sound[].pcm.unsafe_ptr(), Int32(len(sound[].pcm))
+            stream, sound._pcm[].unsafe_ptr(), Int32(len(sound._pcm[]))
         )
         self._sdl.resume_stream(stream)
         var loop_sound = Optional(sound) if loop else None
@@ -202,11 +195,11 @@ struct Audio(Movable):
             if self._voices[i].stream == 0:
                 continue
             if self._voices[i].looping:
-                var pcm_len = len(self._voices[i].loop_sound.value()[].pcm)
+                var pcm_len = len(self._voices[i].loop_sound.value()._pcm[])
                 if self._sdl.available(self._voices[i].stream) < Int32(pcm_len):
                     self._sdl.put_data(
                         self._voices[i].stream,
-                        self._voices[i].loop_sound.value()[].pcm.unsafe_ptr(),
+                        self._voices[i].loop_sound.value()._pcm[].unsafe_ptr(),
                         Int32(pcm_len),
                     )
             elif self._sdl.available(self._voices[i].stream) == 0:

@@ -1,17 +1,18 @@
+from std.memory import ArcPointer
+
 from ._sdl_audio import SDLAudio, SDL_AUDIO_S16
 from ._sndfile import SndFile
 
 
-struct Sound(Movable):
+struct Sound(Copyable, ImplicitlyCopyable, Movable):
     """Decoded PCM plus the format it is in — the asset, not a playing voice.
 
     Decoding happens once, at load; `Audio.play` reads the buffer without
-    touching the file again. Hold one as an `ArcPointer[Sound]` field, since
-    `play` takes it that way for every voice: a voice shares the samples by
-    refcount rather than copying them.
+    touching the file again. Copying one is cheap, like copying an `Image`:
+    the copies share the samples, and so does every voice playing it.
     """
 
-    var pcm: List[UInt8]
+    var _pcm: ArcPointer[List[UInt8]]
     var format: Int32
     var channels: Int32
     var sample_rate: Int32
@@ -23,7 +24,7 @@ struct Sound(Movable):
         channels: Int32,
         sample_rate: Int32,
     ):
-        self.pcm = pcm^
+        self._pcm = ArcPointer(pcm^)
         self.format = format
         self.channels = channels
         self.sample_rate = sample_rate

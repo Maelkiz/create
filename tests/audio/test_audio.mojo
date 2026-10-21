@@ -1,15 +1,14 @@
 # Requires SDL_AUDIO_DRIVER=dummy (set globally by the `test` pixi task) so
 # this runs without real audio hardware.
 
-from std.memory import ArcPointer
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 from std.time import sleep
 from create.audio import Audio, Sound
 
 
-def _tone() -> ArcPointer[Sound]:
+def _tone() -> Sound:
     var data = List[Int16](length=256, fill=0)
-    return ArcPointer(Sound.from_pcm(data))
+    return Sound.from_pcm(data)
 
 
 def test_play_returns_valid_id() raises -> None:
@@ -86,12 +85,12 @@ def test_stop_all_releases_looping_and_one_shot_together() raises -> None:
 def test_looping_voice_shares_sound_via_refcount() raises -> None:
     var audio = Audio()
     var sound = _tone()
-    assert_equal(sound.count(), 1)
+    assert_equal(sound._pcm.count(), 1)
     var id = audio.play(sound, loop=True)
-    # `play` copies the ArcPointer into _Voice.loop_sound, a refcount bump.
-    assert_equal(sound.count(), 2)
+    # `play` copies the sound into _Voice.loop_sound, sharing its samples.
+    assert_equal(sound._pcm.count(), 2)
     audio.stop(id)
-    assert_equal(sound.count(), 1)
+    assert_equal(sound._pcm.count(), 1)
 
 
 def test_id_zero_is_never_valid() raises -> None:

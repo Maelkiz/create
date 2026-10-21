@@ -127,8 +127,8 @@ the loop carries both into the next frame.
 - `animator.update(context.time.delta)` / `tween.update(context.time.delta)` — otherwise the playhead
   never moves.
 
-Shared assets (`Animation`, `Sound`) are held as `ArcPointer` fields; an `Image` shares its pixels
-itself, so a plain `Image` field or `.copy()` is already cheap. Read
+Shared assets (`Image`, `Font`, `Animation`, `Sound`) share their data themselves, so a plain
+field or copy is cheap and nothing is wrapped in an `ArcPointer`. Read
 [`Animator.use`](src/create/image/animator.mojo) before driving an animator.
 
 ### Printing

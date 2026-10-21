@@ -1437,11 +1437,11 @@ struct Canvas(Movable):
 
     def image(mut self, animator: Animator, position: Point2D):
         """Render the animator's current frame, centred at `position`."""
-        self.image(animator.animation[].frame(animator.frame_index), position)
+        self.image(animator.animation.frame(animator.frame_index), position)
 
     def image(mut self, animator: Animator, position: Point2D, w: Int, h: Int):
         self.image(
-            animator.animation[].frame(animator.frame_index), position, w, h
+            animator.animation.frame(animator.frame_index), position, w, h
         )
 
     def text_color(mut self, color: Color):

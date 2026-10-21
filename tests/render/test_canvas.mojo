@@ -17,7 +17,6 @@ from create import *
 from create.core.headless import run_headless
 from create.render.surface import MemorySurface
 from create.image.image import Image
-from std.memory import ArcPointer
 from create.math.geometry import (
     Circle,
     Line,
@@ -2220,7 +2219,7 @@ struct AnimatorBlit(Program):
         var frames = List[Image]()
         for i in range(8):
             frames.append(Image.solid(2, 2, UInt8(i * 20), 0, 0))
-        var a = Animator(ArcPointer(Animation(frames^, 100.0)))
+        var a = Animator(Animation(frames^, 100.0))
         a.play()
         return AnimatorBlit(a^)
 
@@ -2259,7 +2258,7 @@ struct AnimatorSized(Program):
     ) raises -> AnimatorSized:
         var frames = List[Image]()
         frames.append(Image.solid(2, 2, 255, 0, 0))
-        return AnimatorSized(Animator(ArcPointer(Animation(frames^))))
+        return AnimatorSized(Animator(Animation(frames^)))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
@@ -2296,7 +2295,7 @@ struct AnimatorEveryOverload(Program):
     ) raises -> AnimatorEveryOverload:
         var frames = List[Image]()
         frames.append(Image.solid(2, 2, 255, 0, 0))
-        return AnimatorEveryOverload(Animator(ArcPointer(Animation(frames^))))
+        return AnimatorEveryOverload(Animator(Animation(frames^)))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
@@ -2352,7 +2351,7 @@ struct ShadowedImageEveryOverload(Program):
         frames.append(_half_opaque())
         return ShadowedImageEveryOverload(
             _half_opaque(),
-            Animator(ArcPointer(Animation(frames^))),
+            Animator(Animation(frames^)),
         )
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

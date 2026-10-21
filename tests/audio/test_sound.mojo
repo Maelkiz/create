@@ -10,7 +10,7 @@ def _fixture(name: String) -> String:
 def test_from_pcm_byte_length() raises -> None:
     var data: List[Int16] = [0, 100, -100, 32767]
     var s = Sound.from_pcm(data, channels=2, sample_rate=48000)
-    assert_equal(len(s.pcm), len(data) * 2)
+    assert_equal(len(s._pcm[]), len(data) * 2)
     assert_equal(s.channels, 2)
     assert_equal(s.sample_rate, 48000)
 
@@ -18,7 +18,7 @@ def test_from_pcm_byte_length() raises -> None:
 def test_from_pcm_little_endian_packing() raises -> None:
     var data: List[Int16] = [1, -1]
     var s = Sound.from_pcm(data)
-    var ptr = s.pcm.unsafe_ptr()
+    var ptr = s._pcm[].unsafe_ptr()
     # 1 == 0x0001 LE
     assert_equal(Int(ptr[unsafe_offset=0]), 1)
     assert_equal(Int(ptr[unsafe_offset=1]), 0)
@@ -37,14 +37,14 @@ def test_from_pcm_defaults() raises -> None:
 def test_from_pcm_empty() raises -> None:
     var data = List[Int16]()
     var s = Sound.from_pcm(data)
-    assert_equal(len(s.pcm), 0)
+    assert_equal(len(s._pcm[]), 0)
 
 
 def test_from_pcm_single_sample() raises -> None:
     var data: List[Int16] = [12345]
     var s = Sound.from_pcm(data)
-    assert_equal(len(s.pcm), 2)
-    var ptr = s.pcm.unsafe_ptr()
+    assert_equal(len(s._pcm[]), 2)
+    var ptr = s._pcm[].unsafe_ptr()
     assert_equal(Int(ptr[unsafe_offset=0]), 57)
     assert_equal(Int(ptr[unsafe_offset=1]), 48)
 
@@ -52,7 +52,7 @@ def test_from_pcm_single_sample() raises -> None:
 def test_from_pcm_int16_min() raises -> None:
     var data: List[Int16] = [Int16.MIN]
     var s = Sound.from_pcm(data)
-    var ptr = s.pcm.unsafe_ptr()
+    var ptr = s._pcm[].unsafe_ptr()
     # Int16.MIN == -32768 == 0x8000 LE
     assert_equal(Int(ptr[unsafe_offset=0]), 0)
     assert_equal(Int(ptr[unsafe_offset=1]), 128)
@@ -62,8 +62,8 @@ def test_load_wav() raises -> None:
     var s = Sound.load(_fixture("tone.wav"))
     assert_equal(s.channels, 1)
     assert_equal(s.sample_rate, 8000)
-    assert_equal(len(s.pcm), 160)
-    var ptr = s.pcm.unsafe_ptr()
+    assert_equal(len(s._pcm[]), 160)
+    var ptr = s._pcm[].unsafe_ptr()
     assert_equal(Int(ptr[unsafe_offset=0]), 34)
     assert_equal(Int(ptr[unsafe_offset=1]), 1)
 
@@ -72,8 +72,8 @@ def test_load_flac() raises -> None:
     var s = Sound.load(_fixture("tone.flac"))
     assert_equal(s.channels, 1)
     assert_equal(s.sample_rate, 8000)
-    assert_equal(len(s.pcm), 160)
-    var ptr = s.pcm.unsafe_ptr()
+    assert_equal(len(s._pcm[]), 160)
+    var ptr = s._pcm[].unsafe_ptr()
     # Lossless, so this can assert exact sample values, not a tolerance --
     # and they match tone.wav's, since both are the same source signal.
     assert_equal(Int(ptr[unsafe_offset=0]), 34)
@@ -87,7 +87,7 @@ def test_load_dispatches_on_magic_bytes_not_extension() raises -> None:
     var s = Sound.load(_fixture("tone_disguised.flac"))
     assert_equal(s.channels, 1)
     assert_equal(s.sample_rate, 8000)
-    assert_equal(len(s.pcm), 160)
+    assert_equal(len(s._pcm[]), 160)
 
 
 def test_load_nonexistent_path_raises() raises -> None:

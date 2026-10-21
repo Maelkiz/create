@@ -1,5 +1,3 @@
-from std.memory import ArcPointer
-
 from create import *
 
 comptime _SIZE = 128
@@ -18,9 +16,9 @@ struct Game(Program):
     end up as the same type, so nothing downstream cares which path was used.
     """
 
-    var idle: ArcPointer[Animation]
-    var run: ArcPointer[Animation]
-    var spin: ArcPointer[Animation]
+    var idle: Animation
+    var run: Animation
+    var spin: Animation
     var animator: Animator
     var x: Float64
     var spinning: Bool
@@ -31,20 +29,20 @@ struct Game(Program):
 
         # Row-major: the first four cells are the idle cycle, the next four
         # the run cycle. One sheet, two animations, no sheet type.
-        var idle = ArcPointer(
-            Animation.from_sheet(sheet, 32, 32, start=0, count=4, fps=6.0)
+        var idle = Animation.from_sheet(
+            sheet, 32, 32, start=0, count=4, fps=6.0
         )
-        var run = ArcPointer(
-            Animation.from_sheet(sheet, 32, 32, start=4, count=4, fps=12.0)
+        var run = Animation.from_sheet(
+            sheet, 32, 32, start=4, count=4, fps=12.0
         )
 
         # spin_1.png .. spin_8.png, ordered by their trailing number rather
         # than lexicographically, so spin_10 would follow spin_9.
-        var spin = ArcPointer(
-            Animation.from_folder(source_path("../assets/spin"), fps=16.0)
+        var spin = Animation.from_folder(
+            source_path("../assets/spin"), fps=16.0
         )
 
-        var animator = Animator(idle.copy())
+        var animator = Animator(idle)
         animator.loop()
         return Game(idle^, run^, spin^, animator^, 0.0, False)
 
@@ -53,7 +51,7 @@ struct Game(Program):
 
         if context.input.key_pressed("space") and not self.spinning:
             # A one-shot: it holds its last frame and reports is_finished().
-            self.animator.play(self.spin.copy())
+            self.animator.play(self.spin)
             self.spinning = True
 
         if self.spinning:
@@ -71,9 +69,9 @@ struct Game(Program):
             # Switching to the one already playing is a no-op by design, so
             # this does not rewind to frame 0 sixty times a second.
             if dx != 0.0:
-                self.animator.loop(self.run.copy())
+                self.animator.loop(self.run)
             else:
-                self.animator.loop(self.idle.copy())
+                self.animator.loop(self.idle)
 
         if context.input.key_pressed("p"):
             if self.animator.is_playing():

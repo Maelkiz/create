@@ -1,13 +1,11 @@
-from std.memory import ArcPointer
-
 from create import *
 
 
 @fieldwise_init
 struct AudioDemo(Program):
     var audio: Audio
-    var chime: ArcPointer[Sound]
-    var ambience: ArcPointer[Sound]
+    var chime: Sound
+    var ambience: Sound
     var loop_id: Int
     var looping: Bool
 
@@ -15,10 +13,8 @@ struct AudioDemo(Program):
     def create(mut context: Context, mut canvas: Canvas) raises -> AudioDemo:
         context.quit_on_escape(True)
         var audio = Audio()
-        var chime = ArcPointer(Sound.load(source_path("../assets/chime.wav")))
-        var ambience = ArcPointer(
-            Sound.load(source_path("../assets/ambience.wav"))
-        )
+        var chime = Sound.load(source_path("../assets/chime.wav"))
+        var ambience = Sound.load(source_path("../assets/ambience.wav"))
         return AudioDemo(audio^, chime, ambience, 0, False)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
