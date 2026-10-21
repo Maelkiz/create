@@ -44,7 +44,7 @@ struct App(Program):
 
     def _point_under(self, position: Point2D) -> Int:
         for i in range(len(self.points)):
-            if (position - self.points[i]).mag() <= _GRAB_RADIUS:
+            if (position - self.points[i]).magnitude() <= _GRAB_RADIUS:
                 return i
         return -1
 

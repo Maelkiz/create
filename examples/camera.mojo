@@ -3,7 +3,7 @@ from create import *
 
 @fieldwise_init
 struct CameraDemo(Program):
-    var cam: Camera
+    var camera: Camera
     var elapsed: Float64
 
     @staticmethod
@@ -14,16 +14,20 @@ struct CameraDemo(Program):
         self.elapsed = context.time.elapsed
         var speed = 300.0 * context.time.delta
         if context.input.key_down("right"):
-            self.cam.position += Vector2D(speed, 0.0)
+            self.camera.position += Vector2D(speed, 0.0)
         if context.input.key_down("left"):
-            self.cam.position += Vector2D(-speed, 0.0)
+            self.camera.position += Vector2D(-speed, 0.0)
         if context.input.key_down("up"):
-            self.cam.zoom = min(3.0, self.cam.zoom + 1.0 * context.time.delta)
+            self.camera.zoom = min(
+                3.0, self.camera.zoom + 1.0 * context.time.delta
+            )
         if context.input.key_down("down"):
-            self.cam.zoom = max(0.3, self.cam.zoom - 1.0 * context.time.delta)
+            self.camera.zoom = max(
+                0.3, self.camera.zoom - 1.0 * context.time.delta
+            )
 
         canvas.background(Color(15, 15, 25))
-        canvas.camera(self.cam)
+        canvas.camera(self.camera)
 
         # World content: a strip of posts stretching far past what any single
         # screen shows, plus a marker at the world origin — panning the

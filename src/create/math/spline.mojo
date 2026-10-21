@@ -209,9 +209,9 @@ struct Spline(Copyable, Equatable, Movable, Writable):
         controls sit a third of a tangent in from its ends (Yuksel et al.,
         "Parameterization and applications of Catmull-Rom curves").
         """
-        var d0 = pow((p1 - p0).mag(), self.alpha)
-        var d1 = pow((p2 - p1).mag(), self.alpha)
-        var d2 = pow((p3 - p2).mag(), self.alpha)
+        var d0 = pow((p1 - p0).magnitude(), self.alpha)
+        var d1 = pow((p2 - p1).magnitude(), self.alpha)
+        var d2 = pow((p3 - p2).magnitude(), self.alpha)
         var m1 = ((p1 - p0) / d0 - (p2 - p0) / (d0 + d1) + (p2 - p1) / d1) * d1
         var m2 = ((p2 - p1) / d1 - (p3 - p1) / (d1 + d2) + (p3 - p2) / d2) * d1
         return Bezier(p1, p1 + m1 / 3.0, p2 - m2 / 3.0, p2)

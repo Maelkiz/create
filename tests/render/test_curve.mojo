@@ -143,7 +143,7 @@ def test_miter_keeps_both_edges_at_half_width() raises -> None:
 def test_miter_is_clamped_at_a_sharp_turn() raises -> None:
     var points: List[Point2D] = [(0.0, 0.0), (10.0, 0.0), (0.0, 0.1)]
     var corners = stroke_quads(points, 2.0)
-    var reach = (corners[1] - Point2D(10.0, 0.0)).mag()
+    var reach = (corners[1] - Point2D(10.0, 0.0)).magnitude()
     assert_almost_equal(reach, MITER_LIMIT, atol=1e-9)
 
 

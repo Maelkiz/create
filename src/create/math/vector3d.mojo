@@ -2,8 +2,8 @@ from std.math import sqrt
 
 
 struct Vector3D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
-    """A 3D point or direction: arithmetic operators, `mag`, `normalize`,
-    `dot`, `cross`, `dist`, `lerp`, and `xy`/`xyz` to hand the components to
+    """A 3D point or direction: arithmetic operators, `magnitude`, `normalize`,
+    `dot`, `cross`, `distance`, `lerp`, and `xy`/`xyz` to hand the components to
     another type — `xy` dropping `z`.
 
     Rendering is 2D, so nothing in the library takes one — it is here for a
@@ -75,14 +75,14 @@ struct Vector3D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def write_to[W: Writer](self, mut writer: W):
         writer.write("Vector3D(", self.x, ", ", self.y, ", ", self.z, ")")
 
-    def mag(self) -> Float64:
+    def magnitude(self) -> Float64:
         return sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
 
-    def mag_sq(self) -> Float64:
+    def magnitude_squared(self) -> Float64:
         return self.x * self.x + self.y * self.y + self.z * self.z
 
     def normalize(self) -> Vector3D:
-        var m = self.mag()
+        var m = self.magnitude()
         return Vector3D(self.x / m, self.y / m, self.z / m)
 
     def dot(self, other: Vector3D) -> Float64:
@@ -95,11 +95,11 @@ struct Vector3D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             self.x * other.y - self.y * other.x,
         )
 
-    def dist(self, other: Vector3D) -> Float64:
-        return (self - other).mag()
+    def distance(self, other: Vector3D) -> Float64:
+        return (self - other).magnitude()
 
-    def dist_sq(self, other: Vector3D) -> Float64:
-        return (self - other).mag_sq()
+    def distance_squared(self, other: Vector3D) -> Float64:
+        return (self - other).magnitude_squared()
 
     def lerp(self, other: Vector3D, t: Float64) -> Vector3D:
         return Vector3D(

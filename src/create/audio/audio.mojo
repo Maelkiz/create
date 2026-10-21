@@ -92,7 +92,7 @@ struct Audio(Movable):
         and shared -- callers hold their `Sound`s as `ArcPointer[Sound]`
         fields and pass a cheap `.copy()` of the pointer here."""
         var stream = self._sdl.open_device_stream(
-            sound[].format, sound[].channels, sound[].freq
+            sound[].format, sound[].channels, sound[].sample_rate
         )
         self._sdl.set_gain(stream, self.volume)
         self._sdl.put_data(

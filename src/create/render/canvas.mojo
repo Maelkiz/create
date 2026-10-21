@@ -696,20 +696,20 @@ struct Canvas(Movable):
         var p = mat_apply(self._user_inv, world.x, world.y)
         return Point2D(p[0], p[1])
 
-    def camera(mut self, cam: Camera):
+    def camera(mut self, camera: Camera):
         """Set the active camera. Applies to every render call and every nested
         `transform()` from here on, until changed again or `canvas.overlay()`
         suspends it — and resets to identity next frame, like the rest of the
         transform state.
 
         ```mojo
-        canvas.camera(self.cam)
+        canvas.camera(self.camera)
         canvas.image(self.player.position, ...)  # world-space coordinates
         with canvas.overlay():
             canvas.text("Score: " + str(self.score), (0, canvas.top() - 20))
         ```
         """
-        self._camera = cam
+        self._camera = camera
         self._sync_transform()
 
     def overlay(mut self) -> OverlayGuard[origin_of(self)]:
@@ -1397,24 +1397,24 @@ struct Canvas(Movable):
     def triangle(mut self, t: Triangle):
         self.triangle(t.a, t.b, t.c, corner_radius=t.corner_radius)
 
-    def image(mut self, s: Image, position: Point2D):
-        """Render `s` at its own pixel size.
+    def image(mut self, image: Image, position: Point2D):
+        """Render `image` at its own pixel size.
 
         The same command as the sized overload: at a pixel scale of 1 the two
         agree exactly, and the one-image-pixel-per-framebuffer-pixel shortcut
         they used to differ by now lives inside `blit_image`, where the replay
         can take it without the record site having to know.
         """
-        self.image(s, position, s.width, s.height)
+        self.image(image, position, image.width, image.height)
 
-    def image(mut self, s: Image, position: Point2D, w: Int, h: Int):
+    def image(mut self, image: Image, position: Point2D, w: Int, h: Int):
         # Rotation and shear are not resampled — only position and scale apply.
         #
         # The image is interned *now*, not at replay: the command then carries
         # an id rather than a borrow of the program's pixels, which is what
         # keeps caller-owned memory out of a buffer that outlives the call.
         var id = self._state.backend.intern_image(
-            s._id, s._pixels, s.width, s.height
+            image._id, image._pixels, image.width, image.height
         )
         self._state.backend.record(
             image_command(
@@ -1425,17 +1425,19 @@ struct Canvas(Movable):
                 Float64(w),
                 Float64(h),
                 id,
-                s.width,
-                s.height,
+                image.width,
+                image.height,
             )
         )
 
-    def image(mut self, a: Animator, position: Point2D):
+    def image(mut self, animator: Animator, position: Point2D):
         """Render the animator's current frame, centred at `position`."""
-        self.image(a.animation[].frame(a.frame_index), position)
+        self.image(animator.animation[].frame(animator.frame_index), position)
 
-    def image(mut self, a: Animator, position: Point2D, w: Int, h: Int):
-        self.image(a.animation[].frame(a.frame_index), position, w, h)
+    def image(mut self, animator: Animator, position: Point2D, w: Int, h: Int):
+        self.image(
+            animator.animation[].frame(animator.frame_index), position, w, h
+        )
 
     def text_color(mut self, color: Color):
         """Paint glyphs in `color`. Separate from `fill`, so a shape colour and
@@ -1629,8 +1631,8 @@ struct Canvas(Movable):
         """
         self._state.letterbox_color = color
 
-    def font(mut self, f: Font):
-        """Draw the next text in `f`, a face from `Font.load`.
+    def font(mut self, font: Font):
+        """Draw the next text in `font`, a face from `Font.load`.
 
         Part of the style, like `fill`: it holds for the rest of the frame,
         or for a `with canvas.style(font=...)` block, and each `text` call
@@ -1638,24 +1640,24 @@ struct Canvas(Movable):
         packaged Noto Sans again, so a font for the whole program is a
         field set at the top of `update`, or kept in a `Style`.
         """
-        self._style.font = f
+        self._style.font = font
 
-    def text_width(mut self, s: String) raises -> Float64:
-        """How wide `text(s, ...)` would render under the current font, size
+    def text_width(mut self, text: String) raises -> Float64:
+        """How wide `text(text, ...)` would render under the current font, size
         and weight, in the units the next render call is positioned in.
 
         Exact for any prefix too, since glyphs sit advance to advance with no
         kerning, so a caret after a string's first few characters goes at the
         text's left edge plus the width of those characters. With the default
-        `Align.CENTER`, that left edge is `position.x - text_width(s) / 2`.
+        `Align.CENTER`, that left edge is `position.x - text_width(text) / 2`.
 
         Raises only if the default font has to be loaded and cannot be.
         """
         var scale = pixel_scale(self._transform, self.scale)
-        var pixels = self._state.backend.text.width(s, self._style, scale)
+        var pixels = self._state.backend.text.width(text, self._style, scale)
         return Float64(pixels) / scale
 
-    def text(mut self, s: String, position: Point2D):
+    def text(mut self, text: String, position: Point2D):
         if self._style.text_color.a == 0:
             return
         # Deferred whole. Nothing about the layout is decided here: the
@@ -1663,6 +1665,10 @@ struct Canvas(Movable):
         # which the backend owns, so they are resolved at replay.
         self._state.backend.record(
             text_command(
-                self._transform, self._style, position.x, position.y, s.copy()
+                self._transform,
+                self._style,
+                position.x,
+                position.y,
+                text.copy(),
             )
         )

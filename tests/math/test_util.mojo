@@ -7,11 +7,11 @@ from std.testing import (
 from create.math.util import (
     lerp,
     map,
-    norm,
+    inverse_lerp,
     smoothstep,
     sign,
-    fract,
-    fmod,
+    fractional_part,
+    wrap,
     degrees,
     radians,
 )
@@ -59,16 +59,16 @@ def test_map_inverted_output() raises -> None:
     assert_equal(map(1.0, 0.0, 1.0, 1.0, 0.0), 0.0)
 
 
-def test_norm_low() raises -> None:
-    assert_equal(norm(0.0, 0.0, 10.0), 0.0)
+def test_inverse_lerp_low() raises -> None:
+    assert_equal(inverse_lerp(0.0, 0.0, 10.0), 0.0)
 
 
-def test_norm_high() raises -> None:
-    assert_equal(norm(10.0, 0.0, 10.0), 1.0)
+def test_inverse_lerp_high() raises -> None:
+    assert_equal(inverse_lerp(10.0, 0.0, 10.0), 1.0)
 
 
-def test_norm_mid() raises -> None:
-    assert_equal(norm(5.0, 0.0, 10.0), 0.5)
+def test_inverse_lerp_mid() raises -> None:
+    assert_equal(inverse_lerp(5.0, 0.0, 10.0), 0.5)
 
 
 def test_smoothstep_below_edge0() raises -> None:
@@ -110,19 +110,19 @@ def test_sign_zero() raises -> None:
     assert_equal(sign(0.0), 0.0)
 
 
-def test_fract_positive() raises -> None:
-    assert_almost_equal(fract(3.75), 0.75, atol=1e-12)
-    assert_almost_equal(fract(1.0), 0.0, atol=1e-12)
+def test_fractional_part_positive() raises -> None:
+    assert_almost_equal(fractional_part(3.75), 0.75, atol=1e-12)
+    assert_almost_equal(fractional_part(1.0), 0.0, atol=1e-12)
 
 
-def test_fract_negative() raises -> None:
-    # fract(-0.25) = -0.25 - floor(-0.25) = -0.25 - (-1) = 0.75
-    assert_almost_equal(fract(-0.25), 0.75, atol=1e-12)
+def test_fractional_part_negative() raises -> None:
+    # fractional_part(-0.25) = -0.25 - floor(-0.25) = -0.25 - (-1) = 0.75
+    assert_almost_equal(fractional_part(-0.25), 0.75, atol=1e-12)
 
 
-def test_fmod_basic() raises -> None:
-    assert_almost_equal(fmod(7.0, 3.0), 1.0, atol=1e-12)
-    assert_almost_equal(fmod(6.0, 3.0), 0.0, atol=1e-12)
+def test_wrap_basic() raises -> None:
+    assert_almost_equal(wrap(7.0, 3.0), 1.0, atol=1e-12)
+    assert_almost_equal(wrap(6.0, 3.0), 0.0, atol=1e-12)
 
 
 def test_degrees_from_radians() raises -> None:
@@ -140,14 +140,14 @@ def test_degrees_radians_roundtrip() raises -> None:
     assert_almost_equal(radians(degrees(1.0)), 1.0, atol=1e-9)
 
 
-def test_fmod_negative_numerator() raises -> None:
+def test_wrap_negative_numerator() raises -> None:
     # floor(-1/3) = -1, so -1 - (-1)*3 = 2
-    assert_almost_equal(fmod(-1.0, 3.0), 2.0, atol=1e-12)
+    assert_almost_equal(wrap(-1.0, 3.0), 2.0, atol=1e-12)
 
 
-def test_fmod_negative_large() raises -> None:
+def test_wrap_negative_large() raises -> None:
     # floor(-7/3) = -3, so -7 - (-3)*3 = 2
-    assert_almost_equal(fmod(-7.0, 3.0), 2.0, atol=1e-12)
+    assert_almost_equal(wrap(-7.0, 3.0), 2.0, atol=1e-12)
 
 
 def test_lerp_out_of_range_extrapolates_below() raises -> None:
@@ -159,14 +159,14 @@ def test_map_extrapolates_outside_input() raises -> None:
     assert_almost_equal(map(15.0, 0.0, 10.0, 0.0, 100.0), 150.0, atol=1e-9)
 
 
-def test_norm_outside_range() raises -> None:
-    assert_almost_equal(norm(-5.0, 0.0, 10.0), -0.5, atol=1e-12)
-    assert_almost_equal(norm(15.0, 0.0, 10.0), 1.5, atol=1e-12)
+def test_inverse_lerp_outside_range() raises -> None:
+    assert_almost_equal(inverse_lerp(-5.0, 0.0, 10.0), -0.5, atol=1e-12)
+    assert_almost_equal(inverse_lerp(15.0, 0.0, 10.0), 1.5, atol=1e-12)
 
 
-def test_fract_at_integer() raises -> None:
-    assert_almost_equal(fract(5.0), 0.0, atol=1e-12)
-    assert_almost_equal(fract(0.0), 0.0, atol=1e-12)
+def test_fractional_part_at_integer() raises -> None:
+    assert_almost_equal(fractional_part(5.0), 0.0, atol=1e-12)
+    assert_almost_equal(fractional_part(0.0), 0.0, atol=1e-12)
 
 
 def test_degrees_quarter_turn() raises -> None:
@@ -190,12 +190,12 @@ def test_map_degenerate_equal_input_range_away_from_value() raises -> None:
     assert_true(isinf(map(6.0, 5.0, 5.0, 0.0, 100.0)))
 
 
-def test_norm_degenerate_equal_range_at_value() raises -> None:
-    assert_true(isnan(norm(5.0, 5.0, 5.0)))
+def test_inverse_lerp_degenerate_equal_range_at_value() raises -> None:
+    assert_true(isnan(inverse_lerp(5.0, 5.0, 5.0)))
 
 
-def test_norm_degenerate_equal_range_away_from_value() raises -> None:
-    assert_true(isinf(norm(6.0, 5.0, 5.0)))
+def test_inverse_lerp_degenerate_equal_range_away_from_value() raises -> None:
+    assert_true(isinf(inverse_lerp(6.0, 5.0, 5.0)))
 
 
 def test_smoothstep_degenerate_equal_edges() raises -> None:
@@ -205,10 +205,10 @@ def test_smoothstep_degenerate_equal_edges() raises -> None:
     assert_equal(smoothstep(3.0, 3.0, 1.0), 0.0)
 
 
-def test_fmod_by_zero() raises -> None:
-    assert_true(isnan(fmod(5.0, 0.0)))
-    assert_true(isnan(fmod(0.0, 0.0)))
-    assert_true(isnan(fmod(-5.0, 0.0)))
+def test_wrap_by_zero() raises -> None:
+    assert_true(isnan(wrap(5.0, 0.0)))
+    assert_true(isnan(wrap(0.0, 0.0)))
+    assert_true(isnan(wrap(-5.0, 0.0)))
 
 
 def test_sign_negative_zero() raises -> None:

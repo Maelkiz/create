@@ -106,7 +106,7 @@ def _once() -> Color:
 def _distance(lines: List[Line], p: Point2D) -> Float64:
     var d = Float64.MAX
     for l in lines:
-        d = min(d, p.dist(l.closest_point(p)))
+        d = min(d, p.distance(l.closest_point(p)))
     return d
 
 

@@ -62,7 +62,7 @@ def test_regular_starts_straight_up() raises -> None:
     assert_equal(len(p.vertices), 6)
     _assert_point_near(p.vertices[0], Point2D(0.0, 10.0))
     for v in p.vertices:
-        assert_almost_equal((v - Point2D(0, 0)).mag(), 10.0)
+        assert_almost_equal((v - Point2D(0, 0)).magnitude(), 10.0)
     # Counter-clockwise: the second vertex is up and to the left.
     assert_true(p.vertices[1].x < 0.0 and p.vertices[1].y > 0.0)
 
@@ -80,7 +80,9 @@ def test_star_alternates_radii() raises -> None:
     _assert_point_near(s.vertices[0], Point2D(0.0, 10.0))
     for i in range(10):
         var expected = 10.0 if i % 2 == 0 else 4.0
-        assert_almost_equal((s.vertices[i] - Point2D(0, 0)).mag(), expected)
+        assert_almost_equal(
+            (s.vertices[i] - Point2D(0, 0)).magnitude(), expected
+        )
     # The first inner vertex sits halfway to the second tip.
     var angle = tau / 4.0 + pi / 5.0
     _assert_point_near(
@@ -213,7 +215,7 @@ def test_pieces_split_the_rim_from_the_seams() raises -> None:
     assert_equal(len(star[0]), 10)
     assert_equal(len(star[1]), 5)
     for seam in star[1]:
-        assert_true(seam.midpoint().dist(Point2D(0, 0)) < 5.0)
+        assert_true(seam.midpoint().distance(Point2D(0, 0)) < 5.0)
 
 
 def test_overlaps_circle() raises -> None:

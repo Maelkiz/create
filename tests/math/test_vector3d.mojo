@@ -121,13 +121,13 @@ def test_ne() raises -> None:
     assert_equal(Vector3D(1.0, 2.0, 3.0) != Vector3D(1.0, 2.0, 3.0), False)
 
 
-def test_mag() raises -> None:
-    assert_almost_equal(Vector3D(1.0, 2.0, 2.0).mag(), 3.0, atol=1e-9)
-    assert_equal(Vector3D(0.0, 0.0, 0.0).mag(), 0.0)
+def test_magnitude() raises -> None:
+    assert_almost_equal(Vector3D(1.0, 2.0, 2.0).magnitude(), 3.0, atol=1e-9)
+    assert_equal(Vector3D(0.0, 0.0, 0.0).magnitude(), 0.0)
 
 
-def test_mag_sq() raises -> None:
-    assert_equal(Vector3D(1.0, 2.0, 2.0).mag_sq(), 9.0)
+def test_magnitude_squared() raises -> None:
+    assert_equal(Vector3D(1.0, 2.0, 2.0).magnitude_squared(), 9.0)
 
 
 def test_normalize() raises -> None:
@@ -163,14 +163,18 @@ def test_cross_anticommutative() raises -> None:
     assert_almost_equal(ab.z, neg_ba.z, atol=1e-9)
 
 
-def test_dist() raises -> None:
+def test_distance() raises -> None:
     assert_almost_equal(
-        Vector3D(0.0, 0.0, 0.0).dist(Vector3D(1.0, 2.0, 2.0)), 3.0, atol=1e-9
+        Vector3D(0.0, 0.0, 0.0).distance(Vector3D(1.0, 2.0, 2.0)),
+        3.0,
+        atol=1e-9,
     )
 
 
-def test_dist_sq() raises -> None:
-    assert_equal(Vector3D(0.0, 0.0, 0.0).dist_sq(Vector3D(1.0, 2.0, 2.0)), 9.0)
+def test_distance_squared() raises -> None:
+    assert_equal(
+        Vector3D(0.0, 0.0, 0.0).distance_squared(Vector3D(1.0, 2.0, 2.0)), 9.0
+    )
 
 
 def test_lerp_endpoints() raises -> None:

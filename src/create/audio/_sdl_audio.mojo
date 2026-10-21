@@ -57,7 +57,7 @@ struct SDLAudio:
     def load_wav(
         self, path: String
     ) raises -> Tuple[List[UInt8], Int32, Int32, Int32]:
-        """Load a WAV file. Returns (pcm, format, channels, freq)."""
+        """Load a WAV file. Returns (pcm, format, channels, sample_rate)."""
         var spec = List[Int32](length=3, fill=0)
         var buf_out = List[Int](length=1, fill=0)
         var len_out = List[Int32](length=1, fill=0)
@@ -84,12 +84,12 @@ struct SDLAudio:
         return pcm^, spec[0], spec[1], spec[2]
 
     def open_device_stream(
-        self, format: Int32, channels: Int32, freq: Int32
+        self, format: Int32, channels: Int32, sample_rate: Int32
     ) raises -> Int:
         var spec = List[Int32](length=3, fill=0)
         spec[0] = format
         spec[1] = channels
-        spec[2] = freq
+        spec[2] = sample_rate
         var stream = self.lib.call["SDL_OpenAudioDeviceStream", Int](
             SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, spec.unsafe_ptr(), Int(0), Int(0)
         )

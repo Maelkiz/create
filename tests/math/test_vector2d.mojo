@@ -116,13 +116,13 @@ def test_ne() raises -> None:
     assert_equal(Vector2D(1.0, 2.0) != Vector2D(1.0, 2.0), False)
 
 
-def test_mag() raises -> None:
-    assert_equal(Vector2D(3.0, 4.0).mag(), 5.0)
-    assert_equal(Vector2D(0.0, 0.0).mag(), 0.0)
+def test_magnitude() raises -> None:
+    assert_equal(Vector2D(3.0, 4.0).magnitude(), 5.0)
+    assert_equal(Vector2D(0.0, 0.0).magnitude(), 0.0)
 
 
-def test_mag_sq() raises -> None:
-    assert_equal(Vector2D(3.0, 4.0).mag_sq(), 25.0)
+def test_magnitude_squared() raises -> None:
+    assert_equal(Vector2D(3.0, 4.0).magnitude_squared(), 25.0)
 
 
 def test_normalize() raises -> None:
@@ -139,13 +139,13 @@ def test_dot_parallel() raises -> None:
     assert_equal(Vector2D(2.0, 3.0).dot(Vector2D(4.0, 5.0)), 23.0)
 
 
-def test_dist() raises -> None:
-    assert_equal(Vector2D(0.0, 0.0).dist(Vector2D(3.0, 4.0)), 5.0)
-    assert_equal(Vector2D(1.0, 1.0).dist(Vector2D(1.0, 1.0)), 0.0)
+def test_distance() raises -> None:
+    assert_equal(Vector2D(0.0, 0.0).distance(Vector2D(3.0, 4.0)), 5.0)
+    assert_equal(Vector2D(1.0, 1.0).distance(Vector2D(1.0, 1.0)), 0.0)
 
 
-def test_dist_sq() raises -> None:
-    assert_equal(Vector2D(0.0, 0.0).dist_sq(Vector2D(3.0, 4.0)), 25.0)
+def test_distance_squared() raises -> None:
+    assert_equal(Vector2D(0.0, 0.0).distance_squared(Vector2D(3.0, 4.0)), 25.0)
 
 
 def test_lerp_endpoints() raises -> None:

@@ -426,10 +426,10 @@ def test_overlaps_circle_circle_no() raises -> None:
 
 
 def test_overlaps_circle_circle_touching_boundary() raises -> None:
-    # Circles touching at exactly one point — dist == r1+r2
+    # Circles touching at exactly one point — distance == r1+r2
     var a = Circle((0.0, 0.0), 5.0)
     var b = Circle((10.0, 0.0), 5.0)
-    # dist_sq = 100, (r1+r2)^2 = 100: <=, so overlaps is True
+    # distance_squared = 100, (r1+r2)^2 = 100: <=, so overlaps is True
     assert_true(overlaps(a, b))
 
 

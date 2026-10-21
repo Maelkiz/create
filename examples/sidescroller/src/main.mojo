@@ -10,7 +10,7 @@ struct Game(Program):
     comptime WORLD_RIGHT: Float64 = 4000.0
 
     var player: Player
-    var cam: Camera
+    var camera: Camera
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> Game:
@@ -29,17 +29,17 @@ struct Game(Program):
 
         # Follow the player horizontally; the ground stays screen-fixed so
         # jumping doesn't move the camera vertically too.
-        self.cam.position = Point2D(self.player.x, 0.0)
+        self.camera.position = Point2D(self.player.x, 0.0)
 
         canvas.background(Color(30, 30, 30))
-        canvas.camera(self.cam)
+        canvas.camera(self.camera)
 
         # Ground markers every 200 world units, so panning past the edge of
         # any one screen is visible rather than looking like an empty void.
         with canvas.style():
             canvas.outline_enabled(False)
             canvas.fill(Color(70, 70, 70))
-            var first = Int((self.cam.position.x - 1000.0) / 200.0) * 200
+            var first = Int((self.camera.position.x - 1000.0) / 200.0) * 200
             var last = first + 2200
             for i in range(
                 max(first, Int(self.WORLD_LEFT)),

@@ -39,7 +39,7 @@ struct App(Program):
         var mouse = context.input.mouse
         if context.input.mouse_pressed():
             for i in range(len(self.handles)):
-                if (mouse - self.handles[i]).mag() <= _GRAB_RADIUS:
+                if (mouse - self.handles[i]).magnitude() <= _GRAB_RADIUS:
                     self.dragging = i
         if context.input.mouse_released():
             self.dragging = -1

@@ -143,18 +143,18 @@ def test_overlay_restores_the_camera_on_exit() raises -> None:
 
 
 def test_to_world_and_to_screen_round_trip() raises -> None:
-    var cam = Camera(Point2D(10.0, -5.0), 2.0)
+    var camera = Camera(Point2D(10.0, -5.0), 2.0)
     var screen = Point2D(30.0, 40.0)
-    var world = cam.to_world(screen)
-    var back = cam.to_screen(world)
+    var world = camera.to_world(screen)
+    var back = camera.to_screen(world)
     assert_almost_equal(back.x, screen.x)
     assert_almost_equal(back.y, screen.y)
 
 
 def test_to_world_accounts_for_position_and_zoom() raises -> None:
-    var cam = Camera(Point2D(100.0, 0.0), 2.0)
+    var camera = Camera(Point2D(100.0, 0.0), 2.0)
     # Screen origin maps to the camera's own world position.
-    var world = cam.to_world(Point2D(0.0, 0.0))
+    var world = camera.to_world(Point2D(0.0, 0.0))
     assert_almost_equal(world.x, 100.0)
     assert_almost_equal(world.y, 0.0)
 

@@ -92,19 +92,19 @@ def test_ne() raises -> None:
     assert_equal(Point2D(1.0, 2.0) != Point2D(1.0, 2.0), False)
 
 
-def test_dist() raises -> None:
-    assert_equal(Point2D(0.0, 0.0).dist(Point2D(3.0, 4.0)), 5.0)
-    assert_equal(Point2D(1.0, 1.0).dist(Point2D(1.0, 1.0)), 0.0)
+def test_distance() raises -> None:
+    assert_equal(Point2D(0.0, 0.0).distance(Point2D(3.0, 4.0)), 5.0)
+    assert_equal(Point2D(1.0, 1.0).distance(Point2D(1.0, 1.0)), 0.0)
 
 
-def test_dist_is_symmetric() raises -> None:
+def test_distance_is_symmetric() raises -> None:
     var a = Point2D(-2.0, 5.0)
     var b = Point2D(4.0, -3.0)
-    assert_almost_equal(a.dist(b), b.dist(a), atol=1e-9)
+    assert_almost_equal(a.distance(b), b.distance(a), atol=1e-9)
 
 
-def test_dist_sq() raises -> None:
-    assert_equal(Point2D(0.0, 0.0).dist_sq(Point2D(3.0, 4.0)), 25.0)
+def test_distance_squared() raises -> None:
+    assert_equal(Point2D(0.0, 0.0).distance_squared(Point2D(3.0, 4.0)), 25.0)
 
 
 def test_lerp_endpoints() raises -> None:
@@ -153,7 +153,7 @@ def test_xy_is_the_escape_hatch_to_a_vector2d() raises -> None:
     """`Vector2D(p.xy())` is how a program reaches the operations Point2D
     deliberately refuses."""
     var v = Vector2D(Point2D(3.0, 4.0).xy())
-    assert_equal(v.mag(), 5.0)
+    assert_equal(v.magnitude(), 5.0)
 
 
 def test_xyz_converts_to_a_vector3d() raises -> None:
