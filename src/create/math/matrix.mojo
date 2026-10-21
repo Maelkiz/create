@@ -71,11 +71,23 @@ struct Matrix[rows: Int, cols: Int](
         return not (self == other)
 
     def write_to[W: Writer](self, mut writer: W):
-        writer.write("Matrix[", Self.rows, ", ", Self.cols, "](")
+        # One row per line, each column padded to its widest entry, so the
+        # printed call reads as the matrix it builds.
+        var widths = List[Int](length=Self.cols, fill=0)
         for i in range(Self.rows * Self.cols):
-            if i > 0:
-                writer.write(", ")
-            writer.write(self.data[i])
+            var c = i % Self.cols
+            widths[c] = max(widths[c], String(self.data[i]).byte_length())
+        writer.write("Matrix[", Self.rows, ", ", Self.cols, "](\n")
+        for r in range(Self.rows):
+            writer.write("    ")
+            for c in range(Self.cols):
+                var entry = String(self[r, c])
+                if c > 0:
+                    writer.write(" ")
+                writer.write(
+                    " " * (widths[c] - entry.byte_length()), entry, ","
+                )
+            writer.write("\n")
         writer.write(")")
 
 
