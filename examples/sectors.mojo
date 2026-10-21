@@ -109,7 +109,7 @@ struct App(Program):
                 var middle = start - pi * shares[i]
                 slice.translate(Vector2D(cos(middle), sin(middle)) * _POP)
             canvas.fill(_slice_color(i))
-            canvas.sector(slice)
+            canvas.draw(slice)
             start = slice.end_angle()
 
         var body = Color(250, 200, 40)
@@ -124,12 +124,12 @@ struct App(Program):
             shadow_offset=Vector2D(8, -12),
             shadow_blur=20,
         ):
-            canvas.sector(pacman)
+            canvas.draw(pacman)
 
         if self.respawn_in == 0.0:
             canvas.outline_enabled(False)
             canvas.fill(Color(90, 170, 255))
-            canvas.circle(self.ball)
+            canvas.draw(self.ball)
 
         canvas.text_color(Color(200, 200, 212))
         canvas.font_size(30)

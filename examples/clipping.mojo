@@ -26,7 +26,7 @@ struct Clipping(Program):
 
         # A list scrolling through a panel: rows enter and leave at its edges.
         canvas.fill(Color(24, 26, 36))
-        canvas.rectangle(self.panel)
+        canvas.draw(self.panel)
         with canvas.clip(self.panel):
             var scroll = (t * 40.0) % (LINES * LINE_HEIGHT)
             canvas.text_color(Color.WHITE)

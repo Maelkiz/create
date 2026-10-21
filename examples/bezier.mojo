@@ -74,7 +74,7 @@ struct App(Program):
             shadow_offset=Vector2D(6, -10),
             shadow_blur=18,
         ):
-            canvas.bezier(curve)
+            canvas.draw(curve)
 
         canvas.outline_enabled(False)
         canvas.fill(Color(235, 120, 70))

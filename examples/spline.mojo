@@ -94,7 +94,7 @@ struct App(Program):
             shadow_offset=Vector2D(6, -10),
             shadow_blur=18,
         ):
-            canvas.spline(spline)
+            canvas.draw(spline)
 
         canvas.outline_enabled(False)
         if len(self.points) > 0:

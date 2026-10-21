@@ -346,7 +346,7 @@ def _shape_name(shape: Int) -> String:
 
 def _bezier(mut canvas: Canvas):
     """An S-curve with a sharp bend."""
-    canvas.bezier(Bezier((-90, -50), (-60, 90), (60, -90), (90, 50)))
+    canvas.draw(Bezier((-90, -50), (-60, 90), (60, -90), (90, 50)))
 
 
 def _spline(mut canvas: Canvas, closed: Bool):
@@ -743,7 +743,7 @@ struct _Parity(Program):
                 canvas.fill(Color(0x50, 0xA0, 0xD0))
                 canvas.outline(Color.BLACK, thickness=6)
                 with canvas.transform(rotate(0.3) @ scale(1.3, 0.8)):
-                    canvas.polygon(Polygon.regular((0, 0), 70, 6))
+                    canvas.draw(Polygon.regular((0, 0), 70, 6))
         elif self.shape == _SHAPE_CONCAVE_POLYGON:
             # An L: the outline rounds off round the reflex corner.
             with canvas.style():
@@ -762,7 +762,7 @@ struct _Parity(Program):
             with canvas.style():
                 canvas.fill(Color(0xFF, 0xC0, 0x20, 0x80))
                 canvas.outline(Color(0x20, 0x40, 0xFF, 0x80), thickness=8)
-                canvas.polygon(Polygon.star((0, 0), 80, 35, 5))
+                canvas.draw(Polygon.star((0, 0), 80, 35, 5))
         elif self.shape == _SHAPE_PENTAGRAM:
             # Five self-crossing edges: the centre is wound twice.
             var tips = Polygon.regular((0, 0), 80, 5).vertices.copy()
@@ -775,9 +775,7 @@ struct _Parity(Program):
             with canvas.style():
                 canvas.fill(Color(0xFF, 0xC0, 0x20, 0x80))
                 canvas.outline(Color(0x20, 0x40, 0xFF, 0x80), thickness=8)
-                canvas.polygon(
-                    Polygon.star((0, 0), 80, 35, 5, corner_radius=12)
-                )
+                canvas.draw(Polygon.star((0, 0), 80, 35, 5, corner_radius=12))
         elif self.shape == _SHAPE_ROUNDED_PENTAGRAM:
             var tips = Polygon.regular((0, 0), 80, 5).vertices.copy()
             with canvas.style():
@@ -794,7 +792,7 @@ struct _Parity(Program):
             )
             s.shadow_spread = 6.0
             with canvas.style(s):
-                canvas.polygon(Polygon.star((-10, 10), 70, 30, 5))
+                canvas.draw(Polygon.star((-10, 10), 70, 30, 5))
         elif self.shape == _SHAPE_BLURRED_POLYGON_RING:
             # Outline only, concave: the blurred mask of a ring.
             var s = _blurred(
@@ -924,7 +922,7 @@ struct _Parity(Program):
                         Color(0xFF, 0xA0, 0x40), Color(0xFF, 0x60, 0xC0)
                     )
                 )
-                canvas.polygon(Polygon.star((0, 0), 70, 30, 5))
+                canvas.draw(Polygon.star((0, 0), 70, 30, 5))
         elif self.shape == _SHAPE_ROTATED_IMAGE:
             # A solid block, so the GPU's linear filter and the CPU's nearest
             # texel agree inside it and only the rim can differ.

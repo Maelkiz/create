@@ -88,10 +88,10 @@ struct App(Program):
         var square = Rectangle((0, 0), 120, 120, corner_radius=14)
         with canvas.style(fill=Color(0xF0, 0x90, 0x50), outline_enabled=False):
             with canvas.transform(translate(170, 110) @ rotate(self.angle)):
-                canvas.rectangle(square)
+                canvas.draw(square)
             with canvas.style(shadow_follows_transform=True):
                 with canvas.transform(translate(430, 110) @ rotate(self.angle)):
-                    canvas.rectangle(square)
+                    canvas.draw(square)
 
         # An image casts its alpha, not its box. Images move with a
         # transform but are never turned by one, so this one stands still.
