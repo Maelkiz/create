@@ -12,7 +12,7 @@ from create.render._raster import (
     line_pixels,
 )
 from create.text.font import _GlyphInfo
-from create.render.surface import MemorySurface, Surface
+from create.render._surface import MemorySurface, Surface
 from create.image.image import Image
 from create.image.pixel_buffer import PixelBuffer
 

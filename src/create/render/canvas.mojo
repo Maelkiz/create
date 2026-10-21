@@ -9,7 +9,7 @@ from create.color.blend_mode import BlendMode
 from .antialiasing import Antialiasing
 from .autoscale import AutoScale
 from create.text.font import Font
-from .surface import MemorySurface
+from ._surface import MemorySurface
 from ._viewport import Viewport
 from .camera import Camera
 from create.math.bezier import Bezier

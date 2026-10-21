@@ -7,7 +7,7 @@ pixels mean — it takes a buffer, its extent and a path, which is what keeps it
 usable both by the design-size capture and by a raw framebuffer
 screenshot whose bytes were never a `MemorySurface`.
 
-Its own module rather than a member of `surface.mojo` because a file format is
+Its own module rather than a member of `_surface.mojo` because a file format is
 not a framebuffer.
 """
 

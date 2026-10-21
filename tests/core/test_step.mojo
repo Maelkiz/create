@@ -10,6 +10,7 @@
 from std.testing import TestSuite, assert_equal
 
 from create import *
+from create.render._surface import MemorySurface
 from create.core._step import step
 from create.render.canvas import _PersistentCanvasState
 

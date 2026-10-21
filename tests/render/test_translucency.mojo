@@ -132,7 +132,7 @@ struct HalfRed[kind: Int, tinted: Bool = False](Program):
         _draw(canvas, Self.kind)
 
 
-def _check(kind: Int, backend: String, m: MemorySurface) raises:
+def _check(kind: Int, backend: String, m: Image) raises:
     var inked = 0
     var deepest = 0
     var greenest = 0

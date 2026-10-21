@@ -122,16 +122,16 @@ struct EdgeOf[clipped: Bool](Program):
             canvas.circle(disc.position, disc.r)
 
 
-def _at(m: MemorySurface, x: Int, y: Int) -> Color:
+def _at(m: Image, x: Int, y: Int) -> Color:
     """The pixel under screen point `(x, y)`."""
     return m.pixel(_W // 2 + x, _H // 2 - y)
 
 
-def _frame[scene: Int](backend: RenderBackend) raises -> MemorySurface:
+def _frame[scene: Int](backend: RenderBackend) raises -> Image:
     return run_headless[Clipped[scene]](_W, _H, backend=backend)
 
 
-def _check(scene: Int, m: MemorySurface) raises:
+def _check(scene: Int, m: Image) raises:
     """The samples every backend must agree on."""
     var name = "scene " + String(scene)
     assert_equal(_at(m, 90, 40), Color.GREEN, name + ": closed")
@@ -185,8 +185,8 @@ def _check(scene: Int, m: MemorySurface) raises:
         assert_equal(_at(m, 40, 0), _GRAY, name)
 
 
-def _all[backend: RenderBackend]() raises -> List[MemorySurface]:
-    var out = List[MemorySurface]()
+def _all[backend: RenderBackend]() raises -> List[Image]:
+    var out = List[Image]()
     out.append(_frame[_RECT](backend))
     out.append(_frame[_INVERTED_CIRCLE](backend))
     out.append(_frame[_NESTED](backend))
@@ -198,15 +198,13 @@ def _all[backend: RenderBackend]() raises -> List[MemorySurface]:
     return out^
 
 
-def _same_rgb(a: MemorySurface, b: MemorySurface, x: Int, y: Int) -> Bool:
-    var i = (y * _W + x) * 4
-    for k in range(3):
-        if a.data[i + k] != b.data[i + k]:
-            return False
-    return True
+def _same_rgb(a: Image, b: Image, x: Int, y: Int) -> Bool:
+    var p = a.pixel(x, y)
+    var q = b.pixel(x, y)
+    return p.r == q.r and p.g == q.g and p.b == q.b
 
 
-def _flat(m: MemorySurface, x: Int, y: Int) -> Bool:
+def _flat(m: Image, x: Int, y: Int) -> Bool:
     """Whether `(x, y)` and its eight neighbours are all one colour."""
     for dy in range(-1, 2):
         for dx in range(-1, 2):
@@ -215,13 +213,10 @@ def _flat(m: MemorySurface, x: Int, y: Int) -> Bool:
     return True
 
 
-def _rgb_equal(m: MemorySurface, x0: Int, y0: Int, x1: Int, y1: Int) -> Bool:
-    var i = (y0 * _W + x0) * 4
-    var j = (y1 * _W + x1) * 4
-    for k in range(3):
-        if m.data[i + k] != m.data[j + k]:
-            return False
-    return True
+def _rgb_equal(m: Image, x0: Int, y0: Int, x1: Int, y1: Int) -> Bool:
+    var p = m.pixel(x0, y0)
+    var q = m.pixel(x1, y1)
+    return p.r == q.r and p.g == q.g and p.b == q.b
 
 
 def test_cpu_clips() raises -> None:
@@ -231,7 +226,7 @@ def test_cpu_clips() raises -> None:
 
 
 def test_gpu_clips_like_the_cpu() raises -> None:
-    var gpu: List[MemorySurface]
+    var gpu: List[Image]
     try:
         gpu = _all[RenderBackend.GPU]()
     except e:

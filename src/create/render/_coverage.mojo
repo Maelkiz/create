@@ -23,7 +23,7 @@ from std.math import max, min, sqrt
 
 from create.color.color import Color
 from ._raster import FillPaint, GRADIENT_KEY, _key_color, blend, fill_span
-from .surface import Surface
+from ._surface import Surface
 
 
 struct CoverageScratch(Movable):

@@ -12,7 +12,7 @@ from ._window_loop import (
     _apply_window_mode,
     _finish_frame,
 )
-from create.render.surface import Surface
+from create.render._surface import Surface
 from .program import Program
 from .window_mode import WindowMode
 from ._run_gl import run_gl
