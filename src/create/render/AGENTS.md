@@ -9,6 +9,7 @@ and the layering rules.
 |---|---|
 | `canvas.mojo` | `Canvas` (records commands, touches no pixels), `_PersistentCanvasState`, the guards |
 | `_command.mojo` | `RenderCommand` and its kind constants; `_fill_box`, the box a fill gradient spans |
+| `_shape_command.mojo` | `shape_command` (one overload per kind) and `curves_command`: a shape as the command that records it, rounded polygons and sectors flattened; `RegionCapture`, the `DrawTarget` a clip draws its region into |
 | `_backend.mojo` | `Backend` — the text renderer, interned images; replays commands via `present` (CPU) or `present_gpu` |
 | `_raster.mojo` | CPU rasteriser over a `Surface`; called only from `_backend.mojo` |
 | `_surface.mojo` | `Surface`, the borrowed RGBA view the rasteriser writes, and `MemorySurface`, an owned buffer (headless runs, pixel reads, offscreen canvases); `run_headless` hands its pixels over as an `Image` |
@@ -40,6 +41,14 @@ transform at record time, style resolved now) to the `Backend`. Nothing rasteris
 into the backend at record time (the command carries an id); text is recorded as an owned `String`
 and laid out at replay. Add a shape by extending `_command.mojo`'s kinds and `_backend.mojo`'s replay
 (plus `_tessellate.mojo`), never by calling `_raster.mojo` from `Canvas`.
+
+**Shapes reach the canvas through `DrawTarget`** (in `create.geometry`). `canvas.draw(shape)` is
+`shape.draw_to(canvas)`, which calls the primitive for the shape's kind (`_rectangle`, `_circle`,
+`_triangle`, `_sector`, `_polygon`, `_line`, `_curves`); each records
+`shape_command(shape, transform, style, scale)`. The named methods (`rectangle(p, w, h)`, …) only
+build the shape, resolving `corner_radius` against the style, and call `draw`. A new shape kind
+needs a geometry type with `draw_to`, a primitive on `DrawTarget` and `Canvas`, a `shape_command`
+overload, and the command kind above.
 
 `RenderCommand.geom` has 6 slots, sized for a triangle's three points; the geometry table in
 `_command.mojo` gives each kind's layout. `CMD_BEZIER` (control points) and `CMD_POLYGON` (vertices)
@@ -141,7 +150,7 @@ the sector by exactly that first — round the tip and the arc's ends, into the 
 than leaning on a corner radius, which a `CMD_SECTOR` has none of. An outline-only sector's shadow ring
 is the grown sector's outline band, thickened by twice the spread.
 
-A **rounded** sector never reaches `sector_quads`: `Canvas._sector_command` records it as a
+A **rounded** sector never reaches `sector_quads`: its `shape_command` records it as a
 `CMD_POLYGON` through its outline (`rounded_sector_vertices`, each curve flattened as finely as a
 circle of its radius is drawn), via `rounded_sector_command`, which keeps the sector's circle in
 `geom[1..4]` with `geom[5]` set so `_fill_box` spans the circle as for a sharp sector.
@@ -186,7 +195,7 @@ slabs × the edges spanning them, bands included: every slab runs the polygon's 
 a crossing in one corner cuts quads everywhere. Outlined, at `MEDIUM` on the CPU: ~160 µs per
 5-tip star, ~380 µs per pentagram, ~2 ms per 40-tip star. Filled only, a 5-tip star is ~30 µs.
 
-A **rounded** polygon (`Polygon.corner_radius`) is flattened by `Canvas._rounded` when recorded,
+A **rounded** polygon (`Polygon.corner_radius`) is flattened by its `shape_command` when recorded,
 through `rounded_vertices`, each fillet as finely as a circle of that radius is drawn at the
 current transform, so every replay, shadow and clip sees an ordinary polygon. Its fillets add
 vertices and so slabs: outlined, ~360 µs per rounded 5-tip star, ~460 µs per rounded pentagram,
@@ -196,7 +205,9 @@ a tip or neck is thin, which a band never does; that needs a fold check and a ba
 
 ## Clips
 
-`canvas.clip(region, invert)` records no command. `ClipGuard` calls `Backend.push_clip`, which
+`canvas.clip(region, invert)` records no command. It draws the `Region` into a `RegionCapture`,
+a `DrawTarget` that keeps the region's `shape_command` in `clip_style()` instead of recording it,
+so a clip and a fill of a shape are built by the same code. `ClipGuard` calls `Backend.push_clip`, which
 appends a `_Clip` to `Backend.clips` and makes it current (`Backend.clip`). The clip holds the
 region as an ordinary `RenderCommand` in `clip_style()` (an opaque white fill and nothing else),
 its parent and `invert`. `Backend.record`/`record_clear` stamp the current id on every command

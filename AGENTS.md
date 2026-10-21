@@ -194,12 +194,27 @@ A program writes `from create import *`. Otherwise import by name from the ownin
   `Image`/`Animator`.
   A `render` function that needs pixels takes a pointer plus width/height, not an image type.
 
+### Drawing shapes
+
+`canvas.draw(shape)` draws any shape or curve — `Rectangle`, `Circle`, `Triangle`, `Sector`,
+`Polygon`, `Line`, `Arc`, `Bezier`, `Spline` — in the current style and transform. The named
+methods build a shape from numbers and draw it: `canvas.rectangle(p, w, h)` is
+`canvas.draw(Rectangle(p, w, h))`. A shape value is drawn with `draw`; there is no
+`canvas.rectangle(r)`.
+- **A program's own type** is drawn the same way by conforming to `Drawable` and drawing its
+  parts: `def draw_to[T: DrawTarget](self, mut target: T): target.draw(self.body)`. Style comes
+  from the canvas, not the parts. See [examples/drawables.mojo](examples/drawables.mojo).
+- `Drawable`, `DrawTarget` and `Region` live in `geometry`, so a shape never imports `render`:
+  `Canvas` is the `DrawTarget`, its `_`-named primitives are the library's own. Dispatch is
+  static (one instantiation per type); a mixed list still needs `Variant`.
+
 ### Style and clear
 
 `Style()` defaults are not blank: **outline `BLACK`, on, 1 unit**; fill `WHITE`, off; `BLACK`
 text. Every frame opens with a clear to gray 200 so those defaults are visible;
-`canvas.background()` is the only way to choose the colour. Corner rounding is not style: it is
-the shape's `corner_radius` (see Terminology), so what is drawn and what `overlaps` tests agree.
+`canvas.background()` is the only way to choose the colour. `corner_radius` is style only for
+shapes the canvas builds from numbers; a shape value keeps its own (see Terminology), so
+`with canvas.style(corner_radius=8): canvas.draw(rect)` does not round `rect`.
 - An opaque `canvas.background()` replaces that clear rather than painting a second time; a
   translucent one blends over it.
 - `canvas.autoclear(enabled)` switches that clear off or back on for the whole current frame —
@@ -305,9 +320,9 @@ colour passes `antialiasing=Antialiasing.OFF`.
 ### Clipping
 
 `with canvas.clip(region):` renders only inside `region` for the block; `invert=True` keeps only
-what is outside it (fog, a spotlight). `region` is a `Rectangle`, `Circle`, `Triangle`, `Sector` or
-`Polygon` — the region types of `contains`/`overlaps`, rounded by their `corner_radius` as when
-drawn. Guard-only: there is no bare clip to forget to undo. See [examples/clipping.mojo](examples/clipping.mojo).
+what is outside it (fog, a spotlight). `region` is any `Region` — a `Rectangle`, `Circle`,
+`Triangle`, `Sector` or `Polygon`, the region types of `contains`/`overlaps` — rounded by its own
+`corner_radius` as when drawn; a curve is rejected at compile time. Guard-only: there is no bare clip to forget to undo. See [examples/clipping.mojo](examples/clipping.mojo).
 - **Frozen at the call**, like a render call: placed by the transform and camera current then. A
   `transform` or `overlay` inside the block moves what is drawn, not the clip.
 - **Nested clips intersect.** On exit the enclosing clip is current again.
@@ -441,7 +456,8 @@ frame body returns. Headless runs ignore the window dials, like `rumble`.
 | `Gamepad` | `context.input.gamepad(i)`, a copy of player `i`'s pad (default 0). A pad takes the lowest free slot as it connects and keeps it until it disconnects; an empty slot reads `connected` False and all zero, so no check is needed first. Sticks are `Vector2D`s, **y up**, inside the unit circle, with a rescaled radial dead zone (`Gamepad.STICK_DEAD_ZONE`, 0.2) so a resting stick reads exactly zero; triggers 0..1. Face buttons are positional (`GamepadButton.SOUTH` is Xbox A and PlayStation Cross). `connected_this_frame`/`disconnected_this_frame` are the edges of `connected`, and `name` survives the frame a pad leaves in. `context.rumble(seconds, low_frequency=, high_frequency=, player=)` shakes a pad (both motors full by default; a new rumble replaces the running one); it is an output, so it lives on `Context`, not on the `Gamepad` copy. See [examples/gamepad.mojo](examples/gamepad.mojo) |
 | Typed / `text` | Text entry. `key_typed` is pressed or auto-repeated while held, for editing keys (Backspace, arrows); `context.input.text` is this frame's typed characters, UTF-8, with shift, layout and IME applied — append it, don't rebuild it from keycodes. Both reset every frame. `EditableText` does the editing: fed `context.input` each frame, it keeps `text` and a caret, whole characters at a time; `canvas.text_width(field.before_caret())` places the caret. See [examples/typing.mojo](examples/typing.mojo) |
 | `overlaps` / `intersects` / `contains` | `overlaps(a, b)`: free, symmetric, regions only (`Rectangle`/`Circle`/`Triangle`/`Sector`/`Polygon`). `curve.intersects(x)`: `Line` and `Arc` only, since a curve has no interior. `region.contains(x)`: asymmetric, every region against every region and `Line`. A `Line` or `Arc` is never a region. All three see a shape's `corner_radius` |
-| `corner_radius` | Rounding is geometry, not style: a keyword-only field of `Rectangle`, `Triangle`, `Polygon` and `Sector` (`Rectangle(p, w, h, corner_radius=8)`), and a keyword on the scalar canvas calls (`canvas.rectangle(p, w, h, corner_radius=8)`). Clamped as drawn: a rectangle to half its shorter side, a triangle's one radius so no corner overruns half an edge; a polygon's and a sector's corners each on their own, a concave corner filling its notch. Every `contains`/`overlaps`/`intersects`/`closest_point`/`area` sees it: rectangles and triangles exactly, polygons and sectors through their outline with each curve flattened (within ~0.1% of the radius). A rounded polygon or sector draws as a polygon of more vertices, so it costs more outlined (see `Polygon`) |
+| `Drawable` / `DrawTarget` / `Region` | `Drawable` is what `canvas.draw` takes: every shape and curve, or a program's own type that draws its parts (`draw_to[T: DrawTarget](self, mut target: T)`). `DrawTarget` is where it draws: `Canvas`, through one `_`-named primitive per kind and the provided `draw`. `Region` marks the five shapes with an inside, which `canvas.clip` takes; `Line`, `Arc`, `Bezier` and `Spline` aren't regions |
+| `corner_radius` | A keyword-only field of `Rectangle`, `Triangle`, `Polygon` and `Sector` (`Rectangle(p, w, h, corner_radius=8)`): a shape value is drawn and clipped by its own radius, whatever the style says. The scalar canvas calls (`rectangle`, `triangle`, `polygon`, `sector`) take a `corner_radius=` keyword, and without one use the style's: `canvas.corner_radius(r)`, `Style(corner_radius=)`, `canvas.style(corner_radius=)`. A named keyword beats the style, `corner_radius=0` included. Clamped as drawn: a rectangle to half its shorter side, a triangle's one radius so no corner overruns half an edge; a polygon's and a sector's corners each on their own, a concave corner filling its notch. Every `contains`/`overlaps`/`intersects`/`closest_point`/`area` sees it: rectangles and triangles exactly, polygons and sectors through their outline with each curve flattened (within ~0.1% of the radius). A rounded polygon or sector draws as a polygon of more vertices, so it costs more outlined (see `Polygon`) |
 | Sweep | `Arc` and `Sector` share `position` (the circle's centre), `r`, `start_angle` and a **signed** `sweep_angle`, in radians from +x: positive is counter-clockwise (y is up), negative clockwise, and \|sweep\| ≥ tau is the whole circle. Stored as given, so `==` and printing round-trip; `end_angle()` is `start_angle + sweep_angle` |
 | `Arc` | A curve, like `Line`: no interior, never in `overlaps`. Constant speed, so `at_distance(d)` is exact. `beziers()` splits it into Béziers of at most 45°; `canvas.arc` strokes those as one chain, like `canvas.spline` |
 | `Sector` | A pie slice, a region: its tip at `position`, fanned out to its arc. Wider than a half turn it is not convex — the missing wedge is outside it, for `contains` and `overlaps` alike. `center()` is `position`, like `Circle`'s, not the centroid. `canvas.sector` insets its outline as a circle's; no inset shadow. `corner_radius` rounds the tip and both ends of the arc, the ends tangent to the arc from inside; past a half turn the tip is concave and its rounding fills the notch, at exactly a half turn it runs straight and stays, and a whole disc has no corners |
