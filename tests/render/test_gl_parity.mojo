@@ -48,7 +48,7 @@ from create.core._step import step
 from create.render.render_backend import RenderBackend
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
-from create.render.canvas import PersistentCanvasState
+from create.render.canvas import _PersistentCanvasState
 from create._window import GLWindow
 from create.math.matrix import rotate
 
@@ -1102,7 +1102,7 @@ def _assert_interior_colour_matches(
 
 
 def _create(
-    mut context: Context, mut state: PersistentCanvasState, shape: Int
+    mut context: Context, mut state: _PersistentCanvasState, shape: Int
 ) raises -> _Parity:
     """`_Parity.create` with the extra `shape` argument, then the mapping.
 
@@ -1123,7 +1123,7 @@ def _cpu_frame(shape: Int) raises -> MemorySurface:
     which command it records this frame. Otherwise identical to it.
     """
     var mem = MemorySurface(_PIXEL_W, _PIXEL_H)
-    var state = PersistentCanvasState()
+    var state = _PersistentCanvasState()
     var context = Context()
     var program = _create(context, state, shape)
     context.time._start(0)
@@ -1146,7 +1146,7 @@ def _gpu_frame(mut win: GLWindow, shape: Int) raises -> List[UInt8]:
     """
     var target = _GLTarget(GL(), _PIXEL_W, _PIXEL_H)
 
-    var state = PersistentCanvasState(RenderBackend.GPU)
+    var state = _PersistentCanvasState(RenderBackend.GPU)
     var context = Context()
     var program = _create(context, state, shape)
     context.time._start(0)

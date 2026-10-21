@@ -1,4 +1,4 @@
-from create.render.canvas import PersistentCanvasState
+from create.render.canvas import _PersistentCanvasState
 from create.core.context import Context
 from create.render.antialiasing import Antialiasing
 from create.render.autoscale import AutoScale
@@ -64,7 +64,7 @@ def run_headless[
     var pw = pixel_width if pixel_width > 0 else width
     var ph = pixel_height if pixel_height > 0 else height
     var mem = MemorySurface(pw, ph)
-    var state = PersistentCanvasState()
+    var state = _PersistentCanvasState()
     state._backend.antialiasing = antialiasing
     var context = Context()
     context.design_size(width, height)

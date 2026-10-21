@@ -7,7 +7,6 @@ from .style import Style
 from .camera import Camera
 from .canvas import (
     Canvas,
-    PersistentCanvasState,
     StyleGuard as StyleGuard,
     TransformGuard as TransformGuard,
     OverlayGuard as OverlayGuard,

@@ -2,7 +2,7 @@ from create._window.window import Window
 from create.render.antialiasing import Antialiasing
 from create.render.autoscale import AutoScale
 from create.render.render_backend import RenderBackend
-from create.render.canvas import PersistentCanvasState
+from create.render.canvas import _PersistentCanvasState
 from create.core.context import Context
 from ._events import apply_events
 from ._step import first_step, step
@@ -19,13 +19,13 @@ from ._run_gl import run_gl
 
 
 def _update_dimensions(
-    mut win: Window, mut state: PersistentCanvasState, context: Context
+    mut win: Window, mut state: _PersistentCanvasState, context: Context
 ) raises:
     context._set_viewport(state, win.width(), win.height())
 
 
 def _wait_for_dimensions(
-    mut win: Window, mut state: PersistentCanvasState, context: Context
+    mut win: Window, mut state: _PersistentCanvasState, context: Context
 ) raises:
     # For fullscreen, SDL fires a bogus (1, 1) Resized before reporting real
     # dimensions — pump events until the window reports a usable size.
@@ -37,14 +37,14 @@ def _wait_for_dimensions(
 
 def _process_events(
     mut win: Window,
-    state: PersistentCanvasState,
+    state: _PersistentCanvasState,
     mut context: Context,
 ) raises:
     if apply_events(win.events(), state._view, context):
         win.close()
 
 
-def _present(mut win: Window, mut state: PersistentCanvasState) raises:
+def _present(mut win: Window, mut state: _PersistentCanvasState) raises:
     var pixel_w = win.width()
     var pixel_h = win.height()
     state._backend.present(
@@ -58,7 +58,7 @@ def _run_loop[
 ](
     mut program: P,
     mut win: Window,
-    var state: PersistentCanvasState,
+    var state: _PersistentCanvasState,
     mut context: Context,
     var applied: _AppliedWindow,
 ) raises:
@@ -167,7 +167,7 @@ def run[
     # Style and loaded fonts live here rather than in the Canvas, which is
     # rebuilt every frame; the transform stack deliberately does not, so each
     # frame starts unrotated and untranslated.
-    var state = PersistentCanvasState()
+    var state = _PersistentCanvasState()
     state._backend.antialiasing = antialiasing
     # The size the program is authored against is always what the caller asked
     # for, never what the display handed back. In fullscreen SDL ignores the

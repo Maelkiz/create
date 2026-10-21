@@ -28,6 +28,7 @@ from create.math.geometry import (
 )
 from create.math.matrix import rotate, scale, translate
 from create.math.point2d import Point2D
+from create.render.canvas import _PersistentCanvasState
 
 
 @fieldwise_init
@@ -2580,7 +2581,7 @@ def test_both_captures_can_be_pending_in_one_frame() raises -> None:
 
 def _fresh_canvas() raises -> Canvas:
     var context = Context()
-    var state = PersistentCanvasState()
+    var state = _PersistentCanvasState()
     context._set_viewport(state, 100, 100)
     return context._new_canvas(state^)
 

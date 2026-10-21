@@ -10,7 +10,7 @@ from std.testing import TestSuite, assert_equal, assert_false, assert_true
 
 from create import *
 from create.core.headless import run_headless
-from create.render.canvas import PersistentCanvasState
+from create.render.canvas import _PersistentCanvasState
 from create.render.render_backend import RenderBackend
 
 comptime _GRAY = Color(200)
@@ -19,7 +19,7 @@ comptime _GRAY = Color(200)
 def _canvas(
     mut context: Context, pixel_w: Int = 200, pixel_h: Int = 100
 ) raises -> Canvas:
-    var state = PersistentCanvasState()
+    var state = _PersistentCanvasState()
     context.design_size(200, 100)
     context._set_viewport(state, pixel_w, pixel_h)
     return context._new_canvas(state^)

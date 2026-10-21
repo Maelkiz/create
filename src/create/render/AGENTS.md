@@ -7,7 +7,7 @@ and the layering rules.
 
 | File | Role |
 |---|---|
-| `canvas.mojo` | `Canvas` (records commands, touches no pixels), `PersistentCanvasState`, the guards |
+| `canvas.mojo` | `Canvas` (records commands, touches no pixels), `_PersistentCanvasState`, the guards |
 | `_command.mojo` | `RenderCommand` and its kind constants; `_fill_box`, the box a fill gradient spans |
 | `_backend.mojo` | `Backend` — the text renderer, interned images; replays commands via `present` (CPU) or `present_gpu` |
 | `_raster.mojo` | CPU rasteriser over a `Surface`; called only from `_backend.mojo` |
@@ -45,7 +45,7 @@ use `RenderCommand.points` instead, a `List` that stays empty (and unallocated) 
 
 `Canvas` holds no `Surface` and takes its geometry from the `Viewport` alone — don't add a `Surface`
 field or parameter, and don't import `_window` from `canvas.mojo`. What survives the frame boundary:
-`PersistentCanvasState` (the `Backend` and `Viewport` — moved in and back out by `_release` — and
+`_PersistentCanvasState` (the `Backend` and `Viewport` — moved in and back out by `_release` — and
 the frame-wide settings a program sets on the canvas: `autoclear`, `letterbox_color`, and through
 the backend `antialiasing`) and `Context` (in `core`, owned by the loop, home to
 `time` and `input`; its mapping dials reach `Canvas` as plain values through `_set_viewport`). The

@@ -1,6 +1,6 @@
 """What a `Canvas` carries across the frame boundary, and what it must not.
 
-A `Canvas` is rebuilt every frame from a `PersistentCanvasState` and the
+A `Canvas` is rebuilt every frame from a `_PersistentCanvasState` and the
 program's `Context`, so each field is either read-only for the program,
 written back by `_release`, or dropped. The dials themselves outlive the
 frame in `Context`, which the loop reads at frame construction — so a dial
@@ -16,13 +16,13 @@ from std.testing import (
 )
 
 from create import *
-from create.render.canvas import Canvas, PersistentCanvasState
+from create.render.canvas import Canvas, _PersistentCanvasState
 
 
 def _state(
     context: Context, pixel_w: Int, pixel_h: Int
-) raises -> PersistentCanvasState:
-    var state = PersistentCanvasState()
+) raises -> _PersistentCanvasState:
+    var state = _PersistentCanvasState()
     context._set_viewport(state, pixel_w, pixel_h)
     return state^
 

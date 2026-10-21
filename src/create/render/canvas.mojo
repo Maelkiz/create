@@ -67,7 +67,7 @@ from create.math._fillet import (
 comptime _AUTOCLEAR_COLOR = Color(200)
 
 
-struct PersistentCanvasState(Movable):
+struct _PersistentCanvasState(Movable):
     """The part of a `Canvas` that outlives the frame it was rendered in.
 
     A `Canvas` is built fresh each frame, so anything it must remember between
@@ -250,7 +250,7 @@ struct Canvas(Movable):
 
     The canvas the loop hands to `create` and `update` is built fresh each
     frame and dropped before the frame is presented. The machinery that must
-    survive the frame goes in and out through `PersistentCanvasState`.
+    survive the frame goes in and out through `_PersistentCanvasState`.
 
     `Canvas(width, height)` builds an *offscreen* canvas instead: a program's
     own, drawn into with the same calls and read back with `pixel` and
@@ -289,7 +289,7 @@ struct Canvas(Movable):
     var height: Int
     var scale: Float64
     var _view: Viewport
-    var _state: PersistentCanvasState
+    var _state: _PersistentCanvasState
     # Style is per-frame, not carried in `_state`: carrying one across would
     # only preserve a forgotten setting. A reusable style is a `Style` field.
     var _style: Style
@@ -310,9 +310,10 @@ struct Canvas(Movable):
     var _transform_inv: Matrix[3, 3]
     var _transform_stack: List[Matrix[3, 3]]
 
-    def __init__(out self, var state: PersistentCanvasState):
+    def __init__(out self, *, var _state: _PersistentCanvasState):
         """Adopt the carried-over state and this frame's mapping, and open
         the frame with a clear unless `autoclear` is off."""
+        var state = _state^
         self._view = state._view
         self.width = state._view.width
         self.height = state._view.height
@@ -367,18 +368,18 @@ struct Canvas(Movable):
             )
         var pixel_w = Int(Float64(width) * scale + 0.5)
         var pixel_h = Int(Float64(height) * scale + 0.5)
-        var state = PersistentCanvasState(RenderBackend.CPU)
+        var state = _PersistentCanvasState(RenderBackend.CPU)
         state.autoclear = False
         state._backend.antialiasing = antialiasing
         state._set_viewport(AutoScale.FIT, width, height, pixel_w, pixel_h)
         state._backend.target = MemorySurface(pixel_w, pixel_h)
-        self = Canvas(state^)
+        self = Canvas(_state=state^)
 
     def _offscreen(self) -> Bool:
         """Whether this is a program's own canvas rather than a frame's."""
         return Bool(self._state._backend.target)
 
-    def _release(deinit self) -> PersistentCanvasState:
+    def _release(deinit self) -> _PersistentCanvasState:
         """Hand back the state the next frame's `Canvas` should start from.
 
         Consumes the canvas, so the recording is complete before the loop

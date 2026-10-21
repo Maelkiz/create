@@ -1,5 +1,5 @@
 from create.render.autoscale import AutoScale
-from create.render.canvas import Canvas, PersistentCanvasState
+from create.render.canvas import Canvas, _PersistentCanvasState
 
 from .time import Time
 from .window_mode import WindowMode
@@ -197,7 +197,7 @@ struct Context(Copyable, Movable):
         self._max_frame_rate = fps
 
     def _set_viewport(
-        self, mut state: PersistentCanvasState, pixel_w: Int, pixel_h: Int
+        self, mut state: _PersistentCanvasState, pixel_w: Int, pixel_h: Int
     ):
         """Remap `state` onto a framebuffer of this size under the design
         size and autoscale dials, at the top of a frame."""
@@ -205,9 +205,9 @@ struct Context(Copyable, Movable):
             self._autoscale, self._design_w, self._design_h, pixel_w, pixel_h
         )
 
-    def _new_canvas(self, var state: PersistentCanvasState) -> Canvas:
+    def _new_canvas(self, var state: _PersistentCanvasState) -> Canvas:
         """Build this frame's `Canvas` from the carried-over state."""
-        return Canvas(state^)
+        return Canvas(_state=state^)
 
     def _advance_frame(mut self, now: Int):
         """Tick the clock and count the frame, before each `update`."""
