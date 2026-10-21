@@ -165,7 +165,7 @@ def test_zero_width_gives_no_quads() raises -> None:
     assert_equal(len(stroke_quads(points, 0.0)), 0)
 
 
-def _stroked(thickness: Int) -> Style:
+def _stroked(thickness: Float64) -> Style:
     var s = Style()
     s.outline_thickness = thickness
     return s^

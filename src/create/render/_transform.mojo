@@ -88,6 +88,6 @@ def outline_thickness_px(
 ) -> Int:
     """Outline thickness in framebuffer pixels, never thinner than one."""
     return max(
-        Int(Float64(style.outline_thickness) * pixel_scale(m, fallback) + 0.5),
+        Int(style.outline_thickness * pixel_scale(m, fallback) + 0.5),
         1,
     )

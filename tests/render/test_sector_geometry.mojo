@@ -155,7 +155,7 @@ def _convex(corners: List[Point2D], i: Int) -> Bool:
     return not (positive and negative)
 
 
-def _outlined(thickness: Int) -> Style:
+def _outlined(thickness: Float64) -> Style:
     return Style(fill=Color.RED, outline_thickness=thickness)
 
 

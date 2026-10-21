@@ -2771,5 +2771,37 @@ def test_gradient_fills_render_through_every_overload() raises -> None:
     assert_true(m.pixel(75, 50) != Color.BLACK)
 
 
+def test_float_size_keywords_take_integer_literals() raises -> None:
+    """`thickness`, `font_size` and `opacity` are Float64 keywords that a
+    bare integer still reaches."""
+    var canvas = Canvas(10, 10)
+    canvas.outline(thickness=2)
+    assert_equal(canvas._style.outline_thickness, 2.0)
+    canvas.outline(Color.RED, 1.5)
+    assert_equal(canvas._style.outline_thickness, 1.5)
+    canvas.font_size(12.5)
+    assert_equal(canvas._style.font_size, 12.5)
+    with canvas.style(outline_thickness=3, font_size=20, opacity=1):
+        assert_equal(canvas._style.outline_thickness, 3.0)
+        assert_equal(canvas._style.font_size, 20.0)
+        assert_equal(canvas._style.opacity, 1.0)
+    assert_equal(canvas._style.outline_thickness, 1.5)
+
+
+def test_image_draws_at_a_fractional_size() raises -> None:
+    var canvas = Canvas(10, 10, antialiasing=Antialiasing.OFF)
+    var dot = Image.solid(1, 1, Color.RED)
+    canvas.image(dot, (0, 0), 2.5, 2.5)
+    assert_equal(canvas.pixel((0.0, 0.0)), Color.RED)
+    assert_equal(canvas.pixel((3.0, 0.0)), Color.TRANSPARENT)
+
+
+def test_image_still_takes_whole_unit_sizes() raises -> None:
+    var canvas = Canvas(10, 10, antialiasing=Antialiasing.OFF)
+    var dot = Image.solid(1, 1, Color.RED)
+    canvas.image(dot, (0, 0), canvas.width, canvas.height)
+    assert_equal(canvas.pixel((4.0, -4.0)), Color.RED)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

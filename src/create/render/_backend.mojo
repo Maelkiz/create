@@ -1638,7 +1638,7 @@ struct Backend(Movable):
             # gates.
             var minv = inverse(m)
             var b = device_bounds(m, lx0, ly0, lx1, ly1, s.width, s.height)
-            var sw_f = Float64(c.style.outline_thickness)
+            var sw_f = c.style.outline_thickness
             var step_x = minv[0, 0]
             var step_y = minv[1, 0]
             var inv_step_x = 1.0 / step_x if step_x != 0.0 else 0.0
@@ -1849,7 +1849,7 @@ struct Backend(Movable):
         var cy = c.geom[1]
         var r = c.geom[2]
         var r2 = r * r
-        var r_inner = r - Float64(c.style.outline_thickness)
+        var r_inner = r - c.style.outline_thickness
         var r_inner2 = r_inner * r_inner
 
         if uniform(m):

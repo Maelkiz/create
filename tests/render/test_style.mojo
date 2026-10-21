@@ -1,6 +1,8 @@
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
 from create import *
+from create.render._text import _pixel_size
+from create.render._transform import outline_thickness_px
 
 
 def test_default_style_matches_a_fresh_frame() raises -> None:
@@ -98,8 +100,8 @@ def test_style_writes_constructor_keywords() raises -> None:
         (
             "Style(fill=Color(255, 255, 255, 255), fill_gradient=None,"
             " fill_enabled=False, outline=Color(0, 0, 0, 255),"
-            " outline_thickness=1, outline_enabled=True,"
-            " text_color=Color(0, 0, 0, 255), font=None, font_size=16,"
+            " outline_thickness=1.0, outline_enabled=True,"
+            " text_color=Color(0, 0, 0, 255), font=None, font_size=16.0,"
             " font_weight=400, font_italic=False, text_align=Align.CENTER,"
             " tint=Color(255, 255, 255, 255), opacity=1.0,"
             " blend_mode=BlendMode.NORMAL, shadow=Color(0, 0, 0, 96),"
@@ -142,6 +144,31 @@ def test_fill_visibility_follows_the_gradient() raises -> None:
     )
     var clear = Gradient.linear(Color.TRANSPARENT, Color.TRANSPARENT)
     assert_false(Style(fill=Color.RED, fill_gradient=clear)._fill_visible())
+
+
+def test_fractional_sizes_are_kept_as_given() raises -> None:
+    var s = Style(outline_thickness=1.5, font_size=13.5)
+    assert_equal(s.outline_thickness, 1.5)
+    assert_equal(s.font_size, 13.5)
+
+
+def test_integer_literals_still_reach_the_float_keywords() raises -> None:
+    var s = Style(outline_thickness=2, font_size=24)
+    assert_equal(s.outline_thickness, 2.0)
+    assert_equal(s.font_size, 24.0)
+    assert_true(
+        Style(outline_thickness=3, outline_enabled=False).outline_thickness
+        == 3.0
+    )
+
+
+def test_fractional_sizes_round_once_scaled() raises -> None:
+    """World-unit sizes become whole pixels only at the device: 1.5 units
+    at 2 pixels a unit is exactly 3 pixels."""
+    var s = Style(outline_thickness=1.5, font_size=13.5)
+    assert_equal(outline_thickness_px(s, scale(2.0), 2.0), 3)
+    assert_equal(outline_thickness_px(s, scale(1.0), 1.0), 2)
+    assert_equal(_pixel_size(s, 2.0), 27)
 
 
 def main() raises:

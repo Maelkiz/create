@@ -460,16 +460,16 @@ struct Canvas(Movable):
         fill_gradient: Optional[Gradient] = None,
         fill_enabled: Optional[Bool] = None,
         outline: Optional[Color] = None,
-        outline_thickness: Optional[Int] = None,
+        outline_thickness: Float64 = _KEEP,
         outline_enabled: Optional[Bool] = None,
         text_color: Optional[Color] = None,
         font: Optional[Font] = None,
-        font_size: Optional[Int] = None,
+        font_size: Float64 = _KEEP,
         font_weight: Optional[Int] = None,
         font_italic: Optional[Bool] = None,
         text_align: Optional[Align] = None,
         tint: Optional[Color] = None,
-        opacity: Optional[Float64] = None,
+        opacity: Float64 = _KEEP,
         blend_mode: Optional[BlendMode] = None,
         shadow: Optional[Color] = None,
         shadow_offset: Optional[Vector2D] = None,
@@ -501,7 +501,7 @@ struct Canvas(Movable):
         # paints and the colour is kept.
         if fill_gradient:
             self.fill(fill_gradient.value())
-        if outline or outline_thickness:
+        if outline or not isnan(outline_thickness):
             self.outline(outline, outline_thickness)
         # After the colors, which switch fill and outline on: an explicit
         # `*_enabled=False` beside a color wins.
@@ -513,8 +513,8 @@ struct Canvas(Movable):
             self.text_color(text_color.value())
         if font:
             self.font(font.value())
-        if font_size:
-            self.font_size(font_size.value())
+        if not isnan(font_size):
+            self.font_size(font_size)
         if font_weight:
             self.font_weight(font_weight.value())
         if font_italic:
@@ -523,8 +523,8 @@ struct Canvas(Movable):
             self.text_align(text_align.value())
         if tint:
             self.tint(tint.value())
-        if opacity:
-            self.opacity(opacity.value())
+        if not isnan(opacity):
+            self.opacity(opacity)
         if blend_mode:
             self.blend_mode(blend_mode.value())
         if (
@@ -749,7 +749,7 @@ struct Canvas(Movable):
     def outline(
         mut self,
         color: Optional[Color] = None,
-        thickness: Optional[Int] = None,
+        thickness: Float64 = _KEEP,
     ):
         """Outline shapes, switching the outline on if `outline_enabled(False)`
         had turned it off. `color`/`thickness` left unset keep their current
@@ -758,12 +758,13 @@ struct Canvas(Movable):
         one nobody asked for.
 
         Thickness is in world units, scaled by autoscale like every other
-        coordinate, and never rendered thinner than one pixel.
+        coordinate, and never rendered thinner than one pixel; a fractional
+        one (`thickness=1.5`) rounds to whole pixels once scaled.
         """
         if color:
             self._style.outline_color = color.value()
-        if thickness:
-            self._style.outline_thickness = thickness.value()
+        if not isnan(thickness):
+            self._style.outline_thickness = thickness
         self._style.outline_enabled = True
 
     def fill_enabled(mut self, enabled: Bool):
@@ -1405,9 +1406,11 @@ struct Canvas(Movable):
         they used to differ by now lives inside `blit_image`, where the replay
         can take it without the record site having to know.
         """
-        self.image(image, position, image.width, image.height)
+        self.image(image, position, Float64(image.width), Float64(image.height))
 
-    def image(mut self, image: Image, position: Point2D, w: Int, h: Int):
+    def image(
+        mut self, image: Image, position: Point2D, w: Float64, h: Float64
+    ):
         # The image is interned *now*, not at replay: the command then carries
         # an id rather than a borrow of the program's pixels, which is what
         # keeps caller-owned memory out of a buffer that outlives the call.
@@ -1420,8 +1423,8 @@ struct Canvas(Movable):
                 self._style,
                 position.x,
                 position.y,
-                Float64(w),
-                Float64(h),
+                w,
+                h,
                 id,
                 image.width,
                 image.height,
@@ -1432,10 +1435,19 @@ struct Canvas(Movable):
         """Render the animator's current frame, centred at `position`."""
         self.image(animator.animation.frame(animator.frame_index), position)
 
-    def image(mut self, animator: Animator, position: Point2D, w: Int, h: Int):
+    def image(
+        mut self, animator: Animator, position: Point2D, w: Float64, h: Float64
+    ):
         self.image(
             animator.animation.frame(animator.frame_index), position, w, h
         )
+
+    def image(mut self, image: Image, position: Point2D, w: Int, h: Int):
+        """Whole-unit sizes, such as `canvas.width` and `canvas.height`."""
+        self.image(image, position, Float64(w), Float64(h))
+
+    def image(mut self, animator: Animator, position: Point2D, w: Int, h: Int):
+        self.image(animator, position, Float64(w), Float64(h))
 
     def text_color(mut self, color: Color):
         """Paint glyphs in `color`. Separate from `fill`, so a shape colour and
@@ -1443,8 +1455,10 @@ struct Canvas(Movable):
         skips the text entirely."""
         self._style.text_color = color
 
-    def font_size(mut self, size: Int):
-        """Text height in world units, scaled by autoscale like a coordinate."""
+    def font_size(mut self, size: Float64):
+        """Text height in world units, scaled by autoscale like a coordinate.
+        Glyphs are rasterised at whole pixel sizes, so a fractional size rounds
+        once scaled."""
         self._style.font_size = size
 
     def font_weight(mut self, weight: Int):

@@ -227,7 +227,7 @@ def _check_circle_matches_brute_force(
     r: Float64,
     fill_enabled: Bool,
     outline_enabled: Bool,
-    outline_thickness: Int,
+    outline_thickness: Float64,
 ) raises -> None:
     var m = _base()
     var st = Style()
@@ -315,7 +315,7 @@ def _s_curve() -> Bezier:
     return Bezier((-40.0, -30.0), (-40.0, 60.0), (40.0, -60.0), (40.0, 30.0))
 
 
-def _stroke(color: Color, thickness: Int) -> Style:
+def _stroke(color: Color, thickness: Float64) -> Style:
     var st = Style()
     st.outline_enabled = True
     st.outline_color = color

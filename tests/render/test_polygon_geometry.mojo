@@ -184,7 +184,7 @@ def _assert_tiles(
                 )
 
 
-def _outlined(thickness: Int) -> Style:
+def _outlined(thickness: Float64) -> Style:
     return Style(fill=Color.RED, outline_thickness=thickness)
 
 
