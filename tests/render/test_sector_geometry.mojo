@@ -1,7 +1,7 @@
 from std.math import pi, sqrt, tau
 from std.testing import TestSuite, assert_equal, assert_true
 
-from create.math.geometry import Line, Sector
+from create.geometry.geometry import Line, Sector
 from create.math.matrix import (
     Matrix,
     _apply as mat_apply,

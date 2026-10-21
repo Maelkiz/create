@@ -1,7 +1,7 @@
 from create.color.color import Color, _tinted
 from create.color.gradient import Gradient
 from .style import Style
-from create.math.bezier import Bezier
+from create.geometry.bezier import Bezier
 from create.math.matrix import Matrix, identity
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D

@@ -55,8 +55,8 @@ from create.render._viewport import Viewport
 from create.render._curve import bezier_device_points, stroke_quads
 from create.render._sector import sector_quads
 from create.render._polygon import polygon_quads
-from create.math.bezier import Bezier
-from create.math.geometry import Polygon
+from create.geometry.bezier import Bezier
+from create.geometry.geometry import Polygon
 
 comptime _FLOATS = 13
 """Mirrors `_tessellate._VERTEX_FLOATS`; spelled out so a change to the vertex

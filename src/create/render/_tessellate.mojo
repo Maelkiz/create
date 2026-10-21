@@ -35,7 +35,7 @@ from ._sector import sector_quads
 from ._polygon import polygon_quads
 from ._triangle import triangle_pieces
 from ._image_mapping import image_corners, upright, upright_rect
-from create.math._fillet import (
+from create.geometry._fillet import (
     corner_fillet,
     rect_corner_radius,
     triangle_corner_radius,

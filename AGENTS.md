@@ -22,12 +22,13 @@ it makes the library better.
 
 | Module | Path | Responsibility |
 |---|---|---|
-| root | `src/create/__init__.mojo` | The preamble: star-imports all nine subpackages below |
+| root | `src/create/__init__.mojo` | The preamble: star-imports all ten subpackages below |
 | `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path`, `DateTime` |
 | `input` | `src/create/input/` | `Input` (keyboard, mouse, gamepads, typed text), `Key`, `MouseButton`, `Gamepad`, `GamepadButton`, `EditableText` |
 | `render` | `src/create/render/` | `Canvas`, `Camera`, `Antialiasing`, style, text layout, the command buffer, both backends (CPU rasteriser, GL 3.3) |
 | `color` | `src/create/color/` | `Color`, `Gradient` (with the ramp and dither both backends share), `BlendMode` |
-| `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, geometry shapes (`Rectangle`, `Circle`, `Triangle`, `Sector`, `Polygon`, `Line`, `Arc`), `Bezier`, `Spline`, `Random`, `Noise`, easing and `Tween`, util functions |
+| `math` | `src/create/math/` | `Point2D`, `Vector2D`/`Vector3D`, `Matrix`, `Random`, `Noise`, easing and `Tween`, util functions |
+| `geometry` | `src/create/geometry/` | The shapes (`Rectangle`, `Circle`, `Triangle`, `Sector`, `Polygon`, `Line`, `Arc`), `Bezier`, `Spline`, `overlaps`/`contains`/`intersects`, corner rounding's maths |
 | `image` | `src/create/image/` | `Image` (BMP/PNG/JPEG), `PixelBuffer`, `Animation`, `Animator` |
 | `text` | `src/create/text/` | `Font` (FreeType faces, glyph rasterisation), `FontWeight`, the packaged Noto faces |
 | `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |
@@ -152,9 +153,9 @@ printable.
 ### Imports and public surface
 
 A program writes `from create import *`. Otherwise import by name from the owning package
-(`from create.math import overlaps`); a single subpackage star is not a preamble.
+(`from create.geometry import overlaps`); a single subpackage star is not a preamble.
 
-- The root has no names of its own — it star-imports the nine subpackages. Never add a name there;
+- The root has no names of its own — it star-imports the ten subpackages. Never add a name there;
   add it to the owning subpackage.
 - A subpackage exports only what it owns, never a lower layer's symbol.
 - Public surface is exactly what an `__init__.mojo` lists. A new declaration is internal unless it is
@@ -166,11 +167,13 @@ A program writes `from create import *`. Otherwise import by name from the ownin
 
 ### Layering
 
-- **`render` never imports `core`** (it would be a cycle). `render` depends only on `math`, `color`,
-  `image`, `text`, `_bytes` and `_library`, so it works without a run loop. So the mapping dials reach `render` as
+- **`render` never imports `core`** (it would be a cycle). `render` depends only on `math`, `geometry`,
+  `color`, `image`, `text`, `_bytes` and `_library`, so it works without a run loop. So the mapping dials reach `render` as
   plain values: `context._set_viewport(state, …)` in `core` passes the design size and autoscale
   in, and `context._new_canvas(state^)` builds the frame. Frame-wide drawing settings live on
   `_PersistentCanvasState` itself.
+- **`geometry`** depends only on `math`, so collision code (`overlaps`, `contains`) never sees
+  `render`; `render` imports it.
 - **`color`** depends only on `math`; `image` and `render` both import it. It sits below `image` so
   that `Image.pixel` can return a `Color` without a `render`↔`image` cycle.
 - **`data`** imports nothing from `create`: files through the stdlib's `open()`, numbers through

@@ -29,7 +29,7 @@ and the layering rules.
 | `_gl_target.mojo` | Offscreen FBO of an exact size, for the parity test and headless GPU |
 
 Corner rounding's maths (the clamps, `corner_fillet`, `rounded_vertices`, `rounded_sector_vertices`)
-lives in `create/math/_fillet.mojo`, so the geometry's `contains`/`overlaps` and both replays agree
+lives in `create/geometry/_fillet.mojo`, so the geometry's `contains`/`overlaps` and both replays agree
 on it.
 
 ## Canvas, commands and backends

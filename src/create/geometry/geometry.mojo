@@ -20,8 +20,8 @@ from ._fillet import (
     triangle_corner_radius,
 )
 from .bezier import Bezier
-from .point2d import Point2D
-from .vector2d import Vector2D
+from create.math import Point2D
+from create.math import Vector2D
 
 comptime _ANGLE_EPSILON = 1e-12
 """How far, in radians, a direction may fall outside a sweep and still count

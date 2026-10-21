@@ -13,7 +13,7 @@ from std.math import (
     tau,
 )
 
-from .point2d import Point2D
+from create.math import Point2D
 
 
 def rect_corner_radius(radius: Float64, w: Float64, h: Float64) -> Float64:

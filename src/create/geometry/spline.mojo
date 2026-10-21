@@ -1,8 +1,8 @@
 from std.math import max, min, pow
 from .bezier import Bezier
 from .geometry import Rectangle
-from .point2d import Point2D
-from .vector2d import Vector2D
+from create.math import Point2D
+from create.math import Vector2D
 
 
 struct Spline(Copyable, Equatable, Movable, Writable):

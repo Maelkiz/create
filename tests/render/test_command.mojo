@@ -25,7 +25,7 @@ from create.render._command import (
     bezier_command,
     bezier_chain_command,
 )
-from create.math.bezier import Bezier
+from create.geometry.bezier import Bezier
 from create.math.point2d import Point2D
 from create.math.matrix import identity, translate, rotate
 

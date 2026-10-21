@@ -5,7 +5,7 @@ from std.testing import (
     assert_almost_equal,
 )
 
-from create.math.bezier import Bezier
+from create.geometry.bezier import Bezier
 from create.math.matrix import identity, scale, translate
 from create.math.point2d import Point2D
 from create.color.color import Color

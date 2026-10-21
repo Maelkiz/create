@@ -1,6 +1,6 @@
 from std.testing import TestSuite, assert_almost_equal, assert_true
 
-from create.math._fillet import (
+from create.geometry._fillet import (
     _vertex_max_radius,
     corner_fillet,
     rect_corner_radius,

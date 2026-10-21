@@ -11,9 +11,9 @@ from create.text.font import Font, FontWeight
 from ._surface import MemorySurface
 from ._viewport import Viewport
 from .camera import Camera
-from create.math.bezier import Bezier
-from create.math.spline import Spline
-from create.math.geometry import (
+from create.geometry.bezier import Bezier
+from create.geometry.spline import Spline
+from create.geometry.geometry import (
     Arc,
     Circle,
     Line,
@@ -57,7 +57,7 @@ from ._clip import clip_style
 from ._command import RenderCommand
 from ._transform import pixel_scale
 from ._tessellate import circle_segments
-from create.math._fillet import (
+from create.geometry._fillet import (
     rounded_sector_vertices,
     rounded_vertices,
     sector_corner_radii,
