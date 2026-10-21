@@ -47,7 +47,7 @@ struct Animation(Copyable, ImplicitlyCopyable, Movable):
 
     def _is(self, other: Animation) -> Bool:
         """Whether both are copies of one animation, sharing its frames."""
-        return self._frames.unsafe_ptr() == other._frames.unsafe_ptr()
+        return self._frames.ptr() == other._frames.ptr()
 
     def frame_duration(self) -> Float64:
         """Seconds each frame is held."""
