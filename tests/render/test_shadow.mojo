@@ -7,7 +7,14 @@ from std.testing import (
     assert_true,
 )
 
-from create.math.matrix import Matrix, apply, identity, rotate, scale, translate
+from create.math.matrix import (
+    Matrix,
+    _apply as apply,
+    identity,
+    rotate,
+    scale,
+    translate,
+)
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 from create.math.bezier import Bezier

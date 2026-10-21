@@ -6,7 +6,7 @@ from std.testing import (
 )
 from create.render.autoscale import AutoScale
 from create.render._viewport import Viewport
-from create.math.matrix import apply
+from create.math.matrix import _apply as apply
 
 
 def _design(w: Int, h: Int, mode: AutoScale) raises -> Viewport:

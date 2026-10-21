@@ -36,7 +36,7 @@ translucent one is a full-drawable quad in the batch, which blends, and an
 from std.collections import Dict, Optional
 from std.memory import unsafe_memcpy
 
-from create.math.matrix import apply as mat_apply
+from create.math.matrix import _apply as mat_apply
 
 from ._command import (
     CMD_BEZIER,

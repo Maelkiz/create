@@ -11,7 +11,7 @@ on which path an image takes and where it lands.
 
 from std.math import ceil, floor, max, min
 
-from create.math.matrix import Matrix, apply as mat_apply, inverse
+from create.math.matrix import Matrix, _apply as mat_apply, inverse
 from create.math.point2d import Point2D
 
 
