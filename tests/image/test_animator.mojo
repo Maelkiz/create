@@ -1,11 +1,12 @@
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 from create.image import Image, Animation, Animator
+from create.color import Color
 
 
 def _animation(count: Int, fps: Float64 = 10.0) raises -> Animation:
     var frames = List[Image]()
     for i in range(count):
-        frames.append(Image.solid(1, 1, UInt8(i), 0, 0))
+        frames.append(Image.solid(1, 1, Color(UInt8(i), 0, 0)))
     return Animation(frames^, fps)
 
 

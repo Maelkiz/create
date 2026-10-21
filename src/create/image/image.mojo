@@ -106,22 +106,16 @@ struct Image(Copyable, Movable):
         self._id = _next_image_id()
 
     @staticmethod
-    def solid(
-        width: Int,
-        height: Int,
-        r: UInt8,
-        g: UInt8,
-        b: UInt8,
-        a: UInt8 = 255,
-    ) raises -> Image:
+    def solid(width: Int, height: Int, color: Color) raises -> Image:
+        """A `width` x `height` image every pixel of which is `color`."""
         var buffer = PixelBuffer(width, height)
         var ptr = buffer._data.unsafe_ptr()
         for i in range(width * height):
             var off = i * 4
-            ptr[unsafe_offset=off] = r
-            ptr[unsafe_offset=off + 1] = g
-            ptr[unsafe_offset=off + 2] = b
-            ptr[unsafe_offset=off + 3] = a
+            ptr[unsafe_offset=off] = color.r
+            ptr[unsafe_offset=off + 1] = color.g
+            ptr[unsafe_offset=off + 2] = color.b
+            ptr[unsafe_offset=off + 3] = color.a
         return Image(buffer^)
 
     @staticmethod

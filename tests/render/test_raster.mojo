@@ -306,7 +306,7 @@ def test_fill_triangle_matches_the_old_half_plane_test_within_one_pixel() raises
 
 
 def test_blit_image_one_to_one() raises -> None:
-    var sp = Image.solid(2, 2, 255, 0, 0)
+    var sp = Image.solid(2, 2, Color(255, 0, 0))
     var mem = MemorySurface(4, 4)
     blit_image(
         mem.surface(),
@@ -388,7 +388,7 @@ def test_blit_image_silhouette_paints_its_colour() raises -> None:
 
 
 def test_blit_image_multiplies_every_texel_by_the_tint() raises -> None:
-    var sp = Image.solid(1, 1, 200, 100, 255)
+    var sp = Image.solid(1, 1, Color(200, 100, 255))
     var mem = _filled(1, 1, Color(0, 0, 0, 255))
     blit_image(
         mem.surface(),
@@ -405,7 +405,7 @@ def test_blit_image_multiplies_every_texel_by_the_tint() raises -> None:
 
 
 def test_blit_image_clips_against_every_edge() raises -> None:
-    var sp = Image.solid(4, 4, 255, 255, 255)
+    var sp = Image.solid(4, 4, Color(255, 255, 255))
     var mem = MemorySurface(4, 4)
     # Anchored off the top-left: only the bottom-right quarter lands.
     blit_image(

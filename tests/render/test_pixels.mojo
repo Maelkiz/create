@@ -227,7 +227,7 @@ def test_an_image_drawn_every_frame_is_interned_once() raises -> None:
     var context = Context()
     var mem = MemorySurface(200, 100)
     var canvas = _canvas(context)
-    var image = Image.solid(10, 10, 255, 0, 0)
+    var image = Image.solid(10, 10, Color(255, 0, 0))
     for _ in range(3):
         canvas.image(image, (0, 0))
         canvas = _present(context, canvas^, mem)

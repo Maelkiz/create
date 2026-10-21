@@ -104,7 +104,7 @@ def _draw(mut canvas: Canvas, kind: Int) raises:
         canvas.font_size(40)
         canvas.text("WM", (0, 0))
     else:
-        canvas.image(Image.solid(30, 30, 255, 0, 0), (0, 0))
+        canvas.image(Image.solid(30, 30, Color(255, 0, 0)), (0, 0))
 
 
 @fieldwise_init
@@ -221,7 +221,7 @@ struct FadedImageShadow(Program):
         canvas.background(Color.BLACK)
         canvas.opacity(0.5)
         canvas.shadow(color=Color.GREEN, offset=Vector2D(40, 0), blur=0)
-        canvas.image(Image.solid(20, 20, 255, 0, 0), (0, 0))
+        canvas.image(Image.solid(20, 20, Color(255, 0, 0)), (0, 0))
 
 
 def test_opacity_fades_a_image_and_its_shadow_once_each() raises -> None:
@@ -246,7 +246,7 @@ struct TintedImageShadow(Program):
             color=Color(200, 200, 200), offset=Vector2D(40, 0), blur=0
         )
         with canvas.style(tint=Color(255, 128, 0)):
-            canvas.image(Image.solid(20, 20, 200, 100, 255), (0, 0))
+            canvas.image(Image.solid(20, 20, Color(200, 100, 255)), (0, 0))
 
 
 def test_tint_multiplies_an_image_and_its_shadow() raises -> None:
