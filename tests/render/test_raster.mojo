@@ -1,7 +1,8 @@
-from std.math import max, min
+from std.math import abs, max, min
 from std.testing import TestSuite, assert_equal, assert_true
 from create.color.color import Color
 from create.render._raster import (
+    blit_image_mapped,
     blend,
     blit_glyph,
     blit_image,
@@ -13,6 +14,8 @@ from create.render._raster import (
 )
 from create.text.font import _GlyphInfo
 from create.render._surface import MemorySurface, Surface
+from create.render._image_mapping import image_mapping
+from create.math.matrix import rotate, translate
 from create.image.image import Image
 from create.image.pixel_buffer import PixelBuffer
 
@@ -322,6 +325,49 @@ def test_blit_image_one_to_one() raises -> None:
     assert_equal(mem.pixel(2, 2), Color(255, 0, 0, 255))
     assert_equal(mem.pixel(0, 0).a, 0)
     assert_equal(mem.pixel(3, 3).a, 0)
+
+
+def _turned_blit(grid: Int) raises -> MemorySurface:
+    """A solid white 20x20 image turned half a radian, centred on a 40x40
+    transparent surface, its edges sampled on a `grid` x `grid` grid."""
+    var sp = Image.solid(2, 2, Color.WHITE)
+    var mem = MemorySurface(40, 40)
+    blit_image_mapped(
+        mem.surface(),
+        sp._pixels[].unsafe_ptr(),
+        sp.width,
+        sp.height,
+        image_mapping(
+            translate(20.0, 20.0) @ rotate(0.5), 0.0, 0.0, 20.0, 20.0, 2, 2
+        ),
+        grid=grid,
+    )
+    return mem^
+
+
+def test_a_turned_image_is_hard_edged_without_antialiasing() raises -> None:
+    var mem = _turned_blit(1)
+    for y in range(40):
+        for x in range(40):
+            var a = mem.pixel(x, y).a
+            assert_true(a == 0 or a == 255, "a partly covered pixel")
+
+
+def test_a_turned_image_antialiases_its_edge() raises -> None:
+    var mem = _turned_blit(4)
+    var partial = 0
+    var mass = 0
+    for y in range(40):
+        for x in range(40):
+            var a = Int(mem.pixel(x, y).a)
+            mass += a
+            if a != 0 and a != 255:
+                partial += 1
+    assert_true(partial > 40, "the edge isn't antialiased")
+    assert_equal(mem.pixel(20, 20), Color.WHITE)
+    # The covered area is the image's 400 pixels, within the grid's
+    # rounding along its 80-pixel rim.
+    assert_true(abs(mass - 400 * 255) < 80 * 255 // 4, "wrong coverage")
 
 
 def test_blit_image_downscales_by_nearest_neighbour() raises -> None:

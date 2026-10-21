@@ -252,8 +252,8 @@ single-sampled, so the level can change without recreating the GL context.
 `canvas.antialiasing`) applies to the CPU replay of the
 shape kinds — rect, circle, line, Bézier, sector, polygon, triangle — through `Backend._shape`.
 Clear, text, images, letterbox and blurred or inset shadows are untouched; a hard shadow is a
-shape command, so it is antialiased like one. So a rotated image's edge is hard on the CPU and
-multisampled on the GPU.
+shape command, so it is antialiased like one. An image that isn't upright has its edge
+antialiased on the same grid inside `blit_image_mapped` (see Images).
 
 - **Record at `grid`×.** `_shape` replays the command through the kind's own rasteriser
   (`_shape_pixels`) onto a recording surface `grid` times wider and taller, with `mat_scale(grid)`
@@ -414,7 +414,11 @@ An image follows the transform like every render call. Upright (`upright`: an ax
 either axis, unmirrored) it is a device rect, `upright_rect`, blitted row by row (`blit_image`);
 otherwise the CPU fills the mapped parallelogram's bounding box through the inverse mapping
 (`blit_image_mapped`, the texel coordinate stepped per column) and the GPU draws one quad through
-the four mapped corners. The CPU samples nearest-neighbour and the GPU linearly, so parity
+the four mapped corners, multisampled. On the CPU a pixel whose footprint (stepped like the texel
+coordinate) lies inside the image is painted whole; one on the edge counts its `grid`×`grid`
+sample centres inside, as a shape's edge does, and scales the centre's texel alpha by that share.
+A blurred shadow's mask (`image_shadow_mask`) samples centres only, on both backends, so they
+blur the same mask. The CPU samples texels nearest-neighbour and the GPU linearly, so parity
 holds inside a solid image and its rim may differ.
 
 ## CPU rasteriser

@@ -2101,6 +2101,7 @@ struct Backend(Movable):
                 ),
                 silhouette,
                 c.image_tint,
+                self.antialiasing._cpu_grid(),
             )
             return
         var r = upright_rect(m, c.geom[0], c.geom[1], c.geom[2], c.geom[3])

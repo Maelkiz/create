@@ -286,8 +286,9 @@ others, and `canvas.antialiasing(level)` changes it for the whole frame it is ca
 backends rasterise at present) and every later one. One setting for both backends, each reaching
 it its own way: the GPU draws into an offscreen multisampled framebuffer and resolves it into the
 window or headless target (capped at the driver's maximum), the CPU samples each shape on a finer
-grid (`LOW` 2x2, `MEDIUM` 4x4, `HIGH` 8x8 per pixel). Shapes only — text and images are smooth
-already; a clip's edge is antialiased like a shape's (see Clipping). A shape's fill and
+grid (`LOW` 2x2, `MEDIUM` 4x4, `HIGH` 8x8 per pixel). Shapes, and the edge of a rotated or
+sheared image — text and an image's own pixels are smooth already; a clip's edge is antialiased
+like a shape's (see Clipping). A shape's fill and
 outline composite together, so no seam shows between them; two separate shapes meeting inside a pixel can
 show a faint one. `run_headless` defaults to `MEDIUM` too, so a test asserting an edge pixel's exact
 colour passes `antialiasing=Antialiasing.OFF`.
