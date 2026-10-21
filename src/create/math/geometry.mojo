@@ -634,7 +634,7 @@ struct Circle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
 
 struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
-    """A line segment from `start` to `end`: `length`, `length_sq`,
+    """A line segment from `start` to `end`: `length`, `length_squared`,
     `midpoint`, `closest_point`, `intersects`, `move_to`, `translate`.
 
     Unlike `Rectangle`/`Circle`/`Triangle`/`Sector`/`Polygon`, `Line` has
@@ -668,11 +668,11 @@ struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def write_to[W: Writer](self, mut writer: W):
         writer.write("Line(start=", self.start, ", end=", self.end, ")")
 
-    def length_sq(self) -> Float64:
+    def length_squared(self) -> Float64:
         return _distance_squared(self.end, self.start)
 
     def length(self) -> Float64:
-        return sqrt(self.length_sq())
+        return sqrt(self.length_squared())
 
     def intersects(self, other: Line) -> Bool:
         var o1 = _orientation(self.start, self.end, other.start)
