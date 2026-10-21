@@ -322,15 +322,22 @@ def test_copy_ctor_is_independent() raises -> None:
     assert_equal(c[1, 1], 4.0)
 
 
-def test_write_to_contains_type_name() raises -> None:
-    var m = Matrix[2, 2]()
+def test_prints_as_source() raises -> None:
+    var m = Matrix[2, 3]()
     m[0, 0] = 1.0
     m[0, 1] = 2.0
-    m[1, 0] = 3.0
-    m[1, 1] = 4.0
-    var s = String(m)
-    assert_true(s.startswith("Matrix[2x2]("))
-    assert_true(s.endswith(")"))
+    m[0, 2] = 3.0
+    m[1, 0] = 4.0
+    m[1, 1] = 5.0
+    m[1, 2] = 6.0
+    assert_equal(String(m), "Matrix[2, 3](1.0, 2.0, 3.0, 4.0, 5.0, 6.0)")
+
+
+def test_values_fill_row_by_row() raises -> None:
+    var m = Matrix[2, 2](1.0, 2.0, 3.0, 4.0)
+    assert_equal(m[0, 1], 2.0)
+    assert_equal(m[1, 0], 3.0)
+    assert_true(m == Matrix[2, 2](1.0, 2.0, 3.0, 4.0))
 
 
 def test_composition_translate_then_scale() raises -> None:

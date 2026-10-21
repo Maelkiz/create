@@ -19,7 +19,19 @@ struct Matrix[rows: Int, cols: Int](
     var data: Array[Float64, Self.rows * Self.cols]
 
     def __init__(out self):
+        """All zeros."""
         self.data = Array[Float64, Self.rows * Self.cols](fill=0.0)
+
+    def __init__(out self, *values: Float64):
+        """The entries, row by row: `Matrix[2, 2](1.0, 2.0, 3.0, 4.0)` has
+        `1.0, 2.0` on top. Takes exactly `rows * cols` values."""
+        debug_assert(
+            len(values) == Self.rows * Self.cols,
+            "Matrix: takes exactly rows * cols values",
+        )
+        self.data = Array[Float64, Self.rows * Self.cols](fill=0.0)
+        for i in range(min(len(values), Self.rows * Self.cols)):
+            self.data[i] = values[i]
 
     def __init__(out self, *, copy: Self):
         self.data = Array[Float64, Self.rows * Self.cols](copy=copy.data)
@@ -59,16 +71,11 @@ struct Matrix[rows: Int, cols: Int](
         return not (self == other)
 
     def write_to[W: Writer](self, mut writer: W):
-        writer.write("Matrix[", Self.rows, "x", Self.cols, "](")
-        for r in range(Self.rows):
-            if r > 0:
+        writer.write("Matrix[", Self.rows, ", ", Self.cols, "](")
+        for i in range(Self.rows * Self.cols):
+            if i > 0:
                 writer.write(", ")
-            writer.write("[")
-            for c in range(Self.cols):
-                if c > 0:
-                    writer.write(", ")
-                writer.write(self[r, c])
-            writer.write("]")
+            writer.write(self.data[i])
         writer.write(")")
 
 
