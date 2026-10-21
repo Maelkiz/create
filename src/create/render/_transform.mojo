@@ -11,9 +11,9 @@ Device-space *scanning* is not here: `device_bounds` stays with the CPU replay
 that scans, because nothing else has rows to walk.
 """
 
-from std.math import abs, max
+from std.math import abs, max, sqrt
 
-from create.math.matrix import Matrix
+from create.math.matrix import Matrix, scale as mat_scale, translate
 
 from .style import Style
 
@@ -48,6 +48,39 @@ def pixel_scale(m: Matrix[3, 3], fallback: Float64) -> Float64:
     if uniform(m):
         return abs(m[0, 0])
     return fallback
+
+
+def text_pixel_scale(m: Matrix[3, 3], fallback: Float64) -> Float64:
+    """Pixels per world unit that text is laid out and rasterised at under
+    `m`: `pixel_scale` where that has a single factor, and otherwise the
+    square root of `m`'s area scale, so a turned, sheared or stretched
+    string is rasterised at about the density it lands at rather than at
+    the frame's. `fallback` only for a singular `m`."""
+    if uniform(m):
+        return abs(m[0, 0])
+    var area = abs(m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0])
+    if area == 0.0:
+        return fallback
+    return sqrt(area)
+
+
+def text_upright(m: Matrix[3, 3]) -> Bool:
+    """True when text under `m` lays out as it is drawn: an axis-aligned
+    uniform scale, unmirrored, so glyphs land upright on whole pixels around
+    the mapped anchor. Any other `m` lays text out upright first and maps
+    the result through `glyph_transform`."""
+    return uniform(m) and m[0, 0] > 0.0 and m[1, 1] < 0.0
+
+
+def glyph_transform(
+    m: Matrix[3, 3], x: Float64, y: Float64, pixel_scale: Float64
+) -> Matrix[3, 3]:
+    """Where text laid out upright around the origin, at `pixel_scale`
+    pixels per unit (device-style: y down), lands under `m` when anchored
+    at local `(x, y)`: back to local units about the anchor, then `m`."""
+    return (
+        m @ translate(x, y) @ mat_scale(1.0 / pixel_scale, -1.0 / pixel_scale)
+    )
 
 
 def outline_thickness_px(

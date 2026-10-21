@@ -978,6 +978,98 @@ def _blit_image_mapped[
             v += mapping.v_dx
 
 
+def blit_alpha_mapped[
+    o: Origin[mut=True], so: Origin
+](
+    s: Surface[o],
+    src: Pointer[UInt8, so],
+    width: Int,
+    height: Int,
+    mapping: ImageMapping,
+    c: Color,
+):
+    """Composite the `width` x `height` 8-bit coverage mask at `src` through
+    `mapping` in `c` — a glyph turned with its text; see
+    `_blit_alpha_mapped`."""
+    if s._clip:
+        _blit_alpha_mapped[clipped=True](s, src, width, height, mapping, c)
+    else:
+        _blit_alpha_mapped[clipped=False](s, src, width, height, mapping, c)
+
+
+@always_inline
+def _mask_at[
+    so: Origin
+](src: Pointer[UInt8, so], width: Int, height: Int, x: Int, y: Int) -> Float64:
+    """The mask's coverage at texel `(x, y)`, zero off it."""
+    if x < 0 or y < 0 or x >= width or y >= height:
+        return 0.0
+    return Float64(src[unsafe_offset=y * width + x])
+
+
+def _blit_alpha_mapped[
+    o: Origin[mut=True], so: Origin, //, clipped: Bool
+](
+    s: Surface[o],
+    src: Pointer[UInt8, so],
+    width: Int,
+    height: Int,
+    mapping: ImageMapping,
+    c: Color,
+):
+    """`_blit_alpha` for a mask that is not upright on the device: each
+    pixel in `mapping`'s bounds reads the mask bilinearly at the texel
+    coordinate of its centre, zero outside the mask, as the GL atlas's
+    linear filter does — so a turned glyph stays as smooth as an upright
+    one, and its edge needs no antialiasing of its own.
+
+    Texel `i`'s centre is at `i + 0.5`, hence the half texel taken off
+    before interpolating.
+    """
+    var W = s.width
+    var H = s.height
+    var ca = Float64(c.a)
+    var fw = Float64(width)
+    var fh = Float64(height)
+
+    var row_lo = max(mapping.y0, 0)
+    var row_hi = min(mapping.y1, H)
+    var col_lo = max(mapping.x0, 0)
+    var col_hi = min(mapping.x1, W)
+    for row in range(row_lo, row_hi):
+        var py = Float64(row) + 0.5
+        var px = Float64(col_lo) + 0.5
+        var u = mapping.u + mapping.u_dx * px + mapping.u_dy * py - 0.5
+        var v = mapping.v + mapping.v_dx * px + mapping.v_dy * py - 0.5
+        var dst_row_off = row * W * 4
+        for col in range(col_lo, col_hi):
+            if u > -1.0 and u < fw and v > -1.0 and v < fh:
+                var fu = floor(u)
+                var fv = floor(v)
+                var tx = Int(fu)
+                var ty = Int(fv)
+                var ax = u - fu
+                var ay = v - fv
+                var top = (
+                    _mask_at(src, width, height, tx, ty) * (1.0 - ax)
+                    + _mask_at(src, width, height, tx + 1, ty) * ax
+                )
+                var bottom = (
+                    _mask_at(src, width, height, tx, ty + 1) * (1.0 - ax)
+                    + _mask_at(src, width, height, tx + 1, ty + 1) * ax
+                )
+                var cov = top * (1.0 - ay) + bottom * ay
+                var a = Int(cov * ca / 255.0 + 0.5)
+                if a > 0:
+                    blend[clipped=clipped](
+                        s,
+                        dst_row_off + col * 4,
+                        Color(c.r, c.g, c.b, UInt8(min(a, 255))),
+                    )
+            u += mapping.u_dx
+            v += mapping.v_dx
+
+
 def blit_glyph[
     o: Origin[mut=True]
 ](s: Surface[o], g: _GlyphInfo, x0: Int, y0: Int, c: Color):

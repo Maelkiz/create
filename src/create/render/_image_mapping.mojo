@@ -151,3 +151,39 @@ def image_mapping(
         -i[1, 0] * sv,
         -i[1, 1] * sv,
     )
+
+
+def mask_mapping(
+    a: Matrix[3, 3], x: Int, y: Int, width: Int, height: Int
+) -> ImageMapping:
+    """A `width` x `height` mask placed at `(x, y)` in a space that `a` maps
+    onto the device, texel `(tx, ty)` covering `[x + tx, x + tx + 1)` by
+    `[y + ty, y + ty + 1)` there, as a laid-out glyph is. The bounds reach a
+    pixel past the mapped corners, for a bilinear sample's spill. A singular
+    `a` covers nothing."""
+    if a[0, 0] * a[1, 1] - a[0, 1] * a[1, 0] == 0.0:
+        return ImageMapping.empty()
+    var x0 = Float64(x)
+    var y0 = Float64(y)
+    var x1 = Float64(x + width)
+    var y1 = Float64(y + height)
+    var p = mat_apply(a, x0, y0)
+    var lo = Point2D(p[0], p[1])
+    var hi = lo
+    for corner in [(x1, y0), (x1, y1), (x0, y1)]:
+        var q = mat_apply(a, corner[0], corner[1])
+        lo = Point2D(min(lo.x, q[0]), min(lo.y, q[1]))
+        hi = Point2D(max(hi.x, q[0]), max(hi.y, q[1]))
+    var i = inverse(a)
+    return ImageMapping(
+        Int(floor(lo.x)) - 1,
+        Int(floor(lo.y)) - 1,
+        Int(ceil(hi.x)) + 1,
+        Int(ceil(hi.y)) + 1,
+        i[0, 2] - x0,
+        i[0, 0],
+        i[0, 1],
+        i[1, 2] - y0,
+        i[1, 0],
+        i[1, 1],
+    )

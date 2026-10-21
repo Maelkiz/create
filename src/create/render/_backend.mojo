@@ -61,7 +61,14 @@ from ._image_mapping import image_mapping, upright, upright_rect
 from ._interned_image import IMAGE_KEEP_FRAMES, _InternedImage
 from ._clip import _Clip, _ClipRows
 from .style import Style
-from ._transform import pixel_scale, outline_thickness_px, uniform
+from ._transform import (
+    glyph_transform,
+    outline_thickness_px,
+    pixel_scale,
+    text_pixel_scale,
+    text_upright,
+    uniform,
+)
 from ._shadow import (
     BlurredSilhouette,
     blurs_analytically,
@@ -1366,8 +1373,12 @@ struct Backend(Movable):
         if casts_outer_shadow(c):
             var sh = shadow_command(c, scale)
             var sm = pre @ sh.transform
-            # The blur in whole device pixels; see `_ensure_glyph`.
-            var blur = Int(c.style.shadow_blur * pixel_scale(sm, scale) + 0.5)
+            # The blur in whole device pixels; see `_ensure_glyph`. Text is
+            # blurred where it is laid out, at its own scale.
+            var sf = text_pixel_scale(
+                sm, scale
+            ) if c.kind == CMD_TEXT else pixel_scale(sm, scale)
+            var blur = Int(c.style.shadow_blur * sf + 0.5)
             if blur == 0:
                 self._one(s, sh, scale, pre)
             elif blurs_analytically(c):
@@ -2182,13 +2193,23 @@ struct Backend(Movable):
         m: Matrix[3, 3],
         blur: Int = 0,
     ) raises:
-        # Only the anchor is mapped — the layout itself happens in pixel space.
+        # Upright, only the anchor is mapped and the layout happens in pixel
+        # space; otherwise the upright layout is mapped glyph by glyph.
         # `canvas.text` already skips recording when `text_color` is fully
         # transparent; text has no other visibility gate (fill is unrelated).
-        var p = mat_apply(m, c.geom[0], c.geom[1])
-        self.text.render(
-            s, c.text, p[0], p[1], c.style, pixel_scale(m, scale), blur
-        )
+        var sf = text_pixel_scale(m, scale)
+        if text_upright(m):
+            var p = mat_apply(m, c.geom[0], c.geom[1])
+            self.text.render(s, c.text, p[0], p[1], c.style, sf, blur)
+        else:
+            self.text.render_mapped(
+                s,
+                c.text,
+                glyph_transform(m, c.geom[0], c.geom[1], sf),
+                c.style,
+                sf,
+                blur,
+            )
 
     def _letterbox[
         o: Origin[mut=True]
