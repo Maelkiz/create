@@ -1,5 +1,4 @@
 from std.collections import Optional
-from std.utils.numerics import isnan, nan
 
 from .align import Align
 from create.color.blend_mode import BlendMode
@@ -9,12 +8,47 @@ from create.text.font import Font, FontWeight
 from create.math.vector2d import Vector2D
 
 
-comptime _KEEP = nan[DType.float64]()
-"""Default of an optional `Float64` keyword (a thickness, a size, a shadow
-part, an opacity) meaning "not given". Not
-`Optional[Float64]`, which a bare `blur=12` cannot reach — an integer
-literal converts to `Float64` or to an `Optional`, not through both — and not
-a negative number, since a negative spread is meaningful."""
+struct _OptionalFloat64(Boolable, Copyable, ImplicitlyCopyable, Movable):
+    """An optional `Float64` keyword (a thickness, a size, a shadow part, an
+    opacity): `None` when left unset, like every other optional keyword.
+
+    Not `Optional[Float64]`, which a bare `blur=12` cannot reach — an integer
+    literal converts to `Float64` or to an `Optional`, not through both. This
+    takes each in one step, so `blur=12`, `blur=1.5`, `blur=n` and
+    `blur=None` all work and a program never names the type. Read it like an
+    `Optional`: truth for "given", `value()`, `or_else(default)`.
+    """
+
+    var _value: Optional[Float64]
+
+    @implicit
+    def __init__(out self, value: Float64):
+        self._value = value
+
+    @implicit
+    def __init__(out self, value: Int):
+        self._value = Float64(value)
+
+    @implicit
+    def __init__(out self, value: IntLiteral):
+        self._value = Float64(value)
+
+    @implicit
+    def __init__(out self, value: Optional[Float64]):
+        self._value = value
+
+    @implicit
+    def __init__(out self, none: NoneType._mlir_type):
+        self._value = None
+
+    def __bool__(self) -> Bool:
+        return Bool(self._value)
+
+    def value(self) -> Float64:
+        return self._value.value()
+
+    def or_else(self, default: Float64) -> Float64:
+        return self._value.or_else(default)
 
 
 struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
@@ -89,7 +123,7 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         fill_gradient: Optional[Gradient] = None,
         fill_enabled: Optional[Bool] = None,
         outline: Optional[Color] = None,
-        outline_thickness: Float64 = _KEEP,
+        outline_thickness: _OptionalFloat64 = None,
         outline_enabled: Optional[Bool] = None,
         text_color: Color = Color.BLACK,
         font: Optional[Font] = None,
@@ -102,8 +136,8 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         blend_mode: BlendMode = BlendMode.NORMAL,
         shadow: Optional[Color] = None,
         shadow_offset: Optional[Vector2D] = None,
-        shadow_blur: Float64 = _KEEP,
-        shadow_spread: Float64 = _KEEP,
+        shadow_blur: _OptionalFloat64 = None,
+        shadow_spread: _OptionalFloat64 = None,
         shadow_inset: Optional[Bool] = None,
         shadow_follows_transform: Bool = False,
         shadow_enabled: Optional[Bool] = None,
@@ -114,9 +148,7 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
             Bool(fill) or Bool(fill_gradient)
         )
         self.outline_color = outline.or_else(Color.BLACK)
-        self.outline_thickness = 1.0 if isnan(
-            outline_thickness
-        ) else outline_thickness
+        self.outline_thickness = outline_thickness.or_else(1.0)
         self.outline_enabled = outline_enabled.or_else(True)
         self.text_color = text_color
         self.font = font
@@ -129,15 +161,15 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.blend_mode = blend_mode
         self.shadow_color = shadow.or_else(Color(0, 0, 0, 96))
         self.shadow_offset = shadow_offset.or_else(Vector2D(4, -4))
-        self.shadow_blur = 8.0 if isnan(shadow_blur) else shadow_blur
-        self.shadow_spread = 0.0 if isnan(shadow_spread) else shadow_spread
+        self.shadow_blur = shadow_blur.or_else(8.0)
+        self.shadow_spread = shadow_spread.or_else(0.0)
         self.shadow_inset = shadow_inset.or_else(False)
         self.shadow_follows_transform = shadow_follows_transform
         self.shadow_enabled = shadow_enabled.or_else(
             Bool(shadow)
             or Bool(shadow_offset)
-            or not isnan(shadow_blur)
-            or not isnan(shadow_spread)
+            or Bool(shadow_blur)
+            or Bool(shadow_spread)
             or Bool(shadow_inset)
         )
 

@@ -1,6 +1,5 @@
 from std.collections import Optional
 from std.math import floor, tau
-from std.utils.numerics import isnan, nan
 
 from create.color.color import Color
 from create.color.gradient import Gradient
@@ -53,7 +52,7 @@ from ._command import (
     text_command,
     triangle_command,
 )
-from .style import Style, _KEEP
+from .style import Style, _OptionalFloat64
 from ._clip import clip_style
 from ._command import RenderCommand
 from ._transform import pixel_scale
@@ -460,21 +459,21 @@ struct Canvas(Movable):
         fill_gradient: Optional[Gradient] = None,
         fill_enabled: Optional[Bool] = None,
         outline: Optional[Color] = None,
-        outline_thickness: Float64 = _KEEP,
+        outline_thickness: _OptionalFloat64 = None,
         outline_enabled: Optional[Bool] = None,
         text_color: Optional[Color] = None,
         font: Optional[Font] = None,
-        font_size: Float64 = _KEEP,
+        font_size: _OptionalFloat64 = None,
         font_weight: Optional[FontWeight] = None,
         font_italic: Optional[Bool] = None,
         text_align: Optional[Align] = None,
         tint: Optional[Color] = None,
-        opacity: Float64 = _KEEP,
+        opacity: _OptionalFloat64 = None,
         blend_mode: Optional[BlendMode] = None,
         shadow: Optional[Color] = None,
         shadow_offset: Optional[Vector2D] = None,
-        shadow_blur: Float64 = _KEEP,
-        shadow_spread: Float64 = _KEEP,
+        shadow_blur: _OptionalFloat64 = None,
+        shadow_spread: _OptionalFloat64 = None,
         shadow_inset: Optional[Bool] = None,
         shadow_follows_transform: Optional[Bool] = None,
         shadow_enabled: Optional[Bool] = None,
@@ -501,7 +500,7 @@ struct Canvas(Movable):
         # paints and the colour is kept.
         if fill_gradient:
             self.fill(fill_gradient.value())
-        if outline or not isnan(outline_thickness):
+        if outline or outline_thickness:
             self.outline(outline, outline_thickness)
         # After the colors, which switch fill and outline on: an explicit
         # `*_enabled=False` beside a color wins.
@@ -513,8 +512,8 @@ struct Canvas(Movable):
             self.text_color(text_color.value())
         if font:
             self.font(font.value())
-        if not isnan(font_size):
-            self.font_size(font_size)
+        if font_size:
+            self.font_size(font_size.value())
         if font_weight:
             self.font_weight(font_weight.value())
         if font_italic:
@@ -523,15 +522,15 @@ struct Canvas(Movable):
             self.text_align(text_align.value())
         if tint:
             self.tint(tint.value())
-        if not isnan(opacity):
-            self.opacity(opacity)
+        if opacity:
+            self.opacity(opacity.value())
         if blend_mode:
             self.blend_mode(blend_mode.value())
         if (
             shadow
             or shadow_offset
-            or not isnan(shadow_blur)
-            or not isnan(shadow_spread)
+            or shadow_blur
+            or shadow_spread
             or shadow_inset
         ):
             self.shadow(
@@ -749,7 +748,7 @@ struct Canvas(Movable):
     def outline(
         mut self,
         color: Optional[Color] = None,
-        thickness: Float64 = _KEEP,
+        thickness: _OptionalFloat64 = None,
     ):
         """Outline shapes, switching the outline on if `outline_enabled(False)`
         had turned it off. `color`/`thickness` left unset keep their current
@@ -763,8 +762,8 @@ struct Canvas(Movable):
         """
         if color:
             self._style.outline_color = color.value()
-        if not isnan(thickness):
-            self._style.outline_thickness = thickness
+        if thickness:
+            self._style.outline_thickness = thickness.value()
         self._style.outline_enabled = True
 
     def fill_enabled(mut self, enabled: Bool):
@@ -1511,8 +1510,8 @@ struct Canvas(Movable):
         mut self,
         color: Optional[Color] = None,
         offset: Optional[Vector2D] = None,
-        blur: Float64 = _KEEP,
-        spread: Float64 = _KEEP,
+        blur: _OptionalFloat64 = None,
+        spread: _OptionalFloat64 = None,
         inset: Optional[Bool] = None,
     ):
         """Cast a shadow behind what is rendered next, switching shadows on.
@@ -1549,10 +1548,10 @@ struct Canvas(Movable):
             self._style.shadow_color = color.value()
         if offset:
             self._style.shadow_offset = offset.value()
-        if not isnan(blur):
-            self._style.shadow_blur = blur
-        if not isnan(spread):
-            self._style.shadow_spread = spread
+        if blur:
+            self._style.shadow_blur = blur.value()
+        if spread:
+            self._style.shadow_spread = spread.value()
         if inset:
             self._style.shadow_inset = inset.value()
         self._style.shadow_enabled = True
