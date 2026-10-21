@@ -125,6 +125,7 @@ from ._clip import _Clip
 from ._curve import PlacedMask, bezier_shadow_mask
 from ._sector import sector_shadow_mask
 from ._polygon import polygon_shadow_mask
+from ._image_mapping import upright, upright_rect
 from ._interned_image import _InternedImage
 from ._tessellate import (
     MODE_SOLID,
@@ -148,6 +149,7 @@ from ._shadow import (
     blurs_analytically,
     casts_inset_shadow,
     casts_outer_shadow,
+    image_shadow_mask,
     shadow_command,
 )
 from ._text import PlacedGlyph, TextRenderer
@@ -1162,12 +1164,23 @@ struct GLRenderer(Movable):
     ) raises:
         """The silhouette command `c` blurred by `blur` device pixels: the
         CPU replay's mask, uploaded once and drawn over `_image`'s rect
-        grown by the blur's reach."""
+        grown by the blur's reach — or, under a transform that turns the
+        image, built for it this frame, as a Bézier's is."""
         if c.image not in images:
             return
-        var sf = pixel_scale(c.transform, scale)
-        var dw = max(Int(c.geom[2] * sf + 0.5), 1)
-        var dh = max(Int(c.geom[3] * sf + 0.5), 1)
+        if not upright(c.transform):
+            self._mask_shadow(
+                image_shadow_mask(
+                    c, c.transform, images[c.image].pixels[].unsafe_ptr(), blur
+                ),
+                c.style.fill_color,
+            )
+            return
+        var r = upright_rect(
+            c.transform, c.geom[0], c.geom[1], c.geom[2], c.geom[3]
+        )
+        var dw = r.width
+        var dh = r.height
         var sigma = Float64(blur) / 2.0
         var key = shadow_mask_key(c.image, dw, dh, blur)
         if key in self.shadow_textures:

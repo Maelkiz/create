@@ -1413,8 +1413,6 @@ struct Canvas(Movable):
         self.image(image, position, image.width, image.height)
 
     def image(mut self, image: Image, position: Point2D, w: Int, h: Int):
-        # Rotation and shear are not resampled — only position and scale apply.
-        #
         # The image is interned *now*, not at replay: the command then carries
         # an id rather than a borrow of the program's pixels, which is what
         # keeps caller-owned memory out of a buffer that outlives the call.

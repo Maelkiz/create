@@ -7,6 +7,7 @@ from create.color.color import Color, _multiplied
 from create.text.font import _GlyphInfo
 from create.color.gradient import Gradient, _DeviceMapping
 from ._surface import Surface
+from ._image_mapping import ImageMapping
 from create.math.point2d import Point2D
 
 
@@ -796,9 +797,9 @@ def _blit_image[
     `Surface` is a plain value: nothing here needs to know where the pixels
     came from.
 
-    Nearest-neighbour: rotation and shear are not resampled, so the caller
-    maps the anchor and hands over an axis-aligned destination. A 1:1 blit
-    skips the source-index division rather than relying on it cancelling.
+    Nearest-neighbour, into an upright destination: a rotated, sheared or
+    mirrored one goes through `blit_image_mapped` instead. A 1:1 blit skips
+    the source-index division rather than relying on it cancelling.
 
     Destination rows and columns are clipped once against the surface up
     front, the way `fill_pixels` already clips, instead of testing `dx`/`dy`
@@ -861,6 +862,82 @@ def _blit_image[
                 while err >= dw:
                     err -= dw
                     src_col += 1
+
+
+def blit_image_mapped[
+    o: Origin[mut=True], so: Origin
+](
+    s: Surface[o],
+    src: Pointer[UInt8, so],
+    sw: Int,
+    sh: Int,
+    mapping: ImageMapping,
+    silhouette: Optional[Color] = None,
+    tint: Color = Color.WHITE,
+):
+    """Blit the `sw` x `sh` RGBA buffer at `src` through `mapping`, rotated,
+    sheared or mirrored as it says; see `_blit_image_mapped`."""
+    if s._clip:
+        _blit_image_mapped[clipped=True](
+            s, src, sw, sh, mapping, silhouette, tint
+        )
+    else:
+        _blit_image_mapped[clipped=False](
+            s, src, sw, sh, mapping, silhouette, tint
+        )
+
+
+def _blit_image_mapped[
+    o: Origin[mut=True], so: Origin, //, clipped: Bool
+](
+    s: Surface[o],
+    src: Pointer[UInt8, so],
+    sw: Int,
+    sh: Int,
+    mapping: ImageMapping,
+    silhouette: Optional[Color],
+    tint: Color,
+):
+    """`_blit_image` for a destination that is not an upright rect: every
+    device pixel in `mapping`'s bounds whose centre maps inside the image
+    takes the texel it lands on, nearest-neighbour, as the upright blit
+    samples. Tint and silhouette as there.
+
+    The texel coordinate is affine in the device pixel, so it is evaluated
+    once per row and stepped by a constant per column.
+    """
+    var W = s.width
+    var H = s.height
+    var silhouetted = Bool(silhouette)
+    var t = silhouette.value() if silhouette else Color.WHITE
+    var recolored = tint.r != 255 or tint.g != 255 or tint.b != 255
+    var fw = Float64(sw)
+    var fh = Float64(sh)
+
+    var row_lo = max(mapping.y0, 0)
+    var row_hi = min(mapping.y1, H)
+    var col_lo = max(mapping.x0, 0)
+    var col_hi = min(mapping.x1, W)
+    for row in range(row_lo, row_hi):
+        var py = Float64(row) + 0.5
+        var px = Float64(col_lo) + 0.5
+        var u = mapping.u + mapping.u_dx * px + mapping.u_dy * py
+        var v = mapping.v + mapping.v_dx * px + mapping.v_dy * py
+        var dst_row_off = row * W * 4
+        for col in range(col_lo, col_hi):
+            if u >= 0.0 and u < fw and v >= 0.0 and v < fh:
+                var src_off = (Int(v) * sw + Int(u)) * 4
+                var sa = src[unsafe_offset=src_off + 3]
+                if sa != 0:
+                    blend[clipped=clipped](
+                        s,
+                        dst_row_off + col * 4,
+                        _silhouette(t, sa) if silhouetted else _texel(
+                            src, src_off, tint, recolored
+                        ),
+                    )
+            u += mapping.u_dx
+            v += mapping.v_dx
 
 
 def blit_glyph[

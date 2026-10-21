@@ -47,6 +47,7 @@ from ._raster import (
     blend,
     blit_alpha,
     blit_image,
+    blit_image_mapped,
     fill_all,
     fill_convex,
     fill_pixels,
@@ -56,6 +57,7 @@ from ._raster import (
     line_pixels,
 )
 from ._gl_backend import GLRenderer
+from ._image_mapping import image_mapping, upright, upright_rect
 from ._interned_image import IMAGE_KEEP_FRAMES, _InternedImage
 from ._clip import _Clip, _ClipRows
 from .style import Style
@@ -65,6 +67,7 @@ from ._shadow import (
     blurs_analytically,
     casts_inset_shadow,
     casts_outer_shadow,
+    image_shadow_mask,
     inset_interior,
     local_outline_thickness,
     shadow_command,
@@ -2077,23 +2080,40 @@ struct Backend(Movable):
     ) raises:
         if c.image not in self.images:
             return
-        var p = mat_apply(m, c.geom[0], c.geom[1])
-        var sf = pixel_scale(m, scale)
-        var dw = max(Int(c.geom[2] * sf + 0.5), 1)
-        var dh = max(Int(c.geom[3] * sf + 0.5), 1)
         # Bound by reference so the pixels stay in the cache rather than being
         # copied out of it once per render.
         ref img = self.images[c.image]
+        var silhouette = Optional(c.style.fill_color) if c.silhouette else None
+        if not upright(m):
+            blit_image_mapped(
+                s,
+                img.pixels[].unsafe_ptr(),
+                img.width,
+                img.height,
+                image_mapping(
+                    m,
+                    c.geom[0],
+                    c.geom[1],
+                    c.geom[2],
+                    c.geom[3],
+                    img.width,
+                    img.height,
+                ),
+                silhouette,
+                c.image_tint,
+            )
+            return
+        var r = upright_rect(m, c.geom[0], c.geom[1], c.geom[2], c.geom[3])
         blit_image(
             s,
             img.pixels[].unsafe_ptr(),
             img.width,
             img.height,
-            Int(p[0]) - dw // 2,
-            Int(p[1]) - dh // 2,
-            dw,
-            dh,
-            Optional(c.style.fill_color) if c.silhouette else None,
+            r.x,
+            r.y,
+            r.width,
+            r.height,
+            silhouette,
             c.image_tint,
         )
 
@@ -2108,14 +2128,26 @@ struct Backend(Movable):
         blur: Int,
     ) raises:
         """The silhouette command `c` blurred by `blur` device pixels, from
-        a cached mask laid over the same destination rect `_image` uses."""
+        a cached mask laid over the same destination rect `_image` uses —
+        or, under a transform that turns the image, a mask built for it."""
         if c.image not in self.images:
             return
-        var p = mat_apply(m, c.geom[0], c.geom[1])
-        var sf = pixel_scale(m, scale)
-        var dw = max(Int(c.geom[2] * sf + 0.5), 1)
-        var dh = max(Int(c.geom[3] * sf + 0.5), 1)
-        var key = shadow_mask_key(c.image, dw, dh, blur)
+        if not upright(m):
+            var placed = image_shadow_mask(
+                c, m, self.images[c.image].pixels[].unsafe_ptr(), blur
+            )
+            blit_alpha(
+                s,
+                placed.mask.pixels.unsafe_ptr(),
+                placed.mask.width,
+                placed.mask.height,
+                placed.x,
+                placed.y,
+                c.style.fill_color,
+            )
+            return
+        var r = upright_rect(m, c.geom[0], c.geom[1], c.geom[2], c.geom[3])
+        var key = shadow_mask_key(c.image, r.width, r.height, blur)
         if key not in self.shadow_masks:
             if len(self.shadow_masks) >= SHADOW_MASK_LIMIT:
                 self.shadow_masks.clear()
@@ -2124,8 +2156,8 @@ struct Backend(Movable):
                 img.pixels[].unsafe_ptr(),
                 img.width,
                 img.height,
-                dw,
-                dh,
+                r.width,
+                r.height,
                 Float64(blur) / 2.0,
             )
         ref mask = self.shadow_masks[key]
@@ -2134,8 +2166,8 @@ struct Backend(Movable):
             mask.pixels.unsafe_ptr(),
             mask.width,
             mask.height,
-            Int(p[0]) - dw // 2 - mask.pad,
-            Int(p[1]) - dh // 2 - mask.pad,
+            r.x - mask.pad,
+            r.y - mask.pad,
             c.style.fill_color,
         )
 

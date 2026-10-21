@@ -7,7 +7,13 @@ tessellation is its own module: a GL context, a window and a GPU would
 otherwise be prerequisites for testing a coordinate flip.
 """
 
-from std.testing import TestSuite, assert_equal, assert_true
+from std.math import pi
+from std.testing import (
+    TestSuite,
+    assert_almost_equal,
+    assert_equal,
+    assert_true,
+)
 
 from create.render._command import (
     bezier_command,
@@ -42,7 +48,7 @@ from create.render._tessellate import (
     emit_image,
     emit_triangle,
 )
-from create.math.matrix import rotate
+from create.math.matrix import rotate, scale
 from create.render.autoscale import AutoScale
 from create.color.color import Color
 from create.render._viewport import Viewport
@@ -450,17 +456,18 @@ def test_a_image_is_not_flipped() raises -> None:
     assert_true(_y(vb, 0) < _y(vb, 2))
 
 
-def test_a_image_is_upright_under_rotation() raises -> None:
-    # Only the anchor is mapped, matching the CPU blit — a rotated transform
-    # moves the image but must not turn it.
+def test_a_image_turns_with_the_transform() raises -> None:
+    # A quarter turn counter-clockwise: the image's top edge becomes its
+    # left one, so its top-left corner lands bottom-left on the device and
+    # its top-right corner top-left.
     var v = _viewport(100, 100)
     var vb = VertexBuffer()
     emit_image(
         vb,
         image_command(
-            v.base_matrix() @ rotate(0.7),
+            v.base_matrix() @ rotate(pi / 2.0),
             _plain(),
-            20.0,
+            0.0,
             0.0,
             10.0,
             10.0,
@@ -470,8 +477,34 @@ def test_a_image_is_upright_under_rotation() raises -> None:
         ),
         v.scale,
     )
-    assert_equal(_y(vb, 0), _y(vb, 1))
-    assert_equal(_x(vb, 0), _x(vb, 5))
+    assert_equal(vb.count(), 6)
+    assert_almost_equal(_x(vb, 0), 45.0, atol=1e-9)
+    assert_almost_equal(_y(vb, 0), 55.0, atol=1e-9)
+    assert_almost_equal(_x(vb, 1), 45.0, atol=1e-9)
+    assert_almost_equal(_y(vb, 1), 45.0, atol=1e-9)
+
+
+def test_a_mirrored_image_is_mirrored() raises -> None:
+    # Flipped left to right, uv (0, 0) lands on the right edge.
+    var v = _viewport(100, 100)
+    var vb = VertexBuffer()
+    emit_image(
+        vb,
+        image_command(
+            v.base_matrix() @ scale(-1.0, 1.0),
+            _plain(),
+            0.0,
+            0.0,
+            10.0,
+            10.0,
+            7,
+            32,
+            32,
+        ),
+        v.scale,
+    )
+    assert_equal(vb.data[2], Float32(0.0))
+    assert_true(_x(vb, 0) > _x(vb, 1))
 
 
 def test_a_vertex_carries_its_colour_and_mode() raises -> None:

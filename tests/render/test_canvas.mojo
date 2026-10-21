@@ -646,6 +646,66 @@ def test_png_image_blits_unflipped() raises -> None:
     assert_equal(m.pixel(50, 50), Color.WHITE)
 
 
+comptime _ROTATED = 0
+comptime _MIRRORED = 1
+comptime _STRETCHED = 2
+
+
+@fieldwise_init
+struct TransformedImageBlit[transform: Int](Program):
+    """test_2x2.png drawn 20 units square under the transform `transform`
+    names."""
+
+    var image: Image
+
+    @staticmethod
+    def create(mut context: Context, mut canvas: Canvas) raises -> Self:
+        return Self(Image.load("tests/fixtures/test_2x2.png"))
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        var m = rotate(pi / 2.0)
+        comptime if Self.transform == _MIRRORED:
+            m = scale(-1.0, 1.0)
+        elif Self.transform == _STRETCHED:
+            m = scale(2.0, 0.5)
+        with canvas.transform(m):
+            canvas.image(self.image, (0.0, 0.0), 20, 20)
+
+
+def test_image_turns_with_the_transform() raises -> None:
+    # A quarter turn counter-clockwise carries each quadrant of the image
+    # (red, green / blue, white) one corner on.
+    var m = run_headless[TransformedImageBlit[_ROTATED]](100, 100)
+    assert_equal(m.pixel(45, 45), Color(0, 255, 0))
+    assert_equal(m.pixel(55, 45), Color.WHITE)
+    assert_equal(m.pixel(45, 55), Color.RED)
+    assert_equal(m.pixel(55, 55), Color.BLUE)
+    # It still covers 20 units square, centred.
+    assert_equal(m.pixel(40, 40), Color(0, 255, 0))
+    assert_equal(m.pixel(39, 50), Color.BLACK)
+    assert_equal(m.pixel(60, 50), Color.BLACK)
+
+
+def test_image_mirrors_with_the_transform() raises -> None:
+    var m = run_headless[TransformedImageBlit[_MIRRORED]](100, 100)
+    assert_equal(m.pixel(45, 45), Color(0, 255, 0))
+    assert_equal(m.pixel(55, 45), Color.RED)
+    assert_equal(m.pixel(45, 55), Color.WHITE)
+    assert_equal(m.pixel(55, 55), Color.BLUE)
+
+
+def test_image_stretches_with_a_non_uniform_scale() raises -> None:
+    # Upright, so the plain blit, but 40 wide and 10 tall.
+    var m = run_headless[TransformedImageBlit[_STRETCHED]](100, 100)
+    assert_equal(m.pixel(30, 45), Color.RED)
+    assert_equal(m.pixel(69, 45), Color(0, 255, 0))
+    assert_equal(m.pixel(30, 54), Color.BLUE)
+    assert_equal(m.pixel(29, 50), Color.BLACK)
+    assert_equal(m.pixel(50, 44), Color.BLACK)
+    assert_equal(m.pixel(50, 55), Color.BLACK)
+
+
 @fieldwise_init
 struct StyleAcrossFrames(Program):
     # Frame 1 sets a style and renders nothing; frame 2 renders without setting

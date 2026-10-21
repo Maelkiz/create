@@ -160,7 +160,9 @@ comptime _SHAPE_ROUNDED_STAR = 63
 comptime _SHAPE_ROUNDED_PENTAGRAM = 64
 comptime _SHAPE_ROUNDED_PAC_MAN = 65
 comptime _SHAPE_GRADIENT_ROUNDED_SECTOR = 66
-comptime _SHAPE_COUNT = 67
+comptime _SHAPE_ROTATED_IMAGE = 67
+comptime _SHAPE_BLURRED_ROTATED_IMAGE = 68
+comptime _SHAPE_COUNT = 69
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -328,6 +330,10 @@ def _shape_name(shape: Int) -> String:
         return "gradient sector"
     elif shape == _SHAPE_GRADIENT_STAR:
         return "gradient star"
+    elif shape == _SHAPE_ROTATED_IMAGE:
+        return "rotated image"
+    elif shape == _SHAPE_BLURRED_ROTATED_IMAGE:
+        return "blurred rotated image"
     else:
         return "blurred line"
 
@@ -913,6 +919,16 @@ struct _Parity(Program):
                     )
                 )
                 canvas.polygon(Polygon.star((0, 0), 70, 30, 5))
+        elif self.shape == _SHAPE_ROTATED_IMAGE:
+            # A solid block, so the GPU's linear filter and the CPU's nearest
+            # texel agree inside it and only the rim can differ.
+            with canvas.transform(rotate(0.5)):
+                canvas.image(self.block, (20, -10), 40, 40)
+        elif self.shape == _SHAPE_BLURRED_ROTATED_IMAGE:
+            # Not upright, so both backends blit the same uncached mask.
+            with canvas.style(_blurred(Style())):
+                with canvas.transform(rotate(0.5)):
+                    canvas.image(self.block, (-20, 10), 30, 30)
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline

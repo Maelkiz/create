@@ -31,7 +31,7 @@ from create.render._command import (
     bezier_command,
     bezier_chain_command,
 )
-from create.math.matrix import apply as mat_apply
+from create.math.matrix import apply as mat_apply, rotate
 from create.math.point2d import Point2D
 
 
@@ -933,6 +933,32 @@ def test_a_blurred_image_shadow_softens_past_its_silhouette() raises -> None:
     assert_equal(len(backend.shadow_masks), 1)
     _blurred_image_frame(backend, mem, image)
     assert_equal(len(backend.shadow_masks), 1)
+
+
+def test_a_blurred_shadow_turns_with_its_image() raises -> None:
+    # A 20x20 image an eighth of a turn round, centred on the world origin:
+    # a diamond reaching 14 pixels from its centre along the axes. Its
+    # shadow, thrown 40 right, is that diamond blurred.
+    var src = List[UInt8](length=16, fill=255)
+    var backend = Backend()
+    var image = backend.intern_image(3, ArcPointer(src.copy()), 2, 2)
+    var mem = MemorySurface(_W, _H)
+    var cmds = List[RenderCommand]()
+    cmds.append(clear_command(Color.BLACK))
+    var s = _blurred(Color.GREEN, 4.0)
+    s.shadow_offset = Vector2D(40, 0)
+    cmds.append(
+        image_command(
+            _base() @ rotate(pi / 4.0), s^, 0.0, 0.0, 20.0, 20.0, image, 2, 2
+        )
+    )
+    backend.replay(mem.surface(), cmds, 1.0)
+    assert_true(mem.pixel(90, 50).r > 240, "the middle isn't solid")
+    # Its tips reach further than the corners of an upright square would.
+    assert_true(mem.pixel(90, 39).r > 128, "the top tip is missing")
+    assert_true(mem.pixel(99, 41).r < 64, "the square's corner is shaded")
+    # A turned image's mask isn't cached.
+    assert_equal(len(backend.shadow_masks), 0)
 
 
 def test_a_blurred_text_shadow_is_softer_than_a_hard_one() raises -> None:
