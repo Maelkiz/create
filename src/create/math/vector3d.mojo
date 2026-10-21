@@ -1,19 +1,22 @@
 from std.math import sqrt
 
+from .point2d import Point2D
+from .vector2d import Vector2D
+
 
 struct Vector3D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A 3D point or direction: arithmetic operators, `magnitude`, `normalize`,
-    `dot`, `cross`, `distance`, `lerp`, and `xy`/`xyz` to hand the components to
-    another type — `xy` dropping `z`.
+    `dot`, `cross`, `distance`, `lerp`, and explicit constructors from the 2D
+    types.
 
     Rendering is 2D, so nothing in the library takes one — it is here for a
     program doing its own 3D work.
 
     A bare tuple does not convert to one implicitly -- a literal names its
-    type, `Vector3D(1, 2, 3)`. Both accessors return plain tuples, which
-    destructure and go through the explicit tuple constructor to another
-    vector: `Vector2D(v.xy())`. Having to name the accessor is what keeps
-    the conversion visible.
+    type, `Vector3D(1, 2, 3)`. Crossing from 2D is an explicit constructor,
+    `Vector3D(v, z)` or `Vector3D(p, z)`, and back is `Vector2D(v3)`, which
+    drops `z`. `xy` and `xyz` return the components as plain tuples, to
+    destructure.
     """
 
     var x: Float64
@@ -27,6 +30,14 @@ struct Vector3D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     def __init__(out self, x: Int, y: Int, z: Int):
         self = Vector3D(Float64(x), Float64(y), Float64(z))
+
+    def __init__(out self, v: Vector2D, z: Float64 = 0.0):
+        """`v` raised to a height of `z`."""
+        self = Vector3D(v.x, v.y, z)
+
+    def __init__(out self, p: Point2D, z: Float64 = 0.0):
+        """The position `p` raised to a height of `z`, as a 3D vector."""
+        self = Vector3D(p.x, p.y, z)
 
     def __init__(out self, t: Tuple[Float64, Float64, Float64]):
         self = Vector3D(t[0], t[1], t[2])

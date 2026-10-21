@@ -3,7 +3,7 @@ from .vector2d import Vector2D
 
 struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A location in world space: `distance`, `lerp`, the affine operators, and
-    `xy`/`xyz` to hand the components to another type.
+    an explicit constructor from a `Vector2D` for crossing between the two.
 
     Every position in the library is one of these —
     `canvas.circle(position, r)`, `Rectangle.center()`, `input.mouse` — and no
@@ -19,7 +19,7 @@ struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     unary `-` and `Point2D + Point2D` are absent on purpose — none of them
     means anything for a location, and `position.normalize()` compiling was the
     mistake this split exists to catch. A program that genuinely wants a
-    position's components as a direction says so: `Vector2D(p.xy())`.
+    position's components as a direction says so: `Vector2D(p)`.
 
     A displacement is always named: `p + Vector2D(1, 2)` moves a position.
     Mind `p - (1, 2)`: the tuple can only become a `Point2D`, so it is the
@@ -30,10 +30,12 @@ struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     implicit constructor is shorter than any name for the origin, and `one()`
     has no meaning for a position at all.
 
-    `xy` and `xyz` return plain tuples rather than a vector type: they
-    destructure, and go through a vector's explicit tuple constructor,
-    `Vector2D(p.xy())`. Having to name the accessor is what keeps the
-    conversion visible.
+    Crossing to another type is an explicit constructor, never an implicit
+    one: `Vector2D(p)` is the displacement from the origin to `p`,
+    `Point2D(v)` the origin moved by `v`, and `Vector3D(p, z)` widens. Naming
+    the target type is what keeps the conversion visible; an `@implicit` one
+    would undo the split. `xy` returns the components as a plain tuple, to
+    destructure: `var (x, y) = p.xy()`.
     """
 
     var x: Float64
@@ -61,6 +63,10 @@ struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     @implicit
     def __init__(out self, t: Tuple[Float64, Int]):
         self = Point2D(t[0], Float64(t[1]))
+
+    def __init__(out self, v: Vector2D):
+        """The origin moved by `v`: the position `v` points to."""
+        self = Point2D(v.x, v.y)
 
     def __sub__(self, other: Point2D) -> Vector2D:
         """The displacement from `other` to `self`."""
@@ -102,6 +108,3 @@ struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     def xy(self) -> Tuple[Float64, Float64]:
         return (self.x, self.y)
-
-    def xyz(self, z: Float64 = 0.0) -> Tuple[Float64, Float64, Float64]:
-        return (self.x, self.y, z)

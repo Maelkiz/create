@@ -4,6 +4,7 @@ from std.testing import (
     assert_almost_equal,
     assert_true,
 )
+from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 from create.math.vector3d import Vector3D
 from std.math import isnan, isinf
@@ -197,29 +198,37 @@ def test_xy_returns_the_components() raises -> None:
     assert_equal(t[1], 2.5)
 
 
-def test_xyz_defaults_z_to_zero() raises -> None:
-    var t = Vector2D(1.5, 2.5).xyz()
-    assert_equal(t[0], 1.5)
-    assert_equal(t[1], 2.5)
-    assert_equal(t[2], 0.0)
-
-
-def test_xyz_takes_z() raises -> None:
-    var t = Vector2D(1.5, 2.5).xyz(3.5)
-    assert_equal(t[0], 1.5)
-    assert_equal(t[1], 2.5)
-    assert_equal(t[2], 3.5)
-
-
 def test_xy_converts_back_to_a_vector2d() raises -> None:
     var v = Vector2D(1.5, 2.5)
     var back = Vector2D(v.xy())
     assert_equal(back, v)
 
 
-def test_xyz_converts_to_a_vector3d() raises -> None:
-    var w = Vector3D(Vector2D(1.5, 2.5).xyz(3.5))
-    assert_equal(w, Vector3D(1.5, 2.5, 3.5))
+def test_xy_destructures() raises -> None:
+    var (x, y) = Vector2D(1.5, 2.5).xy()
+    assert_equal(x, 1.5)
+    assert_equal(y, 2.5)
+
+
+def test_constructs_from_a_point2d() raises -> None:
+    """The displacement from the origin to the position."""
+    var p = Point2D(1.5, -2.5)
+    assert_equal(Vector2D(p), p - Point2D(0.0, 0.0))
+
+
+def test_widens_to_a_vector3d() raises -> None:
+    assert_equal(Vector3D(Vector2D(1.5, 2.5), 3.5), Vector3D(1.5, 2.5, 3.5))
+    assert_equal(Vector3D(Vector2D(1.5, 2.5)), Vector3D(1.5, 2.5, 0.0))
+
+
+def test_narrows_from_a_vector3d() raises -> None:
+    assert_equal(Vector2D(Vector3D(1.5, 2.5, 3.5)), Vector2D(1.5, 2.5))
+
+
+def test_float_tuple_still_takes_the_tuple_constructor() raises -> None:
+    """A `Point2D` constructor beside the tuple one must not make a float
+    tuple ambiguous."""
+    assert_equal(Vector2D((1.5, 2.5)), Vector2D(1.5, 2.5))
 
 
 def main() raises:

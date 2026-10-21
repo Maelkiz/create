@@ -5,6 +5,7 @@ from std.testing import (
     assert_true,
 )
 from create.math.vector3d import Vector3D
+from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 from std.math import isnan, isinf
 
@@ -239,12 +240,10 @@ def test_xyz_returns_every_component() raises -> None:
     assert_equal(t[2], 3.5)
 
 
-def test_xy_xyz_round_trip() raises -> None:
-    """The tuple return does not chain, so the round trip reconstructs
-    through the explicit tuple constructor instead."""
+def test_2d_round_trip() raises -> None:
+    """Narrowing drops `z`; widening with it puts it back."""
     var v = Vector3D(1.5, 2.5, 3.5)
-    var narrowed = Vector2D(v.xy())
-    assert_equal(Vector3D(narrowed.x, narrowed.y, v.z), v)
+    assert_equal(Vector3D(Vector2D(v), v.z), v)
 
 
 def test_xyz_converts_back_to_a_vector3d() raises -> None:
