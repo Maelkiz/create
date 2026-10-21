@@ -153,9 +153,9 @@ def test_line_length() raises -> None:
     assert_almost_equal(l.length(), 5.0, atol=1e-9)
 
 
-def test_line_length_sq() raises -> None:
+def test_line_length_squared() raises -> None:
     var l = Line((0.0, 0.0), (3.0, 4.0))
-    assert_equal(l.length_sq(), 25.0)
+    assert_equal(l.length_squared(), 25.0)
 
 
 def test_line_closest_point_perpendicular() raises -> None:
@@ -547,7 +547,7 @@ def test_overlaps_circle_triangle_symmetric_edge_case() raises -> None:
 def test_line_zero_length() raises -> None:
     var l = Line((2.0, 3.0), (2.0, 3.0))
     assert_equal(l.length(), 0.0)
-    assert_equal(l.length_sq(), 0.0)
+    assert_equal(l.length_squared(), 0.0)
 
 
 def test_line_zero_length_intersects_when_on_segment() raises -> None:
