@@ -508,6 +508,6 @@ struct Font(Copyable, ImplicitlyCopyable, Movable, Writable):
         face._set_size(load_library("libfreetype"), size)
         return (face.ascender, face.descender)
 
-    def render(mut self, codepoint: Int, size: Int) raises -> _GlyphInfo:
+    def _render(mut self, codepoint: Int, size: Int) raises -> _GlyphInfo:
         """Rasterise one glyph at `size` pixels; see `_Face.render`."""
         return self._faces[].face(self._draws_italic).render(codepoint, size)

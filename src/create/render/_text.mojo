@@ -239,10 +239,10 @@ struct TextRenderer(Movable):
             if face._draws_italic:
                 fallback = fallback._italic()
             fallback._set_weight(weight)
-            self._glyphs[key] = fallback.render(codepoint, size)
+            self._glyphs[key] = fallback._render(codepoint, size)
         else:
             face._set_weight(weight)
-            self._glyphs[key] = face.render(codepoint, size)
+            self._glyphs[key] = face._render(codepoint, size)
         return key
 
     def glyph_mask(
