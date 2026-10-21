@@ -68,7 +68,7 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
     var font: Optional[Font]
     """The face text is drawn in; none for the packaged Noto Sans."""
     var font_size: Float64
-    var font_weight: Int
+    var font_weight: FontWeight
     var font_italic: Bool
     var text_align: Align
     var tint: Color
@@ -94,7 +94,7 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         text_color: Color = Color.BLACK,
         font: Optional[Font] = None,
         font_size: Float64 = 16.0,
-        font_weight: Int = FontWeight.REGULAR,
+        font_weight: FontWeight = FontWeight.REGULAR,
         font_italic: Bool = False,
         text_align: Align = Align.CENTER,
         tint: Color = Color.WHITE,

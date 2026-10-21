@@ -1,4 +1,5 @@
 from create.math.vector2d import Vector2D
+from .gamepad_button import GamepadButton
 
 # SDL's axis numbering, as `GamepadAxisMoved` carries it.
 comptime _LEFT_X = 0
@@ -48,9 +49,9 @@ struct Gamepad(Copyable, ImplicitlyCopyable, Movable, Writable):
     var right_stick: Vector2D
     var left_trigger: Float64
     var right_trigger: Float64
-    # The most recent button pressed, compared against `GamepadButton` (-1
-    # before any, since `SOUTH` is 0). Kept until the next press.
-    var button: Int
+    # The most recent button pressed, compared against `GamepadButton`
+    # (`GamepadButton.NONE` before any). Kept until the next press.
+    var button: GamepadButton
     # SDL's id for the pad in this slot, matched against each event's.
     var _id: Int
     # Stick positions as reported, before the dead zone, y up. The dead zone
@@ -71,7 +72,7 @@ struct Gamepad(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.right_stick = Vector2D.ZERO
         self.left_trigger = 0.0
         self.right_trigger = 0.0
-        self.button = -1
+        self.button = GamepadButton.NONE
         self._id = -1
         self._left_raw = Vector2D.ZERO
         self._right_raw = Vector2D.ZERO
@@ -102,17 +103,17 @@ struct Gamepad(Copyable, ImplicitlyCopyable, Movable, Writable):
             ")",
         )
 
-    def button_down(self, button: Int) -> Bool:
+    def button_down(self, button: GamepadButton) -> Bool:
         """Whether this button is held right now."""
-        return (self._held_buttons & (1 << button)) != 0
+        return (self._held_buttons & button._bit()) != 0
 
-    def button_pressed(self, button: Int) -> Bool:
+    def button_pressed(self, button: GamepadButton) -> Bool:
         """Whether this button went down this frame — true once per press."""
-        return (self._pressed_buttons & (1 << button)) != 0
+        return (self._pressed_buttons & button._bit()) != 0
 
-    def button_released(self, button: Int) -> Bool:
+    def button_released(self, button: GamepadButton) -> Bool:
         """Whether this button came up this frame — true once per release."""
-        return (self._released_buttons & (1 << button)) != 0
+        return (self._released_buttons & button._bit()) != 0
 
     def _new_frame(mut self):
         self._pressed_buttons = 0
@@ -123,15 +124,15 @@ struct Gamepad(Copyable, ImplicitlyCopyable, Movable, Writable):
         if not self.connected:
             self.name = ""
 
-    def _press(mut self, button: Int):
+    def _press(mut self, button: GamepadButton):
         if not self.button_down(button):
             self.button = button
-            self._held_buttons |= 1 << button
-            self._pressed_buttons |= 1 << button
+            self._held_buttons |= button._bit()
+            self._pressed_buttons |= button._bit()
 
-    def _release(mut self, button: Int):
-        self._held_buttons &= ~(1 << button)
-        self._released_buttons |= 1 << button
+    def _release(mut self, button: GamepadButton):
+        self._held_buttons &= ~button._bit()
+        self._released_buttons |= button._bit()
 
     def _set_axis(mut self, axis: Int, value: Float64):
         """Record one axis reading, `value` as `GamepadAxisMoved` carries it:

@@ -31,7 +31,8 @@ def test_no_gamepad_reads_disconnected_and_idle() raises -> None:
     assert_false(pad.connected)
     assert_false(pad.button_down(GamepadButton.SOUTH))
     assert_equal(pad.left_stick, Vector2D.ZERO)
-    assert_equal(pad.button, -1)
+    assert_equal(pad.button, GamepadButton.NONE)
+    assert_false(pad.button_down(GamepadButton.NONE))
     assert_false(context.input.gamepad(3).connected)
     assert_false(context.input.gamepad(-1).connected)
 
@@ -49,7 +50,7 @@ def test_button_down_pressed_released_lifecycle() raises -> None:
         context,
         [
             Event(GamepadAdded(1, "Pad 1")),
-            Event(GamepadButtonDown(1, GamepadButton.START)),
+            Event(GamepadButtonDown(1, GamepadButton.START.value)),
         ],
     )
     var pad = context.input.gamepad()
@@ -62,7 +63,7 @@ def test_button_down_pressed_released_lifecycle() raises -> None:
     assert_true(pad.button_down(GamepadButton.START))
     assert_false(pad.button_pressed(GamepadButton.START))
 
-    _frame(context, [Event(GamepadButtonUp(1, GamepadButton.START))])
+    _frame(context, [Event(GamepadButtonUp(1, GamepadButton.START.value))])
     pad = context.input.gamepad()
     assert_false(pad.button_down(GamepadButton.START))
     assert_true(pad.button_released(GamepadButton.START))
@@ -79,8 +80,8 @@ def test_events_reach_the_pad_they_name() raises -> None:
         [
             Event(GamepadAdded(10, "Pad 10")),
             Event(GamepadAdded(20, "Pad 20")),
-            Event(GamepadButtonDown(20, GamepadButton.SOUTH)),
-            Event(GamepadButtonDown(99, GamepadButton.EAST)),
+            Event(GamepadButtonDown(20, GamepadButton.SOUTH.value)),
+            Event(GamepadButtonDown(99, GamepadButton.EAST.value)),
         ],
     )
     assert_false(context.input.gamepad(0).button_down(GamepadButton.SOUTH))
@@ -161,18 +162,24 @@ def test_removed_pad_frees_its_slot_and_others_stay() raises -> None:
     )
     _frame(
         context,
-        [Event(GamepadButtonDown(1, 0)), Event(GamepadRemoved(1))],
+        [
+            Event(GamepadButtonDown(1, GamepadButton.SOUTH.value)),
+            Event(GamepadRemoved(1)),
+        ],
     )
     assert_false(context.input.gamepad(0).connected)
-    assert_false(context.input.gamepad(0).button_down(0))
+    assert_false(context.input.gamepad(0).button_down(GamepadButton.SOUTH))
     assert_true(context.input.gamepad(1).connected)
 
     _frame(
         context,
-        [Event(GamepadAdded(3, "Pad 3")), Event(GamepadButtonDown(3, 1))],
+        [
+            Event(GamepadAdded(3, "Pad 3")),
+            Event(GamepadButtonDown(3, GamepadButton.EAST.value)),
+        ],
     )
     assert_true(context.input.gamepad(0).connected)
-    assert_true(context.input.gamepad(0).button_down(1))
+    assert_true(context.input.gamepad(0).button_down(GamepadButton.EAST))
     assert_false(context.input.gamepad(2).connected)
 
 
@@ -255,9 +262,15 @@ def test_prints_keyword_form() raises -> None:
             "Gamepad(connected=False, connected_this_frame=False,"
             " disconnected_this_frame=False, name='',"
             " left_stick=Vector2D(0.0, 0.0), right_stick=Vector2D(0.0, 0.0),"
-            " left_trigger=0.0, right_trigger=0.0, button=-1)"
+            " left_trigger=0.0, right_trigger=0.0, button=GamepadButton.NONE)"
         ),
     )
+
+
+def test_gamepad_button_prints_as_source() raises -> None:
+    assert_equal(String(GamepadButton.SOUTH), "GamepadButton.SOUTH")
+    assert_equal(String(GamepadButton.NONE), "GamepadButton.NONE")
+    assert_equal(String(GamepadButton(40)), "GamepadButton(40)")
 
 
 def main() raises:

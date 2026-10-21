@@ -1,6 +1,7 @@
 from std.testing import TestSuite, assert_equal, assert_false, assert_true
 from create.input.input import Input
 from create.input.key import Key
+from create.input.mouse_button import MouseButton
 from create.core.context import Context
 from create.render._viewport import Viewport
 from create.core._events import apply_events
@@ -129,12 +130,12 @@ def test_named_key_ctrl_both_sides() raises -> None:
 
 def test_mouse_button_initial() raises -> None:
     var input = Input()
-    assert_equal(input.mouse_button, 0)
+    assert_equal(input.mouse_button, MouseButton.NONE)
 
 
 def test_key_initial() raises -> None:
     var input = Input()
-    assert_equal(input.key, Key(0))
+    assert_equal(input.key, Key.NONE)
 
 
 def test_key_is_the_most_recent_press_and_outlives_release() raises -> None:
@@ -355,10 +356,27 @@ def test_initial_wheel_and_press_pos_zero() raises -> None:
     assert_equal(input.mouse_press_position.y, 0.0)
 
 
+def test_none_is_never_down() raises -> None:
+    var input = Input()
+    input._held_buttons = -1
+    input._pressed_buttons = -1
+    assert_false(input.mouse_down(MouseButton.NONE))
+    assert_false(input.mouse_pressed(MouseButton.NONE))
+    input._held_keys.set(Key.A)
+    assert_false(input.key_down(Key.NONE))
+
+
+def test_mouse_button_prints_as_source() raises -> None:
+    assert_equal(String(MouseButton.RIGHT), "MouseButton.RIGHT")
+    assert_equal(String(MouseButton.NONE), "MouseButton.NONE")
+    assert_equal(String(MouseButton(8)), "MouseButton(8)")
+    assert_equal(String(Key.NONE), "Key.NONE")
+
+
 def test_no_mouse_buttons_down_initially() raises -> None:
     var input = Input()
     assert_equal(input.mouse_down(), False)
-    assert_equal(input.mouse_down(2), False)
+    assert_equal(input.mouse_down(MouseButton.MIDDLE), False)
     assert_equal(input.mouse_pressed(), False)
     assert_equal(input.mouse_released(), False)
 
@@ -367,37 +385,37 @@ def test_mouse_down_default_button() raises -> None:
     var input = Input()
     input._held_buttons |= 1 << 1
     assert_true(input.mouse_down())
-    assert_equal(input.mouse_down(2), False)
+    assert_equal(input.mouse_down(MouseButton.MIDDLE), False)
 
 
 def test_mouse_down_specific_button() raises -> None:
     var input = Input()
     input._held_buttons |= 1 << 3
-    assert_true(input.mouse_down(3))
-    assert_equal(input.mouse_down(1), False)
+    assert_true(input.mouse_down(MouseButton.RIGHT))
+    assert_equal(input.mouse_down(MouseButton.LEFT), False)
 
 
 def test_multiple_mouse_buttons_held_independently() raises -> None:
     var input = Input()
     input._held_buttons |= 1 << 1
     input._held_buttons |= 1 << 2
-    assert_true(input.mouse_down(1))
-    assert_true(input.mouse_down(2))
-    assert_equal(input.mouse_down(3), False)
+    assert_true(input.mouse_down(MouseButton.LEFT))
+    assert_true(input.mouse_down(MouseButton.MIDDLE))
+    assert_equal(input.mouse_down(MouseButton.RIGHT), False)
 
 
 def test_mouse_pressed_button() raises -> None:
     var input = Input()
     input._pressed_buttons |= 1 << 2
-    assert_true(input.mouse_pressed(2))
-    assert_equal(input.mouse_pressed(1), False)
+    assert_true(input.mouse_pressed(MouseButton.MIDDLE))
+    assert_equal(input.mouse_pressed(MouseButton.LEFT), False)
 
 
 def test_mouse_released_button() raises -> None:
     var input = Input()
     input._released_buttons |= 1 << 1
     assert_true(input.mouse_released())
-    assert_equal(input.mouse_released(2), False)
+    assert_equal(input.mouse_released(MouseButton.MIDDLE), False)
 
 
 def test_new_frame_clears_pressed_and_released() raises -> None:
@@ -417,8 +435,8 @@ def test_new_frame_clears_wheel_and_edge_buttons() raises -> None:
     input._new_frame()
     assert_equal(input.mouse_wheel.x, 0.0)
     assert_equal(input.mouse_wheel.y, 0.0)
-    assert_equal(input.mouse_pressed(1), False)
-    assert_equal(input.mouse_released(2), False)
+    assert_equal(input.mouse_pressed(MouseButton.LEFT), False)
+    assert_equal(input.mouse_released(MouseButton.MIDDLE), False)
 
 
 def test_new_frame_leaves_held_state_alone() raises -> None:
@@ -429,7 +447,7 @@ def test_new_frame_leaves_held_state_alone() raises -> None:
     input._held_buttons |= 1 << 1
     input._new_frame()
     assert_true(input.key_down(Key(65)))
-    assert_true(input.mouse_down(1))
+    assert_true(input.mouse_down(MouseButton.LEFT))
 
 
 def test_set_mouse_records_the_position() raises -> None:

@@ -3,6 +3,7 @@ from create.math.vector2d import Vector2D
 from .key import Key, _KeySet
 from .mouse_button import MouseButton
 from .gamepad import Gamepad
+from .gamepad_button import GamepadButton
 
 
 struct Input(Copyable, Movable):
@@ -49,17 +50,17 @@ struct Input(Copyable, Movable):
     unplugging player one leaves player two where they were.
     """
 
-    # The most recent key pressed, compared against `Key` (`Key(0)` before
-    # any). Kept until the next press, like `mouse_button`; auto-repeat of a
+    # The most recent key pressed, compared against `Key` (`Key.NONE`
+    # before any). Kept until the next press, like `mouse_button`; auto-repeat of a
     # held key does not count as a press.
     var key: Key
     # The text typed this frame, UTF-8 — empty on most frames, several
     # characters when typing outpaces the frame rate. Zeroed every frame.
     var text: String
     var mouse: Point2D
-    # The most recent button pressed, compared against `MouseButton` (0
-    # before any). Kept until the next press.
-    var mouse_button: Int
+    # The most recent button pressed, compared against `MouseButton`
+    # (`MouseButton.NONE` before any). Kept until the next press.
+    var mouse_button: MouseButton
     # This frame's scroll delta — zeroed at the start of every frame, same
     # lifecycle as the pressed/released key bits.
     var mouse_wheel: Vector2D
@@ -82,10 +83,10 @@ struct Input(Copyable, Movable):
     var _gamepads: List[Gamepad]
 
     def __init__(out self):
-        self.key = Key(0)
+        self.key = Key.NONE
         self.text = ""
         self.mouse = Point2D(0, 0)
-        self.mouse_button = 0
+        self.mouse_button = MouseButton.NONE
         self.mouse_wheel = Vector2D(0, 0)
         self.mouse_press_position = Point2D(0, 0)
         self._held_keys = _KeySet()
@@ -138,17 +139,17 @@ struct Input(Copyable, Movable):
     def _type_text(mut self, text: String):
         self.text += text
 
-    def _mouse_button_down(mut self, button: Int, position: Point2D):
+    def _mouse_button_down(mut self, button: MouseButton, position: Point2D):
         self.mouse_button = button
         self._set_mouse(position.x, position.y)
         self.mouse_press_position = position
-        self._held_buttons |= 1 << button
-        self._pressed_buttons |= 1 << button
+        self._held_buttons |= button._bit()
+        self._pressed_buttons |= button._bit()
 
-    def _mouse_button_up(mut self, button: Int, position: Point2D):
+    def _mouse_button_up(mut self, button: MouseButton, position: Point2D):
         self._set_mouse(position.x, position.y)
-        self._held_buttons &= ~(1 << button)
-        self._released_buttons |= 1 << button
+        self._held_buttons &= ~button._bit()
+        self._released_buttons |= button._bit()
 
     def _scroll(mut self, delta: Vector2D):
         self.mouse_wheel = delta
@@ -158,12 +159,12 @@ struct Input(Copyable, Movable):
         if slot != -1:
             self._gamepads[slot]._set_axis(axis, value)
 
-    def _gamepad_button_down(mut self, id: Int, button: Int):
+    def _gamepad_button_down(mut self, id: Int, button: GamepadButton):
         var slot = self._gamepad_slot(id)
         if slot != -1:
             self._gamepads[slot]._press(button)
 
-    def _gamepad_button_up(mut self, id: Int, button: Int):
+    def _gamepad_button_up(mut self, id: Int, button: GamepadButton):
         var slot = self._gamepad_slot(id)
         if slot != -1:
             self._gamepads[slot]._release(button)
@@ -236,23 +237,21 @@ struct Input(Copyable, Movable):
         `_check` for the names."""
         return self._check(key, self._typed_keys)
 
-    def mouse_down(self, button: Int = MouseButton.LEFT) -> Bool:
+    def mouse_down(self, button: MouseButton = MouseButton.LEFT) -> Bool:
         """Whether this mouse button is held right now.
 
         Defaults to `MouseButton.LEFT`, so the common case needs no argument.
-        Name the rest through `MouseButton` rather than passing a raw int — the
-        numbering is not what anyone guesses (`RIGHT` is 3, not 2).
         """
-        return (self._held_buttons & (1 << button)) != 0
+        return (self._held_buttons & button._bit()) != 0
 
-    def mouse_pressed(self, button: Int = MouseButton.LEFT) -> Bool:
+    def mouse_pressed(self, button: MouseButton = MouseButton.LEFT) -> Bool:
         """Whether this mouse button went down this frame — true once per
         click. `mouse_press_position` is where it happened."""
-        return (self._pressed_buttons & (1 << button)) != 0
+        return (self._pressed_buttons & button._bit()) != 0
 
-    def mouse_released(self, button: Int = MouseButton.LEFT) -> Bool:
+    def mouse_released(self, button: MouseButton = MouseButton.LEFT) -> Bool:
         """Whether this mouse button came up this frame — true once."""
-        return (self._released_buttons & (1 << button)) != 0
+        return (self._released_buttons & button._bit()) != 0
 
     def gamepad(self, player: Int = 0) -> Gamepad:
         """The gamepad in slot `player` — player one is 0, the default, so a

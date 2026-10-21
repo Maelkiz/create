@@ -49,20 +49,22 @@ def test_a_glyph_renders() raises -> None:
 
 
 def test_font_weights_are_design_space_values() raises -> None:
-    assert_equal(FontWeight.REGULAR, 400)
-    assert_equal(FontWeight.BOLD, 700)
+    assert_equal(FontWeight.REGULAR.value, 400)
+    assert_equal(FontWeight.BOLD.value, 700)
+    assert_equal(String(FontWeight.BOLD), "FontWeight.BOLD")
+    assert_equal(String(FontWeight(450)), "FontWeight(450)")
 
 
 def test_an_upright_face_does_not_lean() raises -> None:
-    var face = _Face(default_font_path(), 48, FontWeight.REGULAR)
+    var face = _Face(default_font_path(), 48, FontWeight.REGULAR.value)
     assert_equal(_lean(face.render(ord("I"), 48)), 0)
     assert_true(not face.sheared)
 
 
 def test_a_face_without_an_italic_is_sheared() raises -> None:
-    var upright = _Face(default_font_path(), 48, FontWeight.REGULAR)
+    var upright = _Face(default_font_path(), 48, FontWeight.REGULAR.value)
     var slanted = _Face(
-        default_font_path(), 48, FontWeight.REGULAR, slanted=True
+        default_font_path(), 48, FontWeight.REGULAR.value, slanted=True
     )
     assert_true(slanted.sheared)
     var g = slanted.render(ord("I"), 48)
@@ -73,30 +75,34 @@ def test_a_face_without_an_italic_is_sheared() raises -> None:
 
 
 def test_a_slnt_axis_is_the_italic_of_its_own_file() raises -> None:
-    var upright = _Face(_SLNT_FIXTURE, 48, FontWeight.REGULAR)
-    var slanted = _Face(_SLNT_FIXTURE, 48, FontWeight.REGULAR, slanted=True)
+    var upright = _Face(_SLNT_FIXTURE, 48, FontWeight.REGULAR.value)
+    var slanted = _Face(
+        _SLNT_FIXTURE, 48, FontWeight.REGULAR.value, slanted=True
+    )
     assert_true(not slanted.sheared, "the axis, not a transform")
     assert_equal(_lean(upright.render(ord("I"), 48)), 0)
     assert_true(_lean(slanted.render(ord("I"), 48)) >= 4)
     # The weight is solved together with the slant, so changing it keeps
     # the lean.
-    slanted._set_weight(FontWeight.BOLD)
+    slanted._set_weight(FontWeight.BOLD.value)
     assert_true(_lean(slanted.render(ord("I"), 48)) >= 4)
 
 
 def test_the_packaged_italic_is_variable_in_weight() raises -> None:
-    var face = _Face(default_italic_font_path(), 48, FontWeight.REGULAR)
+    var face = _Face(default_italic_font_path(), 48, FontWeight.REGULAR.value)
     var regular = face.render(ord("l"), 48).width
-    face._set_weight(FontWeight.BLACK)
+    face._set_weight(FontWeight.BLACK.value)
     assert_true(face.render(ord("l"), 48).width > regular)
 
 
 def test_the_packaged_italic_is_a_true_italic() raises -> None:
     # A real italic redraws the letter rather than leaning it: a true italic
     # "a" is not the upright one sheared.
-    var true_italic = _Face(default_italic_font_path(), 48, FontWeight.REGULAR)
+    var true_italic = _Face(
+        default_italic_font_path(), 48, FontWeight.REGULAR.value
+    )
     var sheared = _Face(
-        default_font_path(), 48, FontWeight.REGULAR, slanted=True
+        default_font_path(), 48, FontWeight.REGULAR.value, slanted=True
     )
     assert_true(not true_italic.sheared)
     var a = true_italic.render(ord("a"), 48)

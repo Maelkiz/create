@@ -43,7 +43,7 @@ def _pixel_size(style: Style, pixel_scale: Float64) -> Int:
 
 def _key_weight(style: Style) -> Int:
     """The style's weight, clamped into the glyph key's 10 bits."""
-    return min(max(style.font_weight, 0), _MAX_WEIGHT)
+    return min(max(style.font_weight.value, 0), _MAX_WEIGHT)
 
 
 struct PlacedGlyph(Copyable, Movable):
