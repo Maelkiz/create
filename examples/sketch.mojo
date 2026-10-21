@@ -19,15 +19,15 @@ struct Sketch(Program):
         var line = Line((-250, 150), triangle.center())
 
         canvas.fill(Color.BLUE)
-        canvas.circle(circle)
+        canvas.draw(circle)
 
-        canvas.line(line)
+        canvas.draw(line)
 
         canvas.fill(Color.RED)
-        canvas.rectangle(rectangle)
+        canvas.draw(rectangle)
 
         canvas.fill(Color.BLACK)
-        canvas.triangle(triangle)
+        canvas.draw(triangle)
 
         canvas.text_color(Color.BLACK)
         canvas.font_size(54)

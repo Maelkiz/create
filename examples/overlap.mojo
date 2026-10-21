@@ -23,9 +23,9 @@ struct App(Program):
 
         canvas.outline_enabled(False)
         canvas.fill(Color(220, 60, 60))
-        canvas.circle(self.center)
+        canvas.draw(self.center)
         canvas.fill(Color(60, 120, 220))
-        canvas.circle(self.mouse)
+        canvas.draw(self.mouse)
 
 
 def main() raises:

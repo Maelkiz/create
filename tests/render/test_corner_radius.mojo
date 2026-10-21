@@ -1,6 +1,6 @@
-"""A shape's own `corner_radius`, drawn: what `canvas.rectangle`,
-`canvas.triangle`, `canvas.polygon` and `canvas.sector` paint agrees with
-what the shape's `contains` holds.
+"""A shape's own `corner_radius`, drawn: what `canvas.draw` paints for a
+rounded rectangle, triangle, polygon or sector agrees with what the shape's
+`contains` holds.
 
 A 100 x 100 offscreen canvas: screen x and y in -50..50, y up.
 """
@@ -30,7 +30,7 @@ def test_a_rounded_rectangle_paints_what_it_contains() raises -> None:
     var grown = Rectangle(r.position, r.w + 0.2, r.h + 0.2, corner_radius=15.1)
     var shrunk = Rectangle(r.position, r.w - 0.2, r.h - 0.2, corner_radius=14.9)
     var canvas = _canvas()
-    canvas.rectangle(r)
+    canvas.draw(r)
     var shot = canvas.snapshot()
     var checked = 0
     for j in range(100):
@@ -50,7 +50,7 @@ def test_a_rounded_triangle_paints_what_it_contains() raises -> None:
         (-40.0, -35.0), (45.0, -30.0), (-5.0, 40.0), corner_radius=8.0
     )
     var canvas = _canvas()
-    canvas.triangle(t)
+    canvas.draw(t)
     var shot = canvas.snapshot()
     # The triangle's fillets are drawn as chords, which sit inside the true
     # arc by up to about a quarter pixel at this radius, so centres within
@@ -88,7 +88,7 @@ def test_a_rounded_triangle_paints_what_it_contains() raises -> None:
 def test_a_rounded_star_paints_what_it_contains() raises -> None:
     var star = Polygon.star((0.0, 0.0), 48.0, 20.0, 5, corner_radius=6.0)
     var canvas = _canvas()
-    canvas.polygon(star)
+    canvas.draw(star)
     var shot = canvas.snapshot()
     # Fillets are flattened, finer in the geometry than on screen.
     var offsets: List[Vector2D] = [
@@ -121,7 +121,7 @@ def test_a_rounded_star_paints_what_it_contains() raises -> None:
 
 def _assert_sector_paints_what_it_contains(s: Sector) raises:
     var canvas = _canvas()
-    canvas.sector(s)
+    canvas.draw(s)
     var shot = canvas.snapshot()
     # Curves are flattened, finer in the geometry than on screen.
     var offsets: List[Vector2D] = [
@@ -183,7 +183,7 @@ def test_a_rounded_sector_keeps_its_circle_for_a_gradient() raises -> None:
 
 def test_the_keyword_rounds_like_the_shape() raises -> None:
     var shape = _canvas()
-    shape.rectangle(Rectangle((0.0, 0.0), 50.0, 30.0, corner_radius=9.0))
+    shape.draw(Rectangle((0.0, 0.0), 50.0, 30.0, corner_radius=9.0))
     var keyword = _canvas()
     keyword.rectangle((0.0, 0.0), 50.0, 30.0, corner_radius=9.0)
     var a = shape.snapshot()

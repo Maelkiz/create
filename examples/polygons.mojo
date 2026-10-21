@@ -84,7 +84,7 @@ struct App(Program):
                 canvas.fill(Color.WHITE)
             else:
                 canvas.fill(_side_color(sides))
-            canvas.polygon(shape)
+            canvas.draw(shape)
 
         # Stars turning either way. Every star's first tip points up at
         # rest; `start_angle` turns it.
@@ -103,7 +103,7 @@ struct App(Program):
                 canvas.fill(Color.WHITE)
             else:
                 canvas.fill(Color(240, 200, 80))
-            canvas.polygon(star)
+            canvas.draw(star)
 
         # A concave U from literal vertices, translucent and shadowed. Its
         # notch is outside it: hovering there lights nothing, and the
@@ -130,7 +130,7 @@ struct App(Program):
             shadow_offset=Vector2D(10, -14),
             shadow_blur=24,
         ):
-            canvas.polygon(u)
+            canvas.draw(u)
 
         # Translucent, so the outline shows every edge, the crossing ones
         # through the middle too, while the middle is filled just once.
@@ -139,7 +139,7 @@ struct App(Program):
             outline=Color(120, 210, 140),
             outline_thickness=3,
         ):
-            canvas.polygon(self.pentagram)
+            canvas.draw(self.pentagram)
 
         canvas.text_color(Color(200, 200, 212))
         canvas.font_size(30)

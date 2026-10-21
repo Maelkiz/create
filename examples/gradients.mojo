@@ -90,7 +90,7 @@ struct App(Program):
         )
         canvas.sector((220, 120), 65.0, 0.5, 1.6 * pi)
         canvas.fill(Gradient.linear(Color.hex(0xFFD166), Color.hex(0xEF476F)))
-        canvas.polygon(Polygon.star((450, 120), 70.0, 30.0, 5))
+        canvas.draw(Polygon.star((450, 120), 70.0, 30.0, 5))
 
         # The card turns, and its gradient turns with it.
         with canvas.style(self.card):

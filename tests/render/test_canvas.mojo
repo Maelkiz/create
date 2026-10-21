@@ -1138,7 +1138,7 @@ struct BezierBothWays(Program):
         canvas.background(Color.BLACK)
         canvas.outline(Color.WHITE, thickness=4)
         canvas.bezier((-40.0, 20.0), (-20.0, 40.0), (20.0, 40.0), (40.0, 20.0))
-        canvas.bezier(
+        canvas.draw(
             Bezier((-40.0, -20.0), (-20.0, -40.0), (20.0, -40.0), (40.0, -20.0))
         )
 
@@ -1171,7 +1171,7 @@ struct ZoomedBezier(Program):
         canvas.background(Color.BLACK)
         canvas.camera(Camera(zoom=8.0))
         canvas.outline(Color.WHITE, thickness=1)
-        canvas.bezier(_zoomed_curve())
+        canvas.draw(_zoomed_curve())
 
 
 def test_bezier_stays_smooth_under_camera_zoom() raises -> None:
@@ -1266,7 +1266,7 @@ struct OpenSpline(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
         canvas.outline(Color.WHITE, thickness=4)
-        canvas.spline(Spline(_square_corners()))
+        canvas.draw(Spline(_square_corners()))
 
 
 def test_spline_passes_through_every_point() raises -> None:
@@ -1337,7 +1337,7 @@ struct ArcEveryWay(Program):
         # Clockwise from +x: the lower right quarter.
         canvas.arc((0.0, 0.0), 20, 0.0, -pi / 2.0)
         # Counter-clockwise from -x: the lower left quarter.
-        canvas.arc(Arc((0.0, 0.0), 40, pi, pi / 2.0))
+        canvas.draw(Arc((0.0, 0.0), 40, pi, pi / 2.0))
 
 
 def test_arc_strokes_through_every_overload() raises -> None:
@@ -1441,7 +1441,7 @@ struct SectorEveryWay(Program):
         # Clockwise from -x: the upper left quarter.
         canvas.sector((0.0, 0.0), 20, pi, -pi / 2.0)
         # Clockwise from -y: the lower left quarter.
-        canvas.sector(Sector((0.0, 0.0), 40, -pi / 2.0, -pi / 2.0))
+        canvas.draw(Sector((0.0, 0.0), 40, -pi / 2.0, -pi / 2.0))
 
 
 def test_sector_fills_through_every_overload() raises -> None:
@@ -1560,7 +1560,7 @@ struct PolygonEveryWay(Program):
         canvas.background(Color.BLACK)
         canvas.fill(Color.WHITE)
         canvas.outline_enabled(False)
-        canvas.polygon(
+        canvas.draw(
             Polygon(
                 (-40.0, -40.0),
                 (0.0, -40.0),
@@ -1633,7 +1633,7 @@ struct TranslucentStar(Program):
         canvas.fill(Color(255, 255, 255, 128))
         canvas.outline(Color(255, 255, 255, 128), thickness=5)
         with canvas.transform(rotate(0.4) @ scale(1.2, 0.8)):
-            canvas.polygon(Polygon.star((0.0, 0.0), 40.0, 16.0, 5))
+            canvas.draw(Polygon.star((0.0, 0.0), 40.0, 16.0, 5))
         # Self-crossing too: a pentagram beside it.
         var tips = Polygon.regular((0.0, 0.0), 12.0, 5).vertices.copy()
         with canvas.transform(translate(30.0, -30.0)):
@@ -1904,17 +1904,17 @@ struct GeometryOverloads(Program):
 
         canvas.outline_enabled(False)
         canvas.fill(Color.RED)
-        canvas.rectangle(Rectangle((-90.0, 40.0), 20.0, 20.0))
+        canvas.draw(Rectangle((-90.0, 40.0), 20.0, 20.0))
 
         canvas.fill(Color.GREEN)
-        canvas.circle(Circle((-30.0, 40.0), 10.0))
+        canvas.draw(Circle((-30.0, 40.0), 10.0))
 
         canvas.outline(Color.BLUE, thickness=3)
-        canvas.line(Line((20.0, 40.0), (40.0, 40.0)))
+        canvas.draw(Line((20.0, 40.0), (40.0, 40.0)))
 
         canvas.outline_enabled(False)
         canvas.fill(Color.CYAN)
-        canvas.triangle(Triangle((90.0, 50.0), (80.0, 30.0), (100.0, 30.0)))
+        canvas.draw(Triangle((90.0, 50.0), (80.0, 30.0), (100.0, 30.0)))
 
         canvas.fill(Color.MAGENTA)
         canvas.rectangle(Point2D(-90.0, -40.0), 20.0, 20.0)

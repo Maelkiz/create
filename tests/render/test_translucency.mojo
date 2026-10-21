@@ -94,7 +94,7 @@ def _draw(mut canvas: Canvas, kind: Int) raises:
     elif kind == 16:
         canvas.polygon((-20, -20), (20, -20), (20, 20), (-20, 20))
     elif kind == 17:
-        canvas.polygon(Polygon.star((0, 0), 30, 13, 5, corner_radius=4))
+        canvas.draw(Polygon.star((0, 0), 30, 13, 5, corner_radius=4))
     elif kind == 18:
         var tips = Polygon.regular((0, 0), 30, 5).vertices.copy()
         canvas.polygon(

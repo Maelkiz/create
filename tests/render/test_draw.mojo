@@ -49,8 +49,24 @@ def test_draw_matches_each_named_method() raises -> None:
 def test_draw_matches_polygons() raises -> None:
     var drawn = _canvas()
     var named = _canvas()
-    drawn.draw(Polygon.star((0.0, 0.0), 40.0, 16.0, 5, corner_radius=3.0))
-    named.polygon(Polygon.star((0.0, 0.0), 40.0, 16.0, 5, corner_radius=3.0))
+    drawn.draw(
+        Polygon(
+            Point2D(-40.0, -30.0),
+            Point2D(40.0, -30.0),
+            Point2D(0.0, 10.0),
+            Point2D(30.0, 40.0),
+            Point2D(-30.0, 40.0),
+            corner_radius=3.0,
+        )
+    )
+    named.polygon(
+        (-40.0, -30.0),
+        (40.0, -30.0),
+        (0.0, 10.0),
+        (30.0, 40.0),
+        (-30.0, 40.0),
+        corner_radius=3.0,
+    )
     _assert_same(drawn, named, "polygon")
 
 
