@@ -44,11 +44,7 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
     """
 
     var value: Float64
-    """The eased value, between `start` and `end`. Read this after `update`.
-
-    A field rather than a method so `render`, which takes an immutable `self`,
-    can read it without the tween being mutable there.
-    """
+    """The eased value, between `start` and `end`. Read this after `update`."""
 
     var progress: Float64
     """How far through the duration, 0 to 1, *before* easing.

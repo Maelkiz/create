@@ -63,7 +63,7 @@ struct Input(Copyable, Movable):
     # This frame's scroll delta — zeroed at the start of every frame, same
     # lifecycle as the pressed/released key bits.
     var mouse_wheel: Vector2D
-    # World position at the most recent press this frame. Captured at the
+    # Screen position at the most recent press this frame. Captured at the
     # MouseButtonDown event itself rather than read off `mouse`, because a
     # MouseMoved later in the same frame would otherwise overwrite it before
     # a program ever sees where the click actually started.

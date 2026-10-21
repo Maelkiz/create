@@ -44,7 +44,7 @@ struct _Voice(Movable):
 
 struct Audio(Movable):
     """Program-owned playback device. Construct once, hold as a Program field,
-    call `play` from `update` or event callbacks.
+    call `play` from `update`.
 
     Call `update` once per frame (e.g. from `Program.update`) -- it reaps
     finished one-shot voices and refills looping ones. SDL keeps playing
