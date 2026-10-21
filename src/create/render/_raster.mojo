@@ -6,7 +6,7 @@ from create.color.blend_mode import BlendMode
 from create.color.color import Color, _multiplied
 from create.text.font import _GlyphInfo
 from create.color.gradient import Gradient, _DeviceMapping
-from .surface import Surface
+from ._surface import Surface
 from create.math.point2d import Point2D
 
 

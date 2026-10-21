@@ -15,7 +15,6 @@ from std.testing import (
 
 from create import *
 from create.core.headless import run_headless
-from create.render.surface import MemorySurface
 from create.image.image import Image
 from create.math.geometry import (
     Circle,
@@ -1431,7 +1430,7 @@ struct OutlineOnlySector(Program):
         _outlined_quarter(canvas, filled=False)
 
 
-def _assert_quarter_outline(m: MemorySurface) raises:
+def _assert_quarter_outline(m: Image) raises:
     # Just inside the arc, and just above the start edge.
     assert_equal(m.pixel(76, 23), Color.WHITE)
     assert_equal(m.pixel(70, 48), Color.WHITE)
@@ -1815,7 +1814,7 @@ struct SwappedRect(Program):
         canvas.rectangle((0.0, 0.0), 40.0, 20.0)
 
 
-def _assert_quarter_turn_pixels(m: MemorySurface) raises:
+def _assert_quarter_turn_pixels(m: Image) raises:
     assert_equal(m.pixel(50, 50), Color.YELLOW)  # centre
     assert_equal(m.pixel(68, 50), Color.YELLOW)  # inside the wide axis
     assert_equal(m.pixel(50, 32), Color.BLACK)  # outside the narrow axis
@@ -1953,9 +1952,7 @@ def test_outline_thickness_under_non_uniform_transform_follows_autoscale() raise
     assert_equal(m.pixel(50, 53), Color.BLACK)
 
 
-def _non_background_box(
-    m: MemorySurface, bg: Color
-) -> Tuple[Int, Int, Int, Int]:
+def _non_background_box(m: Image, bg: Color) -> Tuple[Int, Int, Int, Int]:
     """Bounding box of every pixel that differs from `bg` — `(x0, y0, x1, y1)`,
     inclusive. Returns `(-1, -1, -1, -1)` when nothing was rendered.
 

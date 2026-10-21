@@ -42,6 +42,7 @@ that reason; see the phase's own commit for their before/after.
 from std.time import perf_counter_ns
 
 from create import *
+from create.render._surface import MemorySurface
 from create.render._backend import Backend
 from create.render._command import (
     clear_command,

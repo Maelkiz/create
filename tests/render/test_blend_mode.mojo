@@ -9,7 +9,7 @@ from std.testing import TestSuite, assert_equal, assert_true
 
 from create import *
 from create.render._raster import blend, fill_all, fill_span
-from create.render.surface import MemorySurface
+from create.render._surface import MemorySurface
 
 comptime _DST = Color(100, 150, 200)
 comptime _SRC = Color(200, 100, 50)

@@ -6,7 +6,7 @@ from std.testing import TestSuite, assert_equal
 
 from create import *
 from create.core.headless import run_headless
-from create.render.surface import MemorySurface
+from create.render._surface import MemorySurface
 from create.image.image import Image
 
 

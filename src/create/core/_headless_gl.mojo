@@ -20,7 +20,7 @@ from create.render.autoscale import AutoScale
 from create.render.render_backend import RenderBackend
 from create.render.canvas import _PersistentCanvasState
 from create.core.context import Context
-from create.render.surface import MemorySurface
+from create.render._surface import MemorySurface
 
 from ._step import first_step, step
 from .headless import _FRAME_MILLIS

@@ -14,7 +14,7 @@ from create.math.matrix import (
 from create.math.point2d import Point2D
 from create.color.color import Color
 from create.render.style import Style
-from create.render.surface import MemorySurface
+from create.render._surface import MemorySurface
 from create.render._command import CMD_SECTOR, sector_command
 from create.render._raster import fill_quad
 from create.render._sector import (

@@ -116,7 +116,7 @@ struct CaptureImageGPU(Program):
 
 
 def test_gpu_save_image_matches_cpu_save_image_byte_for_byte() raises -> None:
-    var gpu_m: MemorySurface
+    var gpu_m: Image
     try:
         gpu_m = run_headless[CaptureImageGPU](
             200,

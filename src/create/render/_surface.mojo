@@ -105,6 +105,10 @@ struct MemorySurface(Movable):
         self.height = height
         self.data = List[UInt8](length=width * height * 4, fill=0)
 
+    def _take_data(deinit self) -> List[UInt8]:
+        """The pixels, handed over without a copy."""
+        return self.data^
+
     def surface(mut self) -> Surface[origin_of(self.data)]:
         """Borrow this buffer as a `Surface` for the raster primitives."""
         return Surface(self.data.unsafe_ptr(), self.width, self.height)

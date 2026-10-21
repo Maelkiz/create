@@ -220,7 +220,7 @@ struct DrawsABadge(Program):
         canvas.image(self.badge, (30, -10))
 
 
-def _check_badge(m: MemorySurface) raises:
+def _check_badge(m: Image) raises:
     # 200 x 100 design: (30, -10) is pixel (130, 60).
     assert_equal(m.pixel(130, 60), Color.BLUE)
     assert_equal(m.pixel(145, 60), Color.RED, "the badge's clear corner")
@@ -231,7 +231,7 @@ def test_a_snapshot_draws_on_a_frame_canvas() raises -> None:
 
 
 def test_a_snapshot_draws_on_the_gpu_too() raises -> None:
-    var m: MemorySurface
+    var m: Image
     try:
         m = run_headless[DrawsABadge](
             200, 100, frames=2, backend=RenderBackend.GPU

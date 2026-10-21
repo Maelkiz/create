@@ -142,7 +142,7 @@ struct TransparentCapture(Program):
         canvas.save_image(_IMG_TRANSPARENT, transparent=True)
 
 
-def _render[n: Int]() raises -> MemorySurface:
+def _render[n: Int]() raises -> Image:
     return run_headless[Scene[n]](100, 100)
 
 
@@ -156,7 +156,7 @@ def _near(got: Color, want: Color, tolerance: Int = 3) raises:
     assert_true(ok, String("got ", got, ", want about ", want))
 
 
-def _assert_runs_down(m: MemorySurface, x: Int, top: Int, bottom: Int) raises:
+def _assert_runs_down(m: Image, x: Int, top: Int, bottom: Int) raises:
     """Red at row `top`, blue at row `bottom`, in column `x`."""
     var hi = m.pixel(x, top)
     var lo = m.pixel(x, bottom)
@@ -305,7 +305,7 @@ def _gpu_matches_cpu_for[
     pixel within one level, away from the shapes' edges, where the two
     rasterisers may claim different pixels. False if there is no GL context
     to try it with."""
-    var gpu: MemorySurface
+    var gpu: Image
     try:
         gpu = run_headless[P](
             100, 100, 1, pixel_w, pixel_h, backend=RenderBackend.GPU

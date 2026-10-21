@@ -10,6 +10,7 @@
 from create._window import GLWindow
 
 from create import *
+from create.render._surface import MemorySurface
 from create.core._step import first_step, step
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget

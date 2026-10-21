@@ -6,7 +6,9 @@ from create.render.render_backend import RenderBackend
 from ._step import first_step, step
 from ._headless_gl import _run_headless_gl
 from .program import Program
-from create.render.surface import MemorySurface
+from create.render._surface import MemorySurface
+from create.image.image import Image
+from create.image.pixel_buffer import PixelBuffer
 
 comptime _FRAME_MILLIS = 16
 """Synthetic frame duration, so a program that integrates delta is
@@ -25,9 +27,10 @@ def run_headless[
     backend: RenderBackend = RenderBackend.CPU,
     antialiasing: Antialiasing = Antialiasing.MEDIUM,
     autoscale: AutoScale = AutoScale.FIT,
-) raises -> MemorySurface:
-    """Run `P` over an owned buffer — `create`'s frame, then `frames` calls
-    to `update` — and return the buffer.
+) raises -> Image:
+    """Run `P` without a window — `create`'s frame, then `frames` calls to
+    `update` — and return the last frame as an `Image`, read back with
+    `pixel(x, y)` in image coordinates (top-left origin, y down).
 
     The same sequence as `run`, minus the window: `create` draws frame 1,
     then `update` draws one frame per call, with the letterbox painted after
@@ -52,14 +55,16 @@ def run_headless[
     `autoscale` is `run`'s too: how the design maps onto the framebuffer.
     """
     if backend == RenderBackend.GPU:
-        return _run_headless_gl[P](
-            width,
-            height,
-            frames,
-            pixel_width,
-            pixel_height,
-            antialiasing,
-            autoscale,
+        return _image_of(
+            _run_headless_gl[P](
+                width,
+                height,
+                frames,
+                pixel_width,
+                pixel_height,
+                antialiasing,
+                autoscale,
+            )
         )
     var pw = pixel_width if pixel_width > 0 else width
     var ph = pixel_height if pixel_height > 0 else height
@@ -85,4 +90,13 @@ def run_headless[
         context._advance_frame(now)
         state = step(program, context, state^)
         state._backend.present(mem.surface(), state._view.scale)
-    return mem^
+    return _image_of(mem^)
+
+
+def _image_of(var mem: MemorySurface) raises -> Image:
+    """`mem`'s pixels as an `Image`, taken over without a copy."""
+    var buffer = PixelBuffer(0, 0)
+    buffer.width = mem.width
+    buffer.height = mem.height
+    buffer._data = mem^._take_data()
+    return Image(buffer^)

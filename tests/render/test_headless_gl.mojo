@@ -1,6 +1,6 @@
 # Coverage the CPU-vs-GPU parity test is structurally blind to: does
 # `run_headless(..., backend=RenderBackend.GPU)` itself work — a correct
-# `MemorySurface` back out, the letterbox painted, several frames advancing
+# `Image` back out, the letterbox painted, several frames advancing
 # state. Skips with no GL context, same as the parity test.
 
 from std.testing import TestSuite, assert_equal, assert_true
@@ -26,7 +26,7 @@ struct GPURect(Program):
 
 
 def test_the_gpu_backend_paints_a_filled_rectangle() raises -> None:
-    var m: MemorySurface
+    var m: Image
     try:
         m = run_headless[GPURect](32, 32, backend=RenderBackend.GPU)
     except e:
@@ -57,7 +57,7 @@ struct GPUMover(Program):
 def test_the_gpu_backend_returns_only_the_last_of_several_frames() raises -> (
     None
 ):
-    var m: MemorySurface
+    var m: Image
     try:
         m = run_headless[GPUMover](64, 32, frames=2, backend=RenderBackend.GPU)
     except e:
@@ -73,7 +73,7 @@ def test_the_gpu_backend_returns_only_the_last_of_several_frames() raises -> (
 
 
 def test_the_gpu_backend_paints_letterbox_bars() raises -> None:
-    var m: MemorySurface
+    var m: Image
     try:
         m = run_headless[GPURect](
             64, 64, pixel_width=128, pixel_height=64, backend=RenderBackend.GPU
@@ -112,7 +112,7 @@ def test_the_gpu_backend_rounds_rectangle_corners() raises -> None:
     """Parity alone would not catch a GPU path that skipped rounding
     entirely — a corner fillet is too small a fraction of the shape's area
     to move the structural tolerances. This checks the corner directly."""
-    var m: MemorySurface
+    var m: Image
     try:
         m = run_headless[GPURoundedRect](100, 100, backend=RenderBackend.GPU)
     except e:
@@ -150,7 +150,7 @@ def test_the_gpu_backend_rounds_triangle_corners() raises -> None:
     """Parity alone would not catch a GPU path that skipped rounding
     entirely — a corner fillet is too small a fraction of the shape's area
     to move the structural tolerances. This checks the corner directly."""
-    var m: MemorySurface
+    var m: Image
     try:
         m = run_headless[GPURoundedTriangle](
             100, 100, backend=RenderBackend.GPU
@@ -190,7 +190,7 @@ struct GPUTextWithoutFill(Program):
 def test_the_gpu_backend_renders_text_with_fill_disabled() raises -> None:
     """Text is painted in `text_color`, independent of `fill` — disabling
     the fill must not hide it."""
-    var m: MemorySurface
+    var m: Image
     try:
         m = run_headless[GPUTextWithoutFill](64, 64, backend=RenderBackend.GPU)
     except e:
@@ -220,7 +220,7 @@ struct GPUCircle(Program):
         canvas.circle((0.0, 0.0), 20.0)
 
 
-def _partly_covered(m: MemorySurface) -> Int:
+def _partly_covered(m: Image) -> Int:
     """Pixels neither black nor white: a white circle's edge on black."""
     var count = 0
     for y in range(m.height):
@@ -232,8 +232,8 @@ def _partly_covered(m: MemorySurface) -> Int:
 
 
 def test_the_gpu_backend_multisamples_headless() raises -> None:
-    var hard: MemorySurface
-    var smooth: MemorySurface
+    var hard: Image
+    var smooth: Image
     try:
         hard = run_headless[GPUCircle](
             64, 64, backend=RenderBackend.GPU, antialiasing=Antialiasing.OFF

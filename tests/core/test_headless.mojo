@@ -116,7 +116,7 @@ struct Labelled[in_create: Bool, every_frame: Bool](Program):
         canvas.text("Hello", (0, 0))
 
 
-def _differing(a: MemorySurface, b: MemorySurface) -> Int:
+def _differing(a: Image, b: Image) -> Int:
     var n = 0
     for y in range(a.height):
         for x in range(a.width):

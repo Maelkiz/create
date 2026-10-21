@@ -9,6 +9,7 @@ present it after.
 from std.testing import TestSuite, assert_equal, assert_false, assert_true
 
 from create import *
+from create.render._surface import MemorySurface
 from create.core.headless import run_headless
 from create.render.canvas import _PersistentCanvasState
 from create.render.render_backend import RenderBackend
@@ -253,7 +254,7 @@ struct DrawsASnapshotBack(Program):
 
 
 def test_the_gpu_backend_reads_and_draws_back_the_same() raises -> None:
-    var m: MemorySurface
+    var m: Image
     try:
         m = run_headless[DrawsASnapshotBack](
             200, 100, frames=3, backend=RenderBackend.GPU

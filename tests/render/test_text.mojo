@@ -15,7 +15,7 @@ from create.text.font import (
     _GlyphInfo,
 )
 from create.render.style import Style
-from create.render.surface import MemorySurface
+from create.render._surface import MemorySurface
 from create.render._text import (
     TextRenderer,
     _FONT_SLOTS,

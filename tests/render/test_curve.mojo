@@ -10,7 +10,7 @@ from create.math.matrix import identity, scale, translate
 from create.math.point2d import Point2D
 from create.color.color import Color
 from create.render.style import Style
-from create.render.surface import MemorySurface
+from create.render._surface import MemorySurface
 from create.render._blur import blur_reach
 from create.render._command import bezier_chain_command, bezier_command
 from create.render._curve import (

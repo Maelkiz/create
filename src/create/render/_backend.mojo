@@ -74,7 +74,7 @@ from create.math._fillet import rect_corner_radius, triangle_corner_radius
 from ._tessellate import _arc_segments
 from ._triangle import triangle_pieces
 from ._png import write_png
-from .surface import MemorySurface, Surface, _force_opaque
+from ._surface import MemorySurface, Surface, _force_opaque
 from ._text import TextRenderer
 from .render_backend import RenderBackend
 from .antialiasing import Antialiasing

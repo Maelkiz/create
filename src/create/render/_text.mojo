@@ -12,7 +12,7 @@ from create.text.font import (
 from ._blur import blur_alpha
 from ._raster import blit_glyph
 from .style import Style
-from .surface import Surface
+from ._surface import Surface
 
 comptime _MAX_SIZE = 4095
 """The largest pixel size text is rasterised at: 12 bits of the glyph key."""

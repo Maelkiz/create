@@ -23,7 +23,7 @@ from ._command import RenderCommand
 from ._raster import fill_quad
 from ._transform import outline_thickness_px
 from create.color.color import Color
-from .surface import MemorySurface
+from ._surface import MemorySurface
 
 comptime FLATTEN_TOLERANCE_PX = 0.25
 """How far, in device pixels, a flattened curve may stray from the true one:

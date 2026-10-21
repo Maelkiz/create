@@ -44,6 +44,7 @@ from std.math import abs, max, min, tau
 from std.testing import TestSuite, assert_true
 
 from create import *
+from create.render._surface import MemorySurface
 from create.core._step import step
 from create.render.render_backend import RenderBackend
 from create.render._gl import GL
