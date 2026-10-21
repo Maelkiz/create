@@ -1,10 +1,13 @@
 from std.math import sqrt
 
+from .point2d import Point2D
+from .vector3d import Vector3D
+
 
 struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A 2D displacement or direction: arithmetic operators, `magnitude`, `normalize`,
-    `dot`, `distance`, `lerp`, and `xy`/`xyz` to hand the components to another
-    type.
+    `dot`, `distance`, `lerp`, and explicit constructors from a `Point2D` or a
+    `Vector3D`.
 
     Unlike `Point2D`, a bare tuple does not convert to one implicitly: a
     displacement literal names its type, `rect.translate(Vector2D(3, 4))`.
@@ -13,10 +16,11 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     displacements mostly arrive from arithmetic (`b - a`, `vel * dt`), which
     already yields a `Vector2D`.
 
-    `xy` and `xyz` return plain tuples, which destructure and bind to a
-    `Point2D` parameter; the explicit tuple constructors take them the rest of
-    the way: `Vector3D(v.xyz())`. Having to name the accessor is what keeps
-    the conversion visible.
+    Crossing to another type is an explicit constructor: `Vector2D(p)` is
+    the displacement from the origin to the position `p`, `Vector2D(v3)`
+    drops `z`, and `Vector3D(v, z)` widens. Naming the target type is what
+    keeps the conversion visible. `xy` returns the components as a plain
+    tuple, to destructure: `var (x, y) = v.xy()`.
 
     The direction constants follow the screen's axes, y up: `UP` is
     `Vector2D(0, 1)` and `DOWN` is `Vector2D(0, -1)`, so gravity is
@@ -35,6 +39,14 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     def __init__(out self, t: Tuple[Float64, Float64]):
         self = Vector2D(t[0], t[1])
+
+    def __init__(out self, p: Point2D):
+        """The displacement from the origin to `p`."""
+        self = Vector2D(p.x, p.y)
+
+    def __init__(out self, v: Vector3D):
+        """`v` without its `z`."""
+        self = Vector2D(v.x, v.y)
 
     def __add__(self, other: Vector2D) -> Vector2D:
         return Vector2D(self.x + other.x, self.y + other.y)
@@ -102,9 +114,6 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     def xy(self) -> Tuple[Float64, Float64]:
         return (self.x, self.y)
-
-    def xyz(self, z: Float64 = 0.0) -> Tuple[Float64, Float64, Float64]:
-        return (self.x, self.y, z)
 
     comptime ZERO = Vector2D(0.0, 0.0)
     comptime ONE = Vector2D(1.0, 1.0)

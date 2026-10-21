@@ -131,34 +131,34 @@ def test_xy_returns_the_components() raises -> None:
     assert_equal(t[1], 2.5)
 
 
-def test_xyz_defaults_z_to_zero() raises -> None:
-    var t = Point2D(1.5, 2.5).xyz()
-    assert_equal(t[0], 1.5)
-    assert_equal(t[1], 2.5)
-    assert_equal(t[2], 0.0)
-
-
-def test_xyz_takes_z() raises -> None:
-    var t = Point2D(1.5, 2.5).xyz(3.5)
-    assert_equal(t[2], 3.5)
-
-
 def test_xy_binds_back_to_a_point2d() raises -> None:
     var p = Point2D(1.5, 2.5)
     var back: Point2D = p.xy()
     assert_equal(back, p)
 
 
-def test_xy_is_the_escape_hatch_to_a_vector2d() raises -> None:
-    """`Vector2D(p.xy())` is how a program reaches the operations Point2D
-    deliberately refuses."""
-    var v = Vector2D(Point2D(3.0, 4.0).xy())
+def test_vector2d_constructor_is_the_escape_hatch() raises -> None:
+    """`Vector2D(p)` is how a program reaches the operations Point2D
+    deliberately refuses: the displacement from the origin to `p`."""
+    var v = Vector2D(Point2D(3.0, 4.0))
+    assert_equal(v, Vector2D(3.0, 4.0))
     assert_equal(v.magnitude(), 5.0)
 
 
-def test_xyz_converts_to_a_vector3d() raises -> None:
-    var w = Vector3D(Point2D(1.5, 2.5).xyz(3.5))
-    assert_equal(w, Vector3D(1.5, 2.5, 3.5))
+def test_constructs_from_a_vector2d() raises -> None:
+    """`Point2D(v)` is the origin moved by `v`."""
+    var v = Vector2D(1.5, -2.5)
+    assert_equal(Point2D(v), Point2D(0.0, 0.0) + v)
+
+
+def test_vector2d_round_trip() raises -> None:
+    var p = Point2D(1.5, 2.5)
+    assert_equal(Point2D(Vector2D(p)), p)
+
+
+def test_converts_to_a_vector3d() raises -> None:
+    assert_equal(Vector3D(Point2D(1.5, 2.5), 3.5), Vector3D(1.5, 2.5, 3.5))
+    assert_equal(Vector3D(Point2D(1.5, 2.5)), Vector3D(1.5, 2.5, 0.0))
 
 
 def test_subtracting_a_bare_tuple_is_a_displacement() raises -> None:
