@@ -50,7 +50,7 @@ def step[
     `Canvas`'s to own, which is what lets `update` be handed both at once.
 
     **The caller presents.** A frame ends with the recording complete and the
-    state handed back; `state.backend.present(surface, scale)` is the caller's
+    state handed back; `state._backend.present(surface, scale)` is the caller's
     call, not this one's. That keeps the frame body target-agnostic — a GPU
     backend has no `Surface` to name — and it is why `step` grows no second
     target parameter. The

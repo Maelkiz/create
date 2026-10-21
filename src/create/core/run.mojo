@@ -30,7 +30,7 @@ def _wait_for_dimensions(
     # For fullscreen, SDL fires a bogus (1, 1) Resized before reporting real
     # dimensions — pump events until the window reports a usable size.
     _update_dimensions(win, state, context)
-    while state.view.width <= 1 or state.view.height <= 1:
+    while state._view.width <= 1 or state._view.height <= 1:
         _ = win.events()
         _update_dimensions(win, state, context)
 
@@ -40,15 +40,15 @@ def _process_events(
     state: PersistentCanvasState,
     mut context: Context,
 ) raises:
-    if apply_events(win.events(), state.view, context):
+    if apply_events(win.events(), state._view, context):
         win.close()
 
 
 def _present(mut win: Window, mut state: PersistentCanvasState) raises:
     var pixel_w = win.width()
     var pixel_h = win.height()
-    state.backend.present(
-        Surface(win.pixels(), pixel_w, pixel_h), state.view.scale
+    state._backend.present(
+        Surface(win.pixels(), pixel_w, pixel_h), state._view.scale
     )
     win.present()
 
@@ -168,7 +168,7 @@ def run[
     # rebuilt every frame; the transform stack deliberately does not, so each
     # frame starts unrotated and untranslated.
     var state = PersistentCanvasState()
-    state.backend.antialiasing = antialiasing
+    state._backend.antialiasing = antialiasing
     # The size the program is authored against is always what the caller asked
     # for, never what the display handed back. In fullscreen SDL ignores the
     # requested size, so seeding this from the window would make the design

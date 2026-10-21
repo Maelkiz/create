@@ -103,7 +103,7 @@ def test_an_opaque_background_replaces_the_autoclear() raises -> None:
     var canvas = context._new_canvas(state^)
     canvas.background(Color.BLUE)
     var out = canvas^._release()
-    assert_equal(len(out.backend.commands), 1)
+    assert_equal(len(out._backend.commands), 1)
 
 
 def test_a_translucent_background_keeps_both() raises -> None:
@@ -114,7 +114,7 @@ def test_a_translucent_background_keeps_both() raises -> None:
     var canvas = context._new_canvas(state^)
     canvas.background(Color(0x11, 0x11, 0x11, 24))
     var out = canvas^._release()
-    assert_equal(len(out.backend.commands), 2)
+    assert_equal(len(out._backend.commands), 2)
 
 
 def test_autoclear_records_nothing_when_off() raises -> None:
@@ -124,7 +124,7 @@ def test_autoclear_records_nothing_when_off() raises -> None:
     context._set_viewport(state, 200, 100)
     var canvas = context._new_canvas(state^)
     var out = canvas^._release()
-    assert_equal(len(out.backend.commands), 0)
+    assert_equal(len(out._backend.commands), 0)
 
 
 def _frame(mut context: Context) raises -> Canvas:
@@ -140,7 +140,7 @@ def test_switching_off_mid_frame_takes_the_opening_clear_out() raises -> None:
     canvas.autoclear(False)
     assert_true(not canvas.autoclear())
     var out = canvas^._release()
-    assert_equal(len(out.backend.commands), 0)
+    assert_equal(len(out._backend.commands), 0)
     assert_true(not out.autoclear, "lasts into later frames")
 
 
@@ -150,8 +150,8 @@ def test_switching_off_keeps_an_opaque_background() raises -> None:
     canvas.background(Color.BLUE)
     canvas.autoclear(False)
     var out = canvas^._release()
-    assert_equal(len(out.backend.commands), 1)
-    assert_equal(out.backend.commands[0].kind, CMD_CLEAR)
+    assert_equal(len(out._backend.commands), 1)
+    assert_equal(out._backend.commands[0].kind, CMD_CLEAR)
 
 
 def test_switching_off_then_on_again_clears_once() raises -> None:
@@ -161,8 +161,8 @@ def test_switching_off_then_on_again_clears_once() raises -> None:
     canvas.autoclear(True)
     canvas.autoclear(True)
     var out = canvas^._release()
-    assert_equal(len(out.backend.commands), 1)
-    assert_equal(out.backend.commands[0].kind, CMD_CLEAR)
+    assert_equal(len(out._backend.commands), 1)
+    assert_equal(out._backend.commands[0].kind, CMD_CLEAR)
 
 
 def test_switching_on_mid_frame_clears_under_what_is_drawn() raises -> None:
@@ -185,7 +185,7 @@ def _commands_after_background(gradient: Gradient) raises -> Int:
     var canvas = context._new_canvas(state^)
     canvas.background(gradient)
     var out = canvas^._release()
-    return len(out.backend.commands)
+    return len(out._backend.commands)
 
 
 def test_an_opaque_gradient_background_replaces_the_autoclear() raises -> None:

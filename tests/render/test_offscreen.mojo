@@ -53,8 +53,8 @@ def test_a_read_drops_the_commands_it_replayed() raises -> None:
     for i in range(5):
         _square(canvas, (Float64(i * 10 - 20), 0), Color.BLUE)
         _ = canvas.pixel((0, 0))
-        assert_equal(len(canvas._state.backend.commands), 0)
-    assert_equal(len(canvas._state.backend.clips), 0)
+        assert_equal(len(canvas._state._backend.commands), 0)
+    assert_equal(len(canvas._state._backend.clips), 0)
 
 
 def test_drawing_after_a_read_inside_a_clip_stays_clipped() raises -> None:
@@ -73,7 +73,7 @@ def test_scale_sets_the_pixel_density() raises -> None:
     var canvas = _canvas(scale=2.0)
     assert_equal(canvas.width, 100, "the size stays in screen units")
     assert_equal(canvas.scale, 2.0)
-    ref target = canvas._state.backend.target.value()
+    ref target = canvas._state._backend.target.value()
     assert_equal(target.width, 200)
     assert_equal(target.height, 120)
     _square(canvas, (0, 0), Color.BLUE)
@@ -122,7 +122,7 @@ def test_a_snapshot_at_its_own_scale_is_its_pixels() raises -> None:
     var shot = canvas.snapshot(scale=canvas.scale)
     assert_equal(shot.width, 200)
     assert_equal(shot.height, 120)
-    ref target = canvas._state.backend.target.value()
+    ref target = canvas._state._backend.target.value()
     for y in range(shot.height):
         for x in range(shot.width):
             assert_equal(shot.pixel(x, y), target.pixel(x, y))

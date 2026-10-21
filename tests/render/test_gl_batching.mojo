@@ -327,7 +327,7 @@ struct BlurredBezier[shadows: Bool](Program):
 
 def _live_textures(mut state: PersistentCanvasState) raises -> Int:
     """How many of the first 4096 texture names are live textures."""
-    ref gl = state.backend.gl.value().gl
+    ref gl = state._backend.gl.value().gl
     var live = 0
     for name in range(1, 4097):
         if gl.is_texture(UInt32(name)) != 0:
@@ -344,7 +344,7 @@ def _texture_growth[P: Program](mut win: GLWindow, frames: Int) raises -> Int:
     context.design_size(100, 100)
     context._set_viewport(state, 100, 100)
     var program = first_step[P](context, state)
-    state.backend.present_gpu(100, 100, state.view.scale)
+    state._backend.present_gpu(100, 100, state._view.scale)
     var now = 0
     context.time._start(now)
     var first = 0
@@ -352,7 +352,7 @@ def _texture_growth[P: Program](mut win: GLWindow, frames: Int) raises -> Int:
         now += 16
         context._advance_frame(now)
         state = step(program, context, state^)
-        state.backend.present_gpu(100, 100, state.view.scale)
+        state._backend.present_gpu(100, 100, state._view.scale)
         if i == 0:
             first = _live_textures(state)
     var growth = _live_textures(state) - first
@@ -380,16 +380,16 @@ def _gpu_frame[
     context.design_size(width, height)
     context._set_viewport(state, width, height)
     var program = first_step[P](context, state)
-    state.backend.present_gpu(width, height, state.view.scale)
+    state._backend.present_gpu(width, height, state._view.scale)
     var now = 0
     context.time._start(now)
     for _ in range(frames):
         now += 16
         context._advance_frame(now)
         state = step(program, context, state^)
-        state.backend.present_gpu(width, height, state.view.scale)
+        state._backend.present_gpu(width, height, state._view.scale)
 
-    var pixels = state.backend.gl.value().read_frame(width, height)
+    var pixels = state._backend.gl.value().read_frame(width, height)
     var mem = MemorySurface(width, height)
     mem.data = pixels^
 
@@ -408,12 +408,12 @@ def _gpu_draw_calls[P: Program](mut win: GLWindow) raises -> Int:
     context.design_size(100, 100)
     context._set_viewport(state, 100, 100)
     var program = first_step[P](context, state)
-    state.backend.present_gpu(100, 100, state.view.scale)
+    state._backend.present_gpu(100, 100, state._view.scale)
     context.time._start(0)
     context.time._tick(16)
     state = step(program, context, state^)
-    state.backend.present_gpu(100, 100, state.view.scale)
-    var calls = state.backend.gl.value().draw_calls
+    state._backend.present_gpu(100, 100, state._view.scale)
+    var calls = state._backend.gl.value().draw_calls
     _ = state^
     _ = target^
     return calls
