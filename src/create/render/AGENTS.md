@@ -338,8 +338,8 @@ nothing is interned. Faces live in `create.text`; `TextRenderer` lays out and ca
   and the GL atlas. Only running out of `_FONT_SLOTS` (1024) starts over: glyphs and slots are
   cleared and `atlas_generation` is bumped, which the atlas watches. `_GLYPH_CACHE_LIMIT` drops the
   masks (not the slots) whole when full.
-- **Metrics:** the layout scales the face to the size it lays out (`Font._set_size`) before reading
-  `ascender`/`descender`, since with every glyph cached nothing else did.
+- **Metrics:** the layout reads them through `Font._vertical_metrics(size)`, which scales the face to
+  that size first: with every glyph cached, nothing else did.
 - The fallback face is consulted per glyph, by `has_glyph` on the style's face; its masks are
   keyed under the style's face's slot, since that face decided to fall back. Italic text falls
   back to the fallback's italic.
