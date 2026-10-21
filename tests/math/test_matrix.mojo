@@ -329,8 +329,25 @@ def test_prints_as_source() raises -> None:
     m[0, 2] = 3.0
     m[1, 0] = 4.0
     m[1, 1] = 5.0
-    m[1, 2] = 6.0
-    assert_equal(String(m), "Matrix[2, 3](1.0, 2.0, 3.0, 4.0, 5.0, 6.0)")
+    m[1, 2] = -60.5
+    assert_equal(
+        String(m),
+        "Matrix[2, 3](\n    1.0, 2.0,   3.0,\n    4.0, 5.0, -60.5,\n)",
+    )
+
+
+def test_printed_form_is_source() raises -> None:
+    # What `test_prints_as_source` prints, pasted back in (and reflowed by
+    # `mojo format`): the trailing comma parses.
+    var m = Matrix[2, 3](
+        1.0,
+        2.0,
+        3.0,
+        4.0,
+        5.0,
+        -60.5,
+    )
+    assert_equal(m[1, 2], -60.5)
 
 
 def test_values_fill_row_by_row() raises -> None:
