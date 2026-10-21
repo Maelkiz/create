@@ -43,7 +43,7 @@ def test_the_packaged_faces_load_from_the_text_package() raises -> None:
 
 def test_a_glyph_renders() raises -> None:
     var f = Font.load(default_font_path())
-    var g = f.render(ord("A"), 24)
+    var g = f._render(ord("A"), 24)
     assert_true(g.width > 0 and g.height > 0)
     assert_true(g.advance_x > 0)
 
@@ -166,15 +166,15 @@ def test_an_italic_partner_is_drawn_as_it_is() raises -> None:
     # The partner file is italic already: drawn as given, never sheared.
     var f = Font.load(_SLNT_FIXTURE, italic_path=default_font_path())
     var italic = f._italic()
-    assert_equal(_lean(italic.render(ord("I"), 48)), 0)
+    assert_equal(_lean(italic._render(ord("I"), 48)), 0)
     assert_true(not f._faces[].face(True).sheared)
 
 
 def test_without_a_partner_the_italic_is_the_fonts_own() raises -> None:
     var f = Font.load(default_font_path())
     var italic = f._italic()
-    assert_true(_lean(italic.render(ord("I"), 48)) >= 5)
-    assert_equal(_lean(f.render(ord("I"), 48)), 0, "the upright is kept")
+    assert_true(_lean(italic._render(ord("I"), 48)) >= 5)
+    assert_equal(_lean(f._render(ord("I"), 48)), 0, "the upright is kept")
 
 
 def test_copies_share_the_italic_once_opened() raises -> None:
@@ -192,7 +192,7 @@ def _copy_of_a_dropped_font() raises -> Font:
 
 def test_a_copy_renders_after_the_original_is_gone() raises -> None:
     var copy = _copy_of_a_dropped_font()
-    var g = copy.render(ord("A"), 24)
+    var g = copy._render(ord("A"), 24)
     assert_true(g.width > 0 and g.height > 0)
 
 
