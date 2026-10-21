@@ -2,10 +2,11 @@ from std.math import max, min, pow
 from .bezier import Bezier
 from .geometry import Rectangle
 from create.math import Point2D
+from .drawable import Drawable, DrawTarget
 from create.math import Vector2D
 
 
-struct Spline(Copyable, Equatable, Movable, Writable):
+struct Spline(Copyable, Drawable, Equatable, Movable, Writable):
     """A smooth curve through every one of `points`, in order: `at`,
     `tangent`, `length`, `at_distance`, `bounds`, `flatten`, `beziers`,
     `translate`.
@@ -63,6 +64,9 @@ struct Spline(Copyable, Equatable, Movable, Writable):
 
     def __ne__(self, other: Spline) -> Bool:
         return not (self == other)
+
+    def draw_to[T: DrawTarget](self, mut target: T):
+        target._curves(self.beziers())
 
     def write_to[W: Writer](self, mut writer: W):
         writer.write("Spline(points=[")

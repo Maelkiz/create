@@ -20,6 +20,7 @@ from ._fillet import (
     triangle_corner_radius,
 )
 from .bezier import Bezier
+from .drawable import Drawable, DrawTarget, Region
 from create.math import Point2D
 from create.math import Vector2D
 
@@ -323,7 +324,9 @@ def _rounded_outline[
     return Polygon(points^)
 
 
-struct Rectangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
+struct Rectangle(
+    Copyable, Equatable, ImplicitlyCopyable, Movable, Region, Writable
+):
     """An axis-aligned rectangle: `center`, `area`, `left`/`right`/`bottom`/
     `top`, `closest_point`, `contains`, `move_to`, `translate`.
 
@@ -498,6 +501,9 @@ struct Rectangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
                 return False
         return True
 
+    def draw_to[T: DrawTarget](self, mut target: T):
+        target._rectangle(self)
+
     def move_to(mut self, position: Point2D):
         self.position = position
 
@@ -528,7 +534,9 @@ struct Rectangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         ]
 
 
-struct Circle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
+struct Circle(
+    Copyable, Equatable, ImplicitlyCopyable, Movable, Region, Writable
+):
     """A circle: `center`, `area`, `diameter`, `closest_point`, `contains`,
     `move_to`, `translate`.
 
@@ -626,6 +634,9 @@ struct Circle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
                 return False
         return True
 
+    def draw_to[T: DrawTarget](self, mut target: T):
+        target._circle(self)
+
     def move_to(mut self, position: Point2D):
         self.position = position
 
@@ -633,7 +644,9 @@ struct Circle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         self.position = self.position + delta
 
 
-struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
+struct Line(
+    Copyable, Drawable, Equatable, ImplicitlyCopyable, Movable, Writable
+):
     """A line segment from `start` to `end`: `length`, `length_squared`,
     `midpoint`, `closest_point`, `intersects`, `move_to`, `translate`.
 
@@ -765,6 +778,9 @@ struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def midpoint(self) -> Point2D:
         return self.start.lerp(self.end, 0.5)
 
+    def draw_to[T: DrawTarget](self, mut target: T):
+        target._line(self)
+
     def move_to(mut self, position: Point2D):
         self.translate(position - self.midpoint())
 
@@ -773,7 +789,9 @@ struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         self.end = self.end + delta
 
 
-struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
+struct Arc(
+    Copyable, Drawable, Equatable, ImplicitlyCopyable, Movable, Writable
+):
     """A circular arc: part of the circle around `position` with radius `r`,
     from `start_angle` round by `sweep_angle`. `end_angle`, `at`, `tangent`,
     `length`, `at_distance`, `bounds`, `flatten`, `beziers`,
@@ -1089,6 +1107,9 @@ struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             return True
         return p._boundary_meets(self)
 
+    def draw_to[T: DrawTarget](self, mut target: T):
+        target._curves(self.beziers())
+
     def move_to(mut self, position: Point2D):
         self.position = position
 
@@ -1096,7 +1117,9 @@ struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         self.position = self.position + delta
 
 
-struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
+struct Sector(
+    Copyable, Equatable, ImplicitlyCopyable, Movable, Region, Writable
+):
     """A sector -- a slice of pie: the region between two radii of the
     circle around `position` with radius `r`, from `start_angle` round by
     `sweep_angle`. `end_angle`, `center`, `area`, `arc`, `bounds`,
@@ -1378,6 +1401,9 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
                 return True
         return a.intersects(self.arc())
 
+    def draw_to[T: DrawTarget](self, mut target: T):
+        target._sector(self)
+
     def move_to(mut self, position: Point2D):
         self.position = position
 
@@ -1385,7 +1411,9 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         self.position = self.position + delta
 
 
-struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
+struct Triangle(
+    Copyable, Equatable, ImplicitlyCopyable, Movable, Region, Writable
+):
     """A triangle defined by its three vertices `a`, `b`, `c`: `center`,
     `area`, `closest_point`, `contains`, `move_to`, `translate`.
 
@@ -1591,6 +1619,9 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
                 return False
         return True
 
+    def draw_to[T: DrawTarget](self, mut target: T):
+        target._triangle(self)
+
     def move_to(mut self, position: Point2D):
         self.translate(position - self.center())
 
@@ -1644,7 +1675,7 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return [self.a, self.b, self.c]
 
 
-struct Polygon(Copyable, Equatable, Movable, Writable):
+struct Polygon(Copyable, Equatable, Movable, Region, Writable):
     """A polygon through `vertices`, in order, closed back to the first:
     `regular`, `star`, `center`, `area`, `bounds`, `closest_point`,
     `contains`, `move_to`, `translate`.
@@ -1918,6 +1949,9 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
             if other._holds_strictly(p):
                 return False
         return True
+
+    def draw_to[T: DrawTarget](self, mut target: T):
+        target._polygon(self)
 
     def move_to(mut self, position: Point2D):
         self.translate(position - self.center())

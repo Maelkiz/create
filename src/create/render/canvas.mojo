@@ -13,6 +13,7 @@ from ._viewport import Viewport
 from .camera import Camera
 from create.geometry.bezier import Bezier
 from create.geometry.spline import Spline
+from create.geometry.drawable import DrawTarget
 from create.geometry.geometry import (
     Arc,
     Circle,
@@ -39,7 +40,6 @@ from ._backend import Backend, _ImageRequest, _seed
 from .render_backend import RenderBackend
 from ._command import (
     bezier_chain_command,
-    bezier_command,
     circle_command,
     clear_command,
     letterbox_command,
@@ -232,7 +232,7 @@ struct ClipGuard[origin: Origin[mut=True]](Movable):
         self._canvas[]._state._backend.clip = self._saved
 
 
-struct Canvas(Movable):
+struct Canvas(DrawTarget, Movable):
     """One frame: the geometry and the rendering API.
 
     This is the object a program is handed to render a frame with. `width`/`height`
@@ -1052,17 +1052,7 @@ struct Canvas(Movable):
         """Draw the `w` by `h` rectangle centred on `position`, its corners
         rounded by `corner_radius` (clamped to half the shorter side), as
         `Rectangle` describes it."""
-        self._state._backend.record(
-            rect_command(
-                self._transform,
-                self._style,
-                position.x,
-                position.y,
-                w,
-                h,
-                corner_radius,
-            )
-        )
+        self._rectangle(Rectangle(position, w, h, corner_radius=corner_radius))
 
     def rectangle(
         mut self,
@@ -1077,20 +1067,16 @@ struct Canvas(Movable):
         )
 
     def rectangle(mut self, r: Rectangle):
-        self.rectangle(r.position, r.w, r.h, corner_radius=r.corner_radius)
+        self._rectangle(r)
 
     def circle(mut self, position: Point2D, r: Float64):
-        self._state._backend.record(
-            circle_command(
-                self._transform, self._style, position.x, position.y, r
-            )
-        )
+        self._circle(Circle(position, r))
 
     def circle(mut self, position: Point2D, r: Int):
         self.circle(position, Float64(r))
 
     def circle(mut self, c: Circle):
-        self.circle(c.center(), c.r)
+        self._circle(c)
 
     def sector(
         mut self,
@@ -1116,14 +1102,13 @@ struct Canvas(Movable):
         describes. A rounded sector is drawn as a polygon, so it costs what
         an outlined `polygon` of its flattened outline does.
         """
-        self._state._backend.record(
-            self._sector_command(
-                self._style,
+        self._sector(
+            Sector(
                 position,
                 r,
                 start_angle,
                 sweep_angle,
-                corner_radius,
+                corner_radius=corner_radius,
             )
         )
 
@@ -1145,13 +1130,7 @@ struct Canvas(Movable):
         )
 
     def sector(mut self, s: Sector):
-        self.sector(
-            s.position,
-            s.r,
-            s.start_angle,
-            s.sweep_angle,
-            corner_radius=s.corner_radius,
-        )
+        self._sector(s)
 
     def _sector_command(
         self,
@@ -1209,25 +1188,13 @@ struct Canvas(Movable):
         `p.corner_radius` rounds every corner, as `Polygon` describes; each
         rounded corner adds vertices, and so cost.
         """
-        self._state._backend.record(
-            polygon_command(
-                self._transform,
-                self._style,
-                self._rounded(p.vertices, p.corner_radius),
-            )
-        )
+        self._polygon(p)
 
     def polygon(mut self, *vertices: Point2D, corner_radius: Float64 = 0.0):
         var points = List[Point2D](capacity=len(vertices))
         for v in vertices:
             points.append(v)
-        self._state._backend.record(
-            polygon_command(
-                self._transform,
-                self._style,
-                self._rounded(points, corner_radius),
-            )
-        )
+        self._polygon(Polygon(points^, corner_radius=corner_radius))
 
     def _rounded(
         self, vertices: List[Point2D], corner_radius: Float64
@@ -1244,19 +1211,10 @@ struct Canvas(Movable):
         return rounded_vertices(vertices, corner_radius, step)
 
     def line(mut self, start: Point2D, end: Point2D):
-        # Recorded only when it would render: an outline-less line is the one
-        # shape with nothing left to paint, so the command would be pure
-        # overhead.
-        if not self._style.outline_enabled:
-            return
-        self._state._backend.record(
-            line_command(
-                self._transform, self._style, start.x, start.y, end.x, end.y
-            )
-        )
+        self._line(Line(start, end))
 
     def line(mut self, l: Line):
-        self.line(l.start, l.end)
+        self._line(l)
 
     def bezier(
         mut self,
@@ -1281,12 +1239,7 @@ struct Canvas(Movable):
         self.bezier(Bezier(start, control1, control2, end))
 
     def bezier(mut self, b: Bezier):
-        # Recorded only when it would render, as `line` is.
-        if not self._style.outline_enabled:
-            return
-        self._state._backend.record(
-            bezier_command(self._transform, self._style, b)
-        )
+        self._curves([b])
 
     def spline(
         mut self,
@@ -1315,7 +1268,7 @@ struct Canvas(Movable):
             return
         # Converted here, in local space: the knot spacing is measured where
         # the points were given, so a non-uniform scale can't reshape it.
-        self._bezier_chain(spline.beziers())
+        self._curves(spline.beziers())
 
     def arc(
         mut self,
@@ -1353,7 +1306,7 @@ struct Canvas(Movable):
             return
         # Converted here, in local space: the transform maps Béziers
         # exactly, so a non-uniform scale draws the arc of an ellipse.
-        self._bezier_chain(a.beziers())
+        self._curves(a.beziers())
 
     def _bezier_chain(mut self, curves: List[Bezier]):
         """Record `curves`, each starting where the last ends, as one
@@ -1380,22 +1333,94 @@ struct Canvas(Movable):
     ):
         """Draw the triangle through `a`, `b` and `c`, its corners rounded
         by `corner_radius`, as `Triangle` describes it."""
+        self._triangle(Triangle(a, b, c, corner_radius=corner_radius))
+
+    def triangle(mut self, t: Triangle):
+        self._triangle(t)
+
+    # The `DrawTarget` primitives: the one place a shape becomes a recorded
+    # command, in the current style and transform. `draw(shape)` reaches
+    # them through the shape's `draw_to`, and every named method above
+    # through its shape.
+
+    def _rectangle(mut self, r: Rectangle):
+        self._state._backend.record(
+            rect_command(
+                self._transform,
+                self._style,
+                r.position.x,
+                r.position.y,
+                r.w,
+                r.h,
+                r.corner_radius,
+            )
+        )
+
+    def _circle(mut self, c: Circle):
+        self._state._backend.record(
+            circle_command(
+                self._transform, self._style, c.position.x, c.position.y, c.r
+            )
+        )
+
+    def _triangle(mut self, t: Triangle):
         self._state._backend.record(
             triangle_command(
                 self._transform,
                 self._style,
-                a.x,
-                a.y,
-                b.x,
-                b.y,
-                c.x,
-                c.y,
-                corner_radius,
+                t.a.x,
+                t.a.y,
+                t.b.x,
+                t.b.y,
+                t.c.x,
+                t.c.y,
+                t.corner_radius,
             )
         )
 
-    def triangle(mut self, t: Triangle):
-        self.triangle(t.a, t.b, t.c, corner_radius=t.corner_radius)
+    def _sector(mut self, s: Sector):
+        self._state._backend.record(
+            self._sector_command(
+                self._style,
+                s.position,
+                s.r,
+                s.start_angle,
+                s.sweep_angle,
+                s.corner_radius,
+            )
+        )
+
+    def _polygon(mut self, p: Polygon):
+        self._state._backend.record(
+            polygon_command(
+                self._transform,
+                self._style,
+                self._rounded(p.vertices, p.corner_radius),
+            )
+        )
+
+    def _line(mut self, l: Line):
+        # Recorded only when it would render: an outline-less line is the one
+        # shape with nothing left to paint, so the command would be pure
+        # overhead.
+        if not self._style.outline_enabled:
+            return
+        self._state._backend.record(
+            line_command(
+                self._transform,
+                self._style,
+                l.start.x,
+                l.start.y,
+                l.end.x,
+                l.end.y,
+            )
+        )
+
+    def _curves(mut self, curves: List[Bezier]):
+        # Recorded only when it would render, as `line` is.
+        if not self._style.outline_enabled:
+            return
+        self._bezier_chain(curves)
 
     def image(mut self, image: Image, position: Point2D):
         """Render `image` at its own pixel size.
