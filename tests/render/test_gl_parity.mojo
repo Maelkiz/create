@@ -364,7 +364,7 @@ struct _Parity(Program):
         context.design_size(_DESIGN_W, _DESIGN_H)
         return _Parity(
             Image.load("tests/fixtures/test_2x2.png"),
-            Image.solid(30, 30, 0xE0, 0x90, 0x40),
+            Image.solid(30, 30, Color(0xE0, 0x90, 0x40)),
             shape,
         )
 

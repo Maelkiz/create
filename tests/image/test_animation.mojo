@@ -1,6 +1,7 @@
 from std.testing import TestSuite, assert_equal, assert_true, assert_raises
 from create.image import Image, Animation
 from create.image.animation import _frame_number, _sort_frame_names
+from create.color import Color
 
 
 def _sheet(cols: Int, rows: Int, cell: Int) raises -> Image:
@@ -84,7 +85,7 @@ def test_empty_frame_list_raises() raises -> None:
 
 def test_non_positive_fps_raises() raises -> None:
     var frames = List[Image]()
-    frames.append(Image.solid(1, 1, 255, 255, 255))
+    frames.append(Image.solid(1, 1, Color(255, 255, 255)))
     with assert_raises(contains="fps must be positive"):
         _ = Animation(frames^, 0.0)
 

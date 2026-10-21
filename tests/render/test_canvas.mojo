@@ -2218,7 +2218,7 @@ struct AnimatorBlit(Program):
     def create(mut context: Context, mut canvas: Canvas) raises -> AnimatorBlit:
         var frames = List[Image]()
         for i in range(8):
-            frames.append(Image.solid(2, 2, UInt8(i * 20), 0, 0))
+            frames.append(Image.solid(2, 2, Color(UInt8(i * 20), 0, 0)))
         var a = Animator(Animation(frames^, 100.0))
         a.play()
         return AnimatorBlit(a^)
@@ -2257,7 +2257,7 @@ struct AnimatorSized(Program):
         mut context: Context, mut canvas: Canvas
     ) raises -> AnimatorSized:
         var frames = List[Image]()
-        frames.append(Image.solid(2, 2, 255, 0, 0))
+        frames.append(Image.solid(2, 2, Color(255, 0, 0)))
         return AnimatorSized(Animator(Animation(frames^)))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -2294,7 +2294,7 @@ struct AnimatorEveryOverload(Program):
         mut context: Context, mut canvas: Canvas
     ) raises -> AnimatorEveryOverload:
         var frames = List[Image]()
-        frames.append(Image.solid(2, 2, 255, 0, 0))
+        frames.append(Image.solid(2, 2, Color(255, 0, 0)))
         return AnimatorEveryOverload(Animator(Animation(frames^)))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

@@ -66,8 +66,8 @@ struct TwoImages(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        var a = Image.solid(2, 2, 255, 0, 255)
-        var b = Image.solid(2, 2, 0, 255, 255)
+        var a = Image.solid(2, 2, Color(255, 0, 255))
+        var b = Image.solid(2, 2, Color(0, 255, 255))
         canvas.image(a, (-20, 0), 16, 16)
         canvas.image(b, (20, 0), 16, 16)
 
@@ -82,7 +82,7 @@ struct TextAndImage(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        var img = Image.solid(2, 2, 255, 0, 0)
+        var img = Image.solid(2, 2, Color(255, 0, 0))
         canvas.image(img, (-30, 0), 16, 16)
         canvas.text_color(Color.WHITE)
         canvas.font_size(24)
@@ -290,7 +290,7 @@ struct BlurredImage[shadows: Bool](Program):
     def create(
         mut context: Context, mut canvas: Canvas
     ) raises -> BlurredImage[Self.shadows]:
-        return BlurredImage[Self.shadows](Image.solid(20, 20, 255, 0, 0))
+        return BlurredImage[Self.shadows](Image.solid(20, 20, Color(255, 0, 0)))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)

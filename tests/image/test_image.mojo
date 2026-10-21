@@ -11,14 +11,14 @@ from create.image.pixel_buffer import PixelBuffer
 
 
 def test_solid_dimensions() raises -> None:
-    var s = Image.solid(4, 3, 255, 0, 0)
+    var s = Image.solid(4, 3, Color(255, 0, 0))
     assert_equal(s.width, 4)
     assert_equal(s.height, 3)
     assert_equal(len(s._pixels[]), 4 * 3 * 4)
 
 
 def test_solid_pixels_correct() raises -> None:
-    var s = Image.solid(2, 2, 255, 0, 0)
+    var s = Image.solid(2, 2, Color(255, 0, 0))
     var ptr = s._pixels[].unsafe_ptr()
     for i in range(4):
         var off = i * 4
@@ -29,7 +29,7 @@ def test_solid_pixels_correct() raises -> None:
 
 
 def test_solid_blue() raises -> None:
-    var s = Image.solid(1, 1, 0, 0, 255)
+    var s = Image.solid(1, 1, Color(0, 0, 255))
     var ptr = s._pixels[].unsafe_ptr()
     assert_equal(Int(ptr[unsafe_offset=0]), 0)  # R
     assert_equal(Int(ptr[unsafe_offset=1]), 0)  # G
@@ -218,7 +218,7 @@ def test_load_bmp_bitfields_compression_raises() raises -> None:
 
 
 def test_resize_dimensions() raises -> None:
-    var s = Image.solid(4, 4, 255, 0, 0)
+    var s = Image.solid(4, 4, Color(255, 0, 0))
     s = s.resize(2, 2)
     assert_equal(s.width, 2)
     assert_equal(s.height, 2)
@@ -228,7 +228,7 @@ def test_resize_dimensions() raises -> None:
 def test_resize_uniform_image_stays_uniform() raises -> None:
     # A uniform-colour source can't reveal which source pixel nearest-neighbour
     # sampled -- only that whichever it picked was the same colour everywhere.
-    var s = Image.solid(4, 4, 255, 0, 0)
+    var s = Image.solid(4, 4, Color(255, 0, 0))
     s = s.resize(2, 2)
     var ptr = s._pixels[].unsafe_ptr()
     for i in range(4):  # 2×2 = 4 pixels
@@ -310,7 +310,7 @@ def test_resize_upscale_block_replication() raises -> None:
 
 
 def test_resize_upscale() raises -> None:
-    var s = Image.solid(2, 2, 0, 255, 0)
+    var s = Image.solid(2, 2, Color(0, 255, 0))
     s = s.resize(4, 4)
     assert_equal(s.width, 4)
     assert_equal(s.height, 4)
@@ -318,7 +318,7 @@ def test_resize_upscale() raises -> None:
 
 
 def test_resize_to_1x1() raises -> None:
-    var s = Image.solid(100, 100, 255, 255, 255)
+    var s = Image.solid(100, 100, Color(255, 255, 255))
     s = s.resize(1, 1)
     assert_equal(s.width, 1)
     assert_equal(s.height, 1)
@@ -326,7 +326,7 @@ def test_resize_to_1x1() raises -> None:
 
 
 def test_solid_1x1() raises -> None:
-    var s = Image.solid(1, 1, 0, 255, 0)
+    var s = Image.solid(1, 1, Color(0, 255, 0))
     assert_equal(s.width, 1)
     assert_equal(s.height, 1)
     assert_equal(len(s._pixels[]), 4)
@@ -357,7 +357,7 @@ def test_image_zero_dimensions() raises -> None:
 
 
 def test_resize_to_zero_dimension() raises -> None:
-    var s = Image.solid(4, 4, 255, 0, 0)
+    var s = Image.solid(4, 4, Color(255, 0, 0))
     s = s.resize(0, 4)
     assert_equal(s.width, 0)
     assert_equal(s.height, 4)
@@ -524,7 +524,7 @@ def test_every_image_gets_its_own_identity() raises -> None:
     # the second render the first's pixels.
     var a = Image(PixelBuffer(2, 2))
     var b = Image(PixelBuffer(2, 2))
-    var c = Image.solid(1, 1, 255, 0, 0)
+    var c = Image.solid(1, 1, Color(255, 0, 0))
     var d = Image.from_rgba(1, 1, List[UInt8](length=4, fill=255))
     assert_true(a._id != b._id)
     assert_true(b._id != c._id)
@@ -533,7 +533,7 @@ def test_every_image_gets_its_own_identity() raises -> None:
 
 
 def test_a_copied_image_shares_its_identity_and_pixels() raises -> None:
-    var a = Image.solid(2, 2, 255, 0, 0)
+    var a = Image.solid(2, 2, Color(255, 0, 0))
     var b = a.copy()
     assert_equal(b._id, a._id)
     assert_equal(Int(b._pixels[].unsafe_ptr()), Int(a._pixels[].unsafe_ptr()))
@@ -548,13 +548,13 @@ def test_a_moved_image_keeps_its_identity() raises -> None:
 
 def test_resizing_takes_a_fresh_identity() raises -> None:
     # A new image, so nothing cached under the old id can stand in for it.
-    var s = Image.solid(2, 2, 255, 0, 0)
+    var s = Image.solid(2, 2, Color(255, 0, 0))
     var resized = s.resize(4, 4)
     assert_true(resized._id != s._id)
 
 
 def test_resize_leaves_the_original_unchanged() raises -> None:
-    var s = Image.solid(2, 2, 255, 0, 0)
+    var s = Image.solid(2, 2, Color(255, 0, 0))
     var before = s._id
     _ = s.resize(4, 4)
     assert_equal(s.width, 2)
