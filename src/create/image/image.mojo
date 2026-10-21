@@ -120,13 +120,35 @@ struct Image(Copyable, Movable):
 
     @staticmethod
     def from_rgba(width: Int, height: Int, data: List[UInt8]) raises -> Image:
-        """Precondition: `data` holds at least `width * height * 4` bytes — not bounds-checked.
+        """A `width` x `height` image of `data`: RGBA bytes, row by row from
+        the top-left corner. Bytes past `width * height * 4` are ignored.
+
+        Raises if either dimension is negative or `data` is too short.
         """
+        if width < 0 or height < 0:
+            raise Error(
+                "Image.from_rgba: negative size "
+                + String(width)
+                + " x "
+                + String(height)
+            )
+        var count = width * height * 4
+        if len(data) < count:
+            raise Error(
+                "Image.from_rgba: "
+                + String(width)
+                + " x "
+                + String(height)
+                + " needs "
+                + String(count)
+                + " bytes, got "
+                + String(len(data))
+            )
         var buffer = PixelBuffer(width, height)
         unsafe_memcpy(
             dest=buffer._data.unsafe_ptr(),
             src=data.unsafe_ptr(),
-            count=width * height * 4,
+            count=count,
         )
         return Image(buffer^)
 
