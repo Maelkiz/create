@@ -57,6 +57,10 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def __mul__(self, s: Float64) -> Vector2D:
         return Vector2D(self.x * s, self.y * s)
 
+    def __rmul__(self, s: Float64) -> Vector2D:
+        """`s * v`, the same as `v * s`, so a formula reads as written."""
+        return self * s
+
     def __truediv__(self, s: Float64) -> Vector2D:
         return Vector2D(self.x / s, self.y / s)
 

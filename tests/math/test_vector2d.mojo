@@ -93,6 +93,14 @@ def test_isub() raises -> None:
     assert_equal(v.y, 2.0)
 
 
+def test_scalar_times_vector() raises -> None:
+    """`s * v` compiles and agrees with `v * s`."""
+    var v = Vector2D(3.0, -4.0)
+    var dt = 2.0
+    assert_equal(dt * v, Vector2D(6.0, -8.0))
+    assert_equal(dt * v, v * dt)
+
+
 def test_imul() raises -> None:
     var v = Vector2D(2.0, 3.0)
     v *= 4.0
