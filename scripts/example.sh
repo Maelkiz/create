@@ -6,6 +6,9 @@
 #   pixi run example shadows gpu     -> extra arguments are passed through
 #
 # A path that exists as given is run as-is, so the long form still works.
+#
+# It runs against build/create.mojoc, which the pixi task rebuilds first only
+# when the library changed, so the library is not recompiled on every run.
 set -e
 
 name="$1"
@@ -29,4 +32,4 @@ else
     exit 1
 fi
 
-exec mojo run -I src "$file" "$@"
+exec mojo run -I build "$file" "$@"

@@ -3,6 +3,9 @@
 #
 #   pixi run benchmark raster        -> benchmarks/raster.mojo
 #   pixi run benchmark frame cpu     -> extra arguments are passed through
+#
+# It runs against build/create.mojoc, which the pixi task rebuilds first only
+# when the library changed, so the library is not recompiled on every run.
 set -e
 
 name="$1"
@@ -19,4 +22,4 @@ if [ ! -f "benchmarks/$name.mojo" ]; then
     exit 1
 fi
 
-exec mojo run -I src "benchmarks/$name.mojo" "$@"
+exec mojo run -I build "benchmarks/$name.mojo" "$@"
