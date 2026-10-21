@@ -1,5 +1,5 @@
 from std.collections import Optional
-from std.math import floor, tau
+from std.math import floor
 
 from create.color.color import Color
 from create.color.gradient import Gradient
@@ -13,7 +13,7 @@ from ._viewport import Viewport
 from .camera import Camera
 from create.geometry.bezier import Bezier
 from create.geometry.spline import Spline
-from create.geometry.drawable import DrawTarget
+from create.geometry.drawable import DrawTarget, Region
 from create.geometry.geometry import (
     Arc,
     Circle,
@@ -39,29 +39,15 @@ from create.image.animator import Animator
 from ._backend import Backend, _ImageRequest, _seed
 from .render_backend import RenderBackend
 from ._command import (
-    bezier_chain_command,
-    circle_command,
     clear_command,
     letterbox_command,
-    line_command,
-    polygon_command,
-    rect_command,
-    rounded_sector_command,
-    sector_command,
     image_command,
     text_command,
-    triangle_command,
 )
 from .style import Style, _OptionalFloat64
-from ._clip import clip_style
 from ._command import RenderCommand
+from ._shape_command import RegionCapture, curves_command, shape_command
 from ._transform import pixel_scale
-from ._tessellate import circle_segments
-from create.geometry._fillet import (
-    rounded_sector_vertices,
-    rounded_vertices,
-    sector_corner_radii,
-)
 
 
 comptime _AUTOCLEAR_COLOR = Color(200)
@@ -584,108 +570,31 @@ struct Canvas(DrawTarget, Movable):
         """Map a point from the current transform's frame into world space."""
         return apply(self._user, local)
 
-    def clip(
-        mut self, r: Rectangle, invert: Bool = False
-    ) -> ClipGuard[origin_of(self)]:
-        """Render only inside `r` for a `with` block — or, with `invert`, only
-        outside it.
+    def clip[
+        R: Region
+    ](mut self, region: R, invert: Bool = False) -> ClipGuard[origin_of(self)]:
+        """Render only inside `region` for a `with` block — or, with
+        `invert`, only outside it. `region` is any `Region`: a `Rectangle`,
+        `Circle`, `Triangle`, `Sector` or `Polygon`, rounded by its own
+        `corner_radius`; a polygon's inside is by the nonzero rule.
 
         ```mojo
         with canvas.clip(Rectangle((0, 0), 200, 120)):
             canvas.image(self.photo, (0, 0))
         ```
 
-        `r` is placed by the transform and camera current here, and stays
-        there for the block: a `transform` or `overlay` inside it moves what
-        is rendered, not the clip. A clip inside another keeps only what both
-        keep. Every render call is clipped, its shadow and `background()`
-        included; the letterbox is not. The clip's edge is the edge a
-        `canvas.rectangle(r)` would have.
+        `region` is placed by the transform and camera current here, and
+        stays there for the block: a `transform` or `overlay` inside it moves
+        what is rendered, not the clip. A clip inside another keeps only what
+        both keep. Every render call is clipped, its shadow and `background()`
+        included; the letterbox is not. The clip's edge is the edge
+        `canvas.draw(region)` would have.
 
         Closes on exit, including on an early return or a raise.
         """
-        return ClipGuard[origin_of(self)](
-            self,
-            rect_command(
-                self._transform,
-                clip_style(),
-                r.position.x,
-                r.position.y,
-                r.w,
-                r.h,
-                r.corner_radius,
-            ),
-            invert,
-        )
-
-    def clip(
-        mut self, c: Circle, invert: Bool = False
-    ) -> ClipGuard[origin_of(self)]:
-        """Render only inside `c` for a `with` block, or only outside it
-        with `invert`; see `clip(Rectangle)`."""
-        var center = c.center()
-        return ClipGuard[origin_of(self)](
-            self,
-            circle_command(
-                self._transform, clip_style(), center.x, center.y, c.r
-            ),
-            invert,
-        )
-
-    def clip(
-        mut self, t: Triangle, invert: Bool = False
-    ) -> ClipGuard[origin_of(self)]:
-        """Render only inside `t` for a `with` block, or only outside it
-        with `invert`; see `clip(Rectangle)`."""
-        return ClipGuard[origin_of(self)](
-            self,
-            triangle_command(
-                self._transform,
-                clip_style(),
-                t.a.x,
-                t.a.y,
-                t.b.x,
-                t.b.y,
-                t.c.x,
-                t.c.y,
-                t.corner_radius,
-            ),
-            invert,
-        )
-
-    def clip(
-        mut self, s: Sector, invert: Bool = False
-    ) -> ClipGuard[origin_of(self)]:
-        """Render only inside `s` for a `with` block, or only outside it
-        with `invert`; see `clip(Rectangle)`."""
-        return ClipGuard[origin_of(self)](
-            self,
-            self._sector_command(
-                clip_style(),
-                s.position,
-                s.r,
-                s.start_angle,
-                s.sweep_angle,
-                s.corner_radius,
-            ),
-            invert,
-        )
-
-    def clip(
-        mut self, p: Polygon, invert: Bool = False
-    ) -> ClipGuard[origin_of(self)]:
-        """Render only inside `p` for a `with` block, or only outside it
-        with `invert`; see `clip(Rectangle)`. Inside is by the nonzero rule,
-        as for `canvas.polygon`."""
-        return ClipGuard[origin_of(self)](
-            self,
-            polygon_command(
-                self._transform,
-                clip_style(),
-                self._rounded(p.vertices, p.corner_radius),
-            ),
-            invert,
-        )
+        var capture = RegionCapture(self._transform, self.scale)
+        capture.draw(region)
+        return ClipGuard[origin_of(self)](self, capture.command.take(), invert)
 
     def to_local(self, world: Point2D) -> Point2D:
         """Map a world-space point — a mouse position already converted
@@ -1132,48 +1041,6 @@ struct Canvas(DrawTarget, Movable):
     def sector(mut self, s: Sector):
         self.draw(s)
 
-    def _sector_command(
-        self,
-        style: Style,
-        position: Point2D,
-        r: Float64,
-        start_angle: Float64,
-        sweep_angle: Float64,
-        corner_radius: Float64,
-    ) -> RenderCommand:
-        """A sector's command: rounded, the polygon through its outline,
-        its curves flattened now as finely as circles of their radii are
-        drawn at the current transform; sharp, a sector's own."""
-        var radii = sector_corner_radii(r, sweep_angle, corner_radius)
-        if radii[0] <= 0.0 and radii[1] <= 0.0:
-            return sector_command(
-                self._transform,
-                style,
-                position.x,
-                position.y,
-                r,
-                start_angle,
-                sweep_angle,
-            )
-        var sf = pixel_scale(self._transform, self.scale)
-        var fillet = max(radii[0], radii[1])
-        return rounded_sector_command(
-            self._transform,
-            style,
-            rounded_sector_vertices(
-                position,
-                r,
-                start_angle,
-                sweep_angle,
-                corner_radius,
-                tau / Float64(circle_segments(fillet * sf)),
-                tau / Float64(circle_segments(r * sf)),
-            ),
-            position.x,
-            position.y,
-            r,
-        )
-
     def polygon(mut self, p: Polygon):
         """Draw the polygon through `p.vertices`, closed back to the first.
 
@@ -1195,20 +1062,6 @@ struct Canvas(DrawTarget, Movable):
         for v in vertices:
             points.append(v)
         self.draw(Polygon(points^, corner_radius=corner_radius))
-
-    def _rounded(
-        self, vertices: List[Point2D], corner_radius: Float64
-    ) -> List[Point2D]:
-        """`vertices` with every corner rounded by `corner_radius`, the
-        fillets flattened now, in local space, as finely as a circle of that
-        radius is drawn at the current transform. Recorded this way, a
-        rounded polygon is an ordinary one to every replay, its shadow and
-        clip included."""
-        if corner_radius <= 0.0:
-            return vertices.copy()
-        var radius_px = corner_radius * pixel_scale(self._transform, self.scale)
-        var step = tau / Float64(circle_segments(radius_px))
-        return rounded_vertices(vertices, corner_radius, step)
 
     def line(mut self, start: Point2D, end: Point2D):
         self.draw(Line(start, end))
@@ -1300,21 +1153,6 @@ struct Canvas(DrawTarget, Movable):
     def arc(mut self, a: Arc):
         self.draw(a)
 
-    def _bezier_chain(mut self, curves: List[Bezier]):
-        """Record `curves`, each starting where the last ends, as one
-        stroke. Nothing is recorded for no curves."""
-        if len(curves) == 0:
-            return
-        var points = List[Point2D](capacity=3 * len(curves) + 1)
-        points.append(curves[0].start)
-        for c in curves:
-            points.append(c.control1)
-            points.append(c.control2)
-            points.append(c.end)
-        self._state._backend.record(
-            bezier_chain_command(self._transform, self._style, points^)
-        )
-
     def triangle(
         mut self,
         a: Point2D,
@@ -1337,58 +1175,27 @@ struct Canvas(DrawTarget, Movable):
 
     def _rectangle(mut self, r: Rectangle):
         self._state._backend.record(
-            rect_command(
-                self._transform,
-                self._style,
-                r.position.x,
-                r.position.y,
-                r.w,
-                r.h,
-                r.corner_radius,
-            )
+            shape_command(r, self._transform, self._style, self.scale)
         )
 
     def _circle(mut self, c: Circle):
         self._state._backend.record(
-            circle_command(
-                self._transform, self._style, c.position.x, c.position.y, c.r
-            )
+            shape_command(c, self._transform, self._style, self.scale)
         )
 
     def _triangle(mut self, t: Triangle):
         self._state._backend.record(
-            triangle_command(
-                self._transform,
-                self._style,
-                t.a.x,
-                t.a.y,
-                t.b.x,
-                t.b.y,
-                t.c.x,
-                t.c.y,
-                t.corner_radius,
-            )
+            shape_command(t, self._transform, self._style, self.scale)
         )
 
     def _sector(mut self, s: Sector):
         self._state._backend.record(
-            self._sector_command(
-                self._style,
-                s.position,
-                s.r,
-                s.start_angle,
-                s.sweep_angle,
-                s.corner_radius,
-            )
+            shape_command(s, self._transform, self._style, self.scale)
         )
 
     def _polygon(mut self, p: Polygon):
         self._state._backend.record(
-            polygon_command(
-                self._transform,
-                self._style,
-                self._rounded(p.vertices, p.corner_radius),
-            )
+            shape_command(p, self._transform, self._style, self.scale)
         )
 
     def _line(mut self, l: Line):
@@ -1398,21 +1205,17 @@ struct Canvas(DrawTarget, Movable):
         if not self._style.outline_enabled:
             return
         self._state._backend.record(
-            line_command(
-                self._transform,
-                self._style,
-                l.start.x,
-                l.start.y,
-                l.end.x,
-                l.end.y,
-            )
+            shape_command(l, self._transform, self._style, self.scale)
         )
 
     def _curves(mut self, curves: List[Bezier]):
-        # Recorded only when it would render, as `line` is.
-        if not self._style.outline_enabled:
+        # Recorded only when it would render, as `line` is; no curves, no
+        # stroke.
+        if not self._style.outline_enabled or len(curves) == 0:
             return
-        self._bezier_chain(curves)
+        self._state._backend.record(
+            curves_command(curves, self._transform, self._style)
+        )
 
     def image(mut self, image: Image, position: Point2D):
         """Render `image` at its own pixel size.
