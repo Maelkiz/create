@@ -38,9 +38,7 @@ fills costs one repopulating frame and needs no recency bookkeeping.
 def _pixel_size(style: Style, pixel_scale: Float64) -> Int:
     """The font size in pixels: world units scaled, at least one and at most
     `_MAX_SIZE`."""
-    return min(
-        max(Int(Float64(style.font_size) * pixel_scale + 0.5), 1), _MAX_SIZE
-    )
+    return min(max(Int(style.font_size * pixel_scale + 0.5), 1), _MAX_SIZE)
 
 
 def _key_weight(style: Style) -> Int:

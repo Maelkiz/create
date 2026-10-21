@@ -251,7 +251,7 @@ implicit conversions from a bare `Color`, which Mojo won't chain.
 
 **Shadows** are part of `Style`, **off by default**: `canvas.shadow(color=, offset=, blur=, spread=,
 inset=)` switches one on (unset parts keep their values, so `shadow()` alone switches the current
-one on; `blur`/`spread` default to a NaN "keep" sentinel, so `blur=12` works),
+one on; `blur`/`spread` default to a NaN "keep" sentinel, so `blur=12` works — as does every `Float64` keyword that may be left unset, `thickness`, `font_size` and `opacity` included, since an integer literal won't convert through `Optional[Float64]`),
 `shadow_enabled(False)` switches it off, and `canvas.style(...)` takes the same parts as `shadow*`
 keywords.
 - **One silhouette, like CSS `drop-shadow`:** fill plus outline cast together (outline only casts

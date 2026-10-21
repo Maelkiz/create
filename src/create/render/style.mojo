@@ -10,7 +10,8 @@ from create.math.vector2d import Vector2D
 
 
 comptime _KEEP = nan[DType.float64]()
-"""Default of a `Float64` shadow part meaning "not given". Not
+"""Default of an optional `Float64` keyword (a thickness, a size, a shadow
+part, an opacity) meaning "not given". Not
 `Optional[Float64]`, which a bare `blur=12` cannot reach — an integer
 literal converts to `Float64` or to an `Optional`, not through both — and not
 a negative number, since a negative spread is meaningful."""
@@ -61,12 +62,12 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
     kept for when it is cleared."""
     var fill_enabled: Bool
     var outline_color: Color
-    var outline_thickness: Int
+    var outline_thickness: Float64
     var outline_enabled: Bool
     var text_color: Color
     var font: Optional[Font]
     """The face text is drawn in; none for the packaged Noto Sans."""
-    var font_size: Int
+    var font_size: Float64
     var font_weight: Int
     var font_italic: Bool
     var text_align: Align
@@ -88,11 +89,11 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         fill_gradient: Optional[Gradient] = None,
         fill_enabled: Optional[Bool] = None,
         outline: Optional[Color] = None,
-        outline_thickness: Optional[Int] = None,
+        outline_thickness: Float64 = _KEEP,
         outline_enabled: Optional[Bool] = None,
         text_color: Color = Color.BLACK,
         font: Optional[Font] = None,
-        font_size: Int = 16,
+        font_size: Float64 = 16.0,
         font_weight: Int = FontWeight.REGULAR,
         font_italic: Bool = False,
         text_align: Align = Align.CENTER,
@@ -113,7 +114,9 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
             Bool(fill) or Bool(fill_gradient)
         )
         self.outline_color = outline.or_else(Color.BLACK)
-        self.outline_thickness = outline_thickness.or_else(1)
+        self.outline_thickness = 1.0 if isnan(
+            outline_thickness
+        ) else outline_thickness
         self.outline_enabled = outline_enabled.or_else(True)
         self.text_color = text_color
         self.font = font

@@ -152,8 +152,8 @@ def shadow_command(c: RenderCommand, scale: Float64) -> RenderCommand:
 
     Assumes `casts_outer_shadow(c)`. Blur is carried along in the style for
     the replays that soften it; the geometry here is the unblurred shape.
-    Spread is in world units, like the outline thickness, and rounds to it
-    where it widens a stroke.
+    Spread is in world units, like the outline thickness, and widens a
+    stroke by twice itself, one spread either side.
     """
     var s = c.copy()
     s.transform = shadow_transform(c, scale)
@@ -182,7 +182,7 @@ def shadow_command(c: RenderCommand, scale: Float64) -> RenderCommand:
         s.style.outline_color = color
         s.style.outline_enabled = True
         s.style.outline_thickness = max(
-            c.style.outline_thickness + Int(round(2.0 * spread)), 0
+            c.style.outline_thickness + 2.0 * spread, 0.0
         )
         if c.kind == CMD_RECT:
             s.geom[2] = max(s.geom[2] + 2.0 * spread, 0.0)
