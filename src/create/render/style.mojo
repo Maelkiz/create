@@ -77,8 +77,11 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
     )
     ```
 
-    A corner radius is not part of a style: it changes the shape, so it
-    belongs to the shape (`Rectangle(..., corner_radius=12)`).
+    `corner_radius` rounds the shapes the canvas builds from numbers --
+    `canvas.rectangle(p, w, h)`, `triangle`, `polygon` and `sector` -- unless
+    the call names its own `corner_radius`. A shape value carries its own
+    radius, so `canvas.draw(shape)` and `canvas.clip(shape)` ignore the
+    style's: what is drawn from a shape is what its `contains` tests.
 
     The constructor's keywords are named after the canvas setters and act
     like them: naming any part of the fill, outline or shadow switches it
@@ -98,6 +101,9 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
     var outline_color: Color
     var outline_thickness: Float64
     var outline_enabled: Bool
+    var corner_radius: Float64
+    """How far the shapes the canvas builds from numbers are rounded, in
+    world units; 0 is sharp. A shape value keeps its own."""
     var text_color: Color
     var font: Optional[Font]
     """The face text is drawn in; none for the packaged Noto Sans."""
@@ -125,6 +131,7 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         outline: Optional[Color] = None,
         outline_thickness: _OptionalFloat64 = None,
         outline_enabled: Optional[Bool] = None,
+        corner_radius: Float64 = 0.0,
         text_color: Color = Color.BLACK,
         font: Optional[Font] = None,
         font_size: Float64 = 16.0,
@@ -150,6 +157,7 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.outline_color = outline.or_else(Color.BLACK)
         self.outline_thickness = outline_thickness.or_else(1.0)
         self.outline_enabled = outline_enabled.or_else(True)
+        self.corner_radius = corner_radius
         self.text_color = text_color
         self.font = font
         self.font_size = font_size
@@ -194,6 +202,8 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.outline_thickness,
             ", outline_enabled=",
             self.outline_enabled,
+            ", corner_radius=",
+            self.corner_radius,
             ", text_color=",
             self.text_color,
             ", font=",
