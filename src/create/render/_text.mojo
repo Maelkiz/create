@@ -306,10 +306,9 @@ struct TextRenderer(Movable):
         elif not align._left():
             pen_x -= tw // 2
 
-        # Set the size first: with every glyph cached, nothing above did.
-        face._set_size(size)
-        var asc = face.ascender()
-        var desc = face.descender()
+        var metrics = face._vertical_metrics(size)
+        var asc = metrics[0]
+        var desc = metrics[1]
         var baseline_y = pen_y
         if align._top():
             baseline_y += asc

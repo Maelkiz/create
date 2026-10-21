@@ -494,14 +494,6 @@ struct Font(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.italic_path,
         )
 
-    def ascender(mut self) raises -> Int:
-        """Pixels above the baseline at the size last rendered."""
-        return self._faces[].face(self._draws_italic).ascender
-
-    def descender(mut self) raises -> Int:
-        """Pixels below the baseline at the size last rendered, negative."""
-        return self._faces[].face(self._draws_italic).descender
-
     def has_glyph(self, codepoint: Int) raises -> Bool:
         """Whether this face can render `codepoint`."""
         return self._faces[].face(self._draws_italic).has_glyph(codepoint)
@@ -509,12 +501,12 @@ struct Font(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _set_weight(mut self, weight: Int) raises:
         self._faces[].face(self._draws_italic)._set_weight(weight)
 
-    def _set_size(mut self, size: Int) raises:
-        """Scale the face to `size` pixels, so `ascender`/`descender` are
-        that size's. Free when it already is."""
-        self._faces[].face(self._draws_italic)._set_size(
-            load_library("libfreetype"), size
-        )
+    def _vertical_metrics(mut self, size: Int) raises -> Tuple[Int, Int]:
+        """Pixels above and below the baseline at `size`, the second
+        negative. Scales the face to `size` first, free when it already is."""
+        ref face = self._faces[].face(self._draws_italic)
+        face._set_size(load_library("libfreetype"), size)
+        return (face.ascender, face.descender)
 
     def render(mut self, codepoint: Int, size: Int) raises -> _GlyphInfo:
         """Rasterise one glyph at `size` pixels; see `_Face.render`."""
