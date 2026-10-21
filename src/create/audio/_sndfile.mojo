@@ -30,7 +30,7 @@ struct SndFile:
         self.lib = load_library("libsndfile")
 
     def load(self, path: String) raises -> Tuple[List[Int16], Int32, Int32]:
-        """Decode an audio file to interleaved S16 PCM. Returns (samples, channels, freq).
+        """Decode an audio file to interleaved S16 PCM. Returns (samples, channels, sample_rate).
         """
         var info = List[UInt8](length=_SF_INFO_SIZE, fill=0)
         var cpath = _cstr(path)

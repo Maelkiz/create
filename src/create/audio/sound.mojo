@@ -14,19 +14,19 @@ struct Sound(Movable):
     var pcm: List[UInt8]
     var format: Int32
     var channels: Int32
-    var freq: Int32
+    var sample_rate: Int32
 
     def __init__(
         out self,
         var pcm: List[UInt8],
         format: Int32,
         channels: Int32,
-        freq: Int32,
+        sample_rate: Int32,
     ):
         self.pcm = pcm^
         self.format = format
         self.channels = channels
-        self.freq = freq
+        self.sample_rate = sample_rate
 
     @staticmethod
     def load(path: String) raises -> Sound:
@@ -51,7 +51,7 @@ struct Sound(Movable):
 
     @staticmethod
     def from_pcm(
-        data: List[Int16], channels: Int32 = 1, freq: Int32 = 44100
+        data: List[Int16], channels: Int32 = 1, sample_rate: Int32 = 44100
     ) -> Sound:
         """Build a Sound from raw S16LE samples, e.g. a synthesized waveform."""
         var pcm = List[UInt8](length=len(data) * 2, fill=0)
@@ -60,4 +60,4 @@ struct Sound(Movable):
             var sample = data[i]
             dst[unsafe_offset=i * 2] = UInt8(sample & 0xFF)
             dst[unsafe_offset=i * 2 + 1] = UInt8((sample >> 8) & 0xFF)
-        return Sound(pcm^, SDL_AUDIO_S16, channels, freq)
+        return Sound(pcm^, SDL_AUDIO_S16, channels, sample_rate)

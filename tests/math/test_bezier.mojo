@@ -21,11 +21,11 @@ def _assert_point_near(p: Point2D, q: Point2D, tol: Float64 = 1e-9) raises:
 
 def _distance_to_segment(p: Point2D, a: Point2D, b: Point2D) -> Float64:
     var ab = b - a
-    var len_sq = ab.mag_sq()
+    var len_sq = ab.magnitude_squared()
     if len_sq == 0.0:
-        return p.dist(a)
+        return p.distance(a)
     var t = max(0.0, min(1.0, (p - a).dot(ab) / len_sq))
-    return p.dist(a + ab * t)
+    return p.distance(a + ab * t)
 
 
 def test_at_endpoints() raises -> None:
@@ -184,7 +184,7 @@ def test_length_matches_dense_polyline() raises -> None:
     var points = b.flatten(1e-6)
     var total = 0.0
     for i in range(len(points) - 1):
-        total += points[i].dist(points[i + 1])
+        total += points[i].distance(points[i + 1])
     assert_almost_equal(b.length(), total, atol=1e-3)
 
 
@@ -210,7 +210,7 @@ def test_at_distance_steps_evenly() raises -> None:
     for i in range(1, n + 1):
         var p = b.at_distance(Float64(i) * step)
         # A chord is at most the arc it spans, and only just shorter here.
-        var chord = p.dist(previous)
+        var chord = p.distance(previous)
         assert_true(chord <= step + 1e-6)
         assert_true(chord >= step * 0.99)
         previous = p

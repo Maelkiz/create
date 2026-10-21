@@ -94,11 +94,11 @@ def _once() -> Color:
 def _signed_distance(s: Sector, p: Point2D) -> Float64:
     """How far `p` lies inside the sector's edge; negative outside."""
     if not s.contains(p):
-        return -p.dist(s.closest_point(p))
-    var d = s.r - p.dist(s.position)
+        return -p.distance(s.closest_point(p))
+    var d = s.r - p.distance(s.position)
     if abs(s.sweep_angle) < tau:
         for radius in s._radii():
-            d = min(d, p.dist(radius.closest_point(p)))
+            d = min(d, p.distance(radius.closest_point(p)))
     return d
 
 
@@ -192,7 +192,7 @@ def test_outline_is_as_thick_as_asked() raises -> None:
     var hi = 0.0
     for p in q.fill:
         lo = min(lo, min(p.x, p.y))
-        hi = max(hi, p.dist(Point2D(0.0, 0.0)))
+        hi = max(hi, p.distance(Point2D(0.0, 0.0)))
     assert_true(abs(lo - 5.0) < 1e-9)
     assert_true(abs(hi - 19.0) < 1e-9)
 

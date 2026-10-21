@@ -1133,7 +1133,7 @@ def test_bezier_stays_smooth_under_camera_zoom() raises -> None:
             var nearest = 0
             var distance = Float64.MAX
             for i in range(len(samples)):
-                var d = (centre - samples[i]).mag()
+                var d = (centre - samples[i]).magnitude()
                 if d < distance:
                     distance = d
                     nearest = i

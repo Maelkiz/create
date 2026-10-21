@@ -26,14 +26,14 @@ def map(
     )
 
 
-def norm(value: Float64, low: Float64, high: Float64) -> Float64:
+def inverse_lerp(value: Float64, low: Float64, high: Float64) -> Float64:
     """Where `value` sits in `[low, high]` as a 0-to-1 fraction. The inverse of
     `lerp`, and `map` with a 0..1 output range."""
     return (value - low) / (high - low)
 
 
 def smoothstep(edge0: Float64, edge1: Float64, x: Float64) -> Float64:
-    """Like `norm`, but clamped to 0..1 and eased at both ends — the usual
+    """Like `inverse_lerp`, but clamped to 0..1 and eased at both ends — the usual
     choice for a transition that should not start or stop abruptly."""
     var t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0)
     return t * t * (3.0 - 2.0 * t)
@@ -49,13 +49,13 @@ def sign(x: Float64) -> Float64:
     return 0.0
 
 
-def fract(x: Float64) -> Float64:
-    """The part after the decimal point, always positive: `fract(-0.25)` is
+def fractional_part(x: Float64) -> Float64:
+    """The part after the decimal point, always positive: `fractional_part(-0.25)` is
     0.75, since it floors rather than truncating."""
     return x - floor(x)
 
 
-def fmod(x: Float64, y: Float64) -> Float64:
+def wrap(x: Float64, y: Float64) -> Float64:
     """`x` wrapped into `[0, y)`. Floored, so a negative `x` wraps forward
     instead of staying negative — what an angle or a scrolling offset wants."""
     return x - floor(x / y) * y

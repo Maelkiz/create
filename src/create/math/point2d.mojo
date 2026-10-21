@@ -2,7 +2,7 @@ from .vector2d import Vector2D
 
 
 struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
-    """A location in world space: `dist`, `lerp`, the affine operators, and
+    """A location in world space: `distance`, `lerp`, the affine operators, and
     `xy`/`xyz` to hand the components to another type.
 
     Every position in the library is one of these —
@@ -15,7 +15,7 @@ struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     The surface is strictly affine, which is the whole point of the type
     existing beside `Vector2D`: subtracting two positions gives the
     displacement between them (`Vector2D`), and adding a displacement to a
-    position gives another position. `mag`, `normalize`, `dot`, scalar `*`,
+    position gives another position. `magnitude`, `normalize`, `dot`, scalar `*`,
     unary `-` and `Point2D + Point2D` are absent on purpose — none of them
     means anything for a location, and `position.normalize()` compiling was the
     mistake this split exists to catch. A program that genuinely wants a
@@ -89,11 +89,11 @@ struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def write_to[W: Writer](self, mut writer: W):
         writer.write("Point2D(", self.x, ", ", self.y, ")")
 
-    def dist(self, other: Point2D) -> Float64:
-        return (self - other).mag()
+    def distance(self, other: Point2D) -> Float64:
+        return (self - other).magnitude()
 
-    def dist_sq(self, other: Point2D) -> Float64:
-        return (self - other).mag_sq()
+    def distance_squared(self, other: Point2D) -> Float64:
+        return (self - other).magnitude_squared()
 
     def lerp(self, other: Point2D, t: Float64) -> Point2D:
         return Point2D(

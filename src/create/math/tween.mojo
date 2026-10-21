@@ -1,7 +1,7 @@
 from std.math import clamp
 
 from .easing import Easing, ease
-from .util import lerp, fmod
+from .util import lerp, wrap
 
 
 struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
@@ -174,7 +174,7 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
                 self.progress = clamp(2.0 - self.progress, 0.0, 1.0)
                 self._reversed = True
             elif self._looping:
-                self.progress = fmod(self.progress, 1.0)
+                self.progress = wrap(self.progress, 1.0)
             else:
                 self.progress = 1.0
                 self._playing = False

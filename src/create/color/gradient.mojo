@@ -303,7 +303,7 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         a degenerate direction or box, which `_at` maps to the first stop."""
         var p = local - center
         if self._kind == _LINEAR:
-            var length = self.direction.mag()
+            var length = self.direction.magnitude()
             if length < _DEGENERATE:
                 return 0.0
             var dx = self.direction.x / length
@@ -335,7 +335,7 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         )
         var zero = SIMD[DType.float64, 4](0.0)
         if self._kind == _LINEAR:
-            var length = self.direction.mag()
+            var length = self.direction.magnitude()
             if length < _DEGENERATE:
                 return _DeviceMapping(zero, zero, False)
             var dx = self.direction.x / length

@@ -62,7 +62,7 @@ def test_tangent_is_constant_speed_along_travel() raises -> None:
     var a = Arc((0, 0), 10, 0.0, -pi)
     for i in range(5):
         var t = Float64(i) / 4.0
-        assert_almost_equal(a.tangent(t).mag(), a.length(), atol=1e-9)
+        assert_almost_equal(a.tangent(t).magnitude(), a.length(), atol=1e-9)
     # Clockwise from (10, 0): heading straight down.
     _assert_point_near(
         Point2D(0, 0) + a.tangent(0.0).normalize(), Point2D(0.0, -1.0)
@@ -106,7 +106,7 @@ def test_flatten_stays_within_tolerance() raises -> None:
     _assert_point_near(points[len(points) - 1], a.at(1.0))
     for i in range(len(points) - 1):
         var mid = points[i].lerp(points[i + 1], 0.5)
-        assert_true(100.0 - mid.dist(Point2D(0, 0)) <= 0.25 + 1e-9)
+        assert_true(100.0 - mid.distance(Point2D(0, 0)) <= 0.25 + 1e-9)
 
 
 def test_flatten_of_a_collapsed_arc_gives_two_points() raises -> None:
@@ -119,7 +119,7 @@ def test_beziers_hug_the_circle() raises -> None:
     assert_equal(len(curves), Int(ceil(4.0 / (pi / 4.0))))
     for c in curves:
         for i in range(11):
-            var d = c.at(Float64(i) / 10.0).dist(a.position)
+            var d = c.at(Float64(i) / 10.0).distance(a.position)
             assert_true(abs(d - 1000.0) <= 1e-5 * 1000.0)
 
 

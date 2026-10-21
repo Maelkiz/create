@@ -135,7 +135,7 @@ def test_diagonal_stick_capped_at_unit_length() raises -> None:
         ],
     )
     var stick = context.input.gamepad().left_stick
-    assert_almost_equal(stick.mag(), 1.0)
+    assert_almost_equal(stick.magnitude(), 1.0)
     assert_true(stick.x > 0 and stick.y < 0)
 
 

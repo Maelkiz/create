@@ -13,11 +13,11 @@ from .spline import Spline
 from .util import (
     lerp,
     map,
-    norm,
+    inverse_lerp,
     smoothstep,
     sign,
-    fract,
-    fmod,
+    fractional_part,
+    wrap,
     degrees,
     radians,
 )

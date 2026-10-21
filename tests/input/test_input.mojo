@@ -450,7 +450,7 @@ def test_mouse_is_a_position_and_the_wheel_a_displacement() raises -> None:
     assert_equal(drag, Vector2D(3.0, 4.0))
     assert_equal(input.mouse_press_position + drag, input.mouse)
     input.mouse_wheel = Vector2D(0.0, -1.0)
-    assert_equal(input.mouse_wheel.mag(), 1.0)
+    assert_equal(input.mouse_wheel.magnitude(), 1.0)
 
 
 def main() raises:

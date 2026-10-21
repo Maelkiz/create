@@ -2,8 +2,8 @@ from std.math import sqrt
 
 
 struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
-    """A 2D displacement or direction: arithmetic operators, `mag`, `normalize`,
-    `dot`, `dist`, `lerp`, and `xy`/`xyz` to hand the components to another
+    """A 2D displacement or direction: arithmetic operators, `magnitude`, `normalize`,
+    `dot`, `distance`, `lerp`, and `xy`/`xyz` to hand the components to another
     type.
 
     Unlike `Point2D`, a bare tuple does not convert to one implicitly: a
@@ -76,24 +76,24 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def write_to[W: Writer](self, mut writer: W):
         writer.write("Vector2D(", self.x, ", ", self.y, ")")
 
-    def mag(self) -> Float64:
+    def magnitude(self) -> Float64:
         return sqrt(self.x * self.x + self.y * self.y)
 
-    def mag_sq(self) -> Float64:
+    def magnitude_squared(self) -> Float64:
         return self.x * self.x + self.y * self.y
 
     def normalize(self) -> Vector2D:
-        var m = self.mag()
+        var m = self.magnitude()
         return Vector2D(self.x / m, self.y / m)
 
     def dot(self, other: Vector2D) -> Float64:
         return self.x * other.x + self.y * other.y
 
-    def dist(self, other: Vector2D) -> Float64:
-        return (self - other).mag()
+    def distance(self, other: Vector2D) -> Float64:
+        return (self - other).magnitude()
 
-    def dist_sq(self, other: Vector2D) -> Float64:
-        return (self - other).mag_sq()
+    def distance_squared(self, other: Vector2D) -> Float64:
+        return (self - other).magnitude_squared()
 
     def lerp(self, other: Vector2D, t: Float64) -> Vector2D:
         return Vector2D(

@@ -150,23 +150,23 @@ struct Image(Copyable, Movable):
             self._pixels[][off + 3],
         )
 
-    def resize(self, new_w: Int, new_h: Int) raises -> Image:
-        """A copy of this image at `new_w` x `new_h`, nearest-neighbour
+    def resize(self, width: Int, height: Int) raises -> Image:
+        """A copy of this image at `width` x `height`, nearest-neighbour
         sampled. This image is unchanged; the copy is a new image, with its
         own identity."""
-        var dst = PixelBuffer(new_w, new_h)
+        var dst = PixelBuffer(width, height)
         if self.width == 0 or self.height == 0:
             # No source pixel to sample -- leave the zero-filled buffer as is
             # rather than computing an offset into an empty source.
             return Image(dst^)
         var src_ptr = self._pixels[].unsafe_ptr()
         var dst_ptr = dst._data.unsafe_ptr()
-        for row in range(new_h):
-            var src_row = row * self.height // new_h
-            for col in range(new_w):
-                var src_col = col * self.width // new_w
+        for row in range(height):
+            var src_row = row * self.height // height
+            for col in range(width):
+                var src_col = col * self.width // width
                 var s = (src_row * self.width + src_col) * 4
-                var d = (row * new_w + col) * 4
+                var d = (row * width + col) * 4
                 dst_ptr[unsafe_offset=d] = src_ptr[unsafe_offset=s]
                 dst_ptr[unsafe_offset=d + 1] = src_ptr[unsafe_offset=s + 1]
                 dst_ptr[unsafe_offset=d + 2] = src_ptr[unsafe_offset=s + 2]

@@ -14,7 +14,7 @@ Usable without a `Tween` — it is a plain function, so anything already holding
 a fraction can bend it:
 
 ```mojo
-var t = norm(self.x, 0.0, 300.0)
+var t = inverse_lerp(self.x, 0.0, 300.0)
 canvas.circle((0.0, lerp(-200.0, 200.0, ease(Easing.OUT_CUBIC, t))), 20.0)
 ```
 

@@ -74,7 +74,7 @@ def _point_on_segment(p: Point2D, a: Point2D, b: Point2D) -> Bool:
     ) <= p.y <= max(a.y, b.y)
 
 
-def _dist_sq(p: Point2D, q: Point2D) -> Float64:
+def _distance_squared(p: Point2D, q: Point2D) -> Float64:
     var d = p - q
     return d.dot(d)
 
@@ -83,10 +83,10 @@ def _rounded_closest(q: Point2D, p: Point2D, r: Float64) -> Point2D:
     """The closest point to `p` on a shape rounded by `r`, given `q`, the
     closest point to `p` on the sharp shape it rounds out from."""
     var d = p - q
-    var dist_sq = d.dot(d)
-    if dist_sq <= r * r:
+    var distance_squared = d.dot(d)
+    if distance_squared <= r * r:
         return p
-    return q + d * (r / sqrt(dist_sq))
+    return q + d * (r / sqrt(distance_squared))
 
 
 def _cross(a: Vector2D, b: Vector2D) -> Float64:
@@ -121,10 +121,10 @@ def _in_sweep(v: Vector2D, start_angle: Float64, sweep_angle: Float64) -> Bool:
     """
     if sweep_angle >= tau:
         return True
-    var mag = v.mag()
-    if mag == 0.0:
+    var magnitude = v.magnitude()
+    if magnitude == 0.0:
         return True
-    var slack = _ANGLE_EPSILON * mag
+    var slack = _ANGLE_EPSILON * magnitude
     var u0 = _unit(start_angle)
     var u1 = _unit(start_angle + sweep_angle)
     if sweep_angle <= pi:
@@ -151,9 +151,11 @@ def _cut_at_line(l: Line, other: Line, mut cuts: List[Float64]):
     var across = _cross(d, e)
     if across != 0.0:
         cuts.append(_cross(other.start - l.start, e) / across)
-    elif _cross(other.start - l.start, d) == 0.0 and d.mag_sq() > 0.0:
-        cuts.append((other.start - l.start).dot(d) / d.mag_sq())
-        cuts.append((other.end - l.start).dot(d) / d.mag_sq())
+    elif (
+        _cross(other.start - l.start, d) == 0.0 and d.magnitude_squared() > 0.0
+    ):
+        cuts.append((other.start - l.start).dot(d) / d.magnitude_squared())
+        cuts.append((other.end - l.start).dot(d) / d.magnitude_squared())
 
 
 def _cut_at_circle(
@@ -162,9 +164,9 @@ def _cut_at_circle(
     """Append the fractions along `l` where its line crosses the circle."""
     var d = l.end - l.start
     var f = l.start - position
-    var len_sq = d.mag_sq()
+    var len_sq = d.magnitude_squared()
     var b = f.dot(d)
-    var discriminant = b * b - len_sq * (f.mag_sq() - r * r)
+    var discriminant = b * b - len_sq * (f.magnitude_squared() - r * r)
     if len_sq > 0.0 and discriminant >= 0.0:
         var root = sqrt(discriminant)
         cuts.append((-b - root) / len_sq)
@@ -191,12 +193,12 @@ def _circle_crossings(
 ):
     """Append where the line through `l` crosses the circle."""
     var d = l.end - l.start
-    var length = d.mag()
+    var length = d.magnitude()
     if length == 0.0:
         return
     var u = d * (1.0 / length)
     var foot = l.start + u * (position - l.start).dot(u)
-    var h_sq = _dist_sq(position, foot)
+    var h_sq = _distance_squared(position, foot)
     if h_sq <= r * r:
         var half = sqrt(r * r - h_sq)
         crossings.append(foot + u * half)
@@ -435,7 +437,7 @@ struct Rectangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def contains(self, p: Point2D) -> Bool:
         var r = self._radius()
         if r > 0.0:
-            return _dist_sq(self._inner().closest_point(p), p) <= r * r
+            return _distance_squared(self._inner().closest_point(p), p) <= r * r
         return (
             self.left() <= p.x <= self.right()
             and self.bottom() <= p.y <= self.top()
@@ -534,7 +536,7 @@ struct Circle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     unlike `Rectangle`/`Triangle` there is nothing y-up affects beyond the
     centre's own coordinates.
 
-    `contains` treats the boundary as inside (`dist <= r`), and
+    `contains` treats the boundary as inside (`distance <= r`), and
     `closest_point` returns the query point itself when it is already
     inside or exactly at the centre, rather than an arbitrary point on the
     circumference. A zero `r` collapses the circle to a point; `contains`
@@ -572,17 +574,17 @@ struct Circle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     def closest_point(self, p: Point2D) -> Point2D:
         var d = p - self.position
-        var dist_sq = d.dot(d)
-        if dist_sq == 0.0 or dist_sq <= self.r * self.r:
+        var distance_squared = d.dot(d)
+        if distance_squared == 0.0 or distance_squared <= self.r * self.r:
             return p
-        return self.position + d * (self.r / sqrt(dist_sq))
+        return self.position + d * (self.r / sqrt(distance_squared))
 
     def contains(self, p: Point2D) -> Bool:
-        return _dist_sq(p, self.position) <= self.r * self.r
+        return _distance_squared(p, self.position) <= self.r * self.r
 
     def contains(self, other: Circle) -> Bool:
-        var dist = sqrt(_dist_sq(other.position, self.position))
-        return dist + other.r <= self.r
+        var distance = sqrt(_distance_squared(other.position, self.position))
+        return distance + other.r <= self.r
 
     def contains(self, r: Rectangle) -> Bool:
         if r._radius() > 0.0:
@@ -614,7 +616,7 @@ struct Circle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             return False
         var far = s.arc()._furthest_along(s.position - self.position)
         var reach = self.r * (1.0 + _RADIUS_EPSILON)
-        return _dist_sq(far, self.position) <= reach * reach
+        return _distance_squared(far, self.position) <= reach * reach
 
     def contains(self, p: Polygon) -> Bool:
         if p._is_rounded():
@@ -667,7 +669,7 @@ struct Line(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         writer.write("Line(start=", self.start, ", end=", self.end, ")")
 
     def length_sq(self) -> Float64:
-        return _dist_sq(self.end, self.start)
+        return _distance_squared(self.end, self.start)
 
     def length(self) -> Float64:
         return sqrt(self.length_sq())
@@ -959,21 +961,23 @@ struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         when `p` lies within the sweep, otherwise the nearer end. From the
         centre itself every point is as near, and the start is returned."""
         var v = p - self.position
-        if v.mag_sq() == 0.0:
+        if v.magnitude_squared() == 0.0:
             return self.at(0.0)
         var s = _normalized_sweep(self.start_angle, self.sweep_angle)
         if _in_sweep(v, s[0], s[1]):
-            return self.position + v * (self.r / v.mag())
+            return self.position + v * (self.r / v.magnitude())
         var a = self.at(0.0)
         var b = self.at(1.0)
-        return a if _dist_sq(p, a) <= _dist_sq(p, b) else b
+        return a if _distance_squared(p, a) <= _distance_squared(p, b) else b
 
     def _furthest_along(self, direction: Vector2D) -> Point2D:
         """The point on the arc furthest in `direction`: straight out that
         way from the centre when the sweep reaches it, otherwise the end
         further that way. A zero `direction` gives the start."""
-        if direction.mag_sq() > 0.0 and self._spans(self.position + direction):
-            return self.position + direction * (self.r / direction.mag())
+        if direction.magnitude_squared() > 0.0 and self._spans(
+            self.position + direction
+        ):
+            return self.position + direction * (self.r / direction.magnitude())
         var a = self.at(0.0)
         var b = self.at(1.0)
         return a if (a - b).dot(direction) >= 0.0 else b
@@ -986,12 +990,12 @@ struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     # The `intersects` family is documented above `Line.intersects`.
     def intersects(self, p: Point2D) -> Bool:
-        var off = abs((p - self.position).mag() - self.r)
+        var off = abs((p - self.position).magnitude() - self.r)
         return off <= _RADIUS_EPSILON * self.r and self._spans(p)
 
     def intersects(self, l: Line) -> Bool:
         var d = l.end - l.start
-        var len_sq = d.mag_sq()
+        var len_sq = d.magnitude_squared()
         if len_sq == 0.0:
             return self.intersects(l.start)
         var f = l.start - self.position
@@ -1018,7 +1022,7 @@ struct Arc(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         if other.r == 0.0:
             return self.intersects(other.position)
         var between = other.position - self.position
-        var d = between.mag()
+        var d = between.magnitude()
         var slack = _RADIUS_EPSILON * (self.r + other.r)
         if d <= slack:
             # One circle: the arcs meet where their sweeps overlap, which
@@ -1228,7 +1232,7 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         var ends: Array[Point2D, 2] = [a.at(0.0), a.at(1.0)]
         for end in ends:
             var q = _closest_on_segment(p, self.position, end)
-            if _dist_sq(p, q) < _dist_sq(p, best):
+            if _distance_squared(p, q) < _distance_squared(p, best):
                 best = q
         return best
 
@@ -1238,7 +1242,7 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         if self._is_rounded():
             return self._outline().contains(p)
         var reach = self.r * (1.0 + _RADIUS_EPSILON)
-        if _dist_sq(p, self.position) > reach * reach:
+        if _distance_squared(p, self.position) > reach * reach:
             return False
         return self.arc()._spans(p)
 
@@ -1304,7 +1308,7 @@ struct Sector(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         for radius in self._radii():
             _circle_crossings(radius, a.position, a.r, crossings)
         var between = self.position - a.position
-        var d = between.mag()
+        var d = between.magnitude()
         if d > 0.0 and d <= a.r + self.r and d >= abs(a.r - self.r):
             var along = (d * d + a.r * a.r - self.r * self.r) / (2.0 * d)
             var h = sqrt(max(0.0, a.r * a.r - along * along))
@@ -1459,9 +1463,9 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             # whole circle's worth of corners.
             var inner = self._inner()
             var perimeter = (
-                sqrt(_dist_sq(inner.a, inner.b))
-                + sqrt(_dist_sq(inner.b, inner.c))
-                + sqrt(_dist_sq(inner.c, inner.a))
+                sqrt(_distance_squared(inner.a, inner.b))
+                + sqrt(_distance_squared(inner.b, inner.c))
+                + sqrt(_distance_squared(inner.c, inner.a))
             )
             return inner.area() + perimeter * r + pi * r * r
         return abs(self._signed_area2()) / 2.0
@@ -1475,9 +1479,9 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         var p1 = _closest_on_segment(p, self.a, self.b)
         var p2 = _closest_on_segment(p, self.b, self.c)
         var p3 = _closest_on_segment(p, self.c, self.a)
-        var d1 = _dist_sq(p1, p)
-        var d2 = _dist_sq(p2, p)
-        var d3 = _dist_sq(p3, p)
+        var d1 = _distance_squared(p1, p)
+        var d2 = _distance_squared(p2, p)
+        var d3 = _distance_squared(p3, p)
         if d1 <= d2 and d1 <= d3:
             return p1
         if d2 <= d3:
@@ -1487,13 +1491,13 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def contains(self, p: Point2D) -> Bool:
         var r = self._radius()
         if r > 0.0:
-            return _dist_sq(self._inner().closest_point(p), p) <= r * r
+            return _distance_squared(self._inner().closest_point(p), p) <= r * r
         if self._signed_area2() == 0.0:
             # Degenerate hull: a segment (or a point). Contained iff on the
             # longest edge -- the other two edges are contained within it.
-            var len_ab = _dist_sq(self.b, self.a)
-            var len_bc = _dist_sq(self.c, self.b)
-            var len_ca = _dist_sq(self.a, self.c)
+            var len_ab = _distance_squared(self.b, self.a)
+            var len_bc = _distance_squared(self.c, self.b)
+            var len_ca = _distance_squared(self.a, self.c)
             if len_ab >= len_bc and len_ab >= len_ca:
                 return _point_on_segment(p, self.a, self.b)
             if len_bc >= len_ca:
@@ -1535,15 +1539,15 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             return False
         var r_sq = c.r * c.r
         return (
-            _dist_sq(
+            _distance_squared(
                 _closest_on_segment(c.position, self.a, self.b), c.position
             )
             >= r_sq
-            and _dist_sq(
+            and _distance_squared(
                 _closest_on_segment(c.position, self.b, self.c), c.position
             )
             >= r_sq
-            and _dist_sq(
+            and _distance_squared(
                 _closest_on_segment(c.position, self.c, self.a), c.position
             )
             >= r_sq
@@ -1615,9 +1619,9 @@ struct Triangle(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         rounded one is the points within the radius of it, each corner's
         fillet centred on its inner corner. Moving every edge in by the
         same distance scales the triangle about its incentre."""
-        var la = sqrt(_dist_sq(self.b, self.c))
-        var lb = sqrt(_dist_sq(self.c, self.a))
-        var lc = sqrt(_dist_sq(self.a, self.b))
+        var la = sqrt(_distance_squared(self.b, self.c))
+        var lb = sqrt(_distance_squared(self.c, self.a))
+        var lc = sqrt(_distance_squared(self.a, self.b))
         var perimeter = la + lb + lc
         var incentre = Point2D(
             (self.a.x * la + self.b.x * lb + self.c.x * lc) / perimeter,
@@ -1812,7 +1816,7 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
         for i in range(len(self.vertices)):
             var e = self._edge(i)
             var q = _closest_on_segment(p, e.start, e.end)
-            if _dist_sq(p, q) < _dist_sq(p, best):
+            if _distance_squared(p, q) < _distance_squared(p, best):
                 best = q
         return best
 
@@ -1880,7 +1884,7 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
         if not self._contains_arc(outline):
             return False
         for p in self._rim([], [outline]):
-            if _dist_sq(p, c.position) < c.r * c.r:
+            if _distance_squared(p, c.position) < c.r * c.r:
                 return False
         return True
 
@@ -2050,7 +2054,7 @@ struct Polygon(Copyable, Equatable, Movable, Writable):
             # In order along the edge; there are only a handful.
             var along = List[Float64](capacity=len(cuts))
             for p in cuts:
-                along.append((p - e.start).dot(d) / d.mag_sq())
+                along.append((p - e.start).dot(d) / d.magnitude_squared())
             for k in range(1, len(cuts)):
                 var m = k
                 while m > 0 and along[m - 1] > along[m]:
@@ -2142,7 +2146,7 @@ def _holds_strictly(t: Triangle, p: Point2D) -> Bool:
 
 def _holds_strictly(s: Sector, p: Point2D) -> Bool:
     var reach = s.r * (1.0 - _RADIUS_EPSILON)
-    if _dist_sq(p, s.position) >= reach * reach:
+    if _distance_squared(p, s.position) >= reach * reach:
         return False
     var sweep = _normalized_sweep(s.start_angle, s.sweep_angle)
     if sweep[1] >= tau:
@@ -2207,7 +2211,7 @@ def overlaps(a: Rectangle, b: Rectangle) -> Bool:
 
 def overlaps(a: Circle, b: Circle) -> Bool:
     var rsum = a.r + b.r
-    return _dist_sq(a.position, b.position) <= rsum * rsum
+    return _distance_squared(a.position, b.position) <= rsum * rsum
 
 
 def overlaps(a: Circle, b: Rectangle) -> Bool:

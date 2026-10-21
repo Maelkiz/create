@@ -201,7 +201,7 @@ struct Bezier(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         """
         var d1 = (self.start - self.control1) + (self.control2 - self.control1)
         var d2 = (self.control1 - self.control2) + (self.end - self.control2)
-        var m = max(d1.mag(), d2.mag())
+        var m = max(d1.magnitude(), d2.magnitude())
         var n = 1
         if tolerance > 0.0 and m > 0.0:
             n = Int(ceil(sqrt(0.75 * m / tolerance)))
@@ -251,7 +251,7 @@ struct Bezier(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             else:
                 lo = t
             var next = (lo + hi) / 2.0
-            var speed = self.tangent(t).mag()
+            var speed = self.tangent(t).magnitude()
             if speed > 0.0:
                 var newton = t - error / speed
                 if newton > lo and newton < hi:
@@ -271,8 +271,8 @@ struct Bezier(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             for k in range(4):
                 var node = nodes[k] * half
                 total += weights[k] * (
-                    self.tangent(centre - node).mag()
-                    + self.tangent(centre + node).mag()
+                    self.tangent(centre - node).magnitude()
+                    + self.tangent(centre + node).magnitude()
                 )
         return total * half
 

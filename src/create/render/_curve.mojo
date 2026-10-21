@@ -91,7 +91,7 @@ def stroke_quads(points: List[Point2D], width: Float64) -> List[Point2D]:
     var normals = List[Vector2D](capacity=segments)
     for i in range(segments):
         var d = path[(i + 1) % n] - path[i]
-        normals.append(Vector2D(-d.y, d.x) / d.mag())
+        normals.append(Vector2D(-d.y, d.x) / d.magnitude())
 
     # Each vertex's offset to the band's left edge; the right edge is its
     # negation. A joint's offset lies along the bisector of its two
@@ -120,7 +120,7 @@ def _miter(before: Vector2D, after: Vector2D, half: Float64) -> Vector2D:
     """The offset to the left edge at a joint between segments with unit
     normals `before` and `after`, clamped to `MITER_LIMIT` half-widths."""
     var bisector = before + after
-    var length = bisector.mag()
+    var length = bisector.magnitude()
     if length == 0.0:
         # The path doubles straight back: no bisector exists.
         return after * half

@@ -156,7 +156,7 @@ def _dead_zone(raw: Vector2D) -> Vector2D:
     """`raw` with the inner `STICK_DEAD_ZONE` cut out and the rest stretched
     back over 0..1, capped at the unit circle — a square-gated stick reaches
     past it on the diagonals."""
-    var length = raw.mag()
+    var length = raw.magnitude()
     if length <= Gamepad.STICK_DEAD_ZONE:
         return Vector2D.ZERO
     var scaled = min(

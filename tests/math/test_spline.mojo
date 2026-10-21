@@ -37,9 +37,9 @@ def _barry_goldman(
     straight from the pyramid of interpolations, as the reference the Bézier
     conversion must reproduce."""
     var t0 = 0.0
-    var t1 = t0 + pow((p1 - p0).mag(), alpha)
-    var t2 = t1 + pow((p2 - p1).mag(), alpha)
-    var t3 = t2 + pow((p3 - p2).mag(), alpha)
+    var t1 = t0 + pow((p1 - p0).magnitude(), alpha)
+    var t2 = t1 + pow((p2 - p1).magnitude(), alpha)
+    var t3 = t2 + pow((p3 - p2).magnitude(), alpha)
     var t = t1 + u * (t2 - t1)
     var a1 = _blend(p0, p1, (t1 - t) / (t1 - t0), (t - t0) / (t1 - t0))
     var a2 = _blend(p1, p2, (t2 - t) / (t2 - t1), (t - t1) / (t2 - t1))
@@ -231,7 +231,7 @@ def test_at_distance_moves_at_constant_speed() raises -> None:
         var p = s.at_distance(Float64(k) * step)
         # A chord is at most the arc it cuts, and nearly all of it when
         # the arc is short.
-        var chord = p.dist(previous)
+        var chord = p.distance(previous)
         assert_true(chord <= step + 1e-6)
         assert_true(chord >= step * 0.98)
         previous = p

@@ -465,7 +465,9 @@ def _rim_corners(rim: List[Line], shape: Polygon) -> List[_RimCorner]:
                 directions.append(l.start - p)
             else:
                 continue
-            shortest = min(shortest, directions[len(directions) - 1].mag())
+            shortest = min(
+                shortest, directions[len(directions) - 1].magnitude()
+            )
         var none = Vector2D(0.0, 0.0)
         if len(directions) != 2 or shortest <= 0.0:
             corners.append(_RimCorner(p, none, none, False, False))
@@ -473,7 +475,7 @@ def _rim_corners(rim: List[Line], shape: Polygon) -> List[_RimCorner]:
         var a = directions[0].normalize()
         var b = directions[1].normalize()
         var between = a + b
-        if between.mag() < 1e-9:
+        if between.magnitude() < 1e-9:
             # Straight on: the rectangles meet flush on both sides.
             corners.append(_RimCorner(p, a, b, False, True))
             continue
@@ -505,7 +507,7 @@ def _add_rim_band(
     # Along each piece, the half of its rectangle on the side.
     for l in rim:
         var along = l.end - l.start
-        var length = along.mag()
+        var length = along.magnitude()
         if length == 0.0:
             continue
         var n = Vector2D(along.y, -along.x) * (d / length)
@@ -522,7 +524,7 @@ def _add_rim_band(
     for corner in corners:
         if not corner.known:
             continue
-        var straight = (corner.a + corner.b).mag() < 1e-9
+        var straight = (corner.a + corner.b).magnitude() < 1e-9
         # The side fills the narrower wedge: covered by the rectangles.
         if straight or corner.inside_between != outside:
             continue
