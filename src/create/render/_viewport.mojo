@@ -126,7 +126,7 @@ struct Viewport(Copyable, ImplicitlyCopyable, Movable):
             Float64(self.pixel_w) / 2.0, Float64(self.pixel_h) / 2.0
         ) @ mat_scale(self.scale, -self.scale)
 
-    def to_screen(self, pixel: Point2D) -> Point2D:
+    def pixel_to_screen(self, pixel: Point2D) -> Point2D:
         """Map a window pixel position into screen space.
 
         The inverse of `base_matrix`, done in arithmetic: pointer positions

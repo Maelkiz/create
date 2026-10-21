@@ -112,6 +112,6 @@ def _to_screen(
     view: Viewport, x: Int, y: Int, px_per_point: Float64
 ) -> Point2D:
     """A pointer position from SDL's window coordinates into screen space."""
-    return view.to_screen(
+    return view.pixel_to_screen(
         Point2D(Float64(x) * px_per_point, Float64(y) * px_per_point)
     )

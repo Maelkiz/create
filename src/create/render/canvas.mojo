@@ -392,10 +392,6 @@ struct Canvas(Movable):
         """
         return self._state^
 
-    def to_screen(self, pixel: Point2D) -> Point2D:
-        """Map a window pixel position into screen space."""
-        return self._view.to_screen(pixel)
-
     def left(self) -> Float64:
         """Screen x of the left edge — negative, since the origin is centred."""
         return self._view.left()
