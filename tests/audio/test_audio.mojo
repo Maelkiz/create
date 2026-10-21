@@ -202,9 +202,35 @@ def test_set_volume_on_stale_id_is_a_no_op() raises -> None:
     assert_true(audio.is_playing(second))
 
 
-def test_volume_field_does_not_raise_before_play() raises -> None:
+def _gain(audio: Audio, id: Int) raises -> Float32:
+    return audio._sdl.gain(audio._voices[Audio._decode(id)[0]].stream)
+
+
+def test_volume_reads_back_its_default_and_what_was_set() raises -> None:
     var audio = Audio()
-    assert_equal(audio.volume, Float32(1.0))
+    assert_equal(audio.volume(), Float32(1.0))
+    audio.volume(0.25)
+    assert_equal(audio.volume(), Float32(0.25))
+
+
+def test_volume_reaches_voices_already_playing() raises -> None:
+    var audio = Audio()
+    var one_shot = audio.play(_tone())
+    var looping = audio.play(_tone(), loop=True)
+    audio.volume(0.5)
+    assert_equal(_gain(audio, one_shot), Float32(0.5))
+    assert_equal(_gain(audio, looping), Float32(0.5))
+    assert_equal(_gain(audio, audio.play(_tone())), Float32(0.5))
+
+
+def test_voice_volume_is_scaled_by_the_volume() raises -> None:
+    var audio = Audio()
+    var id = audio.play(_tone())
+    audio.set_volume(id, 0.5)
+    audio.volume(0.5)
+    assert_equal(_gain(audio, id), Float32(0.25))
+    audio.volume(1.0)
+    assert_equal(_gain(audio, id), Float32(0.5))
 
 
 def _play_and_drop_scope() raises:

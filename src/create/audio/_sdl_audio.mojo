@@ -117,6 +117,12 @@ struct SDLAudio:
         if not self.lib.call["SDL_SetAudioStreamGain", Bool](stream, gain):
             raise Error("SDL_SetAudioStreamGain failed: " + self.get_error())
 
+    def gain(self, stream: Int) raises -> Float32:
+        var gain = self.lib.call["SDL_GetAudioStreamGain", Float32](stream)
+        if gain < 0:
+            raise Error("SDL_GetAudioStreamGain failed: " + self.get_error())
+        return gain
+
     def available(self, stream: Int) raises -> Int32:
         return self.lib.call["SDL_GetAudioStreamAvailable", Int32](stream)
 
