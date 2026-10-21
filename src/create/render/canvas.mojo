@@ -1052,7 +1052,7 @@ struct Canvas(DrawTarget, Movable):
         """Draw the `w` by `h` rectangle centred on `position`, its corners
         rounded by `corner_radius` (clamped to half the shorter side), as
         `Rectangle` describes it."""
-        self._rectangle(Rectangle(position, w, h, corner_radius=corner_radius))
+        self.draw(Rectangle(position, w, h, corner_radius=corner_radius))
 
     def rectangle(
         mut self,
@@ -1067,16 +1067,16 @@ struct Canvas(DrawTarget, Movable):
         )
 
     def rectangle(mut self, r: Rectangle):
-        self._rectangle(r)
+        self.draw(r)
 
     def circle(mut self, position: Point2D, r: Float64):
-        self._circle(Circle(position, r))
+        self.draw(Circle(position, r))
 
     def circle(mut self, position: Point2D, r: Int):
         self.circle(position, Float64(r))
 
     def circle(mut self, c: Circle):
-        self._circle(c)
+        self.draw(c)
 
     def sector(
         mut self,
@@ -1102,7 +1102,7 @@ struct Canvas(DrawTarget, Movable):
         describes. A rounded sector is drawn as a polygon, so it costs what
         an outlined `polygon` of its flattened outline does.
         """
-        self._sector(
+        self.draw(
             Sector(
                 position,
                 r,
@@ -1130,7 +1130,7 @@ struct Canvas(DrawTarget, Movable):
         )
 
     def sector(mut self, s: Sector):
-        self._sector(s)
+        self.draw(s)
 
     def _sector_command(
         self,
@@ -1188,13 +1188,13 @@ struct Canvas(DrawTarget, Movable):
         `p.corner_radius` rounds every corner, as `Polygon` describes; each
         rounded corner adds vertices, and so cost.
         """
-        self._polygon(p)
+        self.draw(p)
 
     def polygon(mut self, *vertices: Point2D, corner_radius: Float64 = 0.0):
         var points = List[Point2D](capacity=len(vertices))
         for v in vertices:
             points.append(v)
-        self._polygon(Polygon(points^, corner_radius=corner_radius))
+        self.draw(Polygon(points^, corner_radius=corner_radius))
 
     def _rounded(
         self, vertices: List[Point2D], corner_radius: Float64
@@ -1211,10 +1211,10 @@ struct Canvas(DrawTarget, Movable):
         return rounded_vertices(vertices, corner_radius, step)
 
     def line(mut self, start: Point2D, end: Point2D):
-        self._line(Line(start, end))
+        self.draw(Line(start, end))
 
     def line(mut self, l: Line):
-        self._line(l)
+        self.draw(l)
 
     def bezier(
         mut self,
@@ -1236,10 +1236,10 @@ struct Canvas(DrawTarget, Movable):
         A blurred shadow is blurred afresh every frame (it cannot be cached
         like an image's), and on the GPU costs one extra draw call.
         """
-        self.bezier(Bezier(start, control1, control2, end))
+        self.draw(Bezier(start, control1, control2, end))
 
     def bezier(mut self, b: Bezier):
-        self._curves([b])
+        self.draw(b)
 
     def spline(
         mut self,
@@ -1261,14 +1261,10 @@ struct Canvas(DrawTarget, Movable):
         blurred shadow costs what a `bezier`'s does. Fewer than two distinct
         points draw nothing.
         """
-        self.spline(Spline(points^, alpha, closed))
+        self.draw(Spline(points^, alpha, closed))
 
     def spline(mut self, spline: Spline):
-        if not self._style.outline_enabled:
-            return
-        # Converted here, in local space: the knot spacing is measured where
-        # the points were given, so a non-uniform scale can't reshape it.
-        self._curves(spline.beziers())
+        self.draw(spline)
 
     def arc(
         mut self,
@@ -1290,7 +1286,7 @@ struct Canvas(DrawTarget, Movable):
         blurred shadow costs what a `bezier`'s does. A zero radius or sweep
         draws nothing.
         """
-        self.arc(Arc(position, r, start_angle, sweep_angle))
+        self.draw(Arc(position, r, start_angle, sweep_angle))
 
     def arc(
         mut self,
@@ -1302,11 +1298,7 @@ struct Canvas(DrawTarget, Movable):
         self.arc(position, Float64(r), start_angle, sweep_angle)
 
     def arc(mut self, a: Arc):
-        if not self._style.outline_enabled:
-            return
-        # Converted here, in local space: the transform maps Béziers
-        # exactly, so a non-uniform scale draws the arc of an ellipse.
-        self._curves(a.beziers())
+        self.draw(a)
 
     def _bezier_chain(mut self, curves: List[Bezier]):
         """Record `curves`, each starting where the last ends, as one
@@ -1333,10 +1325,10 @@ struct Canvas(DrawTarget, Movable):
     ):
         """Draw the triangle through `a`, `b` and `c`, its corners rounded
         by `corner_radius`, as `Triangle` describes it."""
-        self._triangle(Triangle(a, b, c, corner_radius=corner_radius))
+        self.draw(Triangle(a, b, c, corner_radius=corner_radius))
 
     def triangle(mut self, t: Triangle):
-        self._triangle(t)
+        self.draw(t)
 
     # The `DrawTarget` primitives: the one place a shape becomes a recorded
     # command, in the current style and transform. `draw(shape)` reaches

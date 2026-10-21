@@ -66,6 +66,8 @@ struct Spline(Copyable, Drawable, Equatable, Movable, Writable):
         return not (self == other)
 
     def draw_to[T: DrawTarget](self, mut target: T):
+        # Converted here, in local space: the knot spacing is measured where
+        # the points were given, so a non-uniform scale can't reshape it.
         target._curves(self.beziers())
 
     def write_to[W: Writer](self, mut writer: W):
