@@ -975,17 +975,11 @@ struct Canvas(DrawTarget, Movable):
             position, Float64(w), Float64(h), corner_radius=corner_radius
         )
 
-    def rectangle(mut self, r: Rectangle):
-        self.draw(r)
-
     def circle(mut self, position: Point2D, r: Float64):
         self.draw(Circle(position, r))
 
     def circle(mut self, position: Point2D, r: Int):
         self.circle(position, Float64(r))
-
-    def circle(mut self, c: Circle):
-        self.draw(c)
 
     def sector(
         mut self,
@@ -1038,11 +1032,8 @@ struct Canvas(DrawTarget, Movable):
             corner_radius=corner_radius,
         )
 
-    def sector(mut self, s: Sector):
-        self.draw(s)
-
-    def polygon(mut self, p: Polygon):
-        """Draw the polygon through `p.vertices`, closed back to the first.
+    def polygon(mut self, *vertices: Point2D, corner_radius: Float64 = 0.0):
+        """Draw the polygon through `vertices`, closed back to the first.
 
         Filled by the nonzero rule, so a self-crossing polygon fills every
         area its edges wind round, whichever way they run. The outline is
@@ -1052,12 +1043,10 @@ struct Canvas(DrawTarget, Movable):
         casts no inset shadow; a blurred drop shadow costs what a `bezier`'s
         does. Fewer than three vertices draw nothing.
 
-        `p.corner_radius` rounds every corner, as `Polygon` describes; each
-        rounded corner adds vertices, and so cost.
+        `corner_radius` rounds every corner, as `Polygon` describes; each
+        rounded corner adds vertices, and so cost. A `Polygon` value is drawn
+        with `draw`.
         """
-        self.draw(p)
-
-    def polygon(mut self, *vertices: Point2D, corner_radius: Float64 = 0.0):
         var points = List[Point2D](capacity=len(vertices))
         for v in vertices:
             points.append(v)
@@ -1065,9 +1054,6 @@ struct Canvas(DrawTarget, Movable):
 
     def line(mut self, start: Point2D, end: Point2D):
         self.draw(Line(start, end))
-
-    def line(mut self, l: Line):
-        self.draw(l)
 
     def bezier(
         mut self,
@@ -1091,9 +1077,6 @@ struct Canvas(DrawTarget, Movable):
         """
         self.draw(Bezier(start, control1, control2, end))
 
-    def bezier(mut self, b: Bezier):
-        self.draw(b)
-
     def spline(
         mut self,
         var points: List[Point2D],
@@ -1115,9 +1098,6 @@ struct Canvas(DrawTarget, Movable):
         points draw nothing.
         """
         self.draw(Spline(points^, alpha, closed))
-
-    def spline(mut self, spline: Spline):
-        self.draw(spline)
 
     def arc(
         mut self,
@@ -1150,9 +1130,6 @@ struct Canvas(DrawTarget, Movable):
     ):
         self.arc(position, Float64(r), start_angle, sweep_angle)
 
-    def arc(mut self, a: Arc):
-        self.draw(a)
-
     def triangle(
         mut self,
         a: Point2D,
@@ -1164,9 +1141,6 @@ struct Canvas(DrawTarget, Movable):
         """Draw the triangle through `a`, `b` and `c`, its corners rounded
         by `corner_radius`, as `Triangle` describes it."""
         self.draw(Triangle(a, b, c, corner_radius=corner_radius))
-
-    def triangle(mut self, t: Triangle):
-        self.draw(t)
 
     # The `DrawTarget` primitives: the one place a shape becomes a recorded
     # command, in the current style and transform. `draw(shape)` reaches
