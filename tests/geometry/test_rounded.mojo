@@ -6,8 +6,8 @@ from std.testing import (
     assert_almost_equal,
 )
 from std.math import cos, pi, sin, sqrt, tau
-from create.math._fillet import corner_fillet
-from create.math.geometry import (
+from create.geometry._fillet import corner_fillet
+from create.geometry.geometry import (
     Rectangle,
     Circle,
     Line,

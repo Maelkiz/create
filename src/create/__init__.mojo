@@ -4,7 +4,7 @@ interactive graphics.
 `from create import *` is the import a program needs. It brings in the whole
 public surface: the `Program` trait and the run loops, `Context`, keyboard,
 mouse and gamepad input, `Canvas` and the rendering types, the vector and
-matrix maths, images, fonts, audio, CSV tables and JSON, and a re-export of
+matrix maths, the shapes and curves, images, fonts, audio, CSV tables and JSON, and a re-export of
 `std.math` so `sin`, `cos` and `pi` are there without a second import.
 
 ```mojo
@@ -37,11 +37,11 @@ on — so this module is a convenience, not a layer.
 exports the names it owns and nothing from a layer below — `create.core` names
 `Canvas` and `Rectangle` in its signatures but exports neither — so a single
 subpackage star is never a preamble; this module is. It re-exports everything
-public by star-importing all nine, so a name added to `math/__init__.mojo`
+public by star-importing all ten, so a name added to `math/__init__.mojo`
 appears here with no second edit and the two cannot drift apart.
 
 Code that wants less than the whole surface imports by name from the package
-that defines it (`from create.math import overlaps`), rather than starring one
+that defines it (`from create.geometry import overlaps`), rather than starring one
 subpackage.
 
 The stars widen nothing on their own. A star import skips `_`-prefixed
@@ -53,6 +53,7 @@ internal here exactly as they are one level down.
 from create.core import *
 from create.input import *
 from create.math import *
+from create.geometry import *
 from create.color import *
 from create.render import *
 from create.image import *

@@ -17,7 +17,7 @@ from create.math.matrix import (
 )
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
-from create.math.bezier import Bezier
+from create.geometry.bezier import Bezier
 from create.color.color import Color
 from create.render.style import Style
 from create.render._command import (

@@ -13,7 +13,7 @@ so every blurred curve shadow costs one blur per frame.
 
 from std.math import ceil, floor, sqrt
 
-from create.math.bezier import Bezier
+from create.geometry.bezier import Bezier
 from create.math.matrix import Matrix, _apply as mat_apply
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D

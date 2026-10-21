@@ -44,7 +44,7 @@ from ._command import (
     RenderCommand,
     _GEOM_SLOTS,
 )
-from create.math._fillet import rect_corner_radius, triangle_corner_radius
+from create.geometry._fillet import rect_corner_radius, triangle_corner_radius
 from create.color.color import Color
 from ._blur import BlurredMask, blur_alpha
 from ._curve import PlacedMask

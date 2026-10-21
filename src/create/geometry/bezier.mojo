@@ -1,7 +1,7 @@
 from std.math import abs, ceil, min, max, sqrt
 from .geometry import Rectangle
-from .point2d import Point2D
-from .vector2d import Vector2D
+from create.math import Point2D
+from create.math import Vector2D
 
 comptime _MAX_FLATTEN_SEGMENTS = 1024
 """Upper bound on `flatten`'s segment count, so a huge curve at a tiny

@@ -5,7 +5,7 @@ from std.testing import (
     assert_almost_equal,
 )
 from std.math import cos, pi, sin, tau
-from create.math.geometry import (
+from create.geometry.geometry import (
     overlaps,
     Arc,
     Circle,

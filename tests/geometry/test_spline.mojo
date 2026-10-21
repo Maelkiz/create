@@ -5,8 +5,8 @@ from std.testing import (
     assert_almost_equal,
 )
 from std.math import pow
-from create.math.bezier import Bezier
-from create.math.spline import Spline
+from create.geometry.bezier import Bezier
+from create.geometry.spline import Spline
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 

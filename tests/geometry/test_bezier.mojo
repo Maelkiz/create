@@ -5,7 +5,7 @@ from std.testing import (
     assert_almost_equal,
 )
 from std.math import abs, pi
-from create.math.bezier import Bezier
+from create.geometry.bezier import Bezier
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
