@@ -922,6 +922,35 @@ def emit_glyph(
     vb.push(x, y + h, u0, v1, color, MODE_MASK)
 
 
+def emit_mapped_glyph(
+    mut vb: VertexBuffer,
+    m: Matrix[3, 3],
+    x: Float64,
+    y: Float64,
+    w: Float64,
+    h: Float64,
+    u0: Float64,
+    v0: Float64,
+    u1: Float64,
+    v1: Float64,
+    color: Color,
+):
+    """`emit_glyph` for text that is not upright: the glyph's rect from an
+    upright layout, its four corners mapped onto the device by `m`
+    (`glyph_transform`). The atlas's linear filter is the CPU's bilinear
+    read of the mask."""
+    var a = mat_apply(m, x, y)
+    var b = mat_apply(m, x + w, y)
+    var c = mat_apply(m, x + w, y + h)
+    var d = mat_apply(m, x, y + h)
+    vb.push(a[0], a[1], u0, v0, color, MODE_MASK)
+    vb.push(b[0], b[1], u1, v0, color, MODE_MASK)
+    vb.push(c[0], c[1], u1, v1, color, MODE_MASK)
+    vb.push(a[0], a[1], u0, v0, color, MODE_MASK)
+    vb.push(c[0], c[1], u1, v1, color, MODE_MASK)
+    vb.push(d[0], d[1], u0, v1, color, MODE_MASK)
+
+
 def _emit_region(
     mut vb: VertexBuffer,
     region: InsetRegion,

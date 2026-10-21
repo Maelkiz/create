@@ -366,7 +366,8 @@ frame costs bounded memory. Shapes, text and gradients go into an image through 
 **Not Processing's coordinates.** Origin at the screen centre, **y up**; `x ∈ [-w/2, w/2]`,
 `y ∈ [-h/2, h/2]`. So `rotate` is counter-clockwise, gravity is negative `y`, and `canvas.left()`/
 `bottom()` are negative — use the edge methods, not `width`/`height` arithmetic. Glyphs and images
-are not flipped. **All shapes are centre-positioned**, including `Rectangle.position`.
+are not flipped by the y-up axis, but turn, shear and mirror with `canvas.transform` like every
+render call. **All shapes are centre-positioned**, including `Rectangle.position`.
 
 **Camera:** `canvas.camera(camera)` maps world space onto screen space for every later render call and
 nested transform, reset every frame. `canvas.overlay()` suspends it for HUD content.

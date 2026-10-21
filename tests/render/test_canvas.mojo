@@ -24,7 +24,7 @@ from create.math.geometry import (
     Sector,
     Triangle,
 )
-from create.math.matrix import rotate, scale, translate
+from create.math.matrix import identity, rotate, scale, translate
 from create.math.point2d import Point2D
 from create.render.canvas import _PersistentCanvasState
 
@@ -653,7 +653,7 @@ comptime _STRETCHED = 2
 
 @fieldwise_init
 struct TransformedImageBlit[transform: Int](Program):
-    """test_2x2.png drawn 20 units square under the transform `transform`
+    """The 2x2 PNG fixture drawn 20 units square under the transform `transform`
     names."""
 
     var image: Image
@@ -2064,6 +2064,70 @@ def test_text_renders_below_and_right_of_a_top_left_anchor() raises -> None:
     assert_true(box[2] >= 0, "nothing was rendered")
     assert_true(box[0] >= 100, "ink started left of the anchor")
     assert_true(box[1] >= 100, "ink started above the anchor")
+
+
+comptime _UPRIGHT_TEXT = 0
+comptime _TURNED_TEXT = 1
+comptime _STRETCHED_TEXT = 2
+
+
+@fieldwise_init
+struct TransformedText[transform: Int](Program):
+    """ "Hi" anchored top-left at the centre, under the transform `transform`
+    names."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context, mut canvas: Canvas) raises -> Self:
+        return Self(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        canvas.background(Color.BLACK)
+        canvas.text_color(Color.WHITE)
+        canvas.font_size(24)
+        canvas.text_align(Align.TOP_LEFT)
+        var m = identity[3]()
+        comptime if Self.transform == _TURNED_TEXT:
+            m = rotate(pi / 2.0)
+        elif Self.transform == _STRETCHED_TEXT:
+            m = scale(2.0, 1.0)
+        with canvas.transform(m):
+            canvas.text("Hi", (0.0, 0.0))
+
+
+def test_text_turns_with_the_transform() raises -> None:
+    # A quarter turn counter-clockwise: the text runs up from the anchor
+    # instead of right, and its top-left anchor puts it right of the anchor
+    # instead of below.
+    var upright = _non_background_box(
+        run_headless[TransformedText[_UPRIGHT_TEXT]](200, 200), Color.BLACK
+    )
+    var turned = _non_background_box(
+        run_headless[TransformedText[_TURNED_TEXT]](200, 200), Color.BLACK
+    )
+    assert_true(turned[2] >= 0, "nothing was rendered")
+    assert_true(turned[0] >= 99, "ink started left of the anchor")
+    assert_true(turned[3] <= 100, "ink ended below the anchor")
+    # The same box, on its side.
+    var w = upright[2] - upright[0]
+    var h = upright[3] - upright[1]
+    assert_true(abs((turned[3] - turned[1]) - w) <= 2, "wrong length")
+    assert_true(abs((turned[2] - turned[0]) - h) <= 2, "wrong height")
+
+
+def test_text_stretches_with_a_non_uniform_scale() raises -> None:
+    var upright = _non_background_box(
+        run_headless[TransformedText[_UPRIGHT_TEXT]](200, 200), Color.BLACK
+    )
+    var stretched = _non_background_box(
+        run_headless[TransformedText[_STRETCHED_TEXT]](200, 200), Color.BLACK
+    )
+    var w = upright[2] - upright[0]
+    var h = upright[3] - upright[1]
+    var sw = stretched[2] - stretched[0]
+    assert_true(abs(sw - 2 * w) <= 4, "not twice as wide")
+    assert_true(abs((stretched[3] - stretched[1]) - h) <= 3, "wrong height")
 
 
 @fieldwise_init

@@ -162,7 +162,9 @@ comptime _SHAPE_ROUNDED_PAC_MAN = 65
 comptime _SHAPE_GRADIENT_ROUNDED_SECTOR = 66
 comptime _SHAPE_ROTATED_IMAGE = 67
 comptime _SHAPE_BLURRED_ROTATED_IMAGE = 68
-comptime _SHAPE_COUNT = 69
+comptime _SHAPE_ROTATED_TEXT = 69
+comptime _SHAPE_BLURRED_ROTATED_TEXT = 70
+comptime _SHAPE_COUNT = 71
 
 comptime _SHADOW_INK = Color(0x10, 0x10, 0x10)
 """Opaque and far from `_BACKGROUND`, so a shadow counts as ink and its
@@ -334,6 +336,10 @@ def _shape_name(shape: Int) -> String:
         return "rotated image"
     elif shape == _SHAPE_BLURRED_ROTATED_IMAGE:
         return "blurred rotated image"
+    elif shape == _SHAPE_ROTATED_TEXT:
+        return "rotated text"
+    elif shape == _SHAPE_BLURRED_ROTATED_TEXT:
+        return "blurred rotated text"
     else:
         return "blurred line"
 
@@ -929,6 +935,28 @@ struct _Parity(Program):
             with canvas.style(_blurred(Style())):
                 with canvas.transform(rotate(0.5)):
                     canvas.image(self.block, (-20, 10), 30, 30)
+        elif self.shape == _SHAPE_ROTATED_TEXT:
+            # The same masks as upright text, read bilinearly on both.
+            with canvas.style(
+                outline_enabled=False,
+                text_color=Color.WHITE,
+                font_size=24,
+                text_align=Align.CENTER,
+            ):
+                with canvas.transform(rotate(0.5)):
+                    canvas.text("parity", (0, 0))
+        elif self.shape == _SHAPE_BLURRED_ROTATED_TEXT:
+            with canvas.style(
+                _blurred(
+                    Style(
+                        outline_enabled=False,
+                        text_color=Color.WHITE,
+                        font_size=40,
+                    )
+                )
+            ):
+                with canvas.transform(rotate(0.5)):
+                    canvas.text("Il", (0, 0))
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
             # the per-vertex `pi - theta` span math and the centred-outline

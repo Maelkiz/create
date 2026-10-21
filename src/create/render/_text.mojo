@@ -10,7 +10,9 @@ from create.text.font import (
     fallback_font_path,
 )
 from ._blur import blur_alpha
-from ._raster import blit_glyph
+from ._raster import blit_alpha_mapped, blit_glyph
+from ._image_mapping import mask_mapping
+from create.math.matrix import Matrix
 from .style import Style
 from ._surface import Surface
 
@@ -282,9 +284,11 @@ struct TextRenderer(Movable):
         """Place `s` around the already-mapped anchor `(tx, ty)`, as masks
         blurred by `blur` pixels (see `_ensure_glyph`).
 
-        The caller maps the anchor; glyphs lay out upright in pixel space, so
-        `Align.TOP`/`BOTTOM` keep meaning the top and bottom of the text box
-        however the world axes are oriented.
+        Glyphs lay out upright in pixel space, y down, so `Align.TOP`/`BOTTOM`
+        mean the top and bottom of the text box. Under an upright transform
+        the caller maps the anchor and the layout is final; under any other
+        it lays out around the origin and maps each glyph's rect through
+        `glyph_transform`, so the box turns with the text.
 
         Every glyph is in the cache when this returns, so a caller can read
         each one's mask by key without another FreeType call.
@@ -355,3 +359,29 @@ struct TextRenderer(Movable):
         for ref p in self.layout(s, tx, ty, style, pixel_scale, blur):
             ref g = self._glyphs[p.key]
             blit_glyph(surf, g, p.x, p.y, c)
+
+    def render_mapped[
+        o: Origin[mut=True]
+    ](
+        mut self,
+        surf: Surface[o],
+        s: String,
+        glyphs: Matrix[3, 3],
+        style: Style,
+        pixel_scale: Float64,
+        blur: Int = 0,
+    ) raises:
+        """Blit `s` laid out upright around the origin, every glyph mapped
+        onto the device by `glyphs` (`glyph_transform`): text turned,
+        sheared or mirrored with its transform."""
+        var c = style.text_color
+        for ref p in self.layout(s, 0.0, 0.0, style, pixel_scale, blur):
+            ref g = self._glyphs[p.key]
+            blit_alpha_mapped(
+                surf,
+                g.pixels.unsafe_ptr(),
+                g.width,
+                g.height,
+                mask_mapping(glyphs, p.x, p.y, g.width, g.height),
+                c,
+            )

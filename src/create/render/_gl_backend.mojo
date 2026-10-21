@@ -143,6 +143,7 @@ from ._tessellate import (
     emit_sector,
     emit_silhouette_mask,
     emit_image,
+    emit_mapped_glyph,
     emit_triangle,
 )
 from ._shadow import (
@@ -153,7 +154,12 @@ from ._shadow import (
     shadow_command,
 )
 from ._text import PlacedGlyph, TextRenderer
-from ._transform import pixel_scale
+from ._transform import (
+    glyph_transform,
+    pixel_scale,
+    text_pixel_scale,
+    text_upright,
+)
 from create.color.blend_mode import BlendMode
 from create.color.color import Color
 from create.color.gradient import Gradient, RAMP_SIZE
@@ -176,8 +182,15 @@ comptime _ATLAS_PAD = 1
 """Texels of blank left between packed glyphs, and before the first one.
 
 `GL_LINEAR` samples a neighbourhood, so without a gutter a glyph's edge would
-pick up the one packed beside it. The leading pad is also what keeps texel
-(0, 0) — the white texel — out of the allocator's reach."""
+pick up the one packed beside it. The leading pad, above the first shelf as
+well as left of every glyph, keeps texel (0, 0) — the white texel — out of
+the allocator's reach, and gives every glyph a blank texel all round, which
+a turned glyph's quad reaches half into (`emit_mapped_glyph`)."""
+
+comptime _FIRST_SHELF_Y = 2 * _ATLAS_PAD
+"""Where the first shelf starts: below row 0, which holds the white texel,
+and below a gutter row of its own, so a turned glyph's quad reaching half
+a texel past its corner reads blank rather than the white texel."""
 
 
 comptime _VERTEX_SHADER = String(
@@ -591,7 +604,7 @@ struct GLRenderer(Movable):
         self.atlas = _gen_object(self.gl.gen_textures)
         self.glyphs = Dict[Int, _AtlasRect]()
         self.shelf_x = _ATLAS_PAD
-        self.shelf_y = 0
+        self.shelf_y = _FIRST_SHELF_Y
         self.shelf_h = 1
         self.atlas_generation = 0
         self.textures = Dict[Int, UInt32]()
@@ -893,9 +906,10 @@ struct GLRenderer(Movable):
                 var sh = shadow_command(c, scale)
                 # Quantised as the CPU replay does, so both agree on when a
                 # shadow is hard and which cached mask a soft one uses.
-                var blur = Int(
-                    c.style.shadow_blur * pixel_scale(sh.transform, scale) + 0.5
-                )
+                var sf = text_pixel_scale(
+                    sh.transform, scale
+                ) if c.kind == CMD_TEXT else pixel_scale(sh.transform, scale)
+                var blur = Int(c.style.shadow_blur * sf + 0.5)
                 if blur == 0:
                     self._one(sh, images, text, width, height, scale)
                 elif blurs_analytically(c):
@@ -1034,32 +1048,59 @@ struct GLRenderer(Movable):
             # masks may belong to a face a key no longer names: start over.
             self.glyphs.clear()
             self.shelf_x = _ATLAS_PAD
-            self.shelf_y = 0
+            self.shelf_y = _FIRST_SHELF_Y
             self.shelf_h = 1
             self.atlas_generation = text.atlas_generation
         var m = c.transform
-        # Only the anchor is mapped — the layout happens in pixel space.
+        var sf = text_pixel_scale(m, scale)
+        # Upright, only the anchor is mapped and the layout happens in pixel
+        # space; otherwise the upright layout around the origin is mapped
+        # corner by corner, as the CPU replay maps it.
+        var upright = text_upright(m)
+        var glyphs = glyph_transform(m, c.geom[0], c.geom[1], sf)
         var p = mat_apply(m, c.geom[0], c.geom[1])
-        var placed = text.layout(
-            c.text, p[0], p[1], c.style, pixel_scale(m, scale), blur
-        )
+        if not upright:
+            p = (0.0, 0.0)
+        var placed = text.layout(c.text, p[0], p[1], c.style, sf, blur)
         if len(placed) == 0:
             return
         comptime inv = 1.0 / Float64(ATLAS_SIZE)
         for ref g in placed:
             var r = self._pack(g, text)
-            emit_glyph(
-                self.vertices,
-                Float64(g.x),
-                Float64(g.y),
-                Float64(g.width),
-                Float64(g.height),
-                Float64(r.x) * inv,
-                Float64(r.y) * inv,
-                Float64(r.x + r.w) * inv,
-                Float64(r.y + r.h) * inv,
-                c.style.text_color,
-            )
+            var u0 = Float64(r.x) * inv
+            var v0 = Float64(r.y) * inv
+            var u1 = Float64(r.x + r.w) * inv
+            var v1 = Float64(r.y + r.h) * inv
+            if upright:
+                emit_glyph(
+                    self.vertices,
+                    Float64(g.x),
+                    Float64(g.y),
+                    Float64(g.width),
+                    Float64(g.height),
+                    u0,
+                    v0,
+                    u1,
+                    v1,
+                    c.style.text_color,
+                )
+            else:
+                # Half a texel into the gutter all round: the CPU's bilinear
+                # read reaches as far, and the gutter's centre is blank.
+                comptime half = 0.5 * inv
+                emit_mapped_glyph(
+                    self.vertices,
+                    glyphs,
+                    Float64(g.x) - 0.5,
+                    Float64(g.y) - 0.5,
+                    Float64(g.width) + 1.0,
+                    Float64(g.height) + 1.0,
+                    u0 - half,
+                    v0 - half,
+                    u1 + half,
+                    v1 + half,
+                    c.style.text_color,
+                )
 
     def _pack(
         mut self, g: PlacedGlyph, mut text: TextRenderer
@@ -1071,7 +1112,7 @@ struct GLRenderer(Movable):
             self.shelf_x = _ATLAS_PAD
             self.shelf_y += self.shelf_h + _ATLAS_PAD
             self.shelf_h = 1
-        if self.shelf_y + g.height > ATLAS_SIZE:
+        if self.shelf_y + g.height + _ATLAS_PAD > ATLAS_SIZE:
             raise Error(
                 "the GL glyph atlas is full — "
                 + String(len(self.glyphs))

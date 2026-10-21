@@ -329,6 +329,14 @@ A `CMD_TEXT` carries its string and its `Style`, and the style carries the face 
 nothing is interned. Faces live in `create.text`; `TextRenderer` lays out and caches.
 - **One layout, two backends:** `layout` returns `PlacedGlyph`s (cache key and device position);
   the CPU blits each mask, the GPU packs it into the atlas. Neither re-derives a pen position.
+- **Turned text:** under a transform that isn't `text_upright` (rotation, shear, mirror, a
+  non-uniform scale), `layout` runs around the origin at `text_pixel_scale` (√|det|, so a zoomed,
+  turned string is rasterised at the density it lands at) and each glyph's rect is mapped through
+  `glyph_transform`. The CPU reads the mask bilinearly (`blit_alpha_mapped`, zero outside, so the
+  edge needs no antialiasing of its own); the GPU draws the four mapped corners, grown half a texel
+  into the atlas gutter to match the CPU's reach — every glyph has a blank texel all round, the
+  first shelf starting at `_FIRST_SHELF_Y` to keep the white texel's row out of reach. A text
+  shadow's blur is quantised at `text_pixel_scale` too, on both backends.
 - **The glyph cache** (`_glyphs`) is keyed by one `Int`: codepoint 21 bits, size 12, weight 10,
   blur 10, font slot 10. Size, weight and blur are clamped into theirs (`_MAX_SIZE` 4095 px,
   `_MAX_WEIGHT`, `_MAX_BLUR` 1023 px) where they enter. A slot is handed to each face on first
