@@ -171,5 +171,22 @@ def test_fractional_sizes_round_once_scaled() raises -> None:
     assert_equal(_pixel_size(s, 2.0), 27)
 
 
+def test_unset_number_keywords_take_none_or_any_number() raises -> None:
+    # An integer literal, a float, `None` and a forwarded `Optional` all
+    # reach a number keyword, like every other optional keyword.
+    var s = Style(shadow_blur=12, shadow_spread=1.5)
+    assert_equal(s.shadow_blur, 12.0)
+    assert_equal(s.shadow_spread, 1.5)
+    assert_true(s.shadow_enabled)
+
+    var unset = Style(shadow_blur=None, outline_thickness=None)
+    assert_equal(unset.shadow_blur, 8.0)
+    assert_equal(unset.outline_thickness, 1.0)
+    assert_false(unset.shadow_enabled)
+
+    var forwarded: Optional[Float64] = 3.0
+    assert_equal(Style(outline_thickness=forwarded).outline_thickness, 3.0)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
