@@ -202,7 +202,7 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         direction: Vector2D = Vector2D.DOWN,
     ) -> Gradient:
         """Colours at the given positions along `direction`:
-        `Gradient.linear([(0.0, Color.NAVY), (0.7, Color.PURPLE), (1.0, Color.ORANGE)])`.
+        `Gradient.linear([(0.0, Color.BLUE), (0.7, Color.PURPLE), (1.0, Color.ORANGE)])`.
         """
         return Gradient(
             kind=_LINEAR,
