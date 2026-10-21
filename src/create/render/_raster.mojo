@@ -874,16 +874,18 @@ def blit_image_mapped[
     mapping: ImageMapping,
     silhouette: Optional[Color] = None,
     tint: Color = Color.WHITE,
+    grid: Int = 1,
 ):
     """Blit the `sw` x `sh` RGBA buffer at `src` through `mapping`, rotated,
-    sheared or mirrored as it says; see `_blit_image_mapped`."""
+    sheared or mirrored as it says, its edges antialiased on a `grid` x
+    `grid` sample grid per pixel; see `_blit_image_mapped`."""
     if s._clip:
         _blit_image_mapped[clipped=True](
-            s, src, sw, sh, mapping, silhouette, tint
+            s, src, sw, sh, mapping, silhouette, tint, grid
         )
     else:
         _blit_image_mapped[clipped=False](
-            s, src, sw, sh, mapping, silhouette, tint
+            s, src, sw, sh, mapping, silhouette, tint, grid
         )
 
 
@@ -897,14 +899,24 @@ def _blit_image_mapped[
     mapping: ImageMapping,
     silhouette: Optional[Color],
     tint: Color,
+    grid: Int,
 ):
     """`_blit_image` for a destination that is not an upright rect: every
-    device pixel in `mapping`'s bounds whose centre maps inside the image
-    takes the texel it lands on, nearest-neighbour, as the upright blit
-    samples. Tint and silhouette as there.
+    device pixel in `mapping`'s bounds takes the texel its centre lands on,
+    nearest-neighbour, as the upright blit samples. Tint and silhouette as
+    there.
+
+    A pixel whose footprint lies wholly inside the image is painted whole.
+    One straddling the image's edge is covered by the share of its
+    `grid` x `grid` sample centres that land inside, as a shape's edge is
+    (`composite_coverage`), and takes the texel nearest its centre with its
+    alpha scaled by that share. A grid of 1 is the centre alone: covered or
+    not.
 
     The texel coordinate is affine in the device pixel, so it is evaluated
-    once per row and stepped by a constant per column.
+    once per row and stepped by a constant per column. So is the footprint:
+    a pixel's square maps to a parallelogram reaching `reach_u` texels
+    either side of its centre along `u`, `reach_v` along `v`.
     """
     var W = s.width
     var H = s.height
@@ -913,6 +925,11 @@ def _blit_image_mapped[
     var recolored = tint.r != 255 or tint.g != 255 or tint.b != 255
     var fw = Float64(sw)
     var fh = Float64(sh)
+    var reach_u = (abs(mapping.u_dx) + abs(mapping.u_dy)) / 2.0
+    var reach_v = (abs(mapping.v_dx) + abs(mapping.v_dy)) / 2.0
+    var samples = grid * grid
+    var step = 1.0 / Float64(grid)
+    var first = step / 2.0 - 0.5
 
     var row_lo = max(mapping.y0, 0)
     var row_hi = min(mapping.y1, H)
@@ -925,17 +942,38 @@ def _blit_image_mapped[
         var v = mapping.v + mapping.v_dx * px + mapping.v_dy * py
         var dst_row_off = row * W * 4
         for col in range(col_lo, col_hi):
-            if u >= 0.0 and u < fw and v >= 0.0 and v < fh:
-                var src_off = (Int(v) * sw + Int(u)) * 4
+            var cover = 255
+            if grid == 1 or not (
+                u - reach_u >= 0.0
+                and u + reach_u < fw
+                and v - reach_v >= 0.0
+                and v + reach_v < fh
+            ):
+                # On or outside the edge: count the samples inside.
+                var inside = 0
+                for j in range(grid):
+                    var oy = first + Float64(j) * step
+                    for i in range(grid):
+                        var ox = first + Float64(i) * step
+                        var su = u + mapping.u_dx * ox + mapping.u_dy * oy
+                        var sv = v + mapping.v_dx * ox + mapping.v_dy * oy
+                        if su >= 0.0 and su < fw and sv >= 0.0 and sv < fh:
+                            inside += 1
+                cover = inside * 255 // samples
+            if cover != 0:
+                var tu = min(max(Int(u), 0), sw - 1)
+                var tv = min(max(Int(v), 0), sh - 1)
+                var src_off = (tv * sw + tu) * 4
                 var sa = src[unsafe_offset=src_off + 3]
                 if sa != 0:
-                    blend[clipped=clipped](
-                        s,
-                        dst_row_off + col * 4,
-                        _silhouette(t, sa) if silhouetted else _texel(
-                            src, src_off, tint, recolored
-                        ),
-                    )
+                    var shade: Color
+                    if silhouetted:
+                        shade = _silhouette(t, _faded(sa, UInt8(cover)))
+                    else:
+                        var faded = tint
+                        faded.a = _faded(tint.a, UInt8(cover))
+                        shade = _texel(src, src_off, faded, recolored)
+                    blend[clipped=clipped](s, dst_row_off + col * 4, shade)
             u += mapping.u_dx
             v += mapping.v_dx
 
