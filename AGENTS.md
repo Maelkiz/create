@@ -154,6 +154,9 @@ A program writes `from create import *`. Otherwise import by name from the ownin
 - Public surface is exactly what an `__init__.mojo` lists. A new declaration is internal unless it is
   added to one in the same change: `_module.mojo` for a wholly internal file, `_name` for an internal
   declaration in a public module. Tests reach internals by explicit path.
+- A public type's fields of internal types are `_`-named. Mojo has no private initialiser, so an
+  internal constructor takes only `_`-prefixed keyword-only arguments (`JSON(_document=…, _index=…)`):
+  the keywords mark it as the library's own, even where an internal type shows in the signature.
 
 ### Layering
 

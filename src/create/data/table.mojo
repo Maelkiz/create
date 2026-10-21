@@ -55,10 +55,10 @@ struct TableRow(Copyable, Movable):
     var _header: ArcPointer[_Header]
 
     def __init__(
-        out self, var cells: List[String], header: ArcPointer[_Header]
+        out self, *, var _cells: List[String], _header: ArcPointer[_Header]
     ):
-        self._cells = cells^
-        self._header = header
+        self._cells = _cells^
+        self._header = _header
 
     def string(self, column: String) raises -> String:
         """The cell in the named column, as written."""
@@ -172,8 +172,11 @@ struct Table(Copyable, Movable):
     var _header: ArcPointer[_Header]
     var _rows: List[TableRow]
 
-    def __init__(out self, *, var _records: List[List[String]], header: Bool):
+    def __init__(
+        out self, *, var _records: List[List[String]], _has_header: Bool
+    ):
         var records = _records^
+        var header = _has_header
         var names: List[String]
         var start = 0
         if header and len(records) > 0:
@@ -187,7 +190,9 @@ struct Table(Copyable, Movable):
         self._header = ArcPointer(_Header(names^, header))
         self._rows = List[TableRow](capacity=len(records) - start)
         for i in range(start, len(records)):
-            self._rows.append(TableRow(records[i].copy(), self._header))
+            self._rows.append(
+                TableRow(_cells=records[i].copy(), _header=self._header)
+            )
 
     def __init__(out self, var columns: List[String]):
         """An empty table with these column names, to fill with `add_row`."""
@@ -211,7 +216,7 @@ struct Table(Copyable, Movable):
         if chosen == "":
             chosen = "\t" if _is_tsv(path) else ","
         return Table(
-            _records=_parse_delimited(text, chosen, path), header=header
+            _records=_parse_delimited(text, chosen, path), _has_header=header
         )
 
     @staticmethod
@@ -221,7 +226,7 @@ struct Table(Copyable, Movable):
         """Parse CSV or TSV text already in memory."""
         return Table(
             _records=_parse_delimited(text, separator, "<input>"),
-            header=header,
+            _has_header=header,
         )
 
     def row_count(self) -> Int:
@@ -263,7 +268,7 @@ struct Table(Copyable, Movable):
         row.set("score", 120)
         ```
         """
-        self._rows.append(TableRow([], self._header))
+        self._rows.append(TableRow(_cells=[], _header=self._header))
         return self._rows[len(self._rows) - 1]
 
     def add_row(mut self, var cells: List[String]) raises:
@@ -284,7 +289,7 @@ struct Table(Copyable, Movable):
         if len(cells) > len(header.names):
             header.names.resize(len(cells), "")
             self._replace_header(header^)
-        self._rows.append(TableRow(cells^, self._header))
+        self._rows.append(TableRow(_cells=cells^, _header=self._header))
 
     def add_column(mut self, name: String) raises:
         """Append a column, empty in every row."""

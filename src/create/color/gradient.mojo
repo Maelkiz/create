@@ -155,11 +155,12 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def __init__(
         out self,
         *,
-        kind: Int,
-        var stops: List[Tuple[Float64, Color]],
-        direction: Vector2D,
-        center: Point2D,
+        _kind: Int,
+        var _stops: List[Tuple[Float64, Color]],
+        _direction: Vector2D,
+        _center: Point2D,
     ):
+        var stops = _stops^
         var floor = 0.0
         for i in range(len(stops)):
             var position = max(min(stops[i][0], 1.0), floor)
@@ -168,11 +169,11 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         var ramp = List[Color](capacity=RAMP_SIZE)
         for i in range(RAMP_SIZE):
             ramp.append(_color_at(stops, Float64(i) / Float64(RAMP_SIZE - 1)))
-        self._kind = kind
+        self._kind = _kind
         self._ramp = ArcPointer(ramp^)
         self._stops = ArcPointer(stops^)
-        self.direction = direction
-        self.center = center
+        self.direction = _direction
+        self.center = _center
 
     @staticmethod
     def _even(
@@ -190,10 +191,10 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     ) -> Gradient:
         """Evenly spaced colours along `direction`; one colour is a solid."""
         return Gradient(
-            kind=_LINEAR,
-            stops=Gradient._even(first, rest),
-            direction=direction,
-            center=Point2D(0.0, 0.0),
+            _kind=_LINEAR,
+            _stops=Gradient._even(first, rest),
+            _direction=direction,
+            _center=Point2D(0.0, 0.0),
         )
 
     @staticmethod
@@ -205,10 +206,10 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         `Gradient.linear([(0.0, Color.BLUE), (0.7, Color.PURPLE), (1.0, Color.ORANGE)])`.
         """
         return Gradient(
-            kind=_LINEAR,
-            stops=stops.copy(),
-            direction=direction,
-            center=Point2D(0.0, 0.0),
+            _kind=_LINEAR,
+            _stops=stops.copy(),
+            _direction=direction,
+            _center=Point2D(0.0, 0.0),
         )
 
     @staticmethod
@@ -217,10 +218,10 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     ) -> Gradient:
         """Evenly spaced colours out from `center` to the box's edges."""
         return Gradient(
-            kind=_RADIAL,
-            stops=Gradient._even(first, rest),
-            direction=Vector2D.DOWN,
-            center=center,
+            _kind=_RADIAL,
+            _stops=Gradient._even(first, rest),
+            _direction=Vector2D.DOWN,
+            _center=center,
         )
 
     @staticmethod
@@ -231,10 +232,10 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         """Colours at the given positions out from `center` to the box's
         edges."""
         return Gradient(
-            kind=_RADIAL,
-            stops=stops.copy(),
-            direction=Vector2D.DOWN,
-            center=center,
+            _kind=_RADIAL,
+            _stops=stops.copy(),
+            _direction=Vector2D.DOWN,
+            _center=center,
         )
 
     def __eq__(self, other: Gradient) -> Bool:
@@ -403,8 +404,8 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         for i in range(len(stops)):
             stops[i] = (stops[i][0], _tinted(stops[i][1], tint, opacity))
         return Gradient(
-            kind=self._kind,
-            stops=stops^,
-            direction=self.direction,
-            center=self.center,
+            _kind=self._kind,
+            _stops=stops^,
+            _direction=self.direction,
+            _center=self.center,
         )
