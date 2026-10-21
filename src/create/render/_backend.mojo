@@ -6,7 +6,7 @@ from create.math.matrix import (
     Matrix,
     identity,
     inverse,
-    apply as mat_apply,
+    _apply as mat_apply,
     scale as mat_scale,
     translate as mat_translate,
 )

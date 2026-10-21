@@ -26,7 +26,7 @@ where the ring has to follow a rotated edge.
 
 from std.math import abs, ceil, cos, max, min, sin, sqrt, pi
 
-from create.math.matrix import Matrix, inverse, apply as mat_apply
+from create.math.matrix import Matrix, inverse, _apply as mat_apply
 from create.math.point2d import Point2D
 
 from ._command import RenderCommand, _fill_box

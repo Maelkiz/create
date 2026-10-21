@@ -31,7 +31,7 @@ from create.render._command import (
     bezier_command,
     bezier_chain_command,
 )
-from create.math.matrix import apply as mat_apply, rotate
+from create.math.matrix import _apply as mat_apply, rotate
 from create.math.point2d import Point2D
 
 
@@ -193,7 +193,7 @@ def _brute_circle(
     var s = mem.surface()
     var W = s.width
     var H = s.height
-    var p = apply(m, cx, cy)
+    var p = mat_apply(m, cx, cy)
     var pcx = p[0] - 0.5
     var pcy = p[1] - 0.5
     var pr = r * pixel_scale(m, scale)

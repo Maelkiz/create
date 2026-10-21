@@ -31,7 +31,7 @@ local units.
 
 from std.math import atan2, cos, max, min, sin, sqrt, tau
 
-from create.math.matrix import Matrix, apply as mat_apply
+from create.math.matrix import Matrix, _apply as mat_apply
 from create.math.point2d import Point2D
 
 from ._command import RenderCommand

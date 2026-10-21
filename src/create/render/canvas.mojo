@@ -29,7 +29,8 @@ from create.math.matrix import (
     Matrix,
     identity,
     inverse,
-    apply as mat_apply,
+    apply,
+    _apply as mat_apply,
     scale as mat_scale,
     translate as mat_translate,
 )
@@ -582,8 +583,7 @@ struct Canvas(Movable):
 
     def to_world(self, local: Point2D) -> Point2D:
         """Map a point from the current transform's frame into world space."""
-        var p = mat_apply(self._user, local.x, local.y)
-        return Point2D(p[0], p[1])
+        return apply(self._user, local)
 
     def clip(
         mut self, r: Rectangle, invert: Bool = False
@@ -692,8 +692,7 @@ struct Canvas(Movable):
         """Map a world-space point — a mouse position already converted
         through `Camera.to_world`, say — into the current transform's frame.
         """
-        var p = mat_apply(self._user_inv, world.x, world.y)
-        return Point2D(p[0], p[1])
+        return apply(self._user_inv, world)
 
     def camera(mut self, camera: Camera):
         """Set the active camera. Applies to every render call and every nested
