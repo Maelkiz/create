@@ -33,7 +33,9 @@ from create.math.vector2d import Vector2D
 
 from create.core.context import Context
 from create.input.input import Input
+from create.input.gamepad_button import GamepadButton
 from create.input.key import Key
+from create.input.mouse_button import MouseButton
 from create.render._viewport import Viewport
 
 
@@ -79,12 +81,12 @@ def apply_events(
         elif event.isa[MouseButtonDown]():
             var e = event[MouseButtonDown]
             input._mouse_button_down(
-                e.button, _to_screen(view, e.x, e.y, px_per_point)
+                MouseButton(e.button), _to_screen(view, e.x, e.y, px_per_point)
             )
         elif event.isa[MouseButtonUp]():
             var e = event[MouseButtonUp]
             input._mouse_button_up(
-                e.button, _to_screen(view, e.x, e.y, px_per_point)
+                MouseButton(e.button), _to_screen(view, e.x, e.y, px_per_point)
             )
         elif event.isa[MouseWheel]():
             var e = event[MouseWheel]
@@ -99,10 +101,10 @@ def apply_events(
             input._gamepad_axis_moved(e.id, e.axis, e.value)
         elif event.isa[GamepadButtonDown]():
             var e = event[GamepadButtonDown]
-            input._gamepad_button_down(e.id, e.button)
+            input._gamepad_button_down(e.id, GamepadButton(e.button))
         elif event.isa[GamepadButtonUp]():
             var e = event[GamepadButtonUp]
-            input._gamepad_button_up(e.id, e.button)
+            input._gamepad_button_up(e.id, GamepadButton(e.button))
         elif event.isa[Resized]():
             pass  # The viewport is re-derived every frame regardless.
     return quit

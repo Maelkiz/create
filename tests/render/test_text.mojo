@@ -342,7 +342,7 @@ def test_the_cache_is_bounded() raises -> None:
     var t = TextRenderer()
     var slot = t._slot(t._face(Style()))
     for i in range(_GLYPH_CACHE_LIMIT):
-        var key = t._glyph_key(slot, 0xE000 + i, 16, FontWeight.REGULAR)
+        var key = t._glyph_key(slot, 0xE000 + i, 16, FontWeight.REGULAR.value)
         t._glyphs[key] = _GlyphInfo(0, 0, 0, 0, 4)
     assert_equal(len(t._glyphs), _GLYPH_CACHE_LIMIT)
 

@@ -8,7 +8,7 @@ from .align import Align
 from create.color.blend_mode import BlendMode
 from .antialiasing import Antialiasing
 from .autoscale import AutoScale
-from create.text.font import Font
+from create.text.font import Font, FontWeight
 from ._surface import MemorySurface
 from ._viewport import Viewport
 from .camera import Camera
@@ -465,7 +465,7 @@ struct Canvas(Movable):
         text_color: Optional[Color] = None,
         font: Optional[Font] = None,
         font_size: Float64 = _KEEP,
-        font_weight: Optional[Int] = None,
+        font_weight: Optional[FontWeight] = None,
         font_italic: Optional[Bool] = None,
         text_align: Optional[Align] = None,
         tint: Optional[Color] = None,
@@ -1461,8 +1461,8 @@ struct Canvas(Movable):
         once scaled."""
         self._style.font_size = size
 
-    def font_weight(mut self, weight: Int):
-        """Stroke weight of the face, named by `FontWeight`. The packaged Noto
+    def font_weight(mut self, weight: FontWeight):
+        """Stroke weight of the face, a `FontWeight`. The packaged Noto
         faces are variable, so this interpolates rather than swapping files."""
         self._style.font_weight = weight
 

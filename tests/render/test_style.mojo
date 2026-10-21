@@ -100,12 +100,12 @@ def test_style_writes_constructor_keywords() raises -> None:
         (
             "Style(fill=Color(255, 255, 255, 255), fill_gradient=None,"
             " fill_enabled=False, outline=Color(0, 0, 0, 255),"
-            " outline_thickness=1.0, outline_enabled=True,"
-            " text_color=Color(0, 0, 0, 255), font=None, font_size=16.0,"
-            " font_weight=400, font_italic=False, text_align=Align.CENTER,"
-            " tint=Color(255, 255, 255, 255), opacity=1.0,"
-            " blend_mode=BlendMode.NORMAL, shadow=Color(0, 0, 0, 96),"
-            " shadow_offset=Vector2D(4.0, -4.0), shadow_blur=8.0,"
+            " outline_thickness=1.0, outline_enabled=True, text_color=Color(0,"
+            " 0, 0, 255), font=None, font_size=16.0,"
+            " font_weight=FontWeight.REGULAR, font_italic=False,"
+            " text_align=Align.CENTER, tint=Color(255, 255, 255, 255),"
+            " opacity=1.0, blend_mode=BlendMode.NORMAL, shadow=Color(0, 0, 0,"
+            " 96), shadow_offset=Vector2D(4.0, -4.0), shadow_blur=8.0,"
             " shadow_spread=0.0, shadow_inset=False,"
             " shadow_follows_transform=False, shadow_enabled=False)"
         ),

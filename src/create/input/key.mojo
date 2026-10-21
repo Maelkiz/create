@@ -9,9 +9,14 @@ struct Key(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     A wrapped SDL keycode rather than a bare `Int`, so a stray number cannot
     be passed where a key is expected. `Key(keycode)` names any key SDL can
     send, the ones without a constant included.
+
+    `NONE` is no key (SDL's unknown keycode), what `Input.key` reads before
+    any press; it is never down.
     """
 
     var value: Int
+
+    comptime NONE = Key(0)
 
     # Modifier keys
     comptime LEFT_CTRL = Key(1073742048)
@@ -135,6 +140,7 @@ struct Key(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
 # Every `Key` constant with its name, for printing and `from_name`.
 comptime _NAMED_KEYS = [
+    (Key.NONE, StaticString("NONE")),
     (Key.LEFT_CTRL, StaticString("LEFT_CTRL")),
     (Key.RIGHT_CTRL, StaticString("RIGHT_CTRL")),
     (Key.LEFT_SHIFT, StaticString("LEFT_SHIFT")),

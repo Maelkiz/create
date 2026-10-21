@@ -42,20 +42,51 @@ def fallback_font_path() -> String:
     return _packaged_font("NotoSansSymbols.ttf")
 
 
-struct FontWeight:
-    """Named stroke weights for `canvas.font_weight`.
+struct FontWeight(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
+    """A stroke weight, for `canvas.font_weight`.
 
     Design-space values on the packaged variable faces, so they interpolate
-    rather than selecting a file — any number in 100..900 is valid, these are
-    just the ones with names.
+    rather than selecting a file — any number in 100..900 is valid, the
+    constants are just the ones with names. `FontWeight(450)` names one in
+    between.
+
+    A wrapped number rather than a bare `Int`, like `WindowMode`, so a stray
+    number — a font size, say — cannot be passed where a weight is expected.
     """
 
-    comptime THIN = 100
-    comptime LIGHT = 300
-    comptime REGULAR = 400
-    comptime MEDIUM = 500
-    comptime BOLD = 700
-    comptime BLACK = 900
+    var value: Int
+
+    comptime THIN = FontWeight(100)
+    comptime LIGHT = FontWeight(300)
+    comptime REGULAR = FontWeight(400)
+    comptime MEDIUM = FontWeight(500)
+    comptime BOLD = FontWeight(700)
+    comptime BLACK = FontWeight(900)
+
+    def __init__(out self, value: Int):
+        self.value = value
+
+    def __eq__(self, other: FontWeight) -> Bool:
+        return self.value == other.value
+
+    def __ne__(self, other: FontWeight) -> Bool:
+        return self.value != other.value
+
+    def write_to[W: Writer](self, mut writer: W):
+        if self == FontWeight.THIN:
+            writer.write("FontWeight.THIN")
+        elif self == FontWeight.LIGHT:
+            writer.write("FontWeight.LIGHT")
+        elif self == FontWeight.REGULAR:
+            writer.write("FontWeight.REGULAR")
+        elif self == FontWeight.MEDIUM:
+            writer.write("FontWeight.MEDIUM")
+        elif self == FontWeight.BOLD:
+            writer.write("FontWeight.BOLD")
+        elif self == FontWeight.BLACK:
+            writer.write("FontWeight.BLACK")
+        else:
+            writer.write("FontWeight(", self.value, ")")
 
 
 # FT_FaceRec offsets
@@ -406,10 +437,12 @@ struct _FontFaces(Movable):
     def __init__(
         out self, var path: String, var italic_path: Optional[String]
     ) raises:
-        self.upright = _Face(path, 16, FontWeight.REGULAR)
+        self.upright = _Face(path, 16, FontWeight.REGULAR.value)
         self.italic = None
         if italic_path:
-            self.italic = _Face(italic_path.value(), 16, FontWeight.REGULAR)
+            self.italic = _Face(
+                italic_path.value(), 16, FontWeight.REGULAR.value
+            )
         self.upright_id = _next_font_id()
         self.italic_id = _next_font_id()
         self.path = path^
@@ -423,7 +456,9 @@ struct _FontFaces(Movable):
         if not italic:
             return self.upright
         if not self.italic:
-            self.italic = _Face(self.path, 16, FontWeight.REGULAR, slanted=True)
+            self.italic = _Face(
+                self.path, 16, FontWeight.REGULAR.value, slanted=True
+            )
         return self.italic.value()
 
 
