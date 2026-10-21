@@ -1,5 +1,3 @@
-from std.math import floor
-
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 from .key import Key, _KeySet
@@ -58,8 +56,6 @@ struct Input(Copyable, Movable):
     # The text typed this frame, UTF-8 — empty on most frames, several
     # characters when typing outpaces the frame rate. Zeroed every frame.
     var text: String
-    var mouse_x: Int
-    var mouse_y: Int
     var mouse: Point2D
     # The most recent button pressed, compared against `MouseButton` (0
     # before any). Kept until the next press.
@@ -88,8 +84,6 @@ struct Input(Copyable, Movable):
     def __init__(out self):
         self.key = Key(0)
         self.text = ""
-        self.mouse_x = 0
-        self.mouse_y = 0
         self.mouse = Point2D(0, 0)
         self.mouse_button = 0
         self.mouse_wheel = Vector2D(0, 0)
@@ -120,17 +114,9 @@ struct Input(Copyable, Movable):
             self._gamepads[i]._new_frame()
 
     def _set_mouse(mut self, x: Float64, y: Float64):
-        """Record a screen-space pointer position.
-
-        The single writer of `mouse`, `mouse_x` and `mouse_y`, so the three
-        event arms that report a position cannot disagree about which of them
-        a position updates. Screen space is centred, so both coordinates go
-        negative and the Int forms floor rather than truncate — truncation
-        would round the left and bottom halves of the screen the wrong way.
-        """
+        """Record a screen-space pointer position: the single writer of
+        `mouse`, shared by the three event arms that report a position."""
         self.mouse = Point2D(x, y)
-        self.mouse_x = Int(floor(x))
-        self.mouse_y = Int(floor(y))
 
     # The loop's event folding (`core._events`) writes input through these,
     # one per kind of event, so the bookkeeping lives beside the state it
