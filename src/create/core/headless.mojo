@@ -65,14 +65,14 @@ def run_headless[
     var ph = pixel_height if pixel_height > 0 else height
     var mem = MemorySurface(pw, ph)
     var state = PersistentCanvasState()
-    state.backend.antialiasing = antialiasing
+    state._backend.antialiasing = antialiasing
     var context = Context()
     context.design_size(width, height)
     context.autoscale(autoscale)
     # Before create(), from the arguments, as in the windowed loops.
     context._set_viewport(state, pw, ph)
     var program = first_step[P](context, state)
-    state.backend.present(mem.surface(), state.view.scale)
+    state._backend.present(mem.surface(), state._view.scale)
     var now = 0
     context.time._start(now)
     for _ in range(frames):
@@ -84,5 +84,5 @@ def run_headless[
         now += _FRAME_MILLIS
         context._advance_frame(now)
         state = step(program, context, state^)
-        state.backend.present(mem.surface(), state.view.scale)
+        state._backend.present(mem.surface(), state._view.scale)
     return mem^

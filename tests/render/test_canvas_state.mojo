@@ -34,8 +34,8 @@ def test_release_does_not_write_the_viewport_back() raises -> None:
     var canvas = context._new_canvas(_state(context, 800, 600))
     canvas._view.set_size(1600, 1200)
     var state = canvas^._release()
-    assert_equal(state.view.pixel_w, 800)
-    assert_equal(state.view.pixel_h, 600)
+    assert_equal(state._view.pixel_w, 800)
+    assert_equal(state._view.pixel_h, 600)
 
 
 def test_design_takes_effect_on_the_next_frame() raises -> None:

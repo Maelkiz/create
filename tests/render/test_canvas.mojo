@@ -1161,9 +1161,9 @@ struct UnoutlinedBezier(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
-        var before = len(canvas._state.backend.commands)
+        var before = len(canvas._state._backend.commands)
         canvas.bezier((-40.0, 0.0), (-20.0, 40.0), (20.0, 40.0), (40.0, 0.0))
-        if len(canvas._state.backend.commands) != before:
+        if len(canvas._state._backend.commands) != before:
             raise Error("an outline-less bezier was recorded")
 
 
@@ -1246,12 +1246,12 @@ struct UnrecordedSpline(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        var before = len(canvas._state.backend.commands)
+        var before = len(canvas._state._backend.commands)
         # One distinct point is no curve.
         canvas.spline([(10.0, 10.0), (10.0, 10.0)])
         canvas.outline_enabled(False)
         canvas.spline(_square_corners())
-        if len(canvas._state.backend.commands) != before:
+        if len(canvas._state._backend.commands) != before:
             raise Error("a spline that draws nothing was recorded")
 
 
@@ -1347,12 +1347,12 @@ struct UnrecordedArc(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        var before = len(canvas._state.backend.commands)
+        var before = len(canvas._state._backend.commands)
         canvas.arc((0.0, 0.0), 0.0, 0.0, pi)
         canvas.arc((0.0, 0.0), 30.0, 1.0, 0.0)
         canvas.outline_enabled(False)
         canvas.arc((0.0, 0.0), 30.0, 0.0, pi)
-        if len(canvas._state.backend.commands) != before:
+        if len(canvas._state._backend.commands) != before:
             raise Error("an arc that draws nothing was recorded")
 
 

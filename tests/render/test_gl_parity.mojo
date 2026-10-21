@@ -1129,7 +1129,7 @@ def _cpu_frame(shape: Int) raises -> MemorySurface:
     context.time._start(0)
     context.time._tick(16)
     state = step(program, context, state^)
-    state.backend.present(mem.surface(), state.view.scale)
+    state._backend.present(mem.surface(), state._view.scale)
     return mem^
 
 
@@ -1152,11 +1152,11 @@ def _gpu_frame(mut win: GLWindow, shape: Int) raises -> List[UInt8]:
     context.time._start(0)
     context.time._tick(16)
     state = step(program, context, state^)
-    state.backend.present_gpu(_PIXEL_W, _PIXEL_H, state.view.scale)
+    state._backend.present_gpu(_PIXEL_W, _PIXEL_H, state._view.scale)
 
     # The same readback `save_screenshot` uses, so the parity test and the
     # library cannot drift in how a GL frame is read or which way up it is.
-    var out = state.backend.gl.value().read_frame(_PIXEL_W, _PIXEL_H)
+    var out = state._backend.gl.value().read_frame(_PIXEL_W, _PIXEL_H)
 
     # Rule 3: both renderers' GL objects are freed while the context — still
     # owned by `win`, in the caller — is current.

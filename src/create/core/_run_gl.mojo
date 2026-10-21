@@ -77,14 +77,14 @@ def _wait_for_dimensions(
 ) raises:
     # Same bogus (1, 1) as the windowed loop: pump until the size is usable.
     _ = _update_dimensions(win, state, context)
-    while state.view.width <= 1 or state.view.height <= 1:
+    while state._view.width <= 1 or state._view.height <= 1:
         _ = win.events()
         _ = _update_dimensions(win, state, context)
 
 
 def _present(mut win: GLWindow, mut state: PersistentCanvasState) raises:
     var drawable = win.drawable_size()
-    state.backend.present_gpu(drawable[0], drawable[1], state.view.scale)
+    state._backend.present_gpu(drawable[0], drawable[1], state._view.scale)
     win.swap_buffers()
 
 
@@ -100,7 +100,7 @@ def _run_loop[
     context.time._start(win.ticks())
     while win.is_open() and not context._quit:
         var px_per_point = _update_dimensions(win, state, context)
-        if apply_events(win.events(), state.view, context, px_per_point):
+        if apply_events(win.events(), state._view, context, px_per_point):
             win.close()
         # Re-read after events: a resize this frame changed the drawable, and
         # the bars have to reach the edge of the *new* one. The viewport is
@@ -161,7 +161,7 @@ def run_gl[
     # the state now carries the viewport too, so it has to exist before
     # `_wait_for_dimensions` rather than inside the loop.
     var state = PersistentCanvasState(RenderBackend.GPU)
-    state.backend.antialiasing = antialiasing
+    state._backend.antialiasing = antialiasing
     var context = Context()
     context.design_size(width, height)
     context.autoscale(autoscale)

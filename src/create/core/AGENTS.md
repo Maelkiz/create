@@ -71,6 +71,6 @@ the display's. The loop re-reads dimensions every frame.
 `run_gl` creates its `GLWindow` before constructing `GL()`, which needs a current context.
 
 **Antialiasing is a `Backend` field the loops seed** from `run`'s argument
-(`state.backend.antialiasing`) and `canvas.antialiasing` changes; the CPU replay, every pixel read
+(`state._backend.antialiasing`) and `canvas.antialiasing` changes; the CPU replay, every pixel read
 and the GL renderer read it at present. GL windows open single-sampled: the renderer multisamples
 offscreen (see [../render/AGENTS.md](../render/AGENTS.md)), headless included.

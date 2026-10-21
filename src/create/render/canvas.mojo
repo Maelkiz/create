@@ -81,15 +81,15 @@ struct PersistentCanvasState(Movable):
     the autoclear, the letterbox colour and the antialiasing — so they can be
     set in `create` and last until changed. What decides the frame's geometry (the design size
     and the autoscale mode) stays on `Context`, which the loop reads to
-    derive `view` before a `Canvas` exists.
+    derive `_view` before a `Canvas` exists.
 
     It also owns what the run loop needs *before* a `Canvas` exists: event
-    processing maps pointer positions through `view`, and the dimension wait
-    reads `view.width`/`height` before the first frame exists at all.
+    processing maps pointer positions through `_view`, and the dimension wait
+    reads `_view.width`/`height` before the first frame exists at all.
     """
 
-    var backend: Backend
-    var view: Viewport
+    var _backend: Backend
+    var _view: Viewport
     """The authoritative design-to-pixel mapping, re-derived by the loop every
     frame from `Context`. A `Canvas` copies it; `Canvas._release` deliberately
     does not write it back, which would undo the loop's own resize handling."""
@@ -103,8 +103,8 @@ struct PersistentCanvasState(Movable):
     def __init__(out self, kind: RenderBackend = RenderBackend.CPU) raises:
         """`kind` picks the backend that will present the frames — a GPU one
         builds its GL resources now, so a context must already be current."""
-        self.backend = Backend(kind)
-        self.view = Viewport()
+        self._backend = Backend(kind)
+        self._view = Viewport()
         self.letterbox_color = Color.BLACK
         self.autoclear = True
 
@@ -124,9 +124,9 @@ struct PersistentCanvasState(Movable):
         top of the next frame. Plain values rather than the `Context`, which
         lives in `core` above this package.
         """
-        self.view.autoscale = autoscale
-        self.view.set_design(design_w, design_h)
-        self.view.set_size(pixel_w, pixel_h)
+        self._view.autoscale = autoscale
+        self._view.set_design(design_w, design_h)
+        self._view.set_size(pixel_w, pixel_h)
 
 
 struct TransformGuard[origin: Origin[mut=True]](Movable):
@@ -222,14 +222,14 @@ struct ClipGuard[origin: Origin[mut=True]](Movable):
         var region: RenderCommand,
         invert: Bool,
     ):
-        self._saved = canvas._state.backend.push_clip(region^, invert)
+        self._saved = canvas._state._backend.push_clip(region^, invert)
         self._canvas = Pointer(to=canvas)
 
     def __enter__(mut self):
         pass
 
     def __exit__(mut self):
-        self._canvas[]._state.backend.clip = self._saved
+        self._canvas[]._state._backend.clip = self._saved
 
 
 struct Canvas(Movable):
@@ -313,10 +313,10 @@ struct Canvas(Movable):
     def __init__(out self, var state: PersistentCanvasState):
         """Adopt the carried-over state and this frame's mapping, and open
         the frame with a clear unless `autoclear` is off."""
-        self._view = state.view
-        self.width = state.view.width
-        self.height = state.view.height
-        self.scale = state.view.scale
+        self._view = state._view
+        self.width = state._view.width
+        self.height = state._view.height
+        self.scale = state._view.scale
         self._state = state^
         self._style = Style()
         self._base = self._view.base_matrix()
@@ -329,11 +329,13 @@ struct Canvas(Movable):
         self._transform = self._base
         self._transform_inv = self._base_inv
         self._transform_stack = List[Matrix[3, 3]]()
-        self._state.backend.begin_frame(self._base, self.width, self.height)
+        self._state._backend.begin_frame(self._base, self.width, self.height)
         # Recorded here rather than by the loop so both loops get it from one
         # place, and so a program's own `background()` can coalesce with it.
         if self._state.autoclear:
-            self._state.backend.open_with_clear(clear_command(_AUTOCLEAR_COLOR))
+            self._state._backend.open_with_clear(
+                clear_command(_AUTOCLEAR_COLOR)
+            )
 
     def __init__(
         out self,
@@ -367,14 +369,14 @@ struct Canvas(Movable):
         var pixel_h = Int(Float64(height) * scale + 0.5)
         var state = PersistentCanvasState(RenderBackend.CPU)
         state.autoclear = False
-        state.backend.antialiasing = antialiasing
+        state._backend.antialiasing = antialiasing
         state._set_viewport(AutoScale.FIT, width, height, pixel_w, pixel_h)
-        state.backend.target = MemorySurface(pixel_w, pixel_h)
+        state._backend.target = MemorySurface(pixel_w, pixel_h)
         self = Canvas(state^)
 
     def _offscreen(self) -> Bool:
         """Whether this is a program's own canvas rather than a frame's."""
-        return Bool(self._state.backend.target)
+        return Bool(self._state._backend.target)
 
     def _release(deinit self) -> PersistentCanvasState:
         """Hand back the state the next frame's `Canvas` should start from.
@@ -430,7 +432,7 @@ struct Canvas(Movable):
         var cy1 = Float64(
             Int(self._view.offset_y + Float64(self.height) * self.scale + 0.5)
         )
-        self._state.backend.record(
+        self._state._backend.record(
             letterbox_command(self._state.letterbox_color, cx0, cy0, cx1, cy1)
         )
 
@@ -791,9 +793,11 @@ struct Canvas(Movable):
         applies to what is drawn next. To paint over what is there instead,
         use `background()`.
         """
-        self._state.backend.discard()
+        self._state._backend.discard()
         if self._state.autoclear and not self._offscreen():
-            self._state.backend.open_with_clear(clear_command(_AUTOCLEAR_COLOR))
+            self._state._backend.open_with_clear(
+                clear_command(_AUTOCLEAR_COLOR)
+            )
 
     def background(mut self, color: Color):
         """Paint the whole framebuffer — the usual first call in `update`.
@@ -807,7 +811,7 @@ struct Canvas(Movable):
         An opaque color replaces the autoclear rather than
         stacking on it, so opening `update` with this costs one clear, not two.
         """
-        self._state.backend.record_clear(clear_command(color))
+        self._state._backend.record_clear(clear_command(color))
 
     def background(mut self, gradient: Gradient):
         """Paint the whole framebuffer with `gradient` — a sky, a vignette.
@@ -820,7 +824,7 @@ struct Canvas(Movable):
         Like a colour, it replaces the autoclear if every stop
         is opaque, and blends over what is there otherwise.
         """
-        self._state.backend.record_clear(
+        self._state._backend.record_clear(
             clear_command(
                 gradient,
                 self._base,
@@ -879,7 +883,7 @@ struct Canvas(Movable):
         var pw = Int(Float64(self.width) * scale + 0.5)
         var ph = Int(Float64(self.height) * scale + 0.5)
         capture.set_size(pw, ph)
-        self._state.backend.request_image(
+        self._state._backend.request_image(
             _ImageRequest(
                 path,
                 pw,
@@ -916,9 +920,9 @@ struct Canvas(Movable):
         one onto the canvas's own pixels, at its own `scale`.
         """
         if self._offscreen():
-            self._state.backend.bake(self.scale)
+            self._state._backend.bake(self.scale)
             var p = mat_apply(self._base, position.x, position.y)
-            ref target = self._state.backend.target.value()
+            ref target = self._state._backend.target.value()
             var px = Int(floor(p[0]))
             var py = Int(floor(p[1]))
             if px < 0 or py < 0 or px >= target.width or py >= target.height:
@@ -928,8 +932,8 @@ struct Canvas(Movable):
         var y = Int(floor(Float64(self.height) / 2.0 - position.y))
         if x < 0 or y < 0 or x >= self.width or y >= self.height:
             return Color.TRANSPARENT
-        self._state.backend.read_frame(seeded=not self._state.autoclear)
-        return self._state.backend.frame_read.value().pixel(x, y)
+        self._state._backend.read_frame(seeded=not self._state.autoclear)
+        return self._state._backend.frame_read.value().pixel(x, y)
 
     def snapshot(mut self, scale: Float64 = 1.0) raises -> Image:
         """What this frame has drawn so far, as an `Image` of the whole
@@ -972,7 +976,7 @@ struct Canvas(Movable):
         if self._offscreen():
             var mem = self._read_offscreen(region, scale)
             return Image.from_rgba(pw, ph, mem.data)
-        ref backend = self._state.backend
+        ref backend = self._state._backend
         if (
             scale == 1.0
             and pw == self.width
@@ -997,7 +1001,7 @@ struct Canvas(Movable):
     ) raises -> MemorySurface:
         """An offscreen canvas's pixels inside `region`, `scale` pixels to
         the unit, once what was drawn since the last read is baked in."""
-        ref backend = self._state.backend
+        ref backend = self._state._backend
         backend.bake(self.scale)
         ref target = backend.target.value()
         var pw = Int(region.w * scale + 0.5)
@@ -1036,10 +1040,10 @@ struct Canvas(Movable):
         density, alpha kept — it has no window to have been seen in.
         """
         if self._offscreen():
-            self._state.backend.bake(self.scale)
-            self._state.backend.target.value().save(path, opaque=False)
+            self._state._backend.bake(self.scale)
+            self._state._backend.target.value().save(path, opaque=False)
             return
-        self._state.backend.request_screenshot(path)
+        self._state._backend.request_screenshot(path)
 
     def rectangle(
         mut self,
@@ -1052,7 +1056,7 @@ struct Canvas(Movable):
         """Draw the `w` by `h` rectangle centred on `position`, its corners
         rounded by `corner_radius` (clamped to half the shorter side), as
         `Rectangle` describes it."""
-        self._state.backend.record(
+        self._state._backend.record(
             rect_command(
                 self._transform,
                 self._style,
@@ -1080,7 +1084,7 @@ struct Canvas(Movable):
         self.rectangle(r.position, r.w, r.h, corner_radius=r.corner_radius)
 
     def circle(mut self, position: Point2D, r: Float64):
-        self._state.backend.record(
+        self._state._backend.record(
             circle_command(
                 self._transform, self._style, position.x, position.y, r
             )
@@ -1116,7 +1120,7 @@ struct Canvas(Movable):
         describes. A rounded sector is drawn as a polygon, so it costs what
         an outlined `polygon` of its flattened outline does.
         """
-        self._state.backend.record(
+        self._state._backend.record(
             self._sector_command(
                 self._style,
                 position,
@@ -1209,7 +1213,7 @@ struct Canvas(Movable):
         `p.corner_radius` rounds every corner, as `Polygon` describes; each
         rounded corner adds vertices, and so cost.
         """
-        self._state.backend.record(
+        self._state._backend.record(
             polygon_command(
                 self._transform,
                 self._style,
@@ -1221,7 +1225,7 @@ struct Canvas(Movable):
         var points = List[Point2D](capacity=len(vertices))
         for v in vertices:
             points.append(v)
-        self._state.backend.record(
+        self._state._backend.record(
             polygon_command(
                 self._transform,
                 self._style,
@@ -1249,7 +1253,7 @@ struct Canvas(Movable):
         # overhead.
         if not self._style.outline_enabled:
             return
-        self._state.backend.record(
+        self._state._backend.record(
             line_command(
                 self._transform, self._style, start.x, start.y, end.x, end.y
             )
@@ -1284,7 +1288,7 @@ struct Canvas(Movable):
         # Recorded only when it would render, as `line` is.
         if not self._style.outline_enabled:
             return
-        self._state.backend.record(
+        self._state._backend.record(
             bezier_command(self._transform, self._style, b)
         )
 
@@ -1366,7 +1370,7 @@ struct Canvas(Movable):
             points.append(c.control1)
             points.append(c.control2)
             points.append(c.end)
-        self._state.backend.record(
+        self._state._backend.record(
             bezier_chain_command(self._transform, self._style, points^)
         )
 
@@ -1380,7 +1384,7 @@ struct Canvas(Movable):
     ):
         """Draw the triangle through `a`, `b` and `c`, its corners rounded
         by `corner_radius`, as `Triangle` describes it."""
-        self._state.backend.record(
+        self._state._backend.record(
             triangle_command(
                 self._transform,
                 self._style,
@@ -1413,10 +1417,10 @@ struct Canvas(Movable):
         # The image is interned *now*, not at replay: the command then carries
         # an id rather than a borrow of the program's pixels, which is what
         # keeps caller-owned memory out of a buffer that outlives the call.
-        var id = self._state.backend.intern_image(
+        var id = self._state._backend.intern_image(
             image._id, image._pixels, image.width, image.height
         )
-        self._state.backend.record(
+        self._state._backend.record(
             image_command(
                 self._transform,
                 self._style,
@@ -1576,7 +1580,7 @@ struct Canvas(Movable):
 
     def antialiasing(self) -> Antialiasing:
         """How smooth shape edges are: `run`'s `antialiasing` unless set."""
-        return self._state.backend.antialiasing
+        return self._state._backend.antialiasing
 
     def antialiasing(mut self, level: Antialiasing):
         """Smooth shape edges at `level` — `OFF` for hard pixels.
@@ -1587,9 +1591,9 @@ struct Canvas(Movable):
         `antialiasing` argument is the starting level; set it here, in
         `create` or any frame, to change it. See `Antialiasing`.
         """
-        self._state.backend.antialiasing = level
+        self._state._backend.antialiasing = level
         # A read cached under the old level is stale now.
-        self._state.backend.recorded += 1
+        self._state._backend.recorded += 1
 
     def autoclear(self) -> Bool:
         """Whether frames open with the clear to gray 200. On unless set."""
@@ -1613,7 +1617,7 @@ struct Canvas(Movable):
         self._state.autoclear = enabled
         if self._offscreen():
             return
-        self._state.backend.set_autoclear(
+        self._state._backend.set_autoclear(
             enabled, clear_command(_AUTOCLEAR_COLOR)
         )
 
@@ -1654,7 +1658,7 @@ struct Canvas(Movable):
         Raises only if the default font has to be loaded and cannot be.
         """
         var scale = pixel_scale(self._transform, self.scale)
-        var pixels = self._state.backend.text.width(text, self._style, scale)
+        var pixels = self._state._backend.text.width(text, self._style, scale)
         return Float64(pixels) / scale
 
     def text(mut self, text: String, position: Point2D):
@@ -1663,7 +1667,7 @@ struct Canvas(Movable):
         # Deferred whole. Nothing about the layout is decided here: the
         # advances, the alignment and the baseline all come out of the font,
         # which the backend owns, so they are resolved at replay.
-        self._state.backend.record(
+        self._state._backend.record(
             text_command(
                 self._transform,
                 self._style,
