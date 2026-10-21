@@ -1,6 +1,7 @@
 from std.math import abs, ceil, min, max, sqrt
 from .geometry import Rectangle
 from create.math import Point2D
+from .drawable import Drawable, DrawTarget
 from create.math import Vector2D
 
 comptime _MAX_FLATTEN_SEGMENTS = 1024
@@ -70,7 +71,9 @@ def _axis_extremes(
     return (lo, hi)
 
 
-struct Bezier(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
+struct Bezier(
+    Copyable, Drawable, Equatable, ImplicitlyCopyable, Movable, Writable
+):
     """A cubic Bézier curve from `start` to `end`, shaped by `control1` and
     `control2`: `at`, `tangent`, `split`, `bounds`, `flatten`, `translate`.
 
@@ -115,6 +118,9 @@ struct Bezier(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     def __ne__(self, other: Bezier) -> Bool:
         return not (self == other)
+
+    def draw_to[T: DrawTarget](self, mut target: T):
+        target._curves([self])
 
     def write_to[W: Writer](self, mut writer: W):
         writer.write(
