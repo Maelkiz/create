@@ -48,12 +48,18 @@ pixi run benchmark frame                  # benchmarks/, same form; frame cpu fo
 pixi run test                             # whole suite, concurrent
 pixi run test render                      # subpackage, file name sans test_, or path; several allowed
 pixi run test -j 4 canvas tween           # pin worker count (default nproc, max 8)
-pixi run precompile                       # type-check the library, output in build/
+pixi run precompile                       # type-check the library into build/create.mojoc
 pixi run build-examples                   # type-check every example and benchmark
 pixi run check-standalone                 # a `mojo build` program, run outside the environment
 pixi run format                           # 80 columns, enforced by pre-commit
 pixi run setup                            # once per clone: git hooks + blame ignore-revs
 ```
+
+`example` and `benchmark` run against `build/create.mojoc` (`-I build`), not the source: they
+depend on `precompile`, which pixi's task cache skips while no `src/create/**/*.mojo` file and
+nothing in the environment has changed. So a run with the library unchanged starts in about 2 s
+rather than 8; the first one after a library edit pays the ~10 s rebuild. Tests and the CI
+builds still compile from `src`.
 
 Two tiers of automated checks:
 
