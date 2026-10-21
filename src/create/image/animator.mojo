@@ -1,5 +1,3 @@
-from std.memory import ArcPointer
-
 from create.image.animation import Animation
 
 
@@ -22,14 +20,14 @@ struct Animator(Copyable, Movable, Writable):
     confused with one another.
     """
 
-    var animation: ArcPointer[Animation]
+    var animation: Animation
     var frame_index: Int
     var _playing: Bool
     var _looping: Bool
     var _finished: Bool
     var _elapsed: Float64
 
-    def __init__(out self, var animation: ArcPointer[Animation]):
+    def __init__(out self, var animation: Animation):
         """Hold `animation`, stopped on frame 0.
 
         An animator always has an animation, so there is no empty state to
@@ -47,7 +45,7 @@ struct Animator(Copyable, Movable, Writable):
         # playhead shows.
         writer.write("Animator(frame_index=", self.frame_index, ")")
 
-    def use(mut self, var animation: ArcPointer[Animation]):
+    def use(mut self, var animation: Animation):
         """Switch to `animation`, rewound to frame 0 and stopped.
 
         Switching to the animation already held does nothing at all. That
@@ -56,15 +54,15 @@ struct Animator(Copyable, Movable, Writable):
 
         ```mojo
         if self.velocity.x != 0.0:
-            self.animator.loop(self.run.copy())
+            self.animator.loop(self.run)
         else:
-            self.animator.loop(self.idle.copy())
+            self.animator.loop(self.idle)
         ```
 
         -- and without this guard every frame would rewind to frame 0 and the
         animation would never visibly move.
         """
-        if Pointer(to=self.animation[]) == Pointer(to=animation[]):
+        if self.animation._is(animation):
             return
         self.animation = animation^
         self.frame_index = 0
@@ -81,7 +79,7 @@ struct Animator(Copyable, Movable, Writable):
         self._looping = False
         self._finished = False
 
-    def play(mut self, var animation: ArcPointer[Animation]):
+    def play(mut self, var animation: Animation):
         """`use` then `play` -- restarts even if the animation is unchanged."""
         self.use(animation^)
         self.play()
@@ -91,13 +89,9 @@ struct Animator(Copyable, Movable, Writable):
         self.play()
         self._looping = True
 
-    def loop(mut self, var animation: ArcPointer[Animation]):
+    def loop(mut self, var animation: Animation):
         """`use` then `loop`, and a no-op restart-wise if already looping it."""
-        if (
-            Pointer(to=self.animation[]) == Pointer(to=animation[])
-            and self._playing
-            and self._looping
-        ):
+        if self.animation._is(animation) and self._playing and self._looping:
             return
         self.use(animation^)
         self.loop()
@@ -126,11 +120,11 @@ struct Animator(Copyable, Movable, Writable):
         """
         if not self._playing:
             return
-        var duration = self.animation[].frame_duration()
+        var duration = self.animation.frame_duration()
         self._elapsed += dt
         while self._elapsed >= duration:
             self._elapsed -= duration
-            if self.frame_index + 1 < self.animation[].count():
+            if self.frame_index + 1 < self.animation.count():
                 self.frame_index += 1
             elif self._looping:
                 self.frame_index = 0

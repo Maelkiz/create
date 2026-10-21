@@ -1,10 +1,11 @@
+from std.memory import ArcPointer
 from std.os import listdir
 
 from create.image.image import Image
 from create.image.pixel_buffer import PixelBuffer
 
 
-struct Animation(Movable):
+struct Animation(Copyable, ImplicitlyCopyable, Movable):
     """An ordered sequence of frames and the rate they play at.
 
     An `Animation` is the asset, not the playhead -- it holds the frames
@@ -15,12 +16,11 @@ struct Animation(Movable):
     Frames are cut into owned `Image`s at construction, so a sheet or a folder
     is paid for once and every render afterwards is a plain blit.
 
-    Hold one as an `ArcPointer[Animation]` field, like a `Sound`, so
-    several animators can share the frame buffers by refcount instead of
-    copying them.
+    Copying one is cheap, like copying an `Image`: the copies share the
+    frames, so several animators can hold the same animation.
     """
 
-    var frames: List[Image]
+    var _frames: ArcPointer[List[Image]]
     var fps: Float64
 
     def __init__(out self, var frames: List[Image], fps: Float64 = 12.0) raises:
@@ -33,16 +33,21 @@ struct Animation(Movable):
             raise Error("Animation needs at least one frame")
         if fps <= 0.0:
             raise Error("Animation fps must be positive, got " + String(fps))
-        self.frames = frames^
+        self._frames = ArcPointer(frames^)
         self.fps = fps
 
     def count(self) -> Int:
         """The number of frames."""
-        return len(self.frames)
+        return len(self._frames[])
 
-    def frame(self, index: Int) -> ref[self.frames[0]] Image:
-        """Frame `index`, from 0 to `count() - 1`, by reference."""
-        return self.frames[index]
+    def frame(self, index: Int) -> Image:
+        """Frame `index`, from 0 to `count() - 1`. Cheap: an `Image` copy
+        shares its pixels."""
+        return self._frames[][index].copy()
+
+    def _is(self, other: Animation) -> Bool:
+        """Whether both are copies of one animation, sharing its frames."""
+        return self._frames.unsafe_ptr() == other._frames.unsafe_ptr()
 
     def frame_duration(self) -> Float64:
         """Seconds each frame is held."""

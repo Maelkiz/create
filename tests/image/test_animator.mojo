@@ -1,13 +1,12 @@
-from std.memory import ArcPointer
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 from create.image import Image, Animation, Animator
 
 
-def _animation(count: Int, fps: Float64 = 10.0) raises -> ArcPointer[Animation]:
+def _animation(count: Int, fps: Float64 = 10.0) raises -> Animation:
     var frames = List[Image]()
     for i in range(count):
         frames.append(Image.solid(1, 1, UInt8(i), 0, 0))
-    return ArcPointer(Animation(frames^, fps))
+    return Animation(frames^, fps)
 
 
 def test_starts_stopped_on_frame_zero() raises -> None:
@@ -95,23 +94,23 @@ def test_resume_after_finish_does_not_restart() raises -> None:
 
 def test_use_of_the_current_animation_is_a_no_op() raises -> None:
     var anim = _animation(4, fps=10.0)
-    var a = Animator(anim.copy())
+    var a = Animator(anim)
     a.loop()
     a.update(0.2)
     assert_equal(a.frame_index, 2)
     # The call every frame from a movement branch -- must not rewind.
-    a.use(anim.copy())
+    a.use(anim)
     assert_equal(a.frame_index, 2)
     assert_true(a.is_playing())
 
 
 def test_loop_of_the_current_animation_is_a_no_op() raises -> None:
     var anim = _animation(4, fps=10.0)
-    var a = Animator(anim.copy())
-    a.loop(anim.copy())
+    var a = Animator(anim)
+    a.loop(anim)
     a.update(0.2)
     for _ in range(3):
-        a.loop(anim.copy())
+        a.loop(anim)
         assert_equal(a.frame_index, 2)
         assert_true(a.is_playing())
 
@@ -123,24 +122,24 @@ def test_use_of_another_animation_rewinds_and_stops() raises -> None:
     a.use(_animation(2, fps=10.0))
     assert_equal(a.frame_index, 0)
     assert_false(a.is_playing())
-    assert_equal(a.animation[].count(), 2)
+    assert_equal(a.animation.count(), 2)
 
 
 def test_play_with_an_animation_switches_and_starts() raises -> None:
     var a = Animator(_animation(4, fps=10.0))
     a.play(_animation(2, fps=10.0))
     assert_true(a.is_playing())
-    assert_equal(a.animation[].count(), 2)
+    assert_equal(a.animation.count(), 2)
     a.update(0.1)
     assert_equal(a.frame_index, 1)
 
 
 def test_play_restarts_the_current_animation() raises -> None:
     var anim = _animation(4, fps=10.0)
-    var a = Animator(anim.copy())
+    var a = Animator(anim)
     a.loop()
     a.update(0.2)
-    a.play(anim.copy())
+    a.play(anim)
     assert_equal(a.frame_index, 0)
     assert_true(a.is_playing())
 
@@ -167,7 +166,7 @@ def test_a_copy_plays_independently_over_the_same_animation() raises -> None:
     b.update(0.2)
     assert_equal(a.frame_index, 0)
     assert_equal(b.frame_index, 2)
-    assert_true(Pointer(to=a.animation[]) == Pointer(to=b.animation[]))
+    assert_true(a.animation._is(b.animation))
 
 
 def main() raises:
