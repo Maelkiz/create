@@ -1,4 +1,4 @@
-from std.math import sqrt
+from std.math import atan2, cos, sin, sqrt
 
 from .point2d import Point2D
 from .vector3d import Vector3D
@@ -6,8 +6,9 @@ from .vector3d import Vector3D
 
 struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A 2D displacement or direction: arithmetic operators, `magnitude`, `normalize`,
-    `dot`, `distance`, `lerp`, and explicit constructors from a `Point2D` or a
-    `Vector3D`.
+    `dot`, `distance`, `lerp`, the angle helpers `from_angle`, `angle` and
+    `rotate`, the length helpers `with_length` and `limit`, and explicit
+    constructors from a `Point2D` or a `Vector3D`.
 
     Unlike `Point2D`, a bare tuple does not convert to one implicitly: a
     displacement literal names its type, `rect.translate(Vector2D(3, 4))`.
@@ -21,6 +22,11 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     drops `z`, and `Vector3D(v, z)` widens. Naming the target type is what
     keeps the conversion visible. `xy` returns the components as a plain
     tuple, to destructure: `var (x, y) = v.xy()`.
+
+    Angles are radians counter-clockwise from +x, as everywhere in the
+    library (y is up): `Vector2D.from_angle(a) * speed` aims, `v.angle()`
+    reads the heading back, `v.rotate(a)` turns. Like `normalize`, every
+    helper returns a new vector and leaves `self` alone.
 
     The direction constants follow the screen's axes, y up: `UP` is
     `Vector2D(0, 1)` and `DOWN` is `Vector2D(0, -1)`, so gravity is
@@ -115,6 +121,37 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return Vector2D(
             self.x + (other.x - self.x) * t, self.y + (other.y - self.y) * t
         )
+
+    @staticmethod
+    def from_angle(angle: Float64, length: Float64 = 1.0) -> Vector2D:
+        """The vector of `length` pointing at `angle` radians,
+        counter-clockwise from +x: `from_angle(0)` is `RIGHT`."""
+        return Vector2D(cos(angle) * length, sin(angle) * length)
+
+    def angle(self) -> Float64:
+        """The heading in radians, counter-clockwise from +x, in
+        `[-pi, pi]`. `0` for the zero vector."""
+        return atan2(self.y, self.x)
+
+    def rotate(self, angle: Float64) -> Vector2D:
+        """This vector turned by `angle` radians, counter-clockwise; its
+        length is unchanged."""
+        var c = cos(angle)
+        var s = sin(angle)
+        return Vector2D(self.x * c - self.y * s, self.x * s + self.y * c)
+
+    def with_length(self, length: Float64) -> Vector2D:
+        """This direction at `length`. Like `normalize`, the zero vector has
+        no direction and gives NaN."""
+        return self * (length / self.magnitude())
+
+    def limit(self, max_length: Float64) -> Vector2D:
+        """This vector, shortened to `max_length` if it is longer — a speed
+        cap. Shorter vectors, the zero vector among them, are unchanged."""
+        var length_squared = self.magnitude_squared()
+        if length_squared <= max_length * max_length:
+            return self
+        return self * (max_length / sqrt(length_squared))
 
     def xy(self) -> Tuple[Float64, Float64]:
         return (self.x, self.y)

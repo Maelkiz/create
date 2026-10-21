@@ -7,7 +7,7 @@ from std.testing import (
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 from create.math.vector3d import Vector3D
-from std.math import isnan, isinf
+from std.math import isnan, isinf, pi
 
 
 def test_init_float() raises -> None:
@@ -237,6 +237,60 @@ def test_float_tuple_still_takes_the_tuple_constructor() raises -> None:
     """A `Point2D` constructor beside the tuple one must not make a float
     tuple ambiguous."""
     assert_equal(Vector2D((1.5, 2.5)), Vector2D(1.5, 2.5))
+
+
+def _assert_close(a: Vector2D, b: Vector2D) raises:
+    assert_almost_equal(a.x, b.x, atol=1e-12)
+    assert_almost_equal(a.y, b.y, atol=1e-12)
+
+
+def test_from_angle_follows_the_y_up_convention() raises -> None:
+    _assert_close(Vector2D.from_angle(0.0), Vector2D.RIGHT)
+    _assert_close(Vector2D.from_angle(pi / 2.0), Vector2D.UP)
+    _assert_close(Vector2D.from_angle(-pi / 2.0), Vector2D.DOWN)
+
+
+def test_from_angle_takes_a_length() raises -> None:
+    _assert_close(Vector2D.from_angle(pi, 3.0), Vector2D(-3.0, 0.0))
+
+
+def test_angle_reads_the_heading_back() raises -> None:
+    assert_almost_equal(Vector2D.UP.angle(), pi / 2.0)
+    assert_almost_equal(Vector2D.from_angle(2.5, 4.0).angle(), 2.5)
+    assert_equal(Vector2D.ZERO.angle(), 0.0)
+
+
+def test_rotate_turns_counter_clockwise() raises -> None:
+    _assert_close(Vector2D(2.0, 0.0).rotate(pi / 2.0), Vector2D(0.0, 2.0))
+    _assert_close(Vector2D.UP.rotate(-pi / 2.0), Vector2D.RIGHT)
+
+
+def test_rotate_keeps_the_length() raises -> None:
+    var v = Vector2D(3.0, 4.0).rotate(1.234)
+    assert_almost_equal(v.magnitude(), 5.0)
+
+
+def test_rotate_leaves_self_alone() raises -> None:
+    var v = Vector2D(3.0, 4.0)
+    _ = v.rotate(1.0)
+    assert_equal(v, Vector2D(3.0, 4.0))
+
+
+def test_with_length_keeps_the_direction() raises -> None:
+    _assert_close(Vector2D(3.0, 4.0).with_length(10.0), Vector2D(6.0, 8.0))
+
+
+def test_with_length_of_zero_is_nan() raises -> None:
+    var v = Vector2D.ZERO.with_length(2.0)
+    assert_true(isnan(v.x))
+    assert_true(isnan(v.y))
+
+
+def test_limit_shortens_only_a_longer_vector() raises -> None:
+    _assert_close(Vector2D(3.0, 4.0).limit(2.5), Vector2D(1.5, 2.0))
+    assert_equal(Vector2D(3.0, 4.0).limit(5.0), Vector2D(3.0, 4.0))
+    assert_equal(Vector2D(3.0, 4.0).limit(10.0), Vector2D(3.0, 4.0))
+    assert_equal(Vector2D.ZERO.limit(1.0), Vector2D.ZERO)
 
 
 def main() raises:
