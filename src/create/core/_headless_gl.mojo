@@ -18,7 +18,7 @@ from create.render._gl_target import _GLTarget
 from create.render.antialiasing import Antialiasing
 from create.render.autoscale import AutoScale
 from create.render.render_backend import RenderBackend
-from create.render.canvas import PersistentCanvasState
+from create.render.canvas import _PersistentCanvasState
 from create.core.context import Context
 from create.render.surface import MemorySurface
 
@@ -69,7 +69,7 @@ def _run_headless_gl[
     var target = _GLTarget(GL(), pw, ph)
 
     # After the window: its GL resources need a current context.
-    var state = PersistentCanvasState(RenderBackend.GPU)
+    var state = _PersistentCanvasState(RenderBackend.GPU)
     state._backend.antialiasing = antialiasing
     var context = Context()
     context.design_size(width, height)

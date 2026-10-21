@@ -11,7 +11,7 @@ from std.testing import TestSuite, assert_equal, assert_true
 
 from create import *
 from create.render._command import CMD_CLEAR
-from create.render.canvas import Canvas, PersistentCanvasState
+from create.render.canvas import Canvas, _PersistentCanvasState
 
 
 @fieldwise_init
@@ -98,7 +98,7 @@ def test_a_program_background_wins_over_the_autoclear() raises -> None:
 
 def test_an_opaque_background_replaces_the_autoclear() raises -> None:
     var context = Context()
-    var state = PersistentCanvasState()
+    var state = _PersistentCanvasState()
     context._set_viewport(state, 200, 100)
     var canvas = context._new_canvas(state^)
     canvas.background(Color.BLUE)
@@ -109,7 +109,7 @@ def test_an_opaque_background_replaces_the_autoclear() raises -> None:
 def test_a_translucent_background_keeps_both() raises -> None:
     # It blends with what the clear painted, so the clear has to survive.
     var context = Context()
-    var state = PersistentCanvasState()
+    var state = _PersistentCanvasState()
     context._set_viewport(state, 200, 100)
     var canvas = context._new_canvas(state^)
     canvas.background(Color(0x11, 0x11, 0x11, 24))
@@ -119,7 +119,7 @@ def test_a_translucent_background_keeps_both() raises -> None:
 
 def test_autoclear_records_nothing_when_off() raises -> None:
     var context = Context()
-    var state = PersistentCanvasState()
+    var state = _PersistentCanvasState()
     state.autoclear = False
     context._set_viewport(state, 200, 100)
     var canvas = context._new_canvas(state^)
@@ -128,7 +128,7 @@ def test_autoclear_records_nothing_when_off() raises -> None:
 
 
 def _frame(mut context: Context) raises -> Canvas:
-    var state = PersistentCanvasState()
+    var state = _PersistentCanvasState()
     context._set_viewport(state, 200, 100)
     return context._new_canvas(state^)
 
@@ -167,7 +167,7 @@ def test_switching_off_then_on_again_clears_once() raises -> None:
 
 def test_switching_on_mid_frame_clears_under_what_is_drawn() raises -> None:
     var context = Context()
-    var state = PersistentCanvasState()
+    var state = _PersistentCanvasState()
     state.autoclear = False
     context._set_viewport(state, 200, 100)
     var canvas = context._new_canvas(state^)
@@ -180,7 +180,7 @@ def test_switching_on_mid_frame_clears_under_what_is_drawn() raises -> None:
 
 def _commands_after_background(gradient: Gradient) raises -> Int:
     var context = Context()
-    var state = PersistentCanvasState()
+    var state = _PersistentCanvasState()
     context._set_viewport(state, 200, 100)
     var canvas = context._new_canvas(state^)
     canvas.background(gradient)

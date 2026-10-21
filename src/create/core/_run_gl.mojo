@@ -20,7 +20,7 @@ from create._window import GLWindow
 from create.render.antialiasing import Antialiasing
 from create.render.autoscale import AutoScale
 from create.render.render_backend import RenderBackend
-from create.render.canvas import PersistentCanvasState
+from create.render.canvas import _PersistentCanvasState
 from create.core.context import Context
 
 from ._events import apply_events
@@ -58,7 +58,7 @@ def _open_window(
 
 
 def _update_dimensions(
-    mut win: GLWindow, mut state: PersistentCanvasState, context: Context
+    mut win: GLWindow, mut state: _PersistentCanvasState, context: Context
 ) raises -> Float64:
     """Point the viewport at the backing pixels; return pixels per point.
 
@@ -73,7 +73,7 @@ def _update_dimensions(
 
 
 def _wait_for_dimensions(
-    mut win: GLWindow, mut state: PersistentCanvasState, context: Context
+    mut win: GLWindow, mut state: _PersistentCanvasState, context: Context
 ) raises:
     # Same bogus (1, 1) as the windowed loop: pump until the size is usable.
     _ = _update_dimensions(win, state, context)
@@ -82,7 +82,7 @@ def _wait_for_dimensions(
         _ = _update_dimensions(win, state, context)
 
 
-def _present(mut win: GLWindow, mut state: PersistentCanvasState) raises:
+def _present(mut win: GLWindow, mut state: _PersistentCanvasState) raises:
     var drawable = win.drawable_size()
     state._backend.present_gpu(drawable[0], drawable[1], state._view.scale)
     win.swap_buffers()
@@ -93,7 +93,7 @@ def _run_loop[
 ](
     mut program: P,
     mut win: GLWindow,
-    var state: PersistentCanvasState,
+    var state: _PersistentCanvasState,
     mut context: Context,
     var applied: _AppliedWindow,
 ) raises:
@@ -160,7 +160,7 @@ def run_gl[
     # Built after the window because its GL resources need a current context;
     # the state now carries the viewport too, so it has to exist before
     # `_wait_for_dimensions` rather than inside the loop.
-    var state = PersistentCanvasState(RenderBackend.GPU)
+    var state = _PersistentCanvasState(RenderBackend.GPU)
     state._backend.antialiasing = antialiasing
     var context = Context()
     context.design_size(width, height)

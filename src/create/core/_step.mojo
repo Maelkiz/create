@@ -1,11 +1,11 @@
-from create.render.canvas import Canvas, PersistentCanvasState
+from create.render.canvas import Canvas, _PersistentCanvasState
 from create.core.context import Context
 from .program import Program
 
 
 def first_step[
     P: Program
-](mut context: Context, mut state: PersistentCanvasState) raises -> P:
+](mut context: Context, mut state: _PersistentCanvasState) raises -> P:
     """Build `P` with `create`, which draws frame 1, and hand its recorded
     state back through `state`.
 
@@ -34,8 +34,8 @@ def step[
 ](
     mut program: P,
     mut context: Context,
-    var state: PersistentCanvasState,
-) raises -> PersistentCanvasState:
+    var state: _PersistentCanvasState,
+) raises -> _PersistentCanvasState:
     """Advance `program` by one frame and hand its recorded state back.
 
     The windowed and headless loops differ in how they get a frame started —

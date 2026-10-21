@@ -4,12 +4,14 @@
 # `Surface`. The windowed loop relies on exactly that: the viewport is measured
 # before events, but `Window._resize` reallocates the pixel buffer during them,
 # so the two can disagree for a frame. Only the surface knows how big the
+
 # memory actually is — hence the extent must never be read off the viewport.
 
 from std.testing import TestSuite, assert_equal
 
 from create import *
 from create.core._step import step
+from create.render.canvas import _PersistentCanvasState
 
 
 @fieldwise_init
@@ -33,7 +35,7 @@ def _mismatched() raises -> MemorySurface:
     64x64 viewport, 200x200 buffer — the shape a grown window produces between
     the measurement and the resize.
     """
-    var start = PersistentCanvasState()
+    var start = _PersistentCanvasState()
     var context = Context()
     context.design_size(64, 64)
     context._set_viewport(start, 64, 64)
@@ -93,7 +95,7 @@ def test_scripted_click_drives_rendering() raises -> None:
 
     var idle_context = Context()
     idle_context.design_size(32, 32)
-    var idle_start = PersistentCanvasState()
+    var idle_start = _PersistentCanvasState()
     idle_context._set_viewport(idle_start, 32, 32)
     var idle_program = ClickPainter(False)
     var idle_state = step(idle_program, idle_context, idle_start^)
@@ -103,7 +105,7 @@ def test_scripted_click_drives_rendering() raises -> None:
 
     var clicked_context = Context()
     clicked_context.design_size(32, 32)
-    var clicked_start = PersistentCanvasState()
+    var clicked_start = _PersistentCanvasState()
     clicked_context._set_viewport(clicked_start, 32, 32)
     var clicked_program = ClickPainter(False)
     clicked_context.input._pressed_buttons |= 1 << 1

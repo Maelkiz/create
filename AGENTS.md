@@ -164,7 +164,7 @@ A program writes `from create import *`. Otherwise import by name from the ownin
   `image`, `text`, `_bytes` and `_library`, so it works without a run loop. So the mapping dials reach `render` as
   plain values: `context._set_viewport(state, …)` in `core` passes the design size and autoscale
   in, and `context._new_canvas(state^)` builds the frame. Frame-wide drawing settings live on
-  `PersistentCanvasState` itself.
+  `_PersistentCanvasState` itself.
 - **`color`** depends only on `math`; `image` and `render` both import it. It sits below `image` so
   that `Image.pixel` can return a `Color` without a `render`↔`image` cycle.
 - **`data`** imports nothing from `create`: files through the stdlib's `open()`, numbers through
@@ -198,8 +198,8 @@ the shape's `corner_radius` (see Terminology), so what is drawn and what `overla
   drawn stays — and lasts until changed, so set it once in `create`. Off lets ink accumulate (CPU
   backend only — GPU swaps buffers).
 
-**Canvas settings that outlive the frame**, unlike style, transform, camera and clip, live on
-`PersistentCanvasState` and last until changed — set them once in `create`: the frame-wide
+**Canvas settings that outlive the frame**, unlike style, transform, camera and clip, are carried
+from frame to frame (on the internal `_PersistentCanvasState`) and last until changed — set them once in `create`: the frame-wide
 `autoclear`, `letterbox_color` (the bars outside the design under `FIT`, black by
 default) and `antialiasing`. A frame-wide setting applies to the whole frame it is set in, since
 nothing is rasterised until present, and reads back with no arguments.

@@ -14,7 +14,7 @@ from create.core._step import first_step, step
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.autoscale import AutoScale
-from create.render.canvas import PersistentCanvasState
+from create.render.canvas import _PersistentCanvasState
 from create.render.render_backend import RenderBackend
 from create.image.image import Image
 from std.testing import TestSuite, assert_equal, assert_true
@@ -325,7 +325,7 @@ struct BlurredBezier[shadows: Bool](Program):
         canvas.rectangle((30.0, 0.0), 20.0, 20.0)
 
 
-def _live_textures(mut state: PersistentCanvasState) raises -> Int:
+def _live_textures(mut state: _PersistentCanvasState) raises -> Int:
     """How many of the first 4096 texture names are live textures."""
     ref gl = state._backend.gl.value().gl
     var live = 0
@@ -339,7 +339,7 @@ def _texture_growth[P: Program](mut win: GLWindow, frames: Int) raises -> Int:
     """How many more live textures there are after `frames` frames of `P`
     than after its first."""
     var target = _GLTarget(GL(), 100, 100)
-    var state = PersistentCanvasState(RenderBackend.GPU)
+    var state = _PersistentCanvasState(RenderBackend.GPU)
     var context = Context()
     context.design_size(100, 100)
     context._set_viewport(state, 100, 100)
@@ -375,7 +375,7 @@ def _gpu_frame[
     """
     var target = _GLTarget(GL(), width, height)
 
-    var state = PersistentCanvasState(RenderBackend.GPU)
+    var state = _PersistentCanvasState(RenderBackend.GPU)
     var context = Context()
     context.design_size(width, height)
     context._set_viewport(state, width, height)
@@ -403,7 +403,7 @@ def _gpu_frame[
 def _gpu_draw_calls[P: Program](mut win: GLWindow) raises -> Int:
     """How many draw calls one frame of `P` takes through the GL backend."""
     var target = _GLTarget(GL(), 100, 100)
-    var state = PersistentCanvasState(RenderBackend.GPU)
+    var state = _PersistentCanvasState(RenderBackend.GPU)
     var context = Context()
     context.design_size(100, 100)
     context._set_viewport(state, 100, 100)
