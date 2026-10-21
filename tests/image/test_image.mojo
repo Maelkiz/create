@@ -338,8 +338,8 @@ def test_solid_1x1() raises -> None:
 
 
 def test_from_rgba_ignores_trailing_bytes() raises -> None:
-    # from_rgba trusts the caller's dimensions and copies exactly width*height*4
-    # bytes -- extra bytes past that must be ignored, not appended.
+    # from_rgba copies exactly width*height*4 bytes -- extra bytes past that
+    # must be ignored, not appended.
     var data: List[UInt8] = [1, 2, 3, 4, 99, 99, 99, 99]
     var s = Image.from_rgba(1, 1, data)
     assert_equal(len(s._pixels[]), 4)
@@ -347,6 +347,18 @@ def test_from_rgba_ignores_trailing_bytes() raises -> None:
     assert_equal(Int(s._pixels[][1]), 2)
     assert_equal(Int(s._pixels[][2]), 3)
     assert_equal(Int(s._pixels[][3]), 4)
+
+
+def test_from_rgba_raises_on_short_data() raises -> None:
+    var data: List[UInt8] = [1, 2, 3, 4, 5, 6, 7]
+    with assert_raises(contains="needs 8 bytes, got 7"):
+        _ = Image.from_rgba(2, 1, data)
+
+
+def test_from_rgba_raises_on_negative_size() raises -> None:
+    var data: List[UInt8] = [1, 2, 3, 4]
+    with assert_raises(contains="negative size"):
+        _ = Image.from_rgba(-1, -1, data)
 
 
 def test_image_zero_dimensions() raises -> None:
