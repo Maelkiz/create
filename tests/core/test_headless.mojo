@@ -118,8 +118,8 @@ struct Labelled[in_create: Bool, every_frame: Bool](Program):
 
 def _differing(a: Image, b: Image) -> Int:
     var n = 0
-    for y in range(a.height):
-        for x in range(a.width):
+    for y in range(a.height()):
+        for x in range(a.width()):
             if a.pixel(x, y) != b.pixel(x, y):
                 n += 1
     return n

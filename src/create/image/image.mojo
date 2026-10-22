@@ -85,8 +85,8 @@ struct Image(Copyable, Movable):
     package can change an image after it is made — which is what lets a copy
     of the image, and a backend's cache of it, share these rather than copy
     them."""
-    var width: Int
-    var height: Int
+    var _width: Int
+    var _height: Int
     var _id: Int
     """This image's identity, unique for the life of the process.
 
@@ -100,10 +100,18 @@ struct Image(Copyable, Movable):
 
     def __init__(out self, var pixels: PixelBuffer) raises:
         """An image of `pixels`, which it takes over without copying."""
-        self.width = pixels._width
-        self.height = pixels._height
+        self._width = pixels._width
+        self._height = pixels._height
         self._pixels = ArcPointer(pixels^._take_data())
         self._id = _next_image_id()
+
+    def width(self) -> Int:
+        """The image's width in pixels."""
+        return self._width
+
+    def height(self) -> Int:
+        """The image's height in pixels."""
+        return self._height
 
     @staticmethod
     def solid(width: Int, height: Int, color: Color) raises -> Image:
@@ -156,9 +164,9 @@ struct Image(Copyable, Movable):
         """The pixel in column `x` of row `y`, counted from the top-left
         corner — image coordinates, unlike the canvas's. Outside the image
         it is `Color.TRANSPARENT`."""
-        if x < 0 or y < 0 or x >= self.width or y >= self.height:
+        if x < 0 or y < 0 or x >= self._width or y >= self._height:
             return Color.TRANSPARENT
-        var off = (y * self.width + x) * 4
+        var off = (y * self._width + x) * 4
         return Color(
             self._pixels[][off],
             self._pixels[][off + 1],
@@ -171,17 +179,17 @@ struct Image(Copyable, Movable):
         sampled. This image is unchanged; the copy is a new image, with its
         own identity."""
         var dst = PixelBuffer(width, height)
-        if self.width == 0 or self.height == 0:
+        if self._width == 0 or self._height == 0:
             # No source pixel to sample -- leave the zero-filled buffer as is
             # rather than computing an offset into an empty source.
             return Image(dst^)
         var src_ptr = self._pixels[].unsafe_ptr()
         var dst_ptr = dst._data.unsafe_ptr()
         for row in range(height):
-            var src_row = row * self.height // height
+            var src_row = row * self._height // height
             for col in range(width):
-                var src_col = col * self.width // width
-                var s = (src_row * self.width + src_col) * 4
+                var src_col = col * self._width // width
+                var s = (src_row * self._width + src_col) * 4
                 var d = (row * width + col) * 4
                 dst_ptr[unsafe_offset=d] = src_ptr[unsafe_offset=s]
                 dst_ptr[unsafe_offset=d + 1] = src_ptr[unsafe_offset=s + 1]

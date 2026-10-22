@@ -499,7 +499,7 @@ def test_interning_shares_the_pixels_rather_than_copying_them() raises -> None:
     var image = Image.solid(4, 4, Color(255, 0, 0))
     var backend = Backend()
     var id = backend.intern_image(
-        image._id, image._pixels, image.width, image.height
+        image._id, image._pixels, image.width(), image.height()
     )
     assert_equal(
         Int(backend.images[id].pixels[].unsafe_ptr()),
@@ -511,7 +511,7 @@ def _intern_a_red_image(mut backend: Backend) raises -> Int:
     """Intern an image that is dropped as this returns."""
     var image = Image.solid(2, 1, Color(255, 0, 0))
     return backend.intern_image(
-        image._id, image._pixels, image.width, image.height
+        image._id, image._pixels, image.width(), image.height()
     )
 
 

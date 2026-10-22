@@ -186,8 +186,8 @@ def test_the_keyword_rounds_like_the_shape() raises -> None:
     keyword.rectangle((0.0, 0.0), 50.0, 30.0, corner_radius=9.0)
     var a = shape.snapshot()
     var b = keyword.snapshot()
-    for y in range(a.height):
-        for x in range(a.width):
+    for y in range(a.height()):
+        for x in range(a.width()):
             assert_equal(a.pixel(x, y), b.pixel(x, y))
 
 
@@ -207,8 +207,8 @@ def test_a_rounded_clip_keeps_only_the_rounded_shape() raises -> None:
 def _same(mut a: Canvas, mut b: Canvas) raises -> Bool:
     var x = a.snapshot()
     var y = b.snapshot()
-    for j in range(x.height):
-        for i in range(x.width):
+    for j in range(x.height()):
+        for i in range(x.width()):
             if x.pixel(i, j) != y.pixel(i, j):
                 return False
     return True

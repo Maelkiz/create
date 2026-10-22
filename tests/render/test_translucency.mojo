@@ -136,8 +136,8 @@ def _check(kind: Int, backend: String, m: Image) raises:
     var inked = 0
     var deepest = 0
     var greenest = 0
-    for y in range(m.height):
-        for x in range(m.width):
+    for y in range(m.height()):
+        for x in range(m.width()):
             var r = Int(m.pixel(x, y).r)
             if r > 0:
                 inked += 1

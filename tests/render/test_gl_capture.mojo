@@ -26,7 +26,7 @@ def _saved(path: String) raises -> Image:
 
 
 def _px(s: Image, x: Int, y: Int) -> Color:
-    var off = (y * s.width + x) * 4
+    var off = (y * s.width() + x) * 4
     return Color(
         s._pixels[][off],
         s._pixels[][off + 1],
@@ -72,8 +72,8 @@ def test_gpu_screenshot_has_the_framebuffer_resolution_and_is_opaque() raises ->
         return
 
     var shot = _saved(_SHOT)
-    assert_equal(shot.width, 640)
-    assert_equal(shot.height, 480)
+    assert_equal(shot.width(), 640)
+    assert_equal(shot.height(), 480)
     # The design area, scaled 3.2x and centred, with the bars either side —
     # same layout `test_canvas.mojo`'s CPU screenshot test checks.
     assert_equal(_px(shot, 320, 240), Color.RED)
@@ -138,11 +138,11 @@ def test_gpu_save_image_matches_cpu_save_image_byte_for_byte() raises -> None:
 
     var cpu = _saved(_IMG_CPU)
     var gpu = _saved(_IMG_GPU)
-    assert_equal(cpu.width, gpu.width)
-    assert_equal(cpu.height, gpu.height)
+    assert_equal(cpu.width(), gpu.width())
+    assert_equal(cpu.height(), gpu.height())
     var a = cpu._pixels[].unsafe_ptr()
     var b = gpu._pixels[].unsafe_ptr()
-    for i in range(cpu.width * cpu.height * 4):
+    for i in range(cpu.width() * cpu.height() * 4):
         assert_equal(Int(a[unsafe_offset=i]), Int(b[unsafe_offset=i]))
 
 

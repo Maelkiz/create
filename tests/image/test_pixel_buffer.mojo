@@ -43,8 +43,8 @@ def test_an_image_takes_the_buffer_over() raises -> None:
     var buffer = PixelBuffer(3, 2)
     buffer.set(2, 1, Color.RED)
     var image = Image(buffer^)
-    assert_equal(image.width, 3)
-    assert_equal(image.height, 2)
+    assert_equal(image.width(), 3)
+    assert_equal(image.height(), 2)
     assert_equal(image.pixel(2, 1), Color.RED)
     assert_equal(image.pixel(0, 0), Color.TRANSPARENT)
 

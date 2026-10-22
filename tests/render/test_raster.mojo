@@ -314,8 +314,8 @@ def test_blit_image_one_to_one() raises -> None:
     blit_image(
         mem.surface(),
         sp._pixels[].unsafe_ptr(),
-        sp.width,
-        sp.height,
+        sp.width(),
+        sp.height(),
         1,
         1,
         2,
@@ -335,8 +335,8 @@ def _turned_blit(grid: Int) raises -> MemorySurface:
     blit_image_mapped(
         mem.surface(),
         sp._pixels[].unsafe_ptr(),
-        sp.width,
-        sp.height,
+        sp.width(),
+        sp.height(),
         image_mapping(
             translate(20.0, 20.0) @ rotate(0.5), 0.0, 0.0, 20.0, 20.0, 2, 2
         ),
@@ -471,8 +471,8 @@ def test_blit_image_clips_against_every_edge() raises -> None:
     blit_image(
         mem.surface(),
         sp._pixels[].unsafe_ptr(),
-        sp.width,
-        sp.height,
+        sp.width(),
+        sp.height(),
         -2,
         -2,
         4,
@@ -486,8 +486,8 @@ def test_blit_image_clips_against_every_edge() raises -> None:
     blit_image(
         far.surface(),
         sp._pixels[].unsafe_ptr(),
-        sp.width,
-        sp.height,
+        sp.width(),
+        sp.height(),
         3,
         3,
         4,

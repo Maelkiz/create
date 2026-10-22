@@ -23,8 +23,8 @@ struct Game(Program):
         if context.input.key_down("d"):
             self.x += speed
 
-        var hw = (self.image.width) // 2
-        var hh = (self.image.height) // 2
+        var hw = self.image.width() // 2
+        var hh = self.image.height() // 2
         self.x = clamp(
             self.x, Int(canvas.left()) + hw, Int(canvas.right()) - hw
         )

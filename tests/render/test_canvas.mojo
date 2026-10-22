@@ -2018,12 +2018,12 @@ def _non_background_box(m: Image, bg: Color) -> Tuple[Int, Int, Int, Int]:
     onto an opaque background, so ink is found by difference from the known
     background colour rather than by alpha.
     """
-    var x0 = m.width
-    var y0 = m.height
+    var x0 = m.width()
+    var y0 = m.height()
     var x1 = -1
     var y1 = -1
-    for y in range(m.height):
-        for x in range(m.width):
+    for y in range(m.height()):
+        for x in range(m.width()):
             if m.pixel(x, y) != bg:
                 x0 = min(x0, x)
                 y0 = min(y0, y)
@@ -2524,7 +2524,7 @@ def _saved(path: String) raises -> Image:
 
 
 def _px(s: Image, x: Int, y: Int) -> Color:
-    var off = (y * s.width + x) * 4
+    var off = (y * s.width() + x) * 4
     return Color(
         s._pixels[][off],
         s._pixels[][off + 1],
@@ -2589,11 +2589,11 @@ struct SaveImageTransparent(Program):
 def test_save_image_writes_the_design_size() raises -> None:
     var m = run_headless[SaveImage](200, 100, 1, 640, 480)
     # The framebuffer it was captured from is neither that size nor bar-free.
-    assert_equal(m.width, 640)
+    assert_equal(m.width(), 640)
     assert_equal(m.pixel(320, 5), Color.BLACK)
     var img = _saved(_IMG_1X)
-    assert_equal(img.width, 200)
-    assert_equal(img.height, 100)
+    assert_equal(img.width(), 200)
+    assert_equal(img.height(), 100)
 
 
 def test_save_image_lays_out_in_design_coordinates() raises -> None:
@@ -2619,8 +2619,8 @@ def test_save_image_has_no_letterbox_bars() raises -> None:
 def test_save_image_scales_the_whole_export() raises -> None:
     _ = run_headless[SaveImage2x](200, 100, 1, 640, 480)
     var img = _saved(_IMG_2X)
-    assert_equal(img.width, 400)
-    assert_equal(img.height, 200)
+    assert_equal(img.width(), 400)
+    assert_equal(img.height(), 200)
     # The identical layout at twice the resolution: the square now covers
     # [180, 220) x [80, 120).
     assert_equal(_px(img, 200, 100), Color.RED)
@@ -2674,8 +2674,8 @@ struct SaveBoth(Program):
 def test_save_screenshot_writes_the_framebuffer_resolution() raises -> None:
     _ = run_headless[SaveScreenshot](200, 100, 1, 640, 480)
     var shot = _saved(_SHOT)
-    assert_equal(shot.width, 640)
-    assert_equal(shot.height, 480)
+    assert_equal(shot.width(), 640)
+    assert_equal(shot.height(), 480)
 
 
 def test_save_screenshot_keeps_the_letterbox_bars() raises -> None:
@@ -2693,8 +2693,8 @@ def test_both_captures_can_be_pending_in_one_frame() raises -> None:
     _ = run_headless[SaveBoth](200, 100, 1, 640, 480)
     var shot = _saved(_BOTH_SHOT)
     var img = _saved(_BOTH_IMG)
-    assert_equal(shot.width, 640)
-    assert_equal(img.width, 200)
+    assert_equal(shot.width(), 640)
+    assert_equal(img.width(), 200)
 
 
 def _fresh_canvas() raises -> Canvas:

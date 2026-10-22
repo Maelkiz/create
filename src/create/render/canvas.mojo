@@ -1234,7 +1234,9 @@ struct Canvas(DrawTarget, Movable):
         they used to differ by now lives inside `blit_image`, where the replay
         can take it without the record site having to know.
         """
-        self.image(image, position, Float64(image.width), Float64(image.height))
+        self.image(
+            image, position, Float64(image.width()), Float64(image.height())
+        )
 
     def image(
         mut self, image: Image, position: Point2D, w: Float64, h: Float64
@@ -1243,7 +1245,7 @@ struct Canvas(DrawTarget, Movable):
         # an id rather than a borrow of the program's pixels, which is what
         # keeps caller-owned memory out of a buffer that outlives the call.
         var id = self._state._backend.intern_image(
-            image._id, image._pixels, image.width, image.height
+            image._id, image._pixels, image.width(), image.height()
         )
         self._state._backend.record(
             image_command(
@@ -1254,8 +1256,8 @@ struct Canvas(DrawTarget, Movable):
                 w,
                 h,
                 id,
-                image.width,
-                image.height,
+                image.width(),
+                image.height(),
             )
         )
 
