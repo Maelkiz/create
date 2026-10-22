@@ -482,10 +482,8 @@ struct Font(Copyable, ImplicitlyCopyable, Movable, Writable):
     """The identity of the face this copy draws, unique for the life of the
     process and shared by its copies: what a renderer keys its cached glyphs
     by. The upright and the italic each have their own."""
-    var path: String
-    """The file it was loaded from."""
-    var italic_path: Optional[String]
-    """The file its italic was loaded from, if it was given one."""
+    var _path: String
+    var _italic_path: Optional[String]
 
     @staticmethod
     def load(path: String, italic_path: Optional[String] = None) raises -> Font:
@@ -497,36 +495,51 @@ struct Font(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         var faces = ArcPointer(_FontFaces(path, italic_path))
         var id = faces[].upright_id
-        return Font(faces^, False, id, path, italic_path)
+        return Font(
+            _faces=faces^,
+            _draws_italic=False,
+            _id=id,
+            _path=path,
+            _italic_path=italic_path,
+        )
 
     def __init__(
         out self,
-        var faces: ArcPointer[_FontFaces],
-        italic: Bool,
-        id: Int,
-        var path: String,
-        var italic_path: Optional[String],
+        *,
+        var _faces: ArcPointer[_FontFaces],
+        _draws_italic: Bool,
+        _id: Int,
+        var _path: String,
+        var _italic_path: Optional[String],
     ):
-        self._faces = faces^
-        self._draws_italic = italic
-        self._id = id
-        self.path = path^
-        self.italic_path = italic_path^
+        self._faces = _faces^
+        self._draws_italic = _draws_italic
+        self._id = _id
+        self._path = _path^
+        self._italic_path = _italic_path^
+
+    def path(self) -> String:
+        """The file it was loaded from."""
+        return self._path
+
+    def italic_path(self) -> Optional[String]:
+        """The file its italic was loaded from, if it was given one."""
+        return self._italic_path
 
     def write_to[W: Writer](self, mut writer: W):
-        writer.write('Font.load("', self.path, '"')
-        if self.italic_path:
-            writer.write(', italic_path="', self.italic_path.value(), '"')
+        writer.write('Font.load("', self._path, '"')
+        if self._italic_path:
+            writer.write(', italic_path="', self._italic_path.value(), '"')
         writer.write(")")
 
     def _italic(self) -> Font:
         """This font drawing its italic face, under the italic's identity."""
         return Font(
-            self._faces,
-            True,
-            self._faces[].italic_id,
-            self.path,
-            self.italic_path,
+            _faces=self._faces,
+            _draws_italic=True,
+            _id=self._faces[].italic_id,
+            _path=self._path,
+            _italic_path=self._italic_path,
         )
 
     def has_glyph(self, codepoint: Int) raises -> Bool:

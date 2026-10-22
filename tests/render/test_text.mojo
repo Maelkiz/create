@@ -250,7 +250,7 @@ def test_the_default_italic_is_the_packaged_one() raises -> None:
     var t = TextRenderer()
     var f = t._face(_italic(_style(Align.LEFT)))
     assert_true(f._draws_italic)
-    assert_true(f.italic_path, "the default face has an italic partner")
+    assert_true(f.italic_path(), "the default face has an italic partner")
     _ = f.has_glyph(ord("a"))
     assert_false(f._faces[].face(True).sheared)
 
