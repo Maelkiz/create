@@ -25,8 +25,8 @@ def _square(mut canvas: Canvas, position: Point2D, color: Color):
 
 def test_a_new_offscreen_canvas_is_transparent() raises -> None:
     var canvas = _canvas()
-    assert_equal(canvas.width, 100)
-    assert_equal(canvas.height, 60)
+    assert_equal(canvas.width(), 100)
+    assert_equal(canvas.height(), 60)
     assert_equal(canvas.pixel((0, 0)), Color.TRANSPARENT)
     assert_equal(canvas.pixel((-49, 29)), Color.TRANSPARENT)
 
@@ -71,8 +71,8 @@ def test_drawing_after_a_read_inside_a_clip_stays_clipped() raises -> None:
 
 def test_scale_sets_the_pixel_density() raises -> None:
     var canvas = _canvas(scale=2.0)
-    assert_equal(canvas.width, 100, "the size stays in screen units")
-    assert_equal(canvas.scale, 2.0)
+    assert_equal(canvas.width(), 100, "the size stays in screen units")
+    assert_equal(canvas.scale(), 2.0)
     ref target = canvas._state._backend.target.value()
     assert_equal(target.width, 200)
     assert_equal(target.height, 120)
@@ -119,7 +119,7 @@ def test_a_snapshot_is_the_whole_canvas() raises -> None:
 def test_a_snapshot_at_its_own_scale_is_its_pixels() raises -> None:
     var canvas = _canvas(scale=2.0)
     _square(canvas, (-20, 0), Color.BLUE)
-    var shot = canvas.snapshot(scale=canvas.scale)
+    var shot = canvas.snapshot(scale=canvas.scale())
     assert_equal(shot.width(), 200)
     assert_equal(shot.height(), 120)
     ref target = canvas._state._backend.target.value()

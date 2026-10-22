@@ -816,8 +816,8 @@ struct Backend(Movable):
     does."""
     var screen_w: Int
     var screen_h: Int
-    """This frame's screen extent in design units, `canvas.width` and
-    `canvas.height`."""
+    """This frame's screen extent in design units, `canvas.width()` and
+    `canvas.height()`."""
     var recorded: Int
     """Records ever made, a clock for `frame_read`: a read is current while
     nothing has been recorded since. A count of commands would not do, since

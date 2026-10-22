@@ -27,7 +27,7 @@ def _badge() raises -> Image:
     badge.text_color(Color(80, 40, 0))
     badge.font_size(28)
     badge.text("1st", (0, 0))
-    return badge.snapshot(scale=badge.scale)
+    return badge.snapshot(scale=badge.scale())
 
 
 @fieldwise_init
@@ -42,7 +42,7 @@ struct Offscreen(Program):
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> Offscreen:
-        var layer = Canvas(canvas.width, canvas.height)
+        var layer = Canvas(canvas.width(), canvas.height())
         var strokes = layer.snapshot()
         return Offscreen(_badge(), layer^, strokes^, Point2D(0, 0))
 
@@ -72,7 +72,7 @@ struct Offscreen(Program):
         with canvas.style(fill=Color(60, 70, 90), outline_enabled=False):
             canvas.circle((cos(t) * 200, sin(t * 1.3) * 120), 40)
 
-        canvas.image(self.strokes, (0, 0), canvas.width, canvas.height)
+        canvas.image(self.strokes, (0, 0), canvas.width(), canvas.height())
         canvas.image(self.badge, input.mouse, _BADGE_SIZE, _BADGE_SIZE)
 
         with canvas.style(text_color=Color(0x90, 0x98, 0xA8), font_size=18):

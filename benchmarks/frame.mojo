@@ -67,9 +67,9 @@ struct Bench(Program):
                 + " ms worst, "
                 + _round(1000.0 / mean_ms)
                 + " fps, "
-                + String(canvas.width)
+                + String(canvas.width())
                 + "x"
-                + String(canvas.height)
+                + String(canvas.height())
             )
             self.frames = 0
             self.elapsed = 0.0

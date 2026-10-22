@@ -344,8 +344,8 @@ frame has drawn **so far**. They are a CPU replay of the commands recorded up to
   picks under the mouse as it is, and a snapshot region is always upright. Off the screen reads
   transparent.
 - **Design size × `scale`**, without the letterbox. `snapshot()` drawn back with
-  `canvas.image(shot, (0, 0), canvas.width, canvas.height)` lines up exactly;
-  `scale=canvas.scale` gives window pixels.
+  `canvas.image(shot, (0, 0), canvas.width(), canvas.height())` lines up exactly;
+  `scale=canvas.scale()` gives window pixels.
 - **One replay per drawing**: reads are cached until something more is recorded, so many `pixel`
   calls in a row cost one. A full-frame replay costs about a CPU frame. Fine for picking, a
   capture, or a feedback effect; read once rather than per object.
@@ -362,7 +362,7 @@ field to draw into across frames. See [examples/offscreen.mojo](examples/offscre
 - **Bakes on read:** each read replays what was drawn since the last one onto the canvas's own
   pixels and drops those commands, so a long-lived canvas stays bounded and drawing after a read
   lands on what is there. Read when something changed, not every frame regardless.
-- **Density is fixed by `scale`** (pixels per unit). `snapshot(scale=canvas.scale)` reads the
+- **Density is fixed by `scale`** (pixels per unit). `snapshot(scale=canvas.scale())` reads the
   pixels as they are; any other scale resamples them, nearest pixel. Don't take `scale` from the
   frame canvas in `create` (Gotcha 3) — pick a fixed density.
 - `save_image` and `save_screenshot` write **at once**, having no frame to defer to.
@@ -410,7 +410,7 @@ display. `run(..., autoscale=)` (or `context.autoscale(mode)` later) takes `FIT`
 `EXTEND` or `OFF`; `OFF` makes coordinates the window's own pixels. Both decide frame 1's mapping
 only as `run` arguments: the viewport is derived before `create`. Under `EXTEND` the reported size
 grows with the window, so anchor layout to the edges. Font size, outline thickness and image size
-scale by `canvas.scale`. See [examples/autoscale.mojo](examples/autoscale.mojo).
+scale by `canvas.scale()`. See [examples/autoscale.mojo](examples/autoscale.mojo).
 
 `Context` dials are the run's, not the drawing's: `design_size`, `autoscale`, `title`,
 `window_mode`, `resizable`, `quit_on_escape`, `max_frame_rate`. They are methods

@@ -12,7 +12,7 @@ struct Input(Copyable, Movable):
 
     The whole input surface — there are no event callbacks, because every
     window event either lands on a field here or is already reflected in
-    `Canvas` (`canvas.width`/`height` are rebuilt every frame, so a resize needs
+    `Canvas` (`canvas.width()`/`height()` are rebuilt every frame, so a resize needs
     no notification of its own).
 
     A field on `Context` rather than a parameter of its own, alongside `time`
