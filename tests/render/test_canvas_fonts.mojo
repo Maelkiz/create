@@ -125,7 +125,9 @@ def test_text_width_follows_the_font() raises -> None:
 def test_a_style_prints_its_font() raises -> None:
     var font = _symbols()
     var style = Style(font=font)
-    assert_true(String(style).find('font=Font.load("' + font.path + '")') >= 0)
+    assert_true(
+        String(style).find('font=Font.load("' + font.path() + '")') >= 0
+    )
     assert_true(String(Style()).find("font=None") >= 0)
 
 
