@@ -4,7 +4,8 @@ from std.testing import (
     assert_true,
     assert_almost_equal,
 )
-from std.math import cos, pi, sin, tau
+from std.math import cos, sin
+from create.math import PI, TAU
 from create.geometry.geometry import (
     overlaps,
     Arc,
@@ -39,7 +40,7 @@ def _pentagram() -> Polygon:
     and the inner pentagon is wound twice."""
     var vertices = List[Point2D]()
     for i in range(5):
-        var angle = tau / 4.0 + 2.0 * tau * Float64(i) / 5.0
+        var angle = TAU / 4.0 + 2.0 * TAU * Float64(i) / 5.0
         vertices.append(Point2D(10.0 * cos(angle), 10.0 * sin(angle)))
     return Polygon(vertices^)
 
@@ -84,7 +85,7 @@ def test_star_alternates_radii() raises -> None:
             (s.vertices[i] - Point2D(0, 0)).magnitude(), expected
         )
     # The first inner vertex sits halfway to the second tip.
-    var angle = tau / 4.0 + pi / 5.0
+    var angle = TAU / 4.0 + PI / 5.0
     _assert_point_near(
         s.vertices[1], Point2D(4.0 * cos(angle), 4.0 * sin(angle))
     )
@@ -265,16 +266,16 @@ def test_overlaps_triangle() raises -> None:
 def test_overlaps_sector() raises -> None:
     var l = _l_shape()
     # The notch holds a quarter disc pointing into its corner.
-    var in_notch = Sector((9, 9), 3, pi, pi / 2.0)
+    var in_notch = Sector((9, 9), 3, PI, PI / 2.0)
     assert_true(not overlaps(l, in_notch) and not overlaps(in_notch, l))
     # The tip inside the polygon.
     var tip_inside = Sector((2, 2), 50, 0.0, 0.1)
     assert_true(overlaps(l, tip_inside) and overlaps(tip_inside, l))
     # Reaching in from outside, the tip clear of the polygon.
-    var arc_reaches = Sector((20, 2), 11, pi - 0.2, 0.4)
+    var arc_reaches = Sector((20, 2), 11, PI - 0.2, 0.4)
     assert_true(overlaps(l, arc_reaches) and overlaps(arc_reaches, l))
     # The polygon wholly inside the sector.
-    var around = Sector((-5, -5), 40, 0.0, pi / 2.0)
+    var around = Sector((-5, -5), 40, 0.0, PI / 2.0)
     assert_true(overlaps(l, around) and overlaps(around, l))
 
 
@@ -329,10 +330,10 @@ def test_line_intersects() raises -> None:
 
 def test_arc_intersects() raises -> None:
     var l = _l_shape()
-    assert_true(not Arc((10, 10), 3, pi, pi / 2.0).intersects(l))
-    assert_true(Arc((10, 10), 6, pi, pi / 2.0).intersects(l))
-    assert_true(Arc((2, 2), 1, 0.0, tau).intersects(l))
-    assert_true(not Arc((30, 30), 2, 0.0, tau).intersects(l))
+    assert_true(not Arc((10, 10), 3, PI, PI / 2.0).intersects(l))
+    assert_true(Arc((10, 10), 6, PI, PI / 2.0).intersects(l))
+    assert_true(Arc((2, 2), 1, 0.0, TAU).intersects(l))
+    assert_true(not Arc((30, 30), 2, 0.0, TAU).intersects(l))
 
 
 def _ring() -> Polygon:
@@ -390,11 +391,11 @@ def test_contains_circle() raises -> None:
 
 def test_contains_sector() raises -> None:
     var l = _l_shape()
-    assert_true(l.contains(Sector((0, 0), 5, 0.0, pi / 2.0)))
+    assert_true(l.contains(Sector((0, 0), 5, 0.0, PI / 2.0)))
     # Reaching round the reflex corner.
-    assert_true(not l.contains(Sector((0, 0), 9, 0.0, pi / 2.0)))
+    assert_true(not l.contains(Sector((0, 0), 9, 0.0, PI / 2.0)))
     # Only the arc strays out.
-    assert_true(not l.contains(Sector((4, 4), 2, 0.0, pi / 2.0)))
+    assert_true(not l.contains(Sector((4, 4), 2, 0.0, PI / 2.0)))
 
 
 def test_contains_polygon() raises -> None:
@@ -425,7 +426,7 @@ def test_contains_no_shape_round_a_hole() raises -> None:
     assert_true(not ring.contains(Rectangle((5, 5), 9, 9)))
     assert_true(not ring.contains(Circle((5, 5), 4.5)))
     assert_true(not ring.contains(Triangle((1, 1), (9, 1), (5, 9.5))))
-    assert_true(not ring.contains(Sector((1, 1), 8, 0.0, pi / 2.0)))
+    assert_true(not ring.contains(Sector((1, 1), 8, 0.0, PI / 2.0)))
     assert_true(not ring.contains(Polygon.regular((5, 5), 4.5, 8)))
     # A strip down one side, across the edges that reach in to the hole.
     assert_true(ring.contains(Rectangle((1.5, 5), 2, 9)))
@@ -463,9 +464,9 @@ def test_regions_contain_a_polygon() raises -> None:
     assert_true(not Circle((5, 5), 7).contains(l))
     assert_true(Triangle((0, 0), (20, 0), (0, 20)).contains(l))
     assert_true(not Triangle((0, 0), (14, 0), (0, 14)).contains(l))
-    assert_true(Sector((0, 0), 12, 0.0, pi / 2.0).contains(l))
-    assert_true(not Sector((0, 0), 11, 0.0, pi / 2.0).contains(l))
-    assert_true(Sector((10, 10), 20, pi, pi / 2.0).contains(l))
+    assert_true(Sector((0, 0), 12, 0.0, PI / 2.0).contains(l))
+    assert_true(not Sector((0, 0), 11, 0.0, PI / 2.0).contains(l))
+    assert_true(Sector((10, 10), 20, PI, PI / 2.0).contains(l))
 
 
 def main() raises:

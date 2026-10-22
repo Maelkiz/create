@@ -1,5 +1,3 @@
-from std.math import pi, tau
-
 from create import *
 
 comptime _BACKGROUND = Color(40, 42, 56)
@@ -28,16 +26,16 @@ struct App(Program):
         # Two progress rings off one tween. Angles count counter-clockwise
         # from +x because y is up, so the clockwise ring (blue, like a
         # clock's hand) starts at the top and sweeps negatively.
-        var sweep = tau * self.progress.value
+        var sweep = TAU * self.progress.value
         var clockwise = Point2D(-200.0, -20.0)
         var counter = Point2D(200.0, -20.0)
         canvas.outline(Color(62, 64, 82), thickness=_RING_THICKNESS)
-        canvas.arc(clockwise, _RING_RADIUS, 0.0, tau)
-        canvas.arc(counter, _RING_RADIUS, 0.0, tau)
+        canvas.arc(clockwise, _RING_RADIUS, 0.0, TAU)
+        canvas.arc(counter, _RING_RADIUS, 0.0, TAU)
         canvas.outline(Color(90, 170, 255))
-        canvas.arc(clockwise, _RING_RADIUS, pi / 2.0, -sweep)
+        canvas.arc(clockwise, _RING_RADIUS, PI / 2.0, -sweep)
         canvas.outline(Color(235, 120, 70))
-        canvas.arc(counter, _RING_RADIUS, pi / 2.0, sweep)
+        canvas.arc(counter, _RING_RADIUS, PI / 2.0, sweep)
 
         canvas.text_color(Color(200, 200, 212))
         canvas.font_size(30)

@@ -23,7 +23,8 @@ tool: it maps a *range* onto an eased 0..1, where `ease` reshapes a fraction
 that is already normalised.
 """
 
-from std.math import sin, cos, pow, pi, tau, clamp
+from std.math import sin, cos, pow, clamp
+from .constants import PI, TAU
 
 
 struct Easing(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
@@ -132,8 +133,8 @@ comptime _BACK_3 = _BACK_1 + 1.0
 
 # Period constants for the ELASTIC curves: one oscillation per third of the
 # travel, halved again for the IN_OUT variant which fits two ends into one run.
-comptime _ELASTIC_1 = tau / 3.0
-comptime _ELASTIC_2 = tau / 4.5
+comptime _ELASTIC_1 = TAU / 3.0
+comptime _ELASTIC_2 = TAU / 4.5
 
 # The four segments of the BOUNCE curve: each successive bounce is 1/2.75 of
 # the remaining travel, at 7.5625 the steepness.
@@ -194,11 +195,11 @@ def ease(curve: Easing, t: Float64) -> Float64:
         return 1.0 - u * u * u / 2.0
 
     if curve == Easing.IN_SINE:
-        return 1.0 - cos(x * pi / 2.0)
+        return 1.0 - cos(x * PI / 2.0)
     if curve == Easing.OUT_SINE:
-        return sin(x * pi / 2.0)
+        return sin(x * PI / 2.0)
     if curve == Easing.IN_OUT_SINE:
-        return -(cos(pi * x) - 1.0) / 2.0
+        return -(cos(PI * x) - 1.0) / 2.0
 
     if curve == Easing.IN_EXPO:
         if x == 0.0:

@@ -6,12 +6,11 @@ from std.math import (
     cos,
     max,
     min,
-    pi,
     sin,
     sqrt,
     tan,
-    tau,
 )
+from create.math import PI, TAU
 
 from create.math import Point2D
 
@@ -53,7 +52,7 @@ def _vertex_max_radius(
     var wx = (next_x - vx) / l2
     var wy = (next_y - vy) / l2
     var cos_theta = clamp(ux * wx + uy * wy, -1.0, 1.0)
-    var theta = clamp(acos(cos_theta), 1e-6, pi - 1e-6)
+    var theta = clamp(acos(cos_theta), 1e-6, PI - 1e-6)
     return tan(theta / 2.0) * min(l1, l2) / 2.0
 
 
@@ -102,7 +101,7 @@ def corner_fillet(
     unit edge vectors leaving the vertex, which points inward for any convex
     corner regardless of winding), and the two angles are `atan2` about that
     centre for whatever arc-rendering code sweeps between them. Used
-    unconditionally by both rect corners (theta fixed at pi/2) and triangle
+    unconditionally by both rect corners (theta fixed at PI/2) and triangle
     corners (theta from real geometry) — no shape-specific special-casing.
     """
     var l1 = _dist(vx, vy, prev_x, prev_y)
@@ -112,7 +111,7 @@ def corner_fillet(
     var wx = (next_x - vx) / l2
     var wy = (next_y - vy) / l2
     var cos_theta = clamp(ux * wx + uy * wy, -1.0, 1.0)
-    var theta = clamp(acos(cos_theta), 1e-6, pi - 1e-6)
+    var theta = clamp(acos(cos_theta), 1e-6, PI - 1e-6)
     var half = theta / 2.0
     var tin_x = vx + ux * (r / tan(half))
     var tin_y = vy + uy * (r / tan(half))
@@ -182,11 +181,11 @@ def _append_corner(
 
 
 def _shorter(sweep: Float64) -> Float64:
-    """`sweep` the shorter way round, in `[-pi, pi]`."""
-    if sweep > pi:
-        return sweep - tau
-    if sweep < -pi:
-        return sweep + tau
+    """`sweep` the shorter way round, in `[-PI, PI]`."""
+    if sweep > PI:
+        return sweep - TAU
+    if sweep < -PI:
+        return sweep + TAU
     return sweep
 
 
@@ -218,19 +217,19 @@ def sector_corner_radii(
     corner to round.
     """
     var turn = abs(sweep)
-    if radius <= 0.0 or r <= 0.0 or turn >= tau or turn == 0.0:
+    if radius <= 0.0 or r <= 0.0 or turn >= TAU or turn == 0.0:
         return (0.0, 0.0)
     # The narrower wedge between the two radii.
-    var wedge = min(turn, tau - turn)
+    var wedge = min(turn, TAU - turn)
     var tip = 0.0
-    if abs(wedge - pi) > 1e-9:
+    if abs(wedge - PI) > 1e-9:
         tip = min(radius, tan(wedge / 2.0) * r / 2.0)
     # An end's fillet touches its radius sqrt(r^2 - 2 r f) out from the tip,
     # at least halfway for f <= 3r/8, and the arc atan(f / that) round from
     # the end, at most half the sweep.
     var ends = min(radius, 3.0 * r / 8.0)
     var half = turn / 2.0
-    if half < pi / 2.0:
+    if half < PI / 2.0:
         var t2 = tan(half) * tan(half)
         ends = min(ends, r * (sqrt(t2 * t2 + t2) - t2))
     return (max(tip, 0.0), max(ends, 0.0))

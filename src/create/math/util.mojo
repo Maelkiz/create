@@ -3,7 +3,8 @@
 Reached through `from create import *`, or by name from `create.math`.
 """
 
-from std.math import floor, pi, clamp
+from std.math import floor, clamp
+from .constants import PI
 
 
 def lerp(a: Float64, b: Float64, t: Float64) -> Float64:
@@ -63,9 +64,9 @@ def wrap(x: Float64, y: Float64) -> Float64:
 
 def degrees(r: Float64) -> Float64:
     """Radians to degrees. Rotations take radians, so this is for display."""
-    return r * (180.0 / pi)
+    return r * (180.0 / PI)
 
 
 def radians(d: Float64) -> Float64:
     """Degrees to radians, for feeding `rotate` an angle written in degrees."""
-    return d * (pi / 180.0)
+    return d * (PI / 180.0)

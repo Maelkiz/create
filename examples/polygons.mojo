@@ -1,5 +1,3 @@
-from std.math import tau
-
 from create import *
 
 comptime _BACKGROUND = Color(40, 42, 56)
@@ -97,7 +95,7 @@ struct App(Program):
                 75,
                 75 * self.inner_ratio,
                 tips,
-                start_angle=tau / 4.0 + direction * turn,
+                start_angle=TAU / 4.0 + direction * turn,
             )
             if star.contains(mouse):
                 canvas.fill(Color.WHITE)

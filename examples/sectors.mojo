@@ -1,4 +1,4 @@
-from std.math import cos, pi, sin, tau
+from std.math import cos, sin
 
 from create import *
 
@@ -12,7 +12,7 @@ comptime _POP = 16.0
 
 comptime _PACMAN = Point2D(240.0, -20.0)
 comptime _CHEW = 4.0
-"""How fast the pac-man's mouth works; it shuts every pi / _CHEW seconds."""
+"""How fast the pac-man's mouth works; it shuts every PI / _CHEW seconds."""
 
 comptime _BALL_HOME = Point2D(500.0, -280.0)
 comptime _RESPAWN = 3.0
@@ -66,7 +66,7 @@ struct App(Program):
         # sector of its own, the rest of the turn.
         var chew = context.time.elapsed * _CHEW
         var gape = 0.4 + 0.35 * abs(sin(chew))
-        var pacman = Sector(_PACMAN, 150, gape, tau - 2.0 * gape)
+        var pacman = Sector(_PACMAN, 150, gape, TAU - 2.0 * gape)
         var mouth = Sector(pacman.position, pacman.r, -gape, 2.0 * gape)
 
         if self.respawn_in > 0.0:
@@ -86,7 +86,7 @@ struct App(Program):
 
         # The mouth is most shut where the sine crosses zero, once per bite:
         # a ball let go in it then is swallowed; one still held is safe.
-        var bites = Int(chew / pi)
+        var bites = Int(chew / PI)
         if bites != self.bites:
             self.bites = bites
             if (
@@ -102,11 +102,11 @@ struct App(Program):
         # mouse slides out along the middle of its sweep.
         canvas.outline(_BACKGROUND, thickness=3)
         var shares = _shares()
-        var start = pi / 2.0
+        var start = PI / 2.0
         for i in range(len(shares)):
-            var slice = Sector(_PIE, _PIE_RADIUS, start, -tau * shares[i])
+            var slice = Sector(_PIE, _PIE_RADIUS, start, -TAU * shares[i])
             if slice.contains(mouse):
-                var middle = start - pi * shares[i]
+                var middle = start - PI * shares[i]
                 slice.translate(Vector2D(cos(middle), sin(middle)) * _POP)
             canvas.fill(_slice_color(i))
             canvas.draw(slice)

@@ -1,4 +1,5 @@
 from std.math import atan2, cos, sin, sqrt
+from .constants import PI
 
 from .point2d import Point2D
 from .vector3d import Vector3D
@@ -130,7 +131,7 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     def angle(self) -> Float64:
         """The heading in radians, counter-clockwise from +x, in
-        `[-pi, pi]`. `0` for the zero vector."""
+        `[-PI, PI]`. `0` for the zero vector."""
         return atan2(self.y, self.x)
 
     def rotate(self, angle: Float64) -> Vector2D:

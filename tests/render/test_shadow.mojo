@@ -1,4 +1,5 @@
-from std.math import erf, pi, sqrt
+from std.math import erf, sqrt
+from create.math import PI
 from std.testing import (
     TestSuite,
     assert_almost_equal,
@@ -65,7 +66,7 @@ def _moved(m: Matrix[3, 3], s: Matrix[3, 3]) -> Tuple[Float64, Float64]:
 
 
 def test_screen_fixed_offset_ignores_rotation() raises -> None:
-    var m = _device() @ rotate(pi / 2.0)
+    var m = _device() @ rotate(PI / 2.0)
     var c = rect_command(m, _shadowed(), 0.0, 0.0, 10.0, 10.0)
     # A rotated transform has no single pixel scale, so the length comes from
     # the frame's autoscale factor, as outline thickness does.
@@ -76,7 +77,7 @@ def test_screen_fixed_offset_ignores_rotation() raises -> None:
 
 
 def test_follows_transform_offset_turns_with_the_shape() raises -> None:
-    var m = _device() @ rotate(pi / 2.0)
+    var m = _device() @ rotate(PI / 2.0)
     var s = _shadowed()
     s.shadow_follows_transform = True
     var c = rect_command(m, s, 0.0, 0.0, 10.0, 10.0)

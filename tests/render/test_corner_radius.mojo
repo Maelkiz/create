@@ -4,8 +4,6 @@ rounded rectangle, triangle, polygon or sector agrees with what the shape's
 
 A 100 x 100 offscreen canvas: screen x and y in -50..50, y up.
 """
-
-from std.math import pi
 from std.testing import TestSuite, assert_equal, assert_false, assert_true
 
 from create import *
@@ -154,13 +152,13 @@ def _assert_sector_paints_what_it_contains(s: Sector) raises:
 
 def test_rounded_sectors_paint_what_they_contain() raises -> None:
     _assert_sector_paints_what_it_contains(
-        Sector((-10.0, -15.0), 55.0, 0.3, pi / 3.0, corner_radius=7.0)
+        Sector((-10.0, -15.0), 55.0, 0.3, PI / 3.0, corner_radius=7.0)
     )
     _assert_sector_paints_what_it_contains(
-        Sector((0.0, -10.0), 45.0, 0.0, pi, corner_radius=9.0)
+        Sector((0.0, -10.0), 45.0, 0.0, PI, corner_radius=9.0)
     )
     _assert_sector_paints_what_it_contains(
-        Sector((0.0, 0.0), 45.0, 0.5, -3.0 * pi / 2.0, corner_radius=10.0)
+        Sector((0.0, 0.0), 45.0, 0.5, -3.0 * PI / 2.0, corner_radius=10.0)
     )
 
 

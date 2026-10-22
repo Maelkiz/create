@@ -5,7 +5,7 @@ from std.testing import (
     assert_false,
     assert_almost_equal,
 )
-from std.math import pi
+from create.math import PI
 from create.geometry.geometry import Rectangle, Circle, Line, Triangle, overlaps
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
@@ -832,7 +832,7 @@ def test_rect_area() raises -> None:
 
 def test_circle_area() raises -> None:
     var c = Circle((0.0, 0.0), 2.0)
-    assert_almost_equal(c.area(), pi * 4.0)
+    assert_almost_equal(c.area(), PI * 4.0)
 
 
 def test_circle_diameter() raises -> None:

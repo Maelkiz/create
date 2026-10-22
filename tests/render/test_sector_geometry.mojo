@@ -1,4 +1,5 @@
-from std.math import pi, sqrt, tau
+from std.math import sqrt
+from create.math import PI, TAU
 from std.testing import TestSuite, assert_equal, assert_true
 
 from create.geometry.geometry import Line, Sector
@@ -32,10 +33,10 @@ def _sectors() -> List[Sector]:
     """Below, at and above a half turn, clockwise, and a full turn."""
     return [
         Sector((0.0, 0.0), 24.0, 0.3, 1.1),
-        Sector((0.0, 0.0), 24.0, -0.5, pi),
-        Sector((0.0, 0.0), 24.0, 0.2, 1.3 * pi),
-        Sector((0.0, 0.0), 24.0, 2.0, -1.8 * pi),
-        Sector((0.0, 0.0), 24.0, 0.0, tau),
+        Sector((0.0, 0.0), 24.0, -0.5, PI),
+        Sector((0.0, 0.0), 24.0, 0.2, 1.3 * PI),
+        Sector((0.0, 0.0), 24.0, 2.0, -1.8 * PI),
+        Sector((0.0, 0.0), 24.0, 0.0, TAU),
     ]
 
 
@@ -96,7 +97,7 @@ def _signed_distance(s: Sector, p: Point2D) -> Float64:
     if not s.contains(p):
         return -p.distance(s.closest_point(p))
     var d = s.r - p.distance(s.position)
-    if abs(s.sweep_angle) < tau:
+    if abs(s.sweep_angle) < TAU:
         for radius in s._radii():
             d = min(d, p.distance(radius.closest_point(p)))
     return d
@@ -186,7 +187,7 @@ def test_fill_and_outline_tile_the_sector_once() raises -> None:
 def test_outline_is_as_thick_as_asked() raises -> None:
     # A quarter sector with a 5-unit outline: the fill starts 5 in from
     # both straight edges and stops 5 short of the arc.
-    var s = Sector((0.0, 0.0), 24.0, 0.0, pi / 2.0)
+    var s = Sector((0.0, 0.0), 24.0, 0.0, PI / 2.0)
     var q = _quads(s, identity[3](), _outlined(5))
     var lo = Float64.MAX
     var hi = 0.0
@@ -204,7 +205,7 @@ def test_transformed_sectors_tile_once() raises -> None:
 
 
 def test_non_uniform_scale_gives_an_elliptical_sector() raises -> None:
-    var s = Sector((0.0, 0.0), 24.0, 0.0, tau)
+    var s = Sector((0.0, 0.0), 24.0, 0.0, TAU)
     var q = _quads(s, scale(1.5, 0.5), _outlined(2))
     var wide = 0.0
     var tall = 0.0
@@ -246,7 +247,7 @@ def test_shrunk_sectors_tile_their_erosion() raises -> None:
 
 def test_an_outline_only_sector_masks_only_its_ring() raises -> None:
     var style = Style(outline=Color.RED, outline_thickness=4)
-    var c = sector_command(identity[3](), style, 0.0, 0.0, 20.0, 0.0, tau)
+    var c = sector_command(identity[3](), style, 0.0, 0.0, 20.0, 0.0, TAU)
     var placed = sector_shadow_mask(c, c.transform, 1.0, 0)
     # The device pixels whose lower-left corners are (0, 0) and (-19, 0).
     var row = (0 - placed.y) * placed.mask.width

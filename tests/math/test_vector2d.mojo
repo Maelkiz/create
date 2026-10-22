@@ -7,7 +7,8 @@ from std.testing import (
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 from create.math.vector3d import Vector3D
-from std.math import isnan, isinf, pi
+from std.math import isnan, isinf
+from create.math import PI
 
 
 def test_init_float() raises -> None:
@@ -246,23 +247,23 @@ def _assert_close(a: Vector2D, b: Vector2D) raises:
 
 def test_from_angle_follows_the_y_up_convention() raises -> None:
     _assert_close(Vector2D.from_angle(0.0), Vector2D.RIGHT)
-    _assert_close(Vector2D.from_angle(pi / 2.0), Vector2D.UP)
-    _assert_close(Vector2D.from_angle(-pi / 2.0), Vector2D.DOWN)
+    _assert_close(Vector2D.from_angle(PI / 2.0), Vector2D.UP)
+    _assert_close(Vector2D.from_angle(-PI / 2.0), Vector2D.DOWN)
 
 
 def test_from_angle_takes_a_length() raises -> None:
-    _assert_close(Vector2D.from_angle(pi, 3.0), Vector2D(-3.0, 0.0))
+    _assert_close(Vector2D.from_angle(PI, 3.0), Vector2D(-3.0, 0.0))
 
 
 def test_angle_reads_the_heading_back() raises -> None:
-    assert_almost_equal(Vector2D.UP.angle(), pi / 2.0)
+    assert_almost_equal(Vector2D.UP.angle(), PI / 2.0)
     assert_almost_equal(Vector2D.from_angle(2.5, 4.0).angle(), 2.5)
     assert_equal(Vector2D.ZERO.angle(), 0.0)
 
 
 def test_rotate_turns_counter_clockwise() raises -> None:
-    _assert_close(Vector2D(2.0, 0.0).rotate(pi / 2.0), Vector2D(0.0, 2.0))
-    _assert_close(Vector2D.UP.rotate(-pi / 2.0), Vector2D.RIGHT)
+    _assert_close(Vector2D(2.0, 0.0).rotate(PI / 2.0), Vector2D(0.0, 2.0))
+    _assert_close(Vector2D.UP.rotate(-PI / 2.0), Vector2D.RIGHT)
 
 
 def test_rotate_keeps_the_length() raises -> None:

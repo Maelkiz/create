@@ -4,8 +4,9 @@ interactive graphics.
 `from create import *` is the import a program needs. It brings in the whole
 public surface: the `Program` trait and the run loops, `Context`, keyboard,
 mouse and gamepad input, `Canvas` and the rendering types, the vector and
-matrix maths, the shapes and curves, images, fonts, audio, CSV tables and JSON, and a re-export of
-`std.math` so `sin`, `cos` and `pi` are there without a second import.
+matrix maths, the shapes and curves, images, fonts, audio, CSV tables and JSON,
+the circle constants `PI` and `TAU`, and a re-export of `std.math` so `sin`
+and `cos` are there without a second import.
 
 ```mojo
 from create import *

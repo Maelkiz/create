@@ -4,7 +4,8 @@ from std.testing import (
     assert_almost_equal,
     assert_true,
 )
-from std.math import pi, abs
+from std.math import abs
+from create.math import PI
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 from create.math.matrix import (
@@ -170,7 +171,7 @@ def test_rotate_zero() raises -> None:
 
 def test_rotate_90_degrees() raises -> None:
     # x-axis (1,0) rotated 90° → (0,1)
-    var m = rotate(pi / 2.0)
+    var m = rotate(PI / 2.0)
     var r = apply(m, Point2D(1.0, 0.0))
     assert_almost_equal(r.x, 0.0, atol=1e-9)
     assert_almost_equal(r.y, 1.0, atol=1e-9)
@@ -178,15 +179,15 @@ def test_rotate_90_degrees() raises -> None:
 
 def test_rotate_180_degrees() raises -> None:
     # (1,0) rotated 180° → (-1,0)
-    var m = rotate(pi)
+    var m = rotate(PI)
     var r = apply(m, Point2D(1.0, 0.0))
     assert_almost_equal(r.x, -1.0, atol=1e-9)
     assert_almost_equal(r.y, 0.0, atol=1e-9)
 
 
 def test_perspective_key_elements() raises -> None:
-    # fov=pi/2, aspect=1, near=0.1, far=100 → f=1
-    var m = perspective(pi / 2.0, 1.0, 0.1, 100.0)
+    # fov=PI/2, aspect=1, near=0.1, far=100 → f=1
+    var m = perspective(PI / 2.0, 1.0, 0.1, 100.0)
     assert_almost_equal(m[0, 0], 1.0, atol=1e-9)
     assert_almost_equal(m[1, 1], 1.0, atol=1e-9)
     assert_almost_equal(m[3, 2], -1.0, atol=1e-9)
@@ -252,7 +253,7 @@ def test_apply_4x4_with_w_divide() raises -> None:
 
 
 def test_perspective_projects_point() raises -> None:
-    var m = perspective(pi / 2.0, 1.0, 0.1, 100.0)
+    var m = perspective(PI / 2.0, 1.0, 0.1, 100.0)
     var r = apply(m, 1.0, 2.0, -5.0)
     assert_almost_equal(r[0], 0.2, atol=1e-9)
     assert_almost_equal(r[1], 0.4, atol=1e-9)
@@ -376,7 +377,7 @@ def test_translate_takes_a_vector2d() raises -> None:
 
 
 def test_apply_moves_a_point_by_the_translation() raises -> None:
-    var m = translate(3.0, 4.0) @ rotate(pi / 2.0)
+    var m = translate(3.0, 4.0) @ rotate(PI / 2.0)
     var p = apply(m, Point2D(1.0, 0.0))
     assert_almost_equal(p.x, 3.0, atol=1e-9)
     assert_almost_equal(p.y, 5.0, atol=1e-9)
@@ -385,7 +386,7 @@ def test_apply_moves_a_point_by_the_translation() raises -> None:
 def test_apply_leaves_a_vector_untranslated() raises -> None:
     """A displacement turns and stretches with the matrix but is not
     moved by its translation."""
-    var m = translate(3.0, 4.0) @ rotate(pi / 2.0) @ scale(2.0)
+    var m = translate(3.0, 4.0) @ rotate(PI / 2.0) @ scale(2.0)
     var v = apply(m, Vector2D(1.0, 0.0))
     assert_almost_equal(v.x, 0.0, atol=1e-9)
     assert_almost_equal(v.y, 2.0, atol=1e-9)

@@ -4,8 +4,6 @@ type made of shapes draws the same way.
 
 Offscreen 120 x 100 canvases, antialiasing off, compared pixel for pixel.
 """
-
-from std.math import pi
 from std.testing import TestSuite, assert_equal, assert_true
 
 from create import *
@@ -77,8 +75,8 @@ def test_draw_matches_lines_and_curves() raises -> None:
     named.line((-55.0, -45.0), (55.0, -35.0))
     drawn.draw(Bezier((-50.0, 0.0), (-20.0, 40.0), (20.0, -40.0), (50.0, 0.0)))
     named.bezier((-50.0, 0.0), (-20.0, 40.0), (20.0, -40.0), (50.0, 0.0))
-    drawn.draw(Arc((0.0, 10.0), 30.0, 0.0, pi))
-    named.arc((0.0, 10.0), 30.0, 0.0, pi)
+    drawn.draw(Arc((0.0, 10.0), 30.0, 0.0, PI))
+    named.arc((0.0, 10.0), 30.0, 0.0, PI)
     var points: List[Point2D] = [
         Point2D(-50.0, 40.0),
         Point2D(-10.0, 30.0),

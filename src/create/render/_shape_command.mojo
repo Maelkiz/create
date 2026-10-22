@@ -9,7 +9,8 @@ that transform and `scale`, so every replay sees a plain polygon. `Canvas`'s
 command but for its style.
 """
 
-from std.math import max, tau
+from std.math import max
+from create.math import TAU
 
 from create.geometry.bezier import Bezier
 from create.geometry.drawable import DrawTarget
@@ -110,8 +111,8 @@ def shape_command(
             s.start_angle,
             s.sweep_angle,
             s.corner_radius,
-            tau / Float64(circle_segments(fillet * sf)),
-            tau / Float64(circle_segments(s.r * sf)),
+            TAU / Float64(circle_segments(fillet * sf)),
+            TAU / Float64(circle_segments(s.r * sf)),
         ),
         s.position.x,
         s.position.y,
@@ -127,7 +128,7 @@ def shape_command(
     if p.corner_radius <= 0.0:
         return polygon_command(transform, style, p.vertices.copy())
     var radius_px = p.corner_radius * pixel_scale(transform, scale)
-    var step = tau / Float64(circle_segments(radius_px))
+    var step = TAU / Float64(circle_segments(radius_px))
     return polygon_command(
         transform, style, rounded_vertices(p.vertices, p.corner_radius, step)
     )

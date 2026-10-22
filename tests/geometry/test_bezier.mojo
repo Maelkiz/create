@@ -4,7 +4,8 @@ from std.testing import (
     assert_true,
     assert_almost_equal,
 )
-from std.math import abs, pi
+from std.math import abs
+from create.math import PI
 from create.geometry.bezier import Bezier
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
@@ -175,7 +176,7 @@ def test_length_of_quarter_circle() raises -> None:
     # The standard four-arc circle approximation, radius 100.
     var k = 0.5522847498 * 100.0
     var b = Bezier((100.0, 0.0), (100.0, k), (k, 100.0), (0.0, 100.0))
-    var quarter = pi * 100.0 / 2.0
+    var quarter = PI * 100.0 / 2.0
     assert_true(abs(b.length() - quarter) / quarter < 1e-3)
 
 

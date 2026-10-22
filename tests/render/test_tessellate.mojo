@@ -6,8 +6,7 @@ plain numbers rather than against a framebuffer. That is the whole reason
 tessellation is its own module: a GL context, a window and a GPU would
 otherwise be prerequisites for testing a coordinate flip.
 """
-
-from std.math import pi
+from create.math import PI
 from std.testing import (
     TestSuite,
     assert_almost_equal,
@@ -465,7 +464,7 @@ def test_a_image_turns_with_the_transform() raises -> None:
     emit_image(
         vb,
         image_command(
-            v.base_matrix() @ rotate(pi / 2.0),
+            v.base_matrix() @ rotate(PI / 2.0),
             _plain(),
             0.0,
             0.0,

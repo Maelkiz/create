@@ -2,8 +2,6 @@
 # kind paints its gradient over its own box, the gradient turns with the
 # shape, and everything a gradient isn't part of — outline, shadow — keeps
 # its colour.
-
-from std.math import pi
 from std.os import remove
 from std.testing import TestSuite, assert_equal, assert_true
 
@@ -57,7 +55,7 @@ struct Scene[n: Int](Program):
             canvas.circle((0, 0), 40)
         elif Self.n == ROTATED_RECT:
             # A quarter turn counter-clockwise takes "down" to "right".
-            with canvas.transform(rotate(pi / 2.0)):
+            with canvas.transform(rotate(PI / 2.0)):
                 canvas.rectangle((0, 0), 80, 80)
         elif Self.n == ZERO_DIRECTION:
             canvas.fill(
@@ -75,7 +73,7 @@ struct Scene[n: Int](Program):
         elif Self.n == SECTOR:
             # A half disc below the centre: its box is the whole circle, so
             # it shows the circle's lower half of the gradient.
-            canvas.sector((0, 0), 40.0, pi, pi)
+            canvas.sector((0, 0), 40.0, PI, PI)
         elif Self.n == POLYGON:
             canvas.polygon((-40, -40), (40, -40), (40, 40), (-40, 40))
         elif Self.n == ADDED:

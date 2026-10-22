@@ -14,8 +14,8 @@ struct Transforms(Program):
 
         canvas.background(Color(8, 8, 20))
 
-        var planet_angle = self.elapsed * tau / 10.0
-        var moon_angle = self.elapsed * tau / 3.5
+        var planet_angle = self.elapsed * TAU / 10.0
+        var moon_angle = self.elapsed * TAU / 3.5
 
         # Solar system: the sun sits at the origin, so it needs no transform of
         # its own — the nesting below is what the demo is about.
@@ -52,7 +52,7 @@ struct Transforms(Program):
             canvas.circle((0.0, 0.0), 8.0)
 
             for i in range(6):
-                var arm_angle = self.elapsed * 0.9 + Float64(i) * tau / 6.0
+                var arm_angle = self.elapsed * 0.9 + Float64(i) * TAU / 6.0
                 # Arm rotates; rect counter-rotates so it stays axis-aligned in world space
                 with canvas.transform(
                     rotate(arm_angle)
@@ -68,7 +68,7 @@ struct Transforms(Program):
         # Rotating triangle fan
         with canvas.transform(translate(232.0, -165.0)):
             for i in range(5):
-                var a = self.elapsed * 0.6 + Float64(i) * tau / 5.0
+                var a = self.elapsed * 0.6 + Float64(i) * TAU / 5.0
                 with canvas.transform(rotate(a)):
                     var g = UInt8(100 + Int(Float64(i) * 30.0))
                     canvas.outline_enabled(False)

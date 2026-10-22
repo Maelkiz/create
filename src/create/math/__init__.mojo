@@ -26,6 +26,7 @@ from .matrix import (
 )
 from .random import Random
 from .noise import Noise
+from .constants import PI, TAU
 from std.math import (
     clamp,
     sqrt,
@@ -40,8 +41,6 @@ from std.math import (
     exp,
     log,
     log2,
-    pi,
-    tau,
     isnan,
     isinf,
     isfinite,
