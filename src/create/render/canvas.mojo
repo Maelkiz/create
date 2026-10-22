@@ -1263,13 +1263,13 @@ struct Canvas(DrawTarget, Movable):
 
     def image(mut self, animator: Animator, position: Point2D):
         """Render the animator's current frame, centred at `position`."""
-        self.image(animator.animation.frame(animator.frame_index), position)
+        self.image(animator.animation().frame(animator.frame_index()), position)
 
     def image(
         mut self, animator: Animator, position: Point2D, w: Float64, h: Float64
     ):
         self.image(
-            animator.animation.frame(animator.frame_index), position, w, h
+            animator.animation().frame(animator.frame_index()), position, w, h
         )
 
     def image(mut self, image: Image, position: Point2D, w: Int, h: Int):
