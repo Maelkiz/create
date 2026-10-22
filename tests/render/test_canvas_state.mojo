@@ -46,14 +46,14 @@ def test_design_takes_effect_on_the_next_frame() raises -> None:
     var state = _state(context, 1600, 1200)
     var canvas = context._new_canvas(state^)
     context.design_size(800, 600)
-    assert_equal(canvas.width, 1600)
+    assert_equal(canvas.width(), 1600)
     state = canvas^._release()
     context._set_viewport(state, 1600, 1200)
     var next = context._new_canvas(state^)
     assert_true(next._view.autoscale == AutoScale.FIT)
-    assert_equal(next.width, 800)
-    assert_equal(next.height, 600)
-    assert_almost_equal(next.scale, 2.0)
+    assert_equal(next.width(), 800)
+    assert_equal(next.height(), 600)
+    assert_almost_equal(next.scale(), 2.0)
 
 
 def test_design_overrides_an_earlier_design() raises -> None:
@@ -65,9 +65,9 @@ def test_design_overrides_an_earlier_design() raises -> None:
     context._set_viewport(state, 2000, 1000)
     var next = context._new_canvas(state^)
     assert_true(next._view.autoscale == AutoScale.EXTEND)
-    assert_almost_equal(next.scale, 2.0)
-    assert_equal(next.width, 1000)
-    assert_equal(next.height, 500)
+    assert_almost_equal(next.scale(), 2.0)
+    assert_equal(next.width(), 1000)
+    assert_equal(next.height(), 500)
 
 
 def main() raises:

@@ -67,7 +67,7 @@ struct App(Program):
         canvas.font_size(20)
         canvas.text("(space to cycle, F11 for fullscreen)", (0, -180))
         canvas.font_size(28)
-        canvas.text("Current scale: " + String(canvas.scale), (0, -220))
+        canvas.text("Current scale: " + String(canvas.scale()), (0, -220))
 
 
 def main() raises:

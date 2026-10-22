@@ -2000,7 +2000,7 @@ def test_outline_thickness_under_non_uniform_transform_follows_autoscale() raise
     None
 ):
     # scale(3.0, 1.0) makes the transform non-uniform, so _pixel_scale must
-    # fall back to canvas.scale (the autoscale factor, 2x here) rather than
+    # fall back to canvas.scale() (the autoscale factor, 2x here) rather than
     # the local transform's own 3x — a 3-unit outline comes out 6 pixels
     # thick, not 18.
     var m = run_headless[ThickLineUnderNonUniformScale](50, 50, 1, 100, 100)
@@ -2797,7 +2797,7 @@ def test_image_draws_at_a_fractional_size() raises -> None:
 def test_image_still_takes_whole_unit_sizes() raises -> None:
     var canvas = Canvas(10, 10, antialiasing=Antialiasing.OFF)
     var dot = Image.solid(1, 1, Color.RED)
-    canvas.image(dot, (0, 0), canvas.width, canvas.height)
+    canvas.image(dot, (0, 0), canvas.width(), canvas.height())
     assert_equal(canvas.pixel((4.0, -4.0)), Color.RED)
 
 

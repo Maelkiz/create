@@ -74,7 +74,7 @@ def test_a_read_is_at_design_size_on_a_bigger_window() raises -> None:
     assert_equal(shot.height(), 100)
     assert_equal(shot.pixel(100, 50), Color.BLUE)
     assert_equal(shot.pixel(5, 5), Color.RED)
-    var sharp = canvas.snapshot(scale=canvas.scale)
+    var sharp = canvas.snapshot(scale=canvas.scale())
     assert_equal(sharp.width(), 400)
     assert_equal(sharp.pixel(200, 100), Color.BLUE)
 
@@ -133,7 +133,7 @@ def test_a_snapshot_drawn_back_lines_up_with_the_frame() raises -> None:
     _square(canvas, (30, -10), Color.BLUE)
     var shot = canvas.snapshot()
     canvas.background(Color.GREEN)
-    canvas.image(shot, (0, 0), canvas.width, canvas.height)
+    canvas.image(shot, (0, 0), canvas.width(), canvas.height())
     var mem = MemorySurface(400, 200)
     _ = _present(context, canvas^, mem)
     # Screen (30, -10) is window pixel (260, 120) at 2x.
@@ -250,7 +250,7 @@ struct DrawsASnapshotBack(Program):
         _square(canvas, (30, -10), Color.BLUE)
         var shot = canvas.snapshot()
         canvas.background(Color.GREEN)
-        canvas.image(shot, (0, 0), canvas.width, canvas.height)
+        canvas.image(shot, (0, 0), canvas.width(), canvas.height())
 
 
 def test_the_gpu_backend_reads_and_draws_back_the_same() raises -> None:

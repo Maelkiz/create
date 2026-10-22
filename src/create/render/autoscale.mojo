@@ -9,14 +9,14 @@ struct AutoScale(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     - `FIT` scales uniformly by `min(w, h)`, centres the design, and paints the
       leftover with `canvas.letterbox_color` after the frame is rendered --
       which also clips anything rendered past the design bounds.
-      `canvas.width`/`height` never move, so a layout written against them
+      `canvas.width()`/`height()` never move, so a layout written against them
       survives any window size.
     - `EXTEND` uses the same scale factor but anchors at the origin and paints
-      no bars, so the leftover becomes extra world: `canvas.width`/`height` grow
+      no bars, so the leftover becomes extra world: `canvas.width()`/`height()` grow
       with the window. Layout must anchor to the origin or to
       `canvas.left()`/`right()`/`bottom()`/`top()`, since design coordinates no
       longer describe the edges.
-    - `OFF` does not scale at all -- `canvas.width`/`height` are window pixels
+    - `OFF` does not scale at all -- `canvas.width()`/`height()` are window pixels
       and the design size goes unused, so layout has to survive any
       window size on its own.
 
@@ -25,7 +25,7 @@ struct AutoScale(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     silently rearranged on any other display. `create` can pass either other
     mode to `context.autoscale`.
 
-    `FIT` pins `canvas.width`/`height` to the design size, so a rectangle at a
+    `FIT` pins `canvas.width()`/`height()` to the design size, so a rectangle at a
     fixed x is always inside the world by the same margin. `EXTEND` and `OFF`
     let a resize move `right()`/`left()`/`top()`/`bottom()` themselves, which
     can carry them past an entity between frames — code that reacts to a
