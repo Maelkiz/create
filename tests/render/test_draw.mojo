@@ -20,8 +20,8 @@ def _assert_same(mut a: Canvas, mut b: Canvas, what: String) raises:
     var x = a.snapshot()
     var y = b.snapshot()
     var inked = 0
-    for j in range(x.height):
-        for i in range(x.width):
+    for j in range(x.height()):
+        for i in range(x.width()):
             var p = x.pixel(i, j)
             if p != y.pixel(i, j):
                 assert_equal(p, y.pixel(i, j), what)

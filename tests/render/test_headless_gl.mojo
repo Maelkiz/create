@@ -198,8 +198,8 @@ def test_the_gpu_backend_renders_text_with_fill_disabled() raises -> None:
         return
 
     var inked = 0
-    for y in range(m.height):
-        for x in range(m.width):
+    for y in range(m.height()):
+        for x in range(m.width()):
             if m.pixel(x, y) != Color.BLACK:
                 inked += 1
     assert_true(inked > 0, "no glyph pixels")
@@ -223,8 +223,8 @@ struct GPUCircle(Program):
 def _partly_covered(m: Image) -> Int:
     """Pixels neither black nor white: a white circle's edge on black."""
     var count = 0
-    for y in range(m.height):
-        for x in range(m.width):
+    for y in range(m.height()):
+        for x in range(m.width()):
             var c = m.pixel(x, y)
             if c != Color.BLACK and c != Color.WHITE:
                 count += 1

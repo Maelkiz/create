@@ -47,8 +47,8 @@ def test_smoke_renders_through_the_public_api() raises -> None:
     var clear = Color(200, 200, 200)
     assert_equal(m.pixel(5, 5), clear)
     var inked = 0
-    for y in range(m.height):
-        for x in range(m.width):
+    for y in range(m.height()):
+        for x in range(m.width()):
             if m.pixel(x, y) != clear:
                 inked += 1
     assert_true(inked > 0, "the text drew nothing")

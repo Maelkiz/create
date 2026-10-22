@@ -26,7 +26,7 @@ def _loaded(
 
 
 def _pixel(s: Image, x: Int, y: Int) -> Color:
-    var off = (y * s.width + x) * 4
+    var off = (y * s.width() + x) * 4
     return Color(
         s._pixels[][off],
         s._pixels[][off + 1],
@@ -92,8 +92,8 @@ def test_a_saved_surface_reloads_with_the_same_pixels() raises -> None:
     _write(s, 3, 2, Color(0, 0, 200))
 
     var back = _loaded(mem, "roundtrip.png")
-    assert_equal(back.width, 4)
-    assert_equal(back.height, 3)
+    assert_equal(back.width(), 4)
+    assert_equal(back.height(), 3)
     assert_equal(_pixel(back, 0, 0), Color(10, 20, 30))
     assert_equal(_pixel(back, 3, 0), Color(200, 0, 0))
     assert_equal(_pixel(back, 1, 2), Color(0, 200, 0))

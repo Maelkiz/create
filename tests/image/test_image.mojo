@@ -12,8 +12,8 @@ from create.image.pixel_buffer import PixelBuffer
 
 def test_solid_dimensions() raises -> None:
     var s = Image.solid(4, 3, Color(255, 0, 0))
-    assert_equal(s.width, 4)
-    assert_equal(s.height, 3)
+    assert_equal(s.width(), 4)
+    assert_equal(s.height(), 3)
     assert_equal(len(s._pixels[]), 4 * 3 * 4)
 
 
@@ -40,8 +40,8 @@ def test_solid_blue() raises -> None:
 def test_from_rgba_roundtrip() raises -> None:
     var data: List[UInt8] = [10, 20, 30, 128, 40, 50, 60, 200]
     var s = Image.from_rgba(2, 1, data)
-    assert_equal(s.width, 2)
-    assert_equal(s.height, 1)
+    assert_equal(s.width(), 2)
+    assert_equal(s.height(), 1)
     assert_equal(Int(s._pixels[][0]), 10)
     assert_equal(Int(s._pixels[][1]), 20)
     assert_equal(Int(s._pixels[][2]), 30)
@@ -52,8 +52,8 @@ def test_from_rgba_roundtrip() raises -> None:
 
 def test_load_bmp_dimensions() raises -> None:
     var s = Image.load("tests/fixtures/test_2x2.bmp")
-    assert_equal(s.width, 2)
-    assert_equal(s.height, 2)
+    assert_equal(s.width(), 2)
+    assert_equal(s.height(), 2)
     assert_equal(len(s._pixels[]), 2 * 2 * 4)
 
 
@@ -79,8 +79,8 @@ def test_load_bmp_32bit_pixels_and_alpha() raises -> None:
     # file-supplied alpha values -- the only decode path that reads alpha
     # from disk rather than synthesising it.
     var s = Image.load("tests/fixtures/test_2x2_32bit.bmp")
-    assert_equal(s.width, 2)
-    assert_equal(s.height, 2)
+    assert_equal(s.width(), 2)
+    assert_equal(s.height(), 2)
     var ptr = s._pixels[].unsafe_ptr()
     assert_equal(Int(ptr[unsafe_offset=0]), 255)  # (0,0) R -- red
     assert_equal(Int(ptr[unsafe_offset=1]), 0)
@@ -106,8 +106,8 @@ def test_load_topdown_bmp_matches_bottom_up() raises -> None:
     # only proof the row flip fires for one file and not the other.
     var top_down = Image.load("tests/fixtures/test_2x2_topdown.bmp")
     var bottom_up = Image.load("tests/fixtures/test_2x2.bmp")
-    assert_equal(top_down.width, bottom_up.width)
-    assert_equal(top_down.height, bottom_up.height)
+    assert_equal(top_down.width(), bottom_up.width())
+    assert_equal(top_down.height(), bottom_up.height())
     var a = top_down._pixels[].unsafe_ptr()
     var b = bottom_up._pixels[].unsafe_ptr()
     for i in range(2 * 2 * 4):
@@ -116,15 +116,15 @@ def test_load_topdown_bmp_matches_bottom_up() raises -> None:
 
 def test_load_png() raises -> None:
     var s = Image.load("tests/assets/image.png")
-    assert_equal(s.width, 500)
-    assert_equal(s.height, 500)
+    assert_equal(s.width(), 500)
+    assert_equal(s.height(), 500)
     assert_equal(len(s._pixels[]), 500 * 500 * 4)
 
 
 def test_load_jpeg() raises -> None:
     var s = Image.load("tests/assets/image.jpeg")
-    assert_equal(s.width, 500)
-    assert_equal(s.height, 500)
+    assert_equal(s.width(), 500)
+    assert_equal(s.height(), 500)
     assert_equal(len(s._pixels[]), 500 * 500 * 4)
 
 
@@ -178,8 +178,8 @@ def test_load_jpeg_pixels() raises -> None:
 
 def test_load_with_dimensions() raises -> None:
     var s = Image.load("tests/fixtures/test_2x2.bmp", 4, 4)
-    assert_equal(s.width, 4)
-    assert_equal(s.height, 4)
+    assert_equal(s.width(), 4)
+    assert_equal(s.height(), 4)
 
 
 def test_load_nonexistent_path_raises() raises -> None:
@@ -220,8 +220,8 @@ def test_load_bmp_bitfields_compression_raises() raises -> None:
 def test_resize_dimensions() raises -> None:
     var s = Image.solid(4, 4, Color(255, 0, 0))
     s = s.resize(2, 2)
-    assert_equal(s.width, 2)
-    assert_equal(s.height, 2)
+    assert_equal(s.width(), 2)
+    assert_equal(s.height(), 2)
     assert_equal(len(s._pixels[]), 2 * 2 * 4)
 
 
@@ -312,23 +312,23 @@ def test_resize_upscale_block_replication() raises -> None:
 def test_resize_upscale() raises -> None:
     var s = Image.solid(2, 2, Color(0, 255, 0))
     s = s.resize(4, 4)
-    assert_equal(s.width, 4)
-    assert_equal(s.height, 4)
+    assert_equal(s.width(), 4)
+    assert_equal(s.height(), 4)
     assert_equal(len(s._pixels[]), 4 * 4 * 4)
 
 
 def test_resize_to_1x1() raises -> None:
     var s = Image.solid(100, 100, Color(255, 255, 255))
     s = s.resize(1, 1)
-    assert_equal(s.width, 1)
-    assert_equal(s.height, 1)
+    assert_equal(s.width(), 1)
+    assert_equal(s.height(), 1)
     assert_equal(len(s._pixels[]), 4)
 
 
 def test_solid_1x1() raises -> None:
     var s = Image.solid(1, 1, Color(0, 255, 0))
-    assert_equal(s.width, 1)
-    assert_equal(s.height, 1)
+    assert_equal(s.width(), 1)
+    assert_equal(s.height(), 1)
     assert_equal(len(s._pixels[]), 4)
     var ptr = s._pixels[].unsafe_ptr()
     assert_equal(Int(ptr[unsafe_offset=0]), 0)  # R
@@ -363,16 +363,16 @@ def test_from_rgba_raises_on_negative_size() raises -> None:
 
 def test_image_zero_dimensions() raises -> None:
     var s = Image(PixelBuffer(0, 0))
-    assert_equal(s.width, 0)
-    assert_equal(s.height, 0)
+    assert_equal(s.width(), 0)
+    assert_equal(s.height(), 0)
     assert_equal(len(s._pixels[]), 0)
 
 
 def test_resize_to_zero_dimension() raises -> None:
     var s = Image.solid(4, 4, Color(255, 0, 0))
     s = s.resize(0, 4)
-    assert_equal(s.width, 0)
-    assert_equal(s.height, 4)
+    assert_equal(s.width(), 0)
+    assert_equal(s.height(), 4)
     assert_equal(len(s._pixels[]), 0)
 
 
@@ -382,8 +382,8 @@ def test_resize_from_zero_width_stays_blank() raises -> None:
     # buffer, and leave the destination zero-filled.
     var s = Image(PixelBuffer(0, 4))
     s = s.resize(2, 2)
-    assert_equal(s.width, 2)
-    assert_equal(s.height, 2)
+    assert_equal(s.width(), 2)
+    assert_equal(s.height(), 2)
     assert_equal(len(s._pixels[]), 2 * 2 * 4)
     var ptr = s._pixels[].unsafe_ptr()
     for i in range(2 * 2 * 4):
@@ -569,8 +569,8 @@ def test_resize_leaves_the_original_unchanged() raises -> None:
     var s = Image.solid(2, 2, Color(255, 0, 0))
     var before = s._id
     _ = s.resize(4, 4)
-    assert_equal(s.width, 2)
-    assert_equal(s.height, 2)
+    assert_equal(s.width(), 2)
+    assert_equal(s.height(), 2)
     assert_equal(s._id, before)
     assert_equal(s.pixel(1, 1), Color(255, 0, 0))
 

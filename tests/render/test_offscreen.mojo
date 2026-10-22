@@ -109,8 +109,8 @@ def test_a_snapshot_is_the_whole_canvas() raises -> None:
     var canvas = _canvas()
     _square(canvas, (-20, 0), Color.BLUE)
     var shot = canvas.snapshot()
-    assert_equal(shot.width, 100)
-    assert_equal(shot.height, 60)
+    assert_equal(shot.width(), 100)
+    assert_equal(shot.height(), 60)
     # Image coordinates: top-left origin, y down.
     assert_equal(shot.pixel(30, 30), Color.BLUE)
     assert_equal(shot.pixel(70, 30), Color.TRANSPARENT)
@@ -120,11 +120,11 @@ def test_a_snapshot_at_its_own_scale_is_its_pixels() raises -> None:
     var canvas = _canvas(scale=2.0)
     _square(canvas, (-20, 0), Color.BLUE)
     var shot = canvas.snapshot(scale=canvas.scale)
-    assert_equal(shot.width, 200)
-    assert_equal(shot.height, 120)
+    assert_equal(shot.width(), 200)
+    assert_equal(shot.height(), 120)
     ref target = canvas._state._backend.target.value()
-    for y in range(shot.height):
-        for x in range(shot.width):
+    for y in range(shot.height()):
+        for x in range(shot.width()):
             assert_equal(shot.pixel(x, y), target.pixel(x, y))
 
 
@@ -132,7 +132,7 @@ def test_a_snapshot_at_another_scale_resamples() raises -> None:
     var canvas = _canvas(scale=2.0)
     _square(canvas, (-20, 0), Color.BLUE)
     var shot = canvas.snapshot()
-    assert_equal(shot.width, 100)
+    assert_equal(shot.width(), 100)
     assert_equal(shot.pixel(30, 30), Color.BLUE)
     assert_equal(shot.pixel(70, 30), Color.TRANSPARENT)
 
@@ -142,7 +142,7 @@ def test_a_region_snapshot_is_cropped_upright_and_clear_off_it() raises -> None:
     _square(canvas, (40, 20), Color.BLUE)
     # Centred on the square's top-right corner, half past the canvas edge.
     var shot = canvas.snapshot(Rectangle(Point2D(50, 30), 20, 20))
-    assert_equal(shot.width, 20)
+    assert_equal(shot.width(), 20)
     assert_equal(shot.pixel(5, 15), Color.BLUE, "bottom-left: the square")
     assert_equal(shot.pixel(15, 5), Color.TRANSPARENT, "off the canvas")
 
@@ -164,11 +164,11 @@ def test_save_image_and_save_screenshot_write_at_once() raises -> None:
     canvas.save_image(_IMAGE, transparent=True)
     canvas.save_screenshot(_SHOT)
     var image = Image.load(_IMAGE)
-    assert_equal(image.width, 100, "save_image: screen units times scale")
+    assert_equal(image.width(), 100, "save_image: screen units times scale")
     assert_equal(image.pixel(30, 30), Color.BLUE)
     assert_equal(image.pixel(70, 30), Color.TRANSPARENT, "alpha kept")
     var shot = Image.load(_SHOT)
-    assert_equal(shot.width, 200, "save_screenshot: its own pixels")
+    assert_equal(shot.width(), 200, "save_screenshot: its own pixels")
     assert_equal(shot.pixel(60, 60), Color.BLUE)
     assert_equal(shot.pixel(140, 60), Color.TRANSPARENT)
 

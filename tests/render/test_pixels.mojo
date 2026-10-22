@@ -70,12 +70,12 @@ def test_a_read_is_at_design_size_on_a_bigger_window() raises -> None:
     canvas.background(Color.RED)
     _square(canvas, (0, 0), Color.BLUE)
     var shot = canvas.snapshot()
-    assert_equal(shot.width, 200)
-    assert_equal(shot.height, 100)
+    assert_equal(shot.width(), 200)
+    assert_equal(shot.height(), 100)
     assert_equal(shot.pixel(100, 50), Color.BLUE)
     assert_equal(shot.pixel(5, 5), Color.RED)
     var sharp = canvas.snapshot(scale=canvas.scale)
-    assert_equal(sharp.width, 400)
+    assert_equal(sharp.width(), 400)
     assert_equal(sharp.pixel(200, 100), Color.BLUE)
 
 
@@ -85,8 +85,8 @@ def test_a_region_snapshot_is_upright_and_clear_off_screen() raises -> None:
     canvas.background(Color.RED)
     _square(canvas, (50, 0), Color.BLUE)
     var tile = canvas.snapshot(Rectangle((50, 0), 40, 40))
-    assert_equal(tile.width, 40)
-    assert_equal(tile.height, 40)
+    assert_equal(tile.width(), 40)
+    assert_equal(tile.height(), 40)
     assert_equal(tile.pixel(20, 20), Color.BLUE)
     assert_equal(tile.pixel(2, 2), Color.RED)
     # Top-left in image coordinates is the region's top-left on screen.

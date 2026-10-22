@@ -24,18 +24,18 @@ def _sheet(cols: Int, rows: Int, cell: Int) raises -> Image:
 
 
 def _red(s: Image, x: Int, y: Int) -> Int:
-    return Int(s._pixels[].unsafe_ptr()[unsafe_offset=(y * s.width + x) * 4])
+    return Int(s._pixels[].unsafe_ptr()[unsafe_offset=(y * s.width() + x) * 4])
 
 
 def _green(s: Image, x: Int, y: Int) -> Int:
     return Int(
-        s._pixels[].unsafe_ptr()[unsafe_offset=(y * s.width + x) * 4 + 1]
+        s._pixels[].unsafe_ptr()[unsafe_offset=(y * s.width() + x) * 4 + 1]
     )
 
 
 def _blue(s: Image, x: Int, y: Int) -> Int:
     return Int(
-        s._pixels[].unsafe_ptr()[unsafe_offset=(y * s.width + x) * 4 + 2]
+        s._pixels[].unsafe_ptr()[unsafe_offset=(y * s.width() + x) * 4 + 2]
     )
 
 
@@ -43,8 +43,8 @@ def test_from_sheet_cuts_every_cell() raises -> None:
     var anim = Animation.from_sheet(_sheet(2, 2, 3), 3, 3)
     assert_equal(anim.count(), 4)
     for i in range(4):
-        assert_equal(anim.frame(i).width, 3)
-        assert_equal(anim.frame(i).height, 3)
+        assert_equal(anim.frame(i).width(), 3)
+        assert_equal(anim.frame(i).height(), 3)
 
 
 def test_from_sheet_is_row_major() raises -> None:

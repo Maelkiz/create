@@ -84,20 +84,23 @@ struct Animation(Copyable, ImplicitlyCopyable, Movable):
                 + "x"
                 + String(frame_height)
             )
-        if sheet.width % frame_width != 0 or sheet.height % frame_height != 0:
+        if (
+            sheet.width() % frame_width != 0
+            or sheet.height() % frame_height != 0
+        ):
             raise Error(
                 "sheet "
-                + String(sheet.width)
+                + String(sheet.width())
                 + "x"
-                + String(sheet.height)
+                + String(sheet.height())
                 + " is not a whole number of "
                 + String(frame_width)
                 + "x"
                 + String(frame_height)
                 + " frames"
             )
-        var cols = sheet.width // frame_width
-        var total = cols * (sheet.height // frame_height)
+        var cols = sheet.width() // frame_width
+        var total = cols * (sheet.height() // frame_height)
         if start < 0 or start >= total:
             raise Error(
                 "start "
@@ -166,7 +169,7 @@ struct Animation(Copyable, ImplicitlyCopyable, Movable):
         var src = sheet._pixels[].unsafe_ptr()
         var dst = frame._data.unsafe_ptr()
         for row in range(h):
-            var s = ((y + row) * sheet.width + x) * 4
+            var s = ((y + row) * sheet.width() + x) * 4
             var d = row * w * 4
             for i in range(w * 4):
                 dst[unsafe_offset=d + i] = src[unsafe_offset=s + i]

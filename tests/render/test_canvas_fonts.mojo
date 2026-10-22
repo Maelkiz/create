@@ -39,7 +39,7 @@ def _differing_in_half(a: Image, b: Image, right: Bool) -> Int:
     """Pixels that differ between `a` and `b` in one half."""
     var n = 0
     var x0 = 50 if right else 0
-    for y in range(a.height):
+    for y in range(a.height()):
         for x in range(x0, x0 + 50):
             if a.pixel(x, y) != b.pixel(x, y):
                 n += 1
