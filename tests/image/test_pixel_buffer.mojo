@@ -9,8 +9,8 @@ from create.core.headless import run_headless
 
 def test_a_new_buffer_is_transparent() raises -> None:
     var buffer = PixelBuffer(3, 2)
-    assert_equal(buffer.width, 3)
-    assert_equal(buffer.height, 2)
+    assert_equal(buffer.width(), 3)
+    assert_equal(buffer.height(), 2)
     for y in range(2):
         for x in range(3):
             assert_equal(buffer.pixel(x, y), Color.TRANSPARENT)

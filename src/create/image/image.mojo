@@ -100,8 +100,8 @@ struct Image(Copyable, Movable):
 
     def __init__(out self, var pixels: PixelBuffer) raises:
         """An image of `pixels`, which it takes over without copying."""
-        self.width = pixels.width
-        self.height = pixels.height
+        self.width = pixels._width
+        self.height = pixels._height
         self._pixels = ArcPointer(pixels^._take_data())
         self._id = _next_image_id()
 

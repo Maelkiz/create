@@ -19,13 +19,21 @@ struct PixelBuffer(Movable):
     """RGBA, row-major from the top, 8 bits per channel. `Image` takes it
     over as its own pixels; the decoders fill it straight through its
     pointer."""
-    var width: Int
-    var height: Int
+    var _width: Int
+    var _height: Int
 
     def __init__(out self, width: Int, height: Int):
-        self.width = width
-        self.height = height
+        self._width = width
+        self._height = height
         self._data = List[UInt8](length=width * height * 4, fill=0)
+
+    def width(self) -> Int:
+        """The buffer's width in pixels."""
+        return self._width
+
+    def height(self) -> Int:
+        """The buffer's height in pixels."""
+        return self._height
 
     def _take_data(deinit self) -> List[UInt8]:
         """The pixels, consuming the buffer: how `Image` takes them over
@@ -35,9 +43,9 @@ struct PixelBuffer(Movable):
     def pixel(self, x: Int, y: Int) -> Color:
         """The pixel in column `x` of row `y`, counted from the top-left
         corner. Outside the buffer it is `Color.TRANSPARENT`."""
-        if x < 0 or y < 0 or x >= self.width or y >= self.height:
+        if x < 0 or y < 0 or x >= self._width or y >= self._height:
             return Color.TRANSPARENT
-        var off = (y * self.width + x) * 4
+        var off = (y * self._width + x) * 4
         return Color(
             self._data[off],
             self._data[off + 1],
@@ -48,9 +56,9 @@ struct PixelBuffer(Movable):
     def set(mut self, x: Int, y: Int, color: Color):
         """Replace the pixel in column `x` of row `y`, counted from the
         top-left corner. Outside the buffer it does nothing."""
-        if x < 0 or y < 0 or x >= self.width or y >= self.height:
+        if x < 0 or y < 0 or x >= self._width or y >= self._height:
             return
-        var off = (y * self.width + x) * 4
+        var off = (y * self._width + x) * 4
         self._data[off] = color.r
         self._data[off + 1] = color.g
         self._data[off + 2] = color.b
