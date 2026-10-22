@@ -15,8 +15,8 @@ struct Sound(Copyable, ImplicitlyCopyable, Movable):
     var _pcm: ArcPointer[List[UInt8]]
     # The samples' SDL audio format code (`SDL_AUDIO_S16`, ...).
     var _format: Int32
-    var channels: Int
-    var sample_rate: Int
+    var _channels: Int
+    var _sample_rate: Int
 
     def __init__(
         out self,
@@ -28,8 +28,16 @@ struct Sound(Copyable, ImplicitlyCopyable, Movable):
     ):
         self._pcm = ArcPointer(_pcm^)
         self._format = _format
-        self.channels = _channels
-        self.sample_rate = _sample_rate
+        self._channels = _channels
+        self._sample_rate = _sample_rate
+
+    def channels(self) -> Int:
+        """How many channels the samples interleave: 1 mono, 2 stereo."""
+        return self._channels
+
+    def sample_rate(self) -> Int:
+        """Samples per second, per channel."""
+        return self._sample_rate
 
     @staticmethod
     def load(path: String) raises -> Sound:

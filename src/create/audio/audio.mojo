@@ -108,7 +108,7 @@ struct Audio(Movable):
         `is_playing`. Looping voices are refilled by `update`, from a copy of
         `sound` that shares its samples."""
         var stream = self._sdl.open_device_stream(
-            sound._format, Int32(sound.channels), Int32(sound.sample_rate)
+            sound._format, Int32(sound._channels), Int32(sound._sample_rate)
         )
         self._sdl.set_gain(stream, self._volume)
         self._sdl.put_data(
