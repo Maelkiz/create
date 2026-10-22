@@ -24,7 +24,8 @@ one-pixel floor is shared with the CPU path) and converted back to local units
 where the ring has to follow a rotated edge.
 """
 
-from std.math import abs, ceil, cos, max, min, sin, sqrt, pi
+from std.math import abs, ceil, cos, max, min, sin, sqrt
+from create.math import PI
 
 from create.math.matrix import Matrix, inverse, _apply as mat_apply
 from create.math.point2d import Point2D
@@ -121,7 +122,7 @@ def _arc_segments(radius_px: Float64, span: Float64) -> Int:
     rather than a corner cut off with a single straight edge.
     """
     var full = circle_segments(radius_px)
-    var frac = abs(span) / (2.0 * pi)
+    var frac = abs(span) / (2.0 * PI)
     return max(_MIN_CIRCLE_SEGMENTS // 4, Int(ceil(Float64(full) * frac)))
 
 
@@ -276,7 +277,7 @@ def _corner_fan(
     """A solid fan of `n` segments sweeping `span` radians from `angle0`,
     every vertex mapped individually so a sheared corner still comes out as
     a genuine ellipse arc. The rect's corners always sweep a fixed quarter
-    turn (`span = pi/2`); the triangle's sweep `pi - theta` per vertex, so
+    turn (`span = PI/2`); the triangle's sweep `PI - theta` per vertex, so
     `span` is a parameter here rather than the quarter turn this used to
     hardcode."""
     var step = span / Float64(n)
@@ -304,9 +305,9 @@ def _corner_ring_fan(
     degenerates to a solid `_corner_fan` when the inset radius has
     collapsed, matching `emit_circle`'s own solid-disc fallback."""
     if r_inner <= 0.0:
-        _corner_fan(vb, m, ccx, ccy, r_outer, angle0, pi / 2.0, n, color)
+        _corner_fan(vb, m, ccx, ccy, r_outer, angle0, PI / 2.0, n, color)
         return
-    var step = (pi / 2.0) / Float64(n)
+    var step = (PI / 2.0) / Float64(n)
     for i in range(n):
         var a0 = angle0 + Float64(i) * step
         var a1 = angle0 + Float64(i + 1) * step
@@ -335,11 +336,11 @@ def _rounded_rect_fill(
     _mapped_quad(vb, m, x0 + r, y0, x1 - r, y1, color)
     _mapped_quad(vb, m, x0, y0 + r, x0 + r, y1 - r, color)
     _mapped_quad(vb, m, x1 - r, y0 + r, x1, y1 - r, color)
-    var n = _arc_segments(r * sf, pi / 2.0)
-    _corner_fan(vb, m, x0 + r, y0 + r, r, pi, pi / 2.0, n, color)
-    _corner_fan(vb, m, x1 - r, y0 + r, r, 3.0 * pi / 2.0, pi / 2.0, n, color)
-    _corner_fan(vb, m, x1 - r, y1 - r, r, 0.0, pi / 2.0, n, color)
-    _corner_fan(vb, m, x0 + r, y1 - r, r, pi / 2.0, pi / 2.0, n, color)
+    var n = _arc_segments(r * sf, PI / 2.0)
+    _corner_fan(vb, m, x0 + r, y0 + r, r, PI, PI / 2.0, n, color)
+    _corner_fan(vb, m, x1 - r, y0 + r, r, 3.0 * PI / 2.0, PI / 2.0, n, color)
+    _corner_fan(vb, m, x1 - r, y1 - r, r, 0.0, PI / 2.0, n, color)
+    _corner_fan(vb, m, x0 + r, y1 - r, r, PI / 2.0, PI / 2.0, n, color)
 
 
 def _rounded_rect_ring(
@@ -366,13 +367,13 @@ def _rounded_rect_ring(
     _mapped_quad(vb, m, x0 + r, y0, x1 - r, iy0, color)
     _mapped_quad(vb, m, x0, y0 + r, ix0, y1 - r, color)
     _mapped_quad(vb, m, ix1, y0 + r, x1, y1 - r, color)
-    var n = _arc_segments(r * sf, pi / 2.0)
-    _corner_ring_fan(vb, m, x0 + r, y0 + r, r, inner_r, pi, n, color)
+    var n = _arc_segments(r * sf, PI / 2.0)
+    _corner_ring_fan(vb, m, x0 + r, y0 + r, r, inner_r, PI, n, color)
     _corner_ring_fan(
-        vb, m, x1 - r, y0 + r, r, inner_r, 3.0 * pi / 2.0, n, color
+        vb, m, x1 - r, y0 + r, r, inner_r, 3.0 * PI / 2.0, n, color
     )
     _corner_ring_fan(vb, m, x1 - r, y1 - r, r, inner_r, 0.0, n, color)
-    _corner_ring_fan(vb, m, x0 + r, y1 - r, r, inner_r, pi / 2.0, n, color)
+    _corner_ring_fan(vb, m, x0 + r, y1 - r, r, inner_r, PI / 2.0, n, color)
 
 
 def _shade_fill(
@@ -527,7 +528,7 @@ def emit_circle(
         return
     var sf = pixel_scale(m, scale)
     var n = circle_segments(r * sf)
-    var step = 2.0 * pi / Float64(n)
+    var step = 2.0 * PI / Float64(n)
 
     var inner = r - Float64(outline_thickness_px(c.style, m, scale)) / sf
     var outlined = c.style._outline_visible() and inner > 0.0
@@ -663,13 +664,13 @@ def _fillet_arc_span(
     ]
 ) -> Float64:
     """The signed sweep from a fillet's `angle_in` to its `angle_out`,
-    normalised to `[-pi, pi]` — matches `_backend.mojo::_render_fillet_arc`'s
+    normalised to `[-PI, PI]` — matches `_backend.mojo::_render_fillet_arc`'s
     own normalisation so the two backends walk the identical arc."""
     var delta = f[7] - f[6]
-    if delta > pi:
-        delta -= 2.0 * pi
-    if delta < -pi:
-        delta += 2.0 * pi
+    if delta > PI:
+        delta -= 2.0 * PI
+    if delta < -PI:
+        delta += 2.0 * PI
     return delta
 
 

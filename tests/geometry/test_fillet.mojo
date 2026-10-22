@@ -1,3 +1,4 @@
+from create.math import PI
 from std.testing import TestSuite, assert_almost_equal, assert_true
 
 from create.geometry._fillet import (
@@ -44,7 +45,7 @@ def test_triangle_corner_radius_clamps_a_thin_triangle_without_dividing_by_zero(
 
 
 def test_triangle_corner_radius_collinear_triple_is_zero() raises -> None:
-    # Not exactly 0 — the near-pi clamp in _vertex_max_radius leaves a
+    # Not exactly 0 — the near-PI clamp in _vertex_max_radius leaves a
     # floating-point epsilon — but negligible, which is the point: a
     # collinear triple self-gates to (effectively) no rounding.
     var r = triangle_corner_radius(50.0, 0.0, 0.0, 10.0, 0.0, 20.0, 0.0)

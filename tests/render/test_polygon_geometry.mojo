@@ -1,4 +1,5 @@
-from std.math import pi, sqrt
+from std.math import sqrt
+from create.math import PI
 from std.testing import TestSuite, assert_equal, assert_true
 
 from create.geometry.geometry import Line, Polygon
@@ -269,7 +270,7 @@ def test_grown_square_is_rounded() raises -> None:
     var q = _quads(
         p, identity[3](), Style(fill=Color.RED, outline_enabled=False), 4.0
     )
-    var expected = 400.0 + 4.0 * 20.0 * 4.0 + pi * 16.0
+    var expected = 400.0 + 4.0 * 20.0 * 4.0 + PI * 16.0
     var area = _area(q.fill)
     assert_true(area < expected)
     assert_true(area > expected - 3.0)
@@ -300,7 +301,7 @@ def test_a_square_shadow_ring_has_its_area() raises -> None:
     var style = _outlined(8)
     style.fill_enabled = False
     var q = _quads(p, identity[3](), style, 2.0)
-    var outside = 40.0 * 40.0 + 4.0 * 40.0 * 2.0 + pi * 4.0
+    var outside = 40.0 * 40.0 + 4.0 * 40.0 * 2.0 + PI * 4.0
     var expected = outside - 28.0 * 28.0
     var area = _area(q.outline)
     assert_true(area < expected)

@@ -2,8 +2,6 @@
 # assert on the pixels that come out. Everything here runs headless, so the
 # geometry conventions the library promises — centred origin, y up, centred
 # shapes, source-over alpha — are checked rather than eyeballed.
-
-from std.math import pi, tau
 from std.os import remove
 from std.testing import (
     TestSuite,
@@ -263,7 +261,7 @@ struct RotatedRect(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.YELLOW)
-        with canvas.transform(rotate(pi / 4.0)):
+        with canvas.transform(rotate(PI / 4.0)):
             canvas.rectangle((0.0, 0.0), 20.0, 20.0)
 
 
@@ -406,7 +404,7 @@ struct RotatedRoundedRect(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.YELLOW)
-        with canvas.transform(rotate(pi / 4.0)):
+        with canvas.transform(rotate(PI / 4.0)):
             canvas.rectangle((0.0, 0.0), 20.0, 20.0, corner_radius=6)
 
 
@@ -467,7 +465,7 @@ struct RoundedTriangle(Program):
         # Right angle at world (-20, -20), legs of length 20 along +x and +y —
         # same corner shape as corner_fillet's own known right-angle test.
         # The other two vertices are 45 degrees, which clamp the requested
-        # radius 5 down to `10 * tan(pi / 8)` (about 4.14, via
+        # radius 5 down to `10 * tan(PI / 8)` (about 4.14, via
         # triangle_corner_radius), so the right angle's own fillet centre
         # ends up at world (-15.86, -15.86), device pixel (34, 66) — offset
         # from the vertex by the clamped radius, not the requested one.
@@ -574,7 +572,7 @@ struct RotatedRoundedTriangle(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.YELLOW)
-        with canvas.transform(rotate(pi / 4.0)):
+        with canvas.transform(rotate(PI / 4.0)):
             canvas.triangle(
                 (-20.0, -20.0), (0.0, -20.0), (-20.0, 0.0), corner_radius=6
             )
@@ -664,7 +662,7 @@ struct TransformedImageBlit[transform: Int](Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
-        var m = rotate(pi / 2.0)
+        var m = rotate(PI / 2.0)
         comptime if Self.transform == _MIRRORED:
             m = scale(-1.0, 1.0)
         elif Self.transform == _STRETCHED:
@@ -1003,10 +1001,10 @@ struct ShadowFollowsTransform(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
         canvas.shadow(Color.BLUE, offset=Vector2D(10, -10), blur=0)
-        with canvas.transform(translate(-40, 0) @ rotate(pi / 2.0)):
+        with canvas.transform(translate(-40, 0) @ rotate(PI / 2.0)):
             _red_square(canvas, (0, 0))
         canvas.shadow_follows_transform(True)
-        with canvas.transform(translate(40, 0) @ rotate(pi / 2.0)):
+        with canvas.transform(translate(40, 0) @ rotate(PI / 2.0)):
             _red_square(canvas, (0, 0))
 
 
@@ -1333,11 +1331,11 @@ struct ArcEveryWay(Program):
         canvas.background(Color.BLACK)
         canvas.outline(Color.WHITE, thickness=4)
         # The upper half.
-        canvas.arc((0.0, 0.0), 30.0, 0.0, pi)
+        canvas.arc((0.0, 0.0), 30.0, 0.0, PI)
         # Clockwise from +x: the lower right quarter.
-        canvas.arc((0.0, 0.0), 20, 0.0, -pi / 2.0)
+        canvas.arc((0.0, 0.0), 20, 0.0, -PI / 2.0)
         # Counter-clockwise from -x: the lower left quarter.
-        canvas.draw(Arc((0.0, 0.0), 40, pi, pi / 2.0))
+        canvas.draw(Arc((0.0, 0.0), 40, PI, PI / 2.0))
 
 
 def test_arc_strokes_through_every_overload() raises -> None:
@@ -1361,7 +1359,7 @@ struct ArcRing(Program):
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> ArcRing:
-        return ArcRing(tau)
+        return ArcRing(TAU)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
@@ -1381,7 +1379,7 @@ struct ArcGap(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
         canvas.outline(Color.WHITE, thickness=4)
-        canvas.arc((0.0, 0.0), 30.0, 0.0, tau - 0.1)
+        canvas.arc((0.0, 0.0), 30.0, 0.0, TAU - 0.1)
 
 
 def test_a_whole_turn_arc_closes() raises -> None:
@@ -1407,10 +1405,10 @@ struct UnrecordedArc(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         canvas.background(Color.BLACK)
         var before = len(canvas._state._backend.commands)
-        canvas.arc((0.0, 0.0), 0.0, 0.0, pi)
+        canvas.arc((0.0, 0.0), 0.0, 0.0, PI)
         canvas.arc((0.0, 0.0), 30.0, 1.0, 0.0)
         canvas.outline_enabled(False)
-        canvas.arc((0.0, 0.0), 30.0, 0.0, pi)
+        canvas.arc((0.0, 0.0), 30.0, 0.0, PI)
         if len(canvas._state._backend.commands) != before:
             raise Error("an arc that draws nothing was recorded")
 
@@ -1437,11 +1435,11 @@ struct SectorEveryWay(Program):
         canvas.fill(Color.WHITE)
         canvas.outline_enabled(False)
         # Counter-clockwise from +x: the upper right quarter.
-        canvas.sector((0.0, 0.0), 30.0, 0.0, pi / 2.0)
+        canvas.sector((0.0, 0.0), 30.0, 0.0, PI / 2.0)
         # Clockwise from -x: the upper left quarter.
-        canvas.sector((0.0, 0.0), 20, pi, -pi / 2.0)
+        canvas.sector((0.0, 0.0), 20, PI, -PI / 2.0)
         # Clockwise from -y: the lower left quarter.
-        canvas.draw(Sector((0.0, 0.0), 40, -pi / 2.0, -pi / 2.0))
+        canvas.draw(Sector((0.0, 0.0), 40, -PI / 2.0, -PI / 2.0))
 
 
 def test_sector_fills_through_every_overload() raises -> None:
@@ -1459,7 +1457,7 @@ def _outlined_quarter(mut canvas: Canvas, filled: Bool):
     canvas.fill(Color.RED)
     canvas.fill_enabled(filled)
     canvas.outline(Color.WHITE, thickness=4)
-    canvas.sector((0.0, 0.0), 40.0, 0.0, pi / 2.0)
+    canvas.sector((0.0, 0.0), 40.0, 0.0, PI / 2.0)
 
 
 @fieldwise_init
@@ -1524,7 +1522,7 @@ struct TranslucentPacMan(Program):
         canvas.background(Color.BLACK)
         canvas.fill(Color(255, 255, 255, 128))
         canvas.outline(Color(255, 255, 255, 128), thickness=6)
-        canvas.sector((0.0, 0.0), 40.0, 0.6, tau - 1.2)
+        canvas.sector((0.0, 0.0), 40.0, 0.6, TAU - 1.2)
 
 
 def test_a_translucent_sector_composites_once() raises -> None:
@@ -1673,8 +1671,8 @@ struct RotatedSectorUnderCamera(Program):
         canvas.outline_enabled(False)
         # The upper right quarter turned a quarter: the upper left, in
         # world space, twice the size on screen, its tip at (-20, 0).
-        with canvas.transform(rotate(pi / 2.0)):
-            canvas.sector((0.0, 0.0), 15.0, 0.0, pi / 2.0)
+        with canvas.transform(rotate(PI / 2.0)):
+            canvas.sector((0.0, 0.0), 15.0, 0.0, PI / 2.0)
 
 
 def test_a_sector_follows_the_transform_and_camera() raises -> None:
@@ -1822,7 +1820,7 @@ struct RotatedCircle(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.CYAN)
-        with canvas.transform(rotate(pi / 4.0)):
+        with canvas.transform(rotate(PI / 4.0)):
             canvas.circle((0.0, 0.0), 20.0)
 
 
@@ -1855,7 +1853,7 @@ struct QuarterTurnRect(Program):
         canvas.background(Color.BLACK)
         canvas.outline_enabled(False)
         canvas.fill(Color.YELLOW)
-        with canvas.transform(rotate(pi / 2.0)):
+        with canvas.transform(rotate(PI / 2.0)):
             canvas.rectangle((0.0, 0.0), 20.0, 40.0)
 
 
@@ -1968,7 +1966,7 @@ struct ToWorldRoundTrip(Program):
             assert_almost_equal(back.x, 10.0)
             assert_almost_equal(back.y, 20.0)
 
-        with canvas.transform(translate(5.0, -8.0) @ rotate(pi / 3.0)):
+        with canvas.transform(translate(5.0, -8.0) @ rotate(PI / 3.0)):
             var world = canvas.to_world((7.0, -2.0))
             var local = canvas.to_local(world)
             assert_almost_equal(local.x, 7.0)
@@ -2089,7 +2087,7 @@ struct TransformedText[transform: Int](Program):
         canvas.text_align(Align.TOP_LEFT)
         var m = identity[3]()
         comptime if Self.transform == _TURNED_TEXT:
-            m = rotate(pi / 2.0)
+            m = rotate(PI / 2.0)
         elif Self.transform == _STRETCHED_TEXT:
             m = scale(2.0, 1.0)
         with canvas.transform(m):

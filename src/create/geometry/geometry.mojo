@@ -9,9 +9,8 @@ from std.math import (
     sin,
     sqrt,
     tan,
-    pi,
-    tau,
 )
+from create.math import PI, TAU
 from ._fillet import (
     rect_corner_radius,
     rounded_sector_vertices,
@@ -35,7 +34,7 @@ and still count as on it. A point on an arc is found through `cos`, `sin` and
 `sqrt`, which round, so exact equality would miss most of them: tangents,
 crossings, the arc's own `at`."""
 
-comptime _MAX_ARC_BEZIER_ANGLE = pi / 4.0
+comptime _MAX_ARC_BEZIER_ANGLE = PI / 4.0
 """The widest piece `Arc.beziers` approximates with one cubic. At 45° the
 cubic strays from the circle by about 4e-6 of the radius: under a quarter
 pixel for any radius short of 60,000 pixels."""
@@ -43,7 +42,7 @@ pixel for any radius short of 60,000 pixels."""
 comptime _MAX_ARC_FLATTEN_SEGMENTS = 1024
 """Upper bound on `Arc.flatten`'s segment count, as for `Bezier.flatten`."""
 
-comptime _FILLET_STEP = tau / 64.0
+comptime _FILLET_STEP = TAU / 64.0
 """The widest turn, in radians, between two points of a rounded corner in a
 rounded shape's outline polygon. The chords sit inside the arc by at most
 `r * (1 - cos(step / 2))`, about 0.1% of the corner radius."""
@@ -102,11 +101,11 @@ def _normalized_sweep(
     start_angle: Float64, sweep_angle: Float64
 ) -> Tuple[Float64, Float64]:
     """The same sweep as a start angle and a counter-clockwise extent in
-    `[0, tau]`: a clockwise sweep is walked from its other end, and anything
+    `[0, TAU]`: a clockwise sweep is walked from its other end, and anything
     past a full turn is a full turn."""
     if sweep_angle < 0.0:
-        return (start_angle + sweep_angle, min(-sweep_angle, tau))
-    return (start_angle, min(sweep_angle, tau))
+        return (start_angle + sweep_angle, min(-sweep_angle, TAU))
+    return (start_angle, min(sweep_angle, TAU))
 
 
 def _in_sweep(v: Vector2D, start_angle: Float64, sweep_angle: Float64) -> Bool:
@@ -115,12 +114,12 @@ def _in_sweep(v: Vector2D, start_angle: Float64, sweep_angle: Float64) -> Bool:
     counts as inside.
 
     Decided by cross products against the edge directions rather than by
-    comparing `atan2` angles, so there is no wrap-around at ±pi to handle.
+    comparing `atan2` angles, so there is no wrap-around at ±PI to handle.
     Up to a half turn the sweep is convex: `v` must be on the inner side of
     both edges and not pointing away from them. Past a half turn it is
     whatever the open, convex wedge it leaves out is not.
     """
-    if sweep_angle >= tau:
+    if sweep_angle >= TAU:
         return True
     var magnitude = v.magnitude()
     if magnitude == 0.0:
@@ -128,7 +127,7 @@ def _in_sweep(v: Vector2D, start_angle: Float64, sweep_angle: Float64) -> Bool:
     var slack = _ANGLE_EPSILON * magnitude
     var u0 = _unit(start_angle)
     var u1 = _unit(start_angle + sweep_angle)
-    if sweep_angle <= pi:
+    if sweep_angle <= PI:
         return (
             _cross(u0, v) >= -slack
             and _cross(v, u1) >= -slack
@@ -215,7 +214,7 @@ def _arc_middles(a: Arc, crossings: List[Point2D]) -> List[Point2D]:
     for p in crossings:
         var v = p - a.position
         var angle = atan2(v.y, v.x) - s[0]
-        angle -= tau * floor(angle / tau)
+        angle -= TAU * floor(angle / TAU)
         if angle < s[1]:
             cuts.append(angle)
     sort(cuts)
@@ -316,7 +315,7 @@ def _rounded_outline[
         var a0 = atan2(-e0.x, e0.y)
         var sweep = atan2(-e1.x, e1.y) - a0
         while sweep < 0.0:
-            sweep += tau
+            sweep += TAU
         var steps = max(Int(ceil(sweep / _FILLET_STEP)), 1)
         for j in range(steps + 1):
             var angle = a0 + sweep * Float64(j) / Float64(steps)
@@ -414,7 +413,7 @@ struct Rectangle(
 
     def area(self) -> Float64:
         var r = self._radius()
-        return self.w * self.h - (4.0 - pi) * r * r
+        return self.w * self.h - (4.0 - PI) * r * r
 
     def closest_point(self, p: Point2D) -> Point2D:
         var r = self._radius()
@@ -575,7 +574,7 @@ struct Circle(
         return self.position
 
     def area(self) -> Float64:
-        return pi * self.r * self.r
+        return PI * self.r * self.r
 
     def diameter(self) -> Float64:
         return self.r * 2.0
@@ -801,7 +800,7 @@ struct Arc(
     so this is the direction `rotate` turns. The sweep is signed -- positive
     runs counter-clockwise, negative clockwise -- so every arc has one
     spelling and reversing one is negating its sweep. A sweep of a full turn
-    (`tau`) or more is the whole circle. The fields keep what was given; the
+    (`TAU`) or more is the whole circle. The fields keep what was given; the
     methods read the sweep clamped to a turn.
 
     Like `Line` and `Bezier`, an arc is a curve with no interior: there is
@@ -867,7 +866,7 @@ struct Arc(
 
     def _sweep(self) -> Float64:
         """The signed sweep, clamped to a full turn either way."""
-        return max(-tau, min(self.sweep_angle, tau))
+        return max(-TAU, min(self.sweep_angle, TAU))
 
     def _point_at_angle(self, angle: Float64) -> Point2D:
         return self.position + _unit(angle) * self.r
@@ -961,7 +960,7 @@ struct Arc(
             var a0 = self.start_angle + step * Float64(i)
             var a1 = a0 + step
             var end = self._point_at_angle(a1)
-            if i == n - 1 and abs(sweep) == tau:
+            if i == n - 1 and abs(sweep) == TAU:
                 end = first
             curves.append(
                 Bezier(
@@ -1293,7 +1292,7 @@ struct Sector(
     def contains(self, c: Circle) -> Bool:
         if self._is_rounded():
             return self._outline().contains(c)
-        return self._contains_arc(Arc(c.position, c.r, 0.0, tau))
+        return self._contains_arc(Arc(c.position, c.r, 0.0, TAU))
 
     def contains(self, other: Sector) -> Bool:
         if self._is_rounded():
@@ -1497,7 +1496,7 @@ struct Triangle(
                 + sqrt(_distance_squared(inner.b, inner.c))
                 + sqrt(_distance_squared(inner.c, inner.a))
             )
-            return inner.area() + perimeter * r + pi * r * r
+            return inner.area() + perimeter * r + PI * r * r
         return abs(self._signed_area2()) / 2.0
 
     def closest_point(self, p: Point2D) -> Point2D:
@@ -1726,7 +1725,7 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
         position: Point2D,
         r: Float64,
         sides: Int,
-        start_angle: Float64 = tau / 4.0,
+        start_angle: Float64 = TAU / 4.0,
         *,
         corner_radius: Float64 = 0.0,
     ) -> Polygon:
@@ -1736,7 +1735,7 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
         following counter-clockwise."""
         var vertices = List[Point2D](capacity=max(sides, 0))
         for i in range(sides):
-            var angle = start_angle + tau * Float64(i) / Float64(sides)
+            var angle = start_angle + TAU * Float64(i) / Float64(sides)
             vertices.append(position + _unit(angle) * r)
         return Polygon(vertices^, corner_radius=corner_radius)
 
@@ -1746,7 +1745,7 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
         r: Float64,
         inner_r: Float64,
         tips: Int,
-        start_angle: Float64 = tau / 4.0,
+        start_angle: Float64 = TAU / 4.0,
         *,
         corner_radius: Float64 = 0.0,
     ) -> Polygon:
@@ -1756,7 +1755,7 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
         outline does not cross itself, so it is a simple polygon."""
         var vertices = List[Point2D](capacity=max(2 * tips, 0))
         for i in range(2 * tips):
-            var angle = start_angle + pi * Float64(i) / Float64(tips)
+            var angle = start_angle + PI * Float64(i) / Float64(tips)
             vertices.append(
                 position + _unit(angle) * (r if i % 2 == 0 else inner_r)
             )
@@ -1913,7 +1912,7 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
     def contains(self, c: Circle) -> Bool:
         if self._is_rounded():
             return self._outline().contains(c)
-        var outline = Arc(c.position, c.r, 0.0, tau)
+        var outline = Arc(c.position, c.r, 0.0, TAU)
         if not self._contains_arc(outline):
             return False
         for p in self._rim([], [outline]):
@@ -2185,10 +2184,10 @@ def _holds_strictly(s: Sector, p: Point2D) -> Bool:
     if _distance_squared(p, s.position) >= reach * reach:
         return False
     var sweep = _normalized_sweep(s.start_angle, s.sweep_angle)
-    if sweep[1] >= tau:
+    if sweep[1] >= TAU:
         return True
     # Off the closed sweep that is left out, slack and all.
-    return not _in_sweep(p - s.position, sweep[0] + sweep[1], tau - sweep[1])
+    return not _in_sweep(p - s.position, sweep[0] + sweep[1], TAU - sweep[1])
 
 
 # `overlaps(a, b)` is the whole overlap-testing surface for regions: one

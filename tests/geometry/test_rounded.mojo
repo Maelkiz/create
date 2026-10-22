@@ -5,7 +5,8 @@ from std.testing import (
     assert_false,
     assert_almost_equal,
 )
-from std.math import cos, pi, sin, sqrt, tau
+from std.math import cos, sin, sqrt
+from create.math import PI, TAU
 from create.geometry._fillet import corner_fillet
 from create.geometry.geometry import (
     Rectangle,
@@ -52,7 +53,7 @@ def test_the_corner_radius_clamps_to_half_the_shorter_side() raises -> None:
     var r = Rectangle((0.0, 0.0), 20.0, 10.0, corner_radius=100.0)
     assert_true(r.contains(Point2D(0.0, 5.0)))
     assert_false(r.contains(Point2D(9.0, 4.0)))
-    assert_almost_equal(r.area(), 200.0 - (4.0 - pi) * 25.0, atol=1e-9)
+    assert_almost_equal(r.area(), 200.0 - (4.0 - PI) * 25.0, atol=1e-9)
 
 
 def test_a_rounded_rectangle_closest_point_lands_on_the_fillet() raises -> None:
@@ -67,7 +68,7 @@ def test_a_rounded_rectangle_closest_point_lands_on_the_fillet() raises -> None:
 
 def test_a_rounded_rectangle_area_loses_its_corners() raises -> None:
     assert_almost_equal(
-        _rounded_square().area(), 400.0 - (4.0 - pi) * 25.0, atol=1e-9
+        _rounded_square().area(), 400.0 - (4.0 - PI) * 25.0, atol=1e-9
     )
 
 
@@ -271,7 +272,7 @@ def test_a_rounded_star_fills_its_notches() raises -> None:
     var star = Polygon.star((0.0, 0.0), 50.0, 20.0, 5, corner_radius=5.0)
     var sharp = Polygon.star((0.0, 0.0), 50.0, 20.0, 5)
     # Just outside the inner corner between the first two tips.
-    var angle = pi / 2.0 + pi / 5.0
+    var angle = PI / 2.0 + PI / 5.0
     var p = Point2D(20.5 * cos(angle), 20.5 * sin(angle))
     assert_false(sharp.contains(p))
     assert_true(star.contains(p))
@@ -327,12 +328,12 @@ def test_a_rounded_polygon_compares_and_prints_its_radius() raises -> None:
 
 
 def _rounded_quarter() -> Sector:
-    return Sector((0.0, 0.0), 50.0, 0.0, pi / 2.0, corner_radius=8.0)
+    return Sector((0.0, 0.0), 50.0, 0.0, PI / 2.0, corner_radius=8.0)
 
 
 def test_a_rounded_sector_loses_its_tip_and_arc_ends() raises -> None:
     var s = _rounded_quarter()
-    var sharp = Sector((0.0, 0.0), 50.0, 0.0, pi / 2.0)
+    var sharp = Sector((0.0, 0.0), 50.0, 0.0, PI / 2.0)
     # The tip.
     assert_true(sharp.contains(Point2D(0.5, 0.5)))
     assert_false(s.contains(Point2D(0.5, 0.5)))
@@ -350,17 +351,17 @@ def test_a_rounded_sector_loses_its_tip_and_arc_ends() raises -> None:
 
 def test_a_rounded_sector_stays_inside_the_sharp_one() raises -> None:
     var s = _rounded_quarter()
-    var sharp = Sector((0.0, 0.0), 50.0, 0.0, pi / 2.0)
+    var sharp = Sector((0.0, 0.0), 50.0, 0.0, PI / 2.0)
     for v in s._outline().vertices:
         assert_true(sharp.contains(v))
     assert_true(s.area() < sharp.area())
 
 
 def test_a_rounded_wide_sector_fills_its_notch() raises -> None:
-    var s = Sector((0.0, 0.0), 50.0, 0.0, 3.0 * pi / 2.0, corner_radius=8.0)
-    var sharp = Sector((0.0, 0.0), 50.0, 0.0, 3.0 * pi / 2.0)
+    var s = Sector((0.0, 0.0), 50.0, 0.0, 3.0 * PI / 2.0, corner_radius=8.0)
+    var sharp = Sector((0.0, 0.0), 50.0, 0.0, 3.0 * PI / 2.0)
     # In the missing wedge, just past the tip.
-    var p = Point2D(0.5 * cos(-pi / 4.0), 0.5 * sin(-pi / 4.0))
+    var p = Point2D(0.5 * cos(-PI / 4.0), 0.5 * sin(-PI / 4.0))
     assert_false(sharp.contains(p))
     assert_true(s.contains(p))
     assert_true(s.area() > sharp.area() - 200.0)
@@ -368,7 +369,7 @@ def test_a_rounded_wide_sector_fills_its_notch() raises -> None:
 
 def test_a_clockwise_sector_rounds_the_same() raises -> None:
     var ccw = _rounded_quarter()
-    var cw = Sector((0.0, 0.0), 50.0, pi / 2.0, -pi / 2.0, corner_radius=8.0)
+    var cw = Sector((0.0, 0.0), 50.0, PI / 2.0, -PI / 2.0, corner_radius=8.0)
     for p in [
         Point2D(0.5, 0.5),
         Point2D(49.5, 0.5),
@@ -380,7 +381,7 @@ def test_a_clockwise_sector_rounds_the_same() raises -> None:
 
 
 def test_a_half_turn_sector_rounds_only_its_arc_ends() raises -> None:
-    var s = Sector((0.0, 0.0), 50.0, 0.0, pi, corner_radius=8.0)
+    var s = Sector((0.0, 0.0), 50.0, 0.0, PI, corner_radius=8.0)
     # The tip runs straight on: nothing to round.
     assert_true(s.contains(Point2D(0.0, 0.2)))
     assert_false(s.contains(Point2D(49.5, 0.5)))
@@ -388,17 +389,17 @@ def test_a_half_turn_sector_rounds_only_its_arc_ends() raises -> None:
 
 
 def test_a_whole_disc_has_no_corners() raises -> None:
-    var s = Sector((0.0, 0.0), 10.0, 0.0, tau, corner_radius=5.0)
+    var s = Sector((0.0, 0.0), 10.0, 0.0, TAU, corner_radius=5.0)
     assert_true(s.contains(Point2D(9.9, 0.0)))
-    assert_almost_equal(s.area(), pi * 100.0, atol=1e-9)
+    assert_almost_equal(s.area(), PI * 100.0, atol=1e-9)
 
 
 def test_a_rounded_sector_corner_radius_clamps() raises -> None:
     # Far too large: clamped, still a rounded slice holding its middle.
-    var s = Sector((0.0, 0.0), 50.0, 0.0, pi / 2.0, corner_radius=1000.0)
+    var s = Sector((0.0, 0.0), 50.0, 0.0, PI / 2.0, corner_radius=1000.0)
     assert_true(s.contains(Point2D(18.0, 18.0)))
     assert_false(s.contains(Point2D(49.0, 2.0)))
-    var sharp = Sector((0.0, 0.0), 50.0, 0.0, pi / 2.0)
+    var sharp = Sector((0.0, 0.0), 50.0, 0.0, PI / 2.0)
     for v in s._outline().vertices:
         assert_true(sharp.contains(v))
 
@@ -408,14 +409,14 @@ def test_a_rounded_sector_tests_against_other_shapes() raises -> None:
     var at_tip = Circle((0.4, 0.4), 0.4)
     assert_false(overlaps(s, at_tip))
     assert_false(overlaps(at_tip, s))
-    assert_true(overlaps(Sector((0.0, 0.0), 50.0, 0.0, pi / 2.0), at_tip))
+    assert_true(overlaps(Sector((0.0, 0.0), 50.0, 0.0, PI / 2.0), at_tip))
     var corner = Rectangle((49.4, 0.6), 0.8, 0.8)
     assert_false(overlaps(s, corner))
     assert_false(overlaps(corner, s))
     assert_true(Rectangle((25.0, 25.0), 50.0, 50.0).contains(s))
     assert_false(s.contains(Rectangle((25.0, 25.0), 50.0, 50.0)))
     assert_false(Line((-1.0, 1.0), (1.0, -1.0)).intersects(s))
-    assert_true(overlaps(s, Sector((40.0, 40.0), 10.0, pi, pi / 2.0)))
+    assert_true(overlaps(s, Sector((40.0, 40.0), 10.0, PI, PI / 2.0)))
 
 
 def test_a_rounded_sector_compares_and_prints_its_radius() raises -> None:

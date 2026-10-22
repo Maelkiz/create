@@ -15,7 +15,8 @@ from create.math.util import (
     degrees,
     radians,
 )
-from std.math import pi, isnan, isinf
+from std.math import isnan, isinf
+from create.math import PI
 
 
 def test_lerp_start() raises -> None:
@@ -126,12 +127,12 @@ def test_wrap_basic() raises -> None:
 
 
 def test_degrees_from_radians() raises -> None:
-    assert_almost_equal(degrees(pi), 180.0, atol=1e-9)
+    assert_almost_equal(degrees(PI), 180.0, atol=1e-9)
     assert_almost_equal(degrees(0.0), 0.0, atol=1e-12)
 
 
 def test_radians_from_degrees() raises -> None:
-    assert_almost_equal(radians(180.0), pi, atol=1e-12)
+    assert_almost_equal(radians(180.0), PI, atol=1e-12)
     assert_almost_equal(radians(0.0), 0.0, atol=1e-12)
 
 
@@ -170,12 +171,10 @@ def test_fractional_part_at_integer() raises -> None:
 
 
 def test_degrees_quarter_turn() raises -> None:
-    assert_almost_equal(degrees(pi / 2.0), 90.0, atol=1e-9)
+    assert_almost_equal(degrees(PI / 2.0), 90.0, atol=1e-9)
 
 
 def test_radians_quarter_turn() raises -> None:
-    from std.math import pi as PI
-
     assert_almost_equal(radians(90.0), PI / 2.0, atol=1e-12)
 
 

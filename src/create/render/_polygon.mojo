@@ -45,7 +45,8 @@ polygon. A shadow ring's thickness is the outline's plus twice the spread,
 so its seams' band grows by the spread as well.
 """
 
-from std.math import atan2, ceil, cos, max, min, nan, pi, sin, sqrt, tau
+from std.math import atan2, ceil, cos, max, min, nan, sin, sqrt
+from create.math import PI, TAU
 
 from create.geometry.geometry import Line, Polygon
 from create.math.matrix import Matrix, _apply as mat_apply
@@ -414,7 +415,7 @@ def _add_band(
     for a in ends:
         disc.clear()
         for k in range(segments):
-            var angle = tau * Float64(k) / Float64(segments)
+            var angle = TAU * Float64(k) / Float64(segments)
             disc.append(Point2D(a.x + d * cos(angle), a.y + d * sin(angle)))
         _add_loop(edges, disc, layer)
     for l in lines:
@@ -537,11 +538,11 @@ def _add_rim_band(
             nb = -nb
         var start = atan2(na.y, na.x)
         var sweep = atan2(nb.y, nb.x) - start
-        if sweep > pi:
-            sweep -= tau
-        elif sweep < -pi:
-            sweep += tau
-        var steps = max(Int(ceil(Float64(segments) * abs(sweep) / tau)), 1)
+        if sweep > PI:
+            sweep -= TAU
+        elif sweep < -PI:
+            sweep += TAU
+        var steps = max(Int(ceil(Float64(segments) * abs(sweep) / TAU)), 1)
         pie.clear()
         pie.append(corner.position)
         for k in range(steps + 1):

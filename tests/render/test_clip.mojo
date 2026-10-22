@@ -59,7 +59,7 @@ struct Clipped[scene: Int](Program):
                 canvas.fill(Color.BLUE)
                 canvas.rectangle((-50, 0), 60, 100)
         elif Self.scene == _ROTATED:
-            with canvas.transform(rotate(pi / 4.0)):
+            with canvas.transform(rotate(PI / 4.0)):
                 with canvas.clip(Rectangle((0, 0), 40, 40)):
                     canvas.rectangle((0, 0), 200, 200)
         elif Self.scene == _FROZEN:
@@ -68,7 +68,7 @@ struct Clipped[scene: Int](Program):
                     canvas.rectangle((0, 0), 100, 100)
         elif Self.scene == _WEDGE:
             with canvas.clip(Triangle((-40, -30), (40, -30), (0, 30))):
-                with canvas.clip(Sector((0, 0), 25, 0.0, pi)):
+                with canvas.clip(Sector((0, 0), 25, 0.0, PI)):
                     canvas.rectangle((0, 0), 200, 100)
         elif Self.scene == _PAINTS:
             with canvas.clip(Rectangle((0, 0), 40, 20)):

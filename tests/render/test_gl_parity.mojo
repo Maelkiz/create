@@ -40,7 +40,7 @@ when `DISPLAY`, `WAYLAND_DISPLAY` and `XDG_RUNTIME_DIR` are all unset — this
 test only skips if `GLWindow` construction itself raises.
 """
 
-from std.math import abs, max, min, tau
+from std.math import abs, max, min
 from std.testing import TestSuite, assert_true
 
 from create import *
@@ -716,13 +716,13 @@ struct _Parity(Program):
             with canvas.style():
                 canvas.fill(Color(0xFF, 0xC0, 0x20, 0x80))
                 canvas.outline(Color(0x20, 0x40, 0xFF, 0x80), thickness=10)
-                canvas.sector((0, 0), 65, -0.6, -(tau - 1.2))
+                canvas.sector((0, 0), 65, -0.6, -(TAU - 1.2))
         elif self.shape == _SHAPE_OUTLINED_DISC_SECTOR:
             # A whole turn, outline only: a ring.
             with canvas.style():
                 canvas.fill_enabled(False)
                 canvas.outline(Color(0x80, 0xFF, 0x80), thickness=8)
-                canvas.sector((0, 0), 60, 1.0, tau)
+                canvas.sector((0, 0), 60, 1.0, TAU)
         elif self.shape == _SHAPE_SHADOWED_SECTOR:
             # Past a half turn and spread, so the shadow reaches round the
             # tip into the missing wedge.
@@ -731,7 +731,7 @@ struct _Parity(Program):
             )
             s.shadow_spread = 6.0
             with canvas.style(s):
-                canvas.sector((-10, 10), 60, 0.6, tau - 1.2)
+                canvas.sector((-10, 10), 60, 0.6, TAU - 1.2)
         elif self.shape == _SHAPE_BLURRED_SECTOR_RING:
             # Outline only, under a half turn: the blurred mask of a ring.
             var s = _blurred(
@@ -968,7 +968,7 @@ struct _Parity(Program):
                     canvas.text("Il", (0, 0))
         else:
             # Scalene (one acute, one obtuse vertex) and outlined, so both
-            # the per-vertex `pi - theta` span math and the centred-outline
+            # the per-vertex `PI - theta` span math and the centred-outline
             # convention are exercised against the CPU's.
             with canvas.style():
                 canvas.fill(Color(0x50, 0xA0, 0xD0))

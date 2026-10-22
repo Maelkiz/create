@@ -2,7 +2,7 @@
 # hand-build the list — no Canvas involved — so they check the replay itself,
 # and the last one pins it against the Canvas output it has to reproduce.
 
-from std.math import pi, max, min
+from std.math import max, min
 from std.memory import ArcPointer
 from std.testing import TestSuite, assert_equal, assert_true
 
@@ -949,7 +949,7 @@ def test_a_blurred_shadow_turns_with_its_image() raises -> None:
     s.shadow_offset = Vector2D(40, 0)
     cmds.append(
         image_command(
-            _base() @ rotate(pi / 4.0), s^, 0.0, 0.0, 20.0, 20.0, image, 2, 2
+            _base() @ rotate(PI / 4.0), s^, 0.0, 0.0, 20.0, 20.0, image, 2, 2
         )
     )
     backend.replay(mem.surface(), cmds, 1.0)

@@ -1,6 +1,6 @@
 from std.collections import Dict, Optional
 from std.memory import ArcPointer, unsafe_memcpy
-from std.math import max, min, abs, sqrt, ceil, floor, cos, sin, pi
+from std.math import max, min, abs, sqrt, ceil, floor, cos, sin
 
 from create.math.matrix import (
     Matrix,

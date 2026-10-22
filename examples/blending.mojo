@@ -66,7 +66,7 @@ struct App(Program):
         ]
         with canvas.style(blend_mode=self.mode):
             for i in range(3):
-                var angle = t * 0.8 + Float64(i) * 2.0 * pi / 3.0
+                var angle = t * 0.8 + Float64(i) * 2.0 * PI / 3.0
                 canvas.fill(colors[i])
                 canvas.circle(
                     (center_x + 70.0 * cos(angle), 40.0 + 70.0 * sin(angle)),

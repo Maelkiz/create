@@ -10,8 +10,6 @@ it.
 `run_gl` is internal while the GPU backend is being built, so this example
 names it by path rather than through the preamble.
 """
-
-from std.math import pi
 from std.sys import argv
 
 from create import *
@@ -88,7 +86,7 @@ struct App(Program):
                 direction=Vector2D.RIGHT,
             )
         )
-        canvas.sector((220, 120), 65.0, 0.5, 1.6 * pi)
+        canvas.sector((220, 120), 65.0, 0.5, 1.6 * PI)
         canvas.fill(Gradient.linear(Color.hex(0xFFD166), Color.hex(0xEF476F)))
         canvas.draw(Polygon.star((450, 120), 70.0, 30.0, 5))
 

@@ -20,7 +20,8 @@ wedge too, round the tip and the arc's ends, so the walk goes all the way
 round.
 """
 
-from std.math import asin, atan, atan2, cos, max, min, pi, sin, sqrt, tau
+from std.math import asin, atan, atan2, cos, max, min, sin, sqrt
+from create.math import PI, TAU
 
 from create.geometry.geometry import _normalized_sweep
 from create.math.matrix import Matrix, _apply as mat_apply
@@ -68,7 +69,7 @@ def sector_quads(
     var theta = sweep[1]
     if r <= 0.0 or theta <= 0.0 or r + grow <= 0.0:
         return out^
-    var full = theta >= tau
+    var full = theta >= TAU
     var sf = pixel_scale(m, scale)
     var t = 0.0
     if c.style._outline_visible():
@@ -78,7 +79,7 @@ def sector_quads(
     # plus every angle where either boundary changes shape, so each wedge
     # sees a boundary as one straight piece or one chord of a round one. A
     # grown sector reaches round into the missing wedge, so the walk does.
-    var span = tau if grow > 0.0 else theta
+    var span = TAU if grow > 0.0 else theta
     var n = _arc_segments((r + max(grow, 0.0)) * sf, span)
     var alphas = List[Float64]()
     for i in range(n + 1):
@@ -165,7 +166,7 @@ def _offset_extent(
             0.0,
             max(
                 _capsule_distance(alpha - theta, r, offset),
-                _capsule_distance(tau - alpha, r, offset),
+                _capsule_distance(TAU - alpha, r, offset),
             ),
         )
     var e = -offset
@@ -193,10 +194,10 @@ def _breakpoints(
         var e = -offset
         if r - e <= 0.0:
             return
-        var beta = pi / 2.0
+        var beta = PI / 2.0
         if r - e > e:
             beta = asin(e / (r - e))
-        for off in [beta, pi / 2.0, theta / 2.0]:
+        for off in [beta, PI / 2.0, theta / 2.0]:
             for a in [off, theta - off]:
                 if a > 0.0 and a < theta:
                     alphas.append(a)
@@ -206,19 +207,19 @@ def _breakpoints(
         # wedge's middle, where the two edges' bands swap which reaches
         # further. The round end is centred off the tip, so it is walked by
         # its own angle.
-        var gap = tau - theta
-        var ends = _arc_segments(offset * sf, pi / 2.0)
+        var gap = TAU - theta
+        var ends = _arc_segments(offset * sf, PI / 2.0)
         var offs = List[Float64]()
         offs.append(atan(offset / r))
-        offs.append(pi / 2.0)
+        offs.append(PI / 2.0)
         offs.append(gap / 2.0)
         for k in range(1, ends):
-            var psi = -pi / 2.0 * Float64(k) / Float64(ends)
+            var psi = -PI / 2.0 * Float64(k) / Float64(ends)
             offs.append(atan2(-offset * sin(psi), r + offset * cos(psi)))
         for off in offs:
             if off > 0.0 and off < gap:
                 alphas.append(theta + off)
-                alphas.append(tau - off)
+                alphas.append(TAU - off)
 
 
 def _eroded_distance(
@@ -237,7 +238,7 @@ def _eroded_distance(
 
 
 def _edge_distance(alpha: Float64, t: Float64) -> Float64:
-    if alpha >= pi / 2.0:
+    if alpha >= PI / 2.0:
         return t
     var s = sin(alpha)
     if s <= 0.0:
@@ -249,7 +250,7 @@ def _capsule_distance(beta: Float64, r: Float64, g: Float64) -> Float64:
     """How far from the tip the ray `beta` outside a straight edge of
     length `r` leaves that edge grown by `g`: a band of half-width `g`,
     round at both ends."""
-    if beta >= pi / 2.0:
+    if beta >= PI / 2.0:
         return g
     var s = sin(beta)
     var co = cos(beta)

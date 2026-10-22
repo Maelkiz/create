@@ -29,7 +29,8 @@ it should be; `h` is the outline thickness in device pixels taken back to
 local units.
 """
 
-from std.math import atan2, cos, max, min, sin, sqrt, tau
+from std.math import atan2, cos, max, min, sin, sqrt
+from create.math import TAU
 
 from create.math.matrix import Matrix, _apply as mat_apply
 from create.math.point2d import Point2D
@@ -154,7 +155,7 @@ def triangle_pieces(
             var a0 = atan2(ny[prev], nx[prev])
             var a1 = atan2(ny[i], nx[i])
             if a1 < a0:
-                a1 += tau
+                a1 += TAU
             var n = _arc_segments((r + h) * sf, a1 - a0)
             var o = List[Point2D](capacity=n + 1)
             var q = List[Point2D](capacity=n + 1)
