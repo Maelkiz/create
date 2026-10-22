@@ -103,7 +103,7 @@ struct App(Program):
         # tween's eased value. OUT_BACK and OUT_ELASTIC leave 0..1 mid-run, so
         # the box visibly overshoots both ends of its track.
         var position = Point2D(-420.0, 300.0).lerp(
-            Point2D(420.0, 300.0), self.slide.value
+            Point2D(420.0, 300.0), self.slide.value()
         )
         canvas.fill(Color(235, 120, 70))
         canvas.rectangle(position, 44, 44)
@@ -111,7 +111,7 @@ struct App(Program):
         # One dot per curve, all reading the same progress.
         canvas.fill(Color(90, 170, 255))
         for i in range(len(self.curves)):
-            var t = ease(self.curves[i], self.clock.progress)
+            var t = ease(self.curves[i], self.clock.progress())
             canvas.circle((lerp(-360.0, 580.0, t), self._row_y(i)), 11)
 
         canvas.text_color(Color(200, 200, 212))

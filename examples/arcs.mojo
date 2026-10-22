@@ -26,7 +26,7 @@ struct App(Program):
         # Two progress rings off one tween. Angles count counter-clockwise
         # from +x because y is up, so the clockwise ring (blue, like a
         # clock's hand) starts at the top and sweeps negatively.
-        var sweep = TAU * self.progress.value
+        var sweep = TAU * self.progress.value()
         var clockwise = Point2D(-200.0, -20.0)
         var counter = Point2D(200.0, -20.0)
         canvas.outline(Color(62, 64, 82), thickness=_RING_THICKNESS)

@@ -20,7 +20,7 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.fade.update(context.time.delta)
         if context.input.key_pressed(Key.SPACE):
             self.fade.play()
-        canvas.fill(Color(255, 255, 255, Int(255 * self.fade.value)))
+        canvas.fill(Color(255, 255, 255, Int(255 * self.fade.value())))
     ```
 
     Unlike an animation, a tween carries no shared artwork -- its whole
@@ -34,23 +34,13 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
     ```mojo
     self.slide = Tween(0.3, Easing.OUT_CUBIC)      # in create
     ...
-    self.position = self.from_position.lerp(self.to_position, self.slide.value)
+    self.position = self.from_position.lerp(self.to_position, self.slide.value())
     ```
 
     Constructed stopped at `start` -- nothing moves until `play`, `loop` or
     `ping_pong`. The verbs mean what they mean on `Animator`: `play`
     always restarts from the beginning, `pause` freezes where it is and
     `resume` continues from there.
-    """
-
-    var value: Float64
-    """The eased value, between `start` and `end`. Read this after `update`."""
-
-    var progress: Float64
-    """How far through the duration, 0 to 1, *before* easing.
-
-    The raw time fraction, so it is what a progress bar wants to render -- and
-    what `value` is derived from. While ping-ponging it runs back down to 0.
     """
 
     var start: Float64
@@ -65,6 +55,8 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
     var curve: Easing
     """The easing curve applied to `progress` to get `value`."""
 
+    var _value: Float64
+    var _progress: Float64
     var _playing: Bool
     var _finished: Bool
     var _looping: Bool
@@ -82,8 +74,8 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
         debug_assert(
             duration > 0.0, "Tween: duration must be greater than zero"
         )
-        self.value = start
-        self.progress = 0.0
+        self._value = start
+        self._progress = 0.0
         self.start = start
         self.end = end
         self.duration = duration
@@ -100,9 +92,23 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
         plain number."""
         self = Self(0.0, 1.0, duration, curve)
 
+    def value(self) -> Float64:
+        """The eased value, between `start` and `end`. Read this after
+        `update`."""
+        return self._value
+
+    def progress(self) -> Float64:
+        """How far through the duration, 0 to 1, *before* easing.
+
+        The raw time fraction, so it is what a progress bar wants to render --
+        and what `value` is derived from. While ping-ponging it runs back down
+        to 0.
+        """
+        return self._progress
+
     def play(mut self):
         """Run once from the start, holding `end` at the finish."""
-        self.progress = 0.0
+        self._progress = 0.0
         self._playing = True
         self._finished = False
         self._looping = False
@@ -143,7 +149,7 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     def stop(mut self):
         """Halt and rewind, putting `value` back to `start`."""
-        self.progress = 0.0
+        self._progress = 0.0
         self._playing = False
         self._finished = False
         self._reversed = False
@@ -160,24 +166,24 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
             return
 
         var step = dt / self.duration
-        self.progress += -step if self._reversed else step
+        self._progress += -step if self._reversed else step
 
-        if self.progress > 1.0:
+        if self._progress > 1.0:
             if self._ping_pong:
                 # Reflect the overshoot back down so a long frame loses no
                 # time. Clamped because a frame longer than the whole duration
                 # would reflect past the far end.
-                self.progress = clamp(2.0 - self.progress, 0.0, 1.0)
+                self._progress = clamp(2.0 - self._progress, 0.0, 1.0)
                 self._reversed = True
             elif self._looping:
-                self.progress = wrap(self.progress, 1.0)
+                self._progress = wrap(self._progress, 1.0)
             else:
-                self.progress = 1.0
+                self._progress = 1.0
                 self._playing = False
                 self._finished = True
-        elif self.progress < 0.0:
+        elif self._progress < 0.0:
             # Only reachable on a ping-pong return leg, which always loops.
-            self.progress = clamp(-self.progress, 0.0, 1.0)
+            self._progress = clamp(-self._progress, 0.0, 1.0)
             self._reversed = False
 
         self._apply()
@@ -196,9 +202,9 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
         # The public state only: the loop and direction flags have no reader.
         writer.write(
             "Tween(value=",
-            self.value,
+            self._value,
             ", progress=",
-            self.progress,
+            self._progress,
             ", start=",
             self.start,
             ", end=",
@@ -215,4 +221,6 @@ struct Tween(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     def _apply(mut self):
-        self.value = lerp(self.start, self.end, ease(self.curve, self.progress))
+        self._value = lerp(
+            self.start, self.end, ease(self.curve, self._progress)
+        )

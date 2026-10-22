@@ -161,8 +161,8 @@ def test_easing_equality() raises -> None:
 
 def test_tween_starts_stopped_at_start() raises -> None:
     var t = Tween(10.0, 20.0, 1.0)
-    assert_equal(t.value, 10.0)
-    assert_equal(t.progress, 0.0)
+    assert_equal(t.value(), 10.0)
+    assert_equal(t.progress(), 0.0)
     assert_false(t.is_playing())
     assert_false(t.is_finished())
 
@@ -170,7 +170,7 @@ def test_tween_starts_stopped_at_start() raises -> None:
 def test_tween_does_not_move_until_played() raises -> None:
     var t = Tween(10.0, 20.0, 1.0)
     t.update(0.5)
-    assert_equal(t.value, 10.0)
+    assert_equal(t.value(), 10.0)
 
 
 def test_tween_duration_only_runs_zero_to_one() raises -> None:
@@ -179,7 +179,7 @@ def test_tween_duration_only_runs_zero_to_one() raises -> None:
     assert_equal(t.end, 1.0)
     t.play()
     t.update(0.25)
-    assert_almost_equal(t.value, 0.25)
+    assert_almost_equal(t.value(), 0.25)
 
 
 def test_tween_defaults_to_linear() raises -> None:
@@ -194,16 +194,16 @@ def test_tween_advances_linearly() raises -> None:
     var t = Tween(0.0, 100.0, 2.0)
     t.play()
     t.update(0.5)
-    assert_almost_equal(t.progress, 0.25)
-    assert_almost_equal(t.value, 25.0)
+    assert_almost_equal(t.progress(), 0.25)
+    assert_almost_equal(t.value(), 25.0)
 
 
 def test_tween_applies_its_curve() raises -> None:
     var t = Tween(0.0, 100.0, 1.0, Easing.IN_QUAD)
     t.play()
     t.update(0.5)
-    assert_almost_equal(t.progress, 0.5)
-    assert_almost_equal(t.value, 25.0)
+    assert_almost_equal(t.progress(), 0.5)
+    assert_almost_equal(t.value(), 25.0)
 
 
 def test_tween_lands_exactly_on_end() raises -> None:
@@ -211,8 +211,8 @@ def test_tween_lands_exactly_on_end() raises -> None:
     t.play()
     t.update(0.7)
     t.update(0.7)
-    assert_equal(t.progress, 1.0)
-    assert_equal(t.value, 100.0)
+    assert_equal(t.progress(), 1.0)
+    assert_equal(t.value(), 100.0)
 
 
 def test_tween_finishes_and_stops() raises -> None:
@@ -228,7 +228,7 @@ def test_tween_holds_its_end_after_finishing() raises -> None:
     t.play()
     t.update(2.0)
     t.update(2.0)
-    assert_equal(t.value, 100.0)
+    assert_equal(t.value(), 100.0)
 
 
 def test_tween_play_restarts_from_the_beginning() raises -> None:
@@ -236,8 +236,8 @@ def test_tween_play_restarts_from_the_beginning() raises -> None:
     t.play()
     t.update(0.6)
     t.play()
-    assert_equal(t.progress, 0.0)
-    assert_equal(t.value, 0.0)
+    assert_equal(t.progress(), 0.0)
+    assert_equal(t.value(), 0.0)
     assert_true(t.is_playing())
 
 
@@ -253,7 +253,7 @@ def test_tween_runs_backwards_when_end_is_below_start() raises -> None:
     var t = Tween(100.0, 0.0, 1.0)
     t.play()
     t.update(0.25)
-    assert_almost_equal(t.value, 75.0)
+    assert_almost_equal(t.value(), 75.0)
 
 
 # --- Tween: pause, resume, stop ----------------------------------------------
@@ -265,7 +265,7 @@ def test_tween_pause_freezes_the_value() raises -> None:
     t.update(0.3)
     t.pause()
     t.update(0.5)
-    assert_almost_equal(t.value, 30.0)
+    assert_almost_equal(t.value(), 30.0)
     assert_false(t.is_playing())
 
 
@@ -276,7 +276,7 @@ def test_tween_resume_continues_without_rewinding() raises -> None:
     t.pause()
     t.resume()
     t.update(0.2)
-    assert_almost_equal(t.value, 50.0)
+    assert_almost_equal(t.value(), 50.0)
 
 
 def test_tween_resume_does_not_restart_a_finished_tween() raises -> None:
@@ -292,8 +292,8 @@ def test_tween_stop_rewinds_to_start() raises -> None:
     t.play()
     t.update(0.5)
     t.stop()
-    assert_equal(t.progress, 0.0)
-    assert_equal(t.value, 10.0)
+    assert_equal(t.progress(), 0.0)
+    assert_equal(t.value(), 10.0)
     assert_false(t.is_playing())
 
 
@@ -304,8 +304,8 @@ def test_tween_loop_wraps_instead_of_finishing() raises -> None:
     var t = Tween(0.0, 100.0, 1.0)
     t.loop()
     t.update(1.25)
-    assert_almost_equal(t.progress, 0.25)
-    assert_almost_equal(t.value, 25.0)
+    assert_almost_equal(t.progress(), 0.25)
+    assert_almost_equal(t.value(), 25.0)
     assert_true(t.is_playing())
     assert_false(t.is_finished())
 
@@ -316,7 +316,7 @@ def test_tween_loop_keeps_running_over_many_cycles() raises -> None:
     for _ in range(100):
         t.update(0.1)
     assert_true(t.is_playing())
-    assert_true(t.progress >= 0.0 and t.progress <= 1.0)
+    assert_true(t.progress() >= 0.0 and t.progress() <= 1.0)
 
 
 # --- Tween: ping_pong --------------------------------------------------------
@@ -326,11 +326,11 @@ def test_tween_ping_pong_reverses_at_the_end() raises -> None:
     var t = Tween(0.0, 100.0, 1.0)
     t.ping_pong()
     t.update(0.8)
-    assert_almost_equal(t.value, 80.0)
+    assert_almost_equal(t.value(), 80.0)
     t.update(0.4)
     # 0.2 into the return leg, so back down to 0.8.
-    assert_almost_equal(t.progress, 0.8)
-    assert_almost_equal(t.value, 80.0)
+    assert_almost_equal(t.progress(), 0.8)
+    assert_almost_equal(t.value(), 80.0)
 
 
 def test_tween_ping_pong_reverses_again_at_the_start() raises -> None:
@@ -338,7 +338,7 @@ def test_tween_ping_pong_reverses_again_at_the_start() raises -> None:
     t.ping_pong()
     t.update(1.5)  # to 1.0, reflected back to 0.5
     t.update(0.7)  # down past 0 to -0.2, reflected up to 0.2
-    assert_almost_equal(t.progress, 0.2)
+    assert_almost_equal(t.progress(), 0.2)
     assert_true(t.is_playing())
 
 
@@ -348,7 +348,7 @@ def test_tween_ping_pong_never_finishes() raises -> None:
     for _ in range(100):
         t.update(0.13)
         assert_false(t.is_finished())
-        assert_true(t.progress >= 0.0 and t.progress <= 1.0)
+        assert_true(t.progress() >= 0.0 and t.progress() <= 1.0)
 
 
 def test_tween_ping_pong_survives_a_frame_longer_than_its_duration() raises -> (
@@ -359,8 +359,8 @@ def test_tween_ping_pong_survives_a_frame_longer_than_its_duration() raises -> (
     var t = Tween(0.0, 100.0, 0.1)
     t.ping_pong()
     t.update(5.0)
-    assert_true(t.progress >= 0.0 and t.progress <= 1.0)
-    assert_true(t.value >= 0.0 and t.value <= 100.0)
+    assert_true(t.progress() >= 0.0 and t.progress() <= 1.0)
+    assert_true(t.value() >= 0.0 and t.value() <= 100.0)
 
 
 # --- write_to -----------------------------------------------------------------
