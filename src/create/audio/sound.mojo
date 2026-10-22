@@ -13,21 +13,23 @@ struct Sound(Copyable, ImplicitlyCopyable, Movable):
     """
 
     var _pcm: ArcPointer[List[UInt8]]
-    var format: Int32
-    var channels: Int32
-    var sample_rate: Int32
+    # The samples' SDL audio format code (`SDL_AUDIO_S16`, ...).
+    var _format: Int32
+    var channels: Int
+    var sample_rate: Int
 
     def __init__(
         out self,
-        var pcm: List[UInt8],
-        format: Int32,
-        channels: Int32,
-        sample_rate: Int32,
+        *,
+        var _pcm: List[UInt8],
+        _format: Int32,
+        _channels: Int,
+        _sample_rate: Int,
     ):
-        self._pcm = ArcPointer(pcm^)
-        self.format = format
-        self.channels = channels
-        self.sample_rate = sample_rate
+        self._pcm = ArcPointer(_pcm^)
+        self._format = _format
+        self.channels = _channels
+        self.sample_rate = _sample_rate
 
     @staticmethod
     def load(path: String) raises -> Sound:
@@ -45,14 +47,21 @@ struct Sound(Copyable, ImplicitlyCopyable, Movable):
             and header[3] == 70
         ):
             var result = SDLAudio().load_wav(path)
-            return Sound(result[0].copy(), result[1], result[2], result[3])
+            return Sound(
+                _pcm=result[0].copy(),
+                _format=result[1],
+                _channels=Int(result[2]),
+                _sample_rate=Int(result[3]),
+            )
 
         var decoded = SndFile().load(path)
-        return Sound.from_pcm(decoded[0].copy(), decoded[1], decoded[2])
+        return Sound.from_pcm(
+            decoded[0].copy(), Int(decoded[1]), Int(decoded[2])
+        )
 
     @staticmethod
     def from_pcm(
-        data: List[Int16], channels: Int32 = 1, sample_rate: Int32 = 44100
+        data: List[Int16], channels: Int = 1, sample_rate: Int = 44100
     ) -> Sound:
         """Build a Sound from raw S16LE samples, e.g. a synthesized waveform."""
         var pcm = List[UInt8](length=len(data) * 2, fill=0)
@@ -61,4 +70,9 @@ struct Sound(Copyable, ImplicitlyCopyable, Movable):
             var sample = data[i]
             dst[unsafe_offset=i * 2] = UInt8(sample & 0xFF)
             dst[unsafe_offset=i * 2 + 1] = UInt8((sample >> 8) & 0xFF)
-        return Sound(pcm^, SDL_AUDIO_S16, channels, sample_rate)
+        return Sound(
+            _pcm=pcm^,
+            _format=SDL_AUDIO_S16,
+            _channels=channels,
+            _sample_rate=sample_rate,
+        )
