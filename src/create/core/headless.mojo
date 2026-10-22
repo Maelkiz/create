@@ -96,7 +96,7 @@ def run_headless[
 def _image_of(var mem: MemorySurface) raises -> Image:
     """`mem`'s pixels as an `Image`, taken over without a copy."""
     var buffer = PixelBuffer(0, 0)
-    buffer.width = mem.width
-    buffer.height = mem.height
+    buffer._width = mem.width
+    buffer._height = mem.height
     buffer._data = mem^._take_data()
     return Image(buffer^)

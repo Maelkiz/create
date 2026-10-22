@@ -383,7 +383,14 @@ def test_blit_image_downscales_by_nearest_neighbour() raises -> None:
             ptr[unsafe_offset=off + 3] = 255
     var mem = MemorySurface(4, 4)
     blit_image(
-        mem.surface(), sp._data.unsafe_ptr(), sp.width, sp.height, 0, 0, 2, 2
+        mem.surface(),
+        sp._data.unsafe_ptr(),
+        sp.width(),
+        sp.height(),
+        0,
+        0,
+        2,
+        2,
     )
     assert_equal(mem.pixel(0, 0), Color(255, 0, 0, 255))
     assert_equal(mem.pixel(1, 0), Color(0, 0, 255, 255))
@@ -398,7 +405,14 @@ def test_blit_image_skips_transparent_source_pixels() raises -> None:
     ptr[unsafe_offset=7] = 0  # fully transparent
     var mem = _filled(2, 1, Color(9, 9, 9, 255))
     blit_image(
-        mem.surface(), sp._data.unsafe_ptr(), sp.width, sp.height, 0, 0, 2, 1
+        mem.surface(),
+        sp._data.unsafe_ptr(),
+        sp.width(),
+        sp.height(),
+        0,
+        0,
+        2,
+        1,
     )
     assert_equal(mem.pixel(0, 0), Color(255, 0, 0, 255))
     assert_equal(mem.pixel(1, 0), Color(9, 9, 9, 255))
@@ -416,8 +430,8 @@ def test_blit_image_silhouette_paints_its_colour() raises -> None:
     blit_image(
         mem.surface(),
         sp._data.unsafe_ptr(),
-        sp.width,
-        sp.height,
+        sp.width(),
+        sp.height(),
         0,
         0,
         3,
