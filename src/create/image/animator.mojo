@@ -20,8 +20,8 @@ struct Animator(Copyable, Movable, Writable):
     confused with one another.
     """
 
-    var animation: Animation
-    var frame_index: Int
+    var _animation: Animation
+    var _frame_index: Int
     var _playing: Bool
     var _looping: Bool
     var _finished: Bool
@@ -33,17 +33,26 @@ struct Animator(Copyable, Movable, Writable):
         An animator always has an animation, so there is no empty state to
         guard against when rendering.
         """
-        self.animation = animation^
-        self.frame_index = 0
+        self._animation = animation^
+        self._frame_index = 0
         self._playing = False
         self._looping = False
         self._finished = False
         self._elapsed = 0.0
 
+    def animation(self) -> Animation:
+        """The animation being played, sharing its frames. Switch with `use`,
+        `play` or `loop`."""
+        return self._animation
+
+    def frame_index(self) -> Int:
+        """The frame showing, counted from 0."""
+        return self._frame_index
+
     def write_to[W: Writer](self, mut writer: W):
         # The animation is a shared asset, not printable, so only the
         # playhead shows.
-        writer.write("Animator(frame_index=", self.frame_index, ")")
+        writer.write("Animator(frame_index=", self._frame_index, ")")
 
     def use(mut self, var animation: Animation):
         """Switch to `animation`, rewound to frame 0 and stopped.
@@ -62,10 +71,10 @@ struct Animator(Copyable, Movable, Writable):
         -- and without this guard every frame would rewind to frame 0 and the
         animation would never visibly move.
         """
-        if self.animation._is(animation):
+        if self._animation._is(animation):
             return
-        self.animation = animation^
-        self.frame_index = 0
+        self._animation = animation^
+        self._frame_index = 0
         self._playing = False
         self._looping = False
         self._finished = False
@@ -73,7 +82,7 @@ struct Animator(Copyable, Movable, Writable):
 
     def play(mut self):
         """Play once from frame 0, holding the last frame at the end."""
-        self.frame_index = 0
+        self._frame_index = 0
         self._elapsed = 0.0
         self._playing = True
         self._looping = False
@@ -91,7 +100,7 @@ struct Animator(Copyable, Movable, Writable):
 
     def loop(mut self, var animation: Animation):
         """`use` then `loop`, and a no-op restart-wise if already looping it."""
-        if self.animation._is(animation) and self._playing and self._looping:
+        if self._animation._is(animation) and self._playing and self._looping:
             return
         self.use(animation^)
         self.loop()
@@ -107,7 +116,7 @@ struct Animator(Copyable, Movable, Writable):
 
     def stop(mut self):
         """Halt and rewind to frame 0."""
-        self.frame_index = 0
+        self._frame_index = 0
         self._elapsed = 0.0
         self._playing = False
         self._finished = False
@@ -120,14 +129,14 @@ struct Animator(Copyable, Movable, Writable):
         """
         if not self._playing:
             return
-        var duration = self.animation.frame_duration()
+        var duration = self._animation.frame_duration()
         self._elapsed += dt
         while self._elapsed >= duration:
             self._elapsed -= duration
-            if self.frame_index + 1 < self.animation.count():
-                self.frame_index += 1
+            if self._frame_index + 1 < self._animation.count():
+                self._frame_index += 1
             elif self._looping:
-                self.frame_index = 0
+                self._frame_index = 0
             else:
                 self._playing = False
                 self._finished = True
