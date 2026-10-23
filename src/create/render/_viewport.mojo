@@ -16,30 +16,30 @@ struct Viewport(Copyable, ImplicitlyCopyable, Movable):
     framebuffer size, which is what makes it unit-testable on its own.
     """
 
-    var width: Int
-    var height: Int
+    var width: Float64
+    var height: Float64
     var autoscale: AutoScale
     var scale: Float64
     var pixel_w: Int
     var pixel_h: Int
     var offset_x: Float64
     var offset_y: Float64
-    var _design_w: Int
-    var _design_h: Int
+    var _design_w: Float64
+    var _design_h: Float64
 
     def __init__(out self):
-        self.width = 0
-        self.height = 0
+        self.width = 0.0
+        self.height = 0.0
         self.autoscale = AutoScale.OFF
         self.scale = 1.0
         self.pixel_w = 0
         self.pixel_h = 0
         self.offset_x = 0.0
         self.offset_y = 0.0
-        self._design_w = 0
-        self._design_h = 0
+        self._design_w = 0.0
+        self._design_h = 0.0
 
-    def set_design(mut self, width: Int, height: Int):
+    def set_design(mut self, width: Float64, height: Float64):
         """Set the design size, the space the program is authored in.
 
         Stores only — the caller recomputes the mapping with `set_size`, so a
@@ -63,32 +63,34 @@ struct Viewport(Copyable, ImplicitlyCopyable, Movable):
         self.pixel_h = pixel_h
         if (
             self.autoscale != AutoScale.OFF
-            and self._design_w > 1
-            and self._design_h > 1
+            and self._design_w > 1.0
+            and self._design_h > 1.0
         ):
             self.scale = min(
-                Float64(pixel_w) / Float64(self._design_w),
-                Float64(pixel_h) / Float64(self._design_h),
+                Float64(pixel_w) / self._design_w,
+                Float64(pixel_h) / self._design_h,
             )
             if self.autoscale == AutoScale.EXTEND:
                 # The axis that constrained the scale divides back out to its
                 # design size; the other one gains the slack as world space.
-                self.width = Int(Float64(pixel_w) / self.scale + 0.5)
-                self.height = Int(Float64(pixel_h) / self.scale + 0.5)
+                # Not rounded: the extent is the window's, which a whole
+                # number of units would miss by up to half of one.
+                self.width = Float64(pixel_w) / self.scale
+                self.height = Float64(pixel_h) / self.scale
                 self.offset_x = 0.0
                 self.offset_y = 0.0
             else:
                 self.width = self._design_w
                 self.height = self._design_h
                 self.offset_x = (
-                    Float64(pixel_w) - Float64(self._design_w) * self.scale
+                    Float64(pixel_w) - self._design_w * self.scale
                 ) / 2.0
                 self.offset_y = (
-                    Float64(pixel_h) - Float64(self._design_h) * self.scale
+                    Float64(pixel_h) - self._design_h * self.scale
                 ) / 2.0
         else:
-            self.width = pixel_w
-            self.height = pixel_h
+            self.width = Float64(pixel_w)
+            self.height = Float64(pixel_h)
             self.scale = 1.0
             self.offset_x = 0.0
             self.offset_y = 0.0
@@ -99,25 +101,24 @@ struct Viewport(Copyable, ImplicitlyCopyable, Movable):
 
     def left(self) -> Float64:
         """Screen x of the left edge — negative, since the origin is centred."""
-        return -Float64(self.width) / 2.0
+        return -self.width / 2.0
 
     def right(self) -> Float64:
-        return Float64(self.width) / 2.0
+        return self.width / 2.0
 
     def bottom(self) -> Float64:
         """Screen y of the bottom edge — negative, since y grows upward."""
-        return -Float64(self.height) / 2.0
+        return -self.height / 2.0
 
     def top(self) -> Float64:
-        return Float64(self.height) / 2.0
+        return self.height / 2.0
 
     def base_matrix(self) -> Matrix[3, 3]:
         """The screen-to-pixel mapping: origin centred, y up.
 
         Anchoring on the framebuffer centre covers all three autoscale modes
         at once — `offset_x + scale * width / 2` equals `pixel_w / 2` for
-        `OFF`, `FIT` and `EXTEND` alike — and avoids the rounding `EXTEND`
-        introduces when it stores the extended size as an Int.
+        `OFF`, `FIT` and `EXTEND` alike.
 
         Screen space, not world space: this knows nothing of `Camera`, which
         sits between the two and is `Canvas`'s concern, not `Viewport`'s.

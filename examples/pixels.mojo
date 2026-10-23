@@ -22,8 +22,8 @@ struct Pixels(Program):
             canvas.image(
                 self.last.value(),
                 (0, 0),
-                Int(Float64(canvas.width()) * 1.01),
-                Int(Float64(canvas.height()) * 1.01),
+                canvas.width() * 1.01,
+                canvas.height() * 1.01,
             )
             canvas.background(Color(20, 20, 30, 30))
 

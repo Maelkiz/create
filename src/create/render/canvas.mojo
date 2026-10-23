@@ -97,8 +97,8 @@ struct _PersistentCanvasState(Movable):
     def _set_viewport(
         mut self,
         autoscale: AutoScale,
-        design_w: Int,
-        design_h: Int,
+        design_w: Float64,
+        design_h: Float64,
         pixel_w: Int,
         pixel_h: Int,
     ):
@@ -271,8 +271,8 @@ struct Canvas(DrawTarget, Movable):
     unless `blend_mode` picks another way to combine them.
     """
 
-    var _width: Int
-    var _height: Int
+    var _width: Float64
+    var _height: Float64
     var _scale: Float64
     var _view: Viewport
     var _state: _PersistentCanvasState
@@ -326,8 +326,8 @@ struct Canvas(DrawTarget, Movable):
 
     def __init__(
         out self,
-        width: Int,
-        height: Int,
+        width: Float64,
+        height: Float64,
         *,
         scale: Float64 = 1.0,
         antialiasing: Antialiasing = Antialiasing.MEDIUM,
@@ -340,7 +340,7 @@ struct Canvas(DrawTarget, Movable):
         rasterised on the CPU, whatever backend the program runs on; what
         comes out of it is an `Image`, which any canvas can draw.
         """
-        if width <= 0 or height <= 0:
+        if width <= 0.0 or height <= 0.0:
             raise Error(
                 "an offscreen canvas needs a size of at least one unit, got "
                 + String(width)
@@ -352,8 +352,8 @@ struct Canvas(DrawTarget, Movable):
                 "an offscreen canvas needs a positive scale, got "
                 + String(scale)
             )
-        var pixel_w = Int(Float64(width) * scale + 0.5)
-        var pixel_h = Int(Float64(height) * scale + 0.5)
+        var pixel_w = Int(width * scale + 0.5)
+        var pixel_h = Int(height * scale + 0.5)
         var state = _PersistentCanvasState(RenderBackend.CPU)
         state.autoclear = False
         state._backend.antialiasing = antialiasing
@@ -378,15 +378,23 @@ struct Canvas(DrawTarget, Movable):
         """
         return self._state^
 
-    def width(self) -> Int:
+    def width(self) -> Float64:
         """The width in screen units, `right() - left()`: the design width
-        under `AutoScale.FIT`, more under `EXTEND` as the window grows, the
+        under `AutoScale.FIT`, more under `EXTEND` as the window grows — by
+        a fraction of a unit too, as the window's pixels divide out — the
         window's pixels under `OFF`. Rebuilt every frame."""
         return self._width
 
-    def height(self) -> Int:
+    def height(self) -> Float64:
         """The height in screen units, `top() - bottom()`; see `width`."""
         return self._height
+
+    def bounds(self) -> Rectangle:
+        """The screen as a rectangle in screen space, `left()` to `right()`
+        and `bottom()` to `top()`: centred on the origin, `width()` by
+        `height()`. What `snapshot` and `clip` take, and what `contains`
+        asks whether something is on the screen."""
+        return Rectangle(Point2D(0.0, 0.0), self._width, self._height)
 
     def scale(self) -> Float64:
         """Window pixels per screen unit: what font size, outline thickness
@@ -425,10 +433,10 @@ struct Canvas(DrawTarget, Movable):
         var cx0 = Float64(Int(self._view.offset_x))
         var cy0 = Float64(Int(self._view.offset_y))
         var cx1 = Float64(
-            Int(self._view.offset_x + Float64(self._width) * self._scale + 0.5)
+            Int(self._view.offset_x + self._width * self._scale + 0.5)
         )
         var cy1 = Float64(
-            Int(self._view.offset_y + Float64(self._height) * self._scale + 0.5)
+            Int(self._view.offset_y + self._height * self._scale + 0.5)
         )
         self._state._backend.record(
             letterbox_command(self._state.letterbox_color, cx0, cy0, cx1, cy1)
@@ -760,8 +768,8 @@ struct Canvas(DrawTarget, Movable):
             clear_command(
                 gradient,
                 self._base,
-                Float64(self._width),
-                Float64(self._height),
+                self._width,
+                self._height,
             )
         )
 
@@ -801,10 +809,7 @@ struct Canvas(DrawTarget, Movable):
                 "save_image needs a positive scale, got " + String(scale)
             )
         if self._offscreen():
-            var whole = Rectangle(
-                Point2D(0.0, 0.0), Float64(self._width), Float64(self._height)
-            )
-            var mem = self._read_offscreen(whole, scale)
+            var mem = self._read_offscreen(self.bounds(), scale)
             mem.save(path, opaque=not transparent)
             return
         var capture = Viewport()
@@ -812,8 +817,8 @@ struct Canvas(DrawTarget, Movable):
         # extended space, which is exactly the area the program drew into.
         capture.autoscale = AutoScale.FIT
         capture.set_design(self._width, self._height)
-        var pw = Int(Float64(self._width) * scale + 0.5)
-        var ph = Int(Float64(self._height) * scale + 0.5)
+        var pw = Int(self._width * scale + 0.5)
+        var ph = Int(self._height * scale + 0.5)
         capture.set_size(pw, ph)
         self._state._backend.request_image(
             _ImageRequest(
@@ -860,12 +865,14 @@ struct Canvas(DrawTarget, Movable):
             if px < 0 or py < 0 or px >= target.width or py >= target.height:
                 return Color.TRANSPARENT
             return target.pixel(px, py)
-        var x = Int(floor(position.x + Float64(self._width) / 2.0))
-        var y = Int(floor(Float64(self._height) / 2.0 - position.y))
-        if x < 0 or y < 0 or x >= self._width or y >= self._height:
+        # The read is whole units, centred on the screen like the frame.
+        ref backend = self._state._backend
+        var x = Int(floor(position.x + Float64(backend.frame_w) / 2.0))
+        var y = Int(floor(Float64(backend.frame_h) / 2.0 - position.y))
+        if x < 0 or y < 0 or x >= backend.frame_w or y >= backend.frame_h:
             return Color.TRANSPARENT
-        self._state._backend.read_frame(seeded=not self._state.autoclear)
-        return self._state._backend.frame_read.value().pixel(x, y)
+        backend.read_frame(seeded=not self._state.autoclear)
+        return backend.frame_read.value().pixel(x, y)
 
     def snapshot(mut self, scale: Float64 = 1.0) raises -> Image:
         """What this frame has drawn so far, as an `Image` of the whole
@@ -877,12 +884,7 @@ struct Canvas(DrawTarget, Movable):
         `scale=canvas.scale()` gives the window's own resolution instead.
         Everything `pixel` says about what is read applies.
         """
-        return self.snapshot(
-            Rectangle(
-                Point2D(0.0, 0.0), Float64(self._width), Float64(self._height)
-            ),
-            scale,
-        )
+        return self.snapshot(self.bounds(), scale)
 
     def snapshot(
         mut self, region: Rectangle, scale: Float64 = 1.0
@@ -911,8 +913,8 @@ struct Canvas(DrawTarget, Movable):
         ref backend = self._state._backend
         if (
             scale == 1.0
-            and pw == self._width
-            and ph == self._height
+            and pw == backend.frame_w
+            and ph == backend.frame_h
             and region.position == Point2D(0.0, 0.0)
         ):
             # The whole screen at design size is what `pixel` reads,
@@ -1286,13 +1288,6 @@ struct Canvas(DrawTarget, Movable):
         self.image(
             animator.animation().frame(animator.frame_index()), position, w, h
         )
-
-    def image(mut self, image: Image, position: Point2D, w: Int, h: Int):
-        """Whole-unit sizes, such as `canvas.width()` and `canvas.height()`."""
-        self.image(image, position, Float64(w), Float64(h))
-
-    def image(mut self, animator: Animator, position: Point2D, w: Int, h: Int):
-        self.image(animator, position, Float64(w), Float64(h))
 
     def text_color(mut self, color: Color):
         """Paint glyphs in `color`. Separate from `fill`, so a shape colour and

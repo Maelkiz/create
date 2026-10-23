@@ -12,7 +12,7 @@ from create.math.matrix import _apply as apply
 def _design(w: Int, h: Int, mode: AutoScale) raises -> Viewport:
     var v = Viewport()
     v.autoscale = mode
-    v.set_design(w, h)
+    v.set_design(Float64(w), Float64(h))
     return v^
 
 
@@ -170,12 +170,28 @@ def test_extend_matches_fit_when_the_aspect_matches() raises -> None:
 
 def test_extend_reports_the_slack_on_the_unconstrained_axis() raises -> None:
     # Height constrains: 700/600 < 1000/800. The design height survives the
-    # round-trip through the scale, and the width picks up the slack.
+    # round-trip through the scale, and the width picks up the slack, not
+    # rounded to a whole unit.
     var v = _design(800, 600, AutoScale.EXTEND)
     v.set_size(1000, 700)
     assert_almost_equal(v.scale, 700.0 / 600.0)
-    assert_equal(v.height, 600)
-    assert_equal(v.width, 857)
+    assert_almost_equal(v.height, 600.0)
+    assert_almost_equal(v.width, 6000.0 / 7.0)
+
+
+def test_extend_edges_are_the_window_edges_at_a_fractional_size() raises -> (
+    None
+):
+    # 1000 / (7/6) is 857.14 units: the edges sit on the window's own edges
+    # rather than a whole-unit width's, a fifth of a pixel inside them.
+    var v = _design(800, 600, AutoScale.EXTEND)
+    v.set_size(1000, 700)
+    var top_left = v.pixel_to_screen((0.0, 0.0))
+    var bottom_right = v.pixel_to_screen((1000.0, 700.0))
+    assert_almost_equal(top_left.x, v.left())
+    assert_almost_equal(top_left.y, v.top())
+    assert_almost_equal(bottom_right.x, v.right())
+    assert_almost_equal(bottom_right.y, v.bottom())
 
 
 def test_pixel_to_screen_centres_the_framebuffer_centre() raises -> None:

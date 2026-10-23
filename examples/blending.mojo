@@ -49,7 +49,7 @@ struct App(Program):
             canvas.rectangle(
                 ((x0 + canvas.right()) / 2.0, 0.0),
                 canvas.right() - x0,
-                Float64(canvas.height()),
+                canvas.height(),
             )
 
         # Three overlapping circles, turning slowly while the cluster swings

@@ -43,7 +43,7 @@ def _base(width: Int = _W, height: Int = _H) -> Matrix[3, 3]:
     """The same world-to-pixel mapping a 1:1 frame gets, taken from `Viewport`
     rather than rebuilt, so a change there cannot silently desync these."""
     var v = Viewport()
-    v.set_design(width, height)
+    v.set_design(Float64(width), Float64(height))
     v.set_size(width, height)
     return v.base_matrix()
 

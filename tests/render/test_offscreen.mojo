@@ -28,6 +28,14 @@ def test_a_new_offscreen_canvas_is_transparent() raises -> None:
     assert_equal(canvas.width(), 100)
     assert_equal(canvas.height(), 60)
     assert_equal(canvas.pixel((0, 0)), Color.TRANSPARENT)
+
+
+def test_bounds_is_the_screen_as_a_rectangle() raises -> None:
+    var canvas = _canvas()
+    var bounds = canvas.bounds()
+    assert_equal(bounds, Rectangle((0, 0), 100, 60))
+    assert_equal(bounds.left(), canvas.left())
+    assert_equal(bounds.top(), canvas.top())
     assert_equal(canvas.pixel((-49, 29)), Color.TRANSPARENT)
 
 

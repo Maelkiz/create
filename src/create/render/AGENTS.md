@@ -295,7 +295,9 @@ with `pre = to_target @ screen_inv`. `to_target` maps screen space to the read's
 `screen_inv` is the window-pixel-to-screen mapping that `Canvas.__init__` hands over through
 `begin_frame`. Like `present`, it moves the command buffer out and back. Pixels whose centre is off
 the screen are made transparent afterwards, since a clear fills the whole target.
-- `read_frame` caches the full-screen read at design size in `frame_read`. It stays current
+- `read_frame` caches the full-screen read at design size in `frame_read`: `frame_w` x
+  `frame_h`, the screen extent (`screen_w`, a `Float64`) rounded to whole units and centred on
+  the screen, so `pixel` and `last_frame` share its grid. It stays current
   while `recorded` (bumped by every `record` and `record_clear`) is unchanged, and resets at present.
   `pixel` and a full-screen scale-1 `snapshot` share it.
 - `seeded` (autoclear off): the first such read sets `keep_frames`. From then on `present` samples
