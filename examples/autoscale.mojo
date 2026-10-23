@@ -1,10 +1,10 @@
 from create import *
 
 
-def _mode_name(mode: AutoScale) -> String:
-    if mode == AutoScale.FIT:
+def _mode_name(mode: Autoscale) -> String:
+    if mode == Autoscale.FIT:
         return "FIT"
-    if mode == AutoScale.EXTEND:
+    if mode == Autoscale.EXTEND:
         return "EXTEND"
     return "OFF"
 
@@ -13,7 +13,7 @@ def _mode_name(mode: AutoScale) -> String:
 struct App(Program):
     var x: Float64
     var dir: Float64
-    var mode: AutoScale
+    var mode: Autoscale
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> App:
@@ -26,7 +26,7 @@ struct App(Program):
         #           the scene stays put while the space around it grows
         # The origin is the middle of the design area and y grows upward, so
         # the labels below centre sit at negative y.
-        return App(100.0, 1.0, AutoScale.FIT)
+        return App(100.0, 1.0, Autoscale.FIT)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         if context.input.key_pressed("f11"):
@@ -35,12 +35,12 @@ struct App(Program):
             else:
                 context.window_mode(WindowMode.FULLSCREEN)
         if context.input.key_pressed("space"):
-            if self.mode == AutoScale.FIT:
-                self.mode = AutoScale.EXTEND
-            elif self.mode == AutoScale.EXTEND:
-                self.mode = AutoScale.OFF
+            if self.mode == Autoscale.FIT:
+                self.mode = Autoscale.EXTEND
+            elif self.mode == Autoscale.EXTEND:
+                self.mode = Autoscale.OFF
             else:
-                self.mode = AutoScale.FIT
+                self.mode = Autoscale.FIT
             context.autoscale(self.mode)
         self.x += self.dir * 200.0 * context.time.delta
         # Set the sign rather than flip it: under EXTEND/OFF a shrinking

@@ -110,7 +110,7 @@ struct LaidOut[extend: Bool](Program):
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> Self:
         comptime if Self.extend:
-            context.autoscale(AutoScale.EXTEND)
+            context.autoscale(Autoscale.EXTEND)
         return Self(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

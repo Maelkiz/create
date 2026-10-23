@@ -14,7 +14,7 @@ from create.render._surface import MemorySurface
 from create.core._step import first_step, step
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
-from create.render.autoscale import AutoScale
+from create.render.autoscale import Autoscale
 from create.render.canvas import _PersistentCanvasState
 from create.render.render_backend import RenderBackend
 from create.image.image import Image

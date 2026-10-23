@@ -1,4 +1,4 @@
-from create.render.autoscale import AutoScale
+from create.render.autoscale import Autoscale
 from create.render.canvas import Canvas, _PersistentCanvasState
 
 from .time import Time
@@ -23,7 +23,7 @@ struct Context(Copyable, Movable):
     Two directions share it. The loop writes `time` and `input` before each
     `update`, for the program to read; the program sets the dials, for the
     loop to read. Every dial is a method, like the `Canvas` style setters:
-    `context.autoscale(AutoScale.EXTEND)`, `context.max_frame_rate(30)`.
+    `context.autoscale(Autoscale.EXTEND)`, `context.max_frame_rate(30)`.
     Called with no arguments, each reads back the value as set, for a debug
     overlay or a settings screen to show.
 
@@ -54,7 +54,7 @@ struct Context(Copyable, Movable):
     """Keyboard, mouse and gamepad state. The run loop folds each frame's events into
     it before `update`, so it is settled for the whole frame. Read it, don't
     write it: the loop carries it into the next frame."""
-    var _autoscale: AutoScale
+    var _autoscale: Autoscale
     var _quit_on_escape: Bool
     var _title: String
     var _resizable: Bool
@@ -71,7 +71,7 @@ struct Context(Copyable, Movable):
     def __init__(out self):
         self.time = Time()
         self.input = Input()
-        self._autoscale = AutoScale.FIT
+        self._autoscale = Autoscale.FIT
         self._quit_on_escape = True
         self._title = ""
         self._resizable = True
@@ -103,13 +103,13 @@ struct Context(Copyable, Movable):
         self._design_w = width
         self._design_h = height
 
-    def autoscale(self) -> AutoScale:
+    def autoscale(self) -> Autoscale:
         """How the design size maps onto the window. `FIT` unless set."""
         return self._autoscale
 
-    def autoscale(mut self, mode: AutoScale):
+    def autoscale(mut self, mode: Autoscale):
         """Choose how the design size maps onto the window — see
-        `AutoScale`."""
+        `Autoscale`."""
         self._autoscale = mode
 
     def quit_on_escape(self) -> Bool:

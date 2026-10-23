@@ -126,9 +126,9 @@ def main() raises:
             "Gradients (GPU)",
             width=1280,
             height=720,
-            autoscale=AutoScale.EXTEND,
+            autoscale=Autoscale.EXTEND,
         )
     else:
         run[App](
-            "Gradients", width=1280, height=720, autoscale=AutoScale.EXTEND
+            "Gradients", width=1280, height=720, autoscale=Autoscale.EXTEND
         )

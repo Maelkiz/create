@@ -12,7 +12,7 @@ from std.testing import (
 
 from create.core.context import Context
 from create.core.window_mode import WindowMode
-from create.render import AutoScale
+from create.render import Autoscale
 
 
 def test_frame_count_is_zero_before_the_first_frame() raises -> None:
@@ -67,7 +67,7 @@ def test_quit_is_recorded_on_the_context() raises -> None:
 
 def test_dials_read_back_their_defaults() raises -> None:
     var context = Context()
-    assert_true(context.autoscale() == AutoScale.FIT)
+    assert_true(context.autoscale() == Autoscale.FIT)
     assert_true(context.quit_on_escape())
     assert_equal(context.max_frame_rate(), 0)
 
@@ -75,12 +75,12 @@ def test_dials_read_back_their_defaults() raises -> None:
 def test_dials_read_back_what_was_set() raises -> None:
     var context = Context()
     context.design_size(800, 600)
-    context.autoscale(AutoScale.EXTEND)
+    context.autoscale(Autoscale.EXTEND)
     context.quit_on_escape(False)
     var size = context.design_size()
     assert_equal(size[0], 800)
     assert_equal(size[1], 600)
-    assert_true(context.autoscale() == AutoScale.EXTEND)
+    assert_true(context.autoscale() == Autoscale.EXTEND)
     assert_true(not context.quit_on_escape())
 
 

@@ -243,7 +243,7 @@ def test_fit_paints_letterbox_bars() raises -> None:
 def test_extend_has_no_letterbox_bars() raises -> None:
     # Same shape under EXTEND: the world grows into the leftover instead.
     var m = run_headless[ExtendNoBars](
-        100, 50, 1, 100, 100, autoscale=AutoScale.EXTEND
+        100, 50, 1, 100, 100, autoscale=Autoscale.EXTEND
     )
     assert_equal(m.pixel(50, 5), Color.BLUE)
     assert_equal(m.pixel(50, 95), Color.BLUE)

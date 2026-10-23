@@ -1,6 +1,6 @@
 from create._window.window import Window
 from create.render.antialiasing import Antialiasing
-from create.render.autoscale import AutoScale
+from create.render.autoscale import Autoscale
 from create.render.render_backend import RenderBackend
 from create.render.canvas import _PersistentCanvasState
 from create.core.context import Context
@@ -101,7 +101,7 @@ def run[
     backend: RenderBackend = RenderBackend.CPU,
     resizable: Bool = True,
     antialiasing: Antialiasing = Antialiasing.MEDIUM,
-    autoscale: AutoScale = AutoScale.FIT,
+    autoscale: Autoscale = Autoscale.FIT,
 ) raises:
     """Open a window and run `P` in it until it quits.
 
@@ -113,7 +113,7 @@ def run[
     its work area and the design is scaled onto it. `mode=FULLSCREEN` with a
     size therefore means *author at that size, present fullscreen*.
 
-    The scaling is `autoscale`, `AutoScale.FIT` by default, so a program keeps
+    The scaling is `autoscale`, `Autoscale.FIT` by default, so a program keeps
     its layout on any display:
 
     | call                                          | FIT / EXTEND             | OFF            |
@@ -122,7 +122,7 @@ def run[
     | `run("T", FULLSCREEN, width=1000, height=1000)`| design 1000x1000, scaled | world = monitor|
     | `run("T", WindowMode.FULLSCREEN)`             | design 1280x720, scaled  | world = monitor|
 
-    `AutoScale.OFF` is the opt-out, and the only way the size here stops
+    `Autoscale.OFF` is the opt-out, and the only way the size here stops
     meaning anything: the design size goes unused and coordinates become
     the window's own pixels, which is how a program authors against the
     display rather than against a fixed space. `context.autoscale(mode)`
@@ -176,7 +176,7 @@ def run[
     #
     # Scaling that design to the window is the default because the alternative
     # punishes the obvious way to write a program: laid-out coordinates that
-    # break on a display the author never had. `autoscale=AutoScale.OFF` opts
+    # break on a display the author never had. `autoscale=Autoscale.OFF` opts
     # back out.
     var context = Context()
     context.design_size(width, height)

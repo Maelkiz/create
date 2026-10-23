@@ -18,7 +18,7 @@ two loops cannot drift in what a frame is.
 from create._window import GLWindow
 
 from create.render.antialiasing import Antialiasing
-from create.render.autoscale import AutoScale
+from create.render.autoscale import Autoscale
 from create.render.render_backend import RenderBackend
 from create.render.canvas import _PersistentCanvasState
 from create.core.context import Context
@@ -131,7 +131,7 @@ def run_gl[
     vsync: Bool = True,
     resizable: Bool = True,
     antialiasing: Antialiasing = Antialiasing.MEDIUM,
-    autoscale: AutoScale = AutoScale.FIT,
+    autoscale: Autoscale = Autoscale.FIT,
 ) raises:
     """Open a GL window and run `P` on the GPU backend until it quits.
 

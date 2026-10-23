@@ -19,7 +19,7 @@ struct ExtendAfterFirst(Program):
         mut context: Context, mut canvas: Canvas
     ) raises -> ExtendAfterFirst:
         canvas.background(Color.BLUE)
-        context.autoscale(AutoScale.EXTEND)
+        context.autoscale(Autoscale.EXTEND)
         return ExtendAfterFirst(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
