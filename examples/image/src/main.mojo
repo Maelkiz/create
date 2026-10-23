@@ -9,7 +9,9 @@ struct Game(Program):
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> Game:
-        var image = Image.load(source_path("../assets/image.jpeg"), 120, 120)
+        var image = Image.load(source_path("../assets/image.jpeg")).resize(
+            120, 120
+        )
         return Game(image^, 0, 0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

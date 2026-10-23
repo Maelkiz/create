@@ -198,11 +198,6 @@ struct Image(Copyable, Movable):
         return Image(dst^)
 
     @staticmethod
-    def load(path: String, width: Int, height: Int) raises -> Image:
-        """Load an image file and resize to the given dimensions."""
-        return Image.load(path).resize(width, height)
-
-    @staticmethod
     def _stem_end(path: String) -> Int:
         """Index of the last `.` in `path`, or its length when it has none.
 

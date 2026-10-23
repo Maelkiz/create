@@ -176,12 +176,6 @@ def test_load_jpeg_pixels() raises -> None:
     _assert_close(Int(ptr[unsafe_offset=14]), 255, tol)
 
 
-def test_load_with_dimensions() raises -> None:
-    var s = Image.load("tests/fixtures/test_2x2.bmp", 4, 4)
-    assert_equal(s.width(), 4)
-    assert_equal(s.height(), 4)
-
-
 def test_load_nonexistent_path_raises() raises -> None:
     with assert_raises():
         _ = Image.load("tests/fixtures/does_not_exist.bmp")
