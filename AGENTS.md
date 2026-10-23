@@ -389,7 +389,9 @@ frame costs bounded memory. Shapes, text and gradients go into an image through 
 
 **Not Processing's coordinates.** Origin at the screen centre, **y up**; `x ∈ [-w/2, w/2]`,
 `y ∈ [-h/2, h/2]`. So `rotate` is counter-clockwise, gravity is negative `y`, and `canvas.left()`/
-`bottom()` are negative — use the edge methods, not `width`/`height` arithmetic. Glyphs and images
+`bottom()` are negative — use the edge methods, not `width`/`height` arithmetic. `canvas.width()`/
+`height()` are `Float64` units (under `EXTEND` the window's pixels divide out to a fraction), and
+`canvas.bounds()` is the screen as a `Rectangle`, for `snapshot`, `clip` or `contains`. Glyphs and images
 are not flipped by the y-up axis, but turn, shear and mirror with `canvas.transform` like every
 render call. **All shapes are centre-positioned**, including `Rectangle.position`.
 

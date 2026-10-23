@@ -202,7 +202,11 @@ struct Context(Copyable, Movable):
         """Remap `state` onto a framebuffer of this size under the design
         size and autoscale dials, at the top of a frame."""
         state._set_viewport(
-            self._autoscale, self._design_w, self._design_h, pixel_w, pixel_h
+            self._autoscale,
+            Float64(self._design_w),
+            Float64(self._design_h),
+            pixel_w,
+            pixel_h,
         )
 
     def _new_canvas(self, var state: _PersistentCanvasState) -> Canvas:

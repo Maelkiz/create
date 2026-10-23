@@ -66,7 +66,7 @@ def _viewport(design: Int, pixels: Int) -> Viewport:
     """A `FIT` viewport of `design` world units across `pixels` pixels."""
     var v = Viewport()
     v.autoscale = AutoScale.FIT
-    v.set_design(design, design)
+    v.set_design(Float64(design), Float64(design))
     v.set_size(pixels, pixels)
     return v^
 

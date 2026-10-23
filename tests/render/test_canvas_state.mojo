@@ -70,5 +70,21 @@ def test_design_overrides_an_earlier_design() raises -> None:
     assert_equal(next.height(), 500)
 
 
+def test_extend_reports_a_fractional_size() raises -> None:
+    # 1000 x 700 at the 7/6 scale 600 rows fix: 857.14 units wide, the
+    # edges a half of it either side, and a whole-screen read rounds to
+    # whole units.
+    var context = Context()
+    context.design_size(800, 600)
+    context.autoscale(AutoScale.EXTEND)
+    var canvas = context._new_canvas(_state(context, 1000, 700))
+    assert_almost_equal(canvas.width(), 6000.0 / 7.0)
+    assert_almost_equal(canvas.right() - canvas.left(), canvas.width())
+    assert_almost_equal(canvas.bounds().w, canvas.width())
+    var shot = canvas.snapshot()
+    assert_equal(shot.width(), 857)
+    assert_equal(shot.height(), 600)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

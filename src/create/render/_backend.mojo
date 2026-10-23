@@ -677,13 +677,16 @@ def _design_pixels(width: Int, height: Int) -> Matrix[3, 3]:
 
 
 def _clear_off_screen(
-    mut mem: MemorySurface, to_target: Matrix[3, 3], width: Int, height: Int
+    mut mem: MemorySurface,
+    to_target: Matrix[3, 3],
+    width: Float64,
+    height: Float64,
 ):
     """Make every pixel of `mem` whose centre is off the `width` x
     `height` screen transparent. A clear paints the whole target, and a
     read's target may reach past the screen, where the frame has nothing."""
-    var a = mat_apply(to_target, -Float64(width) / 2.0, Float64(height) / 2.0)
-    var b = mat_apply(to_target, Float64(width) / 2.0, -Float64(height) / 2.0)
+    var a = mat_apply(to_target, -width / 2.0, height / 2.0)
+    var b = mat_apply(to_target, width / 2.0, -height / 2.0)
     # Pixels whose centre `i + 0.5` lies in `[lo, hi)`.
     var x0 = max(Int(ceil(min(a[0], b[0]) - 0.5)), 0)
     var x1 = min(Int(ceil(max(a[0], b[0]) - 0.5)), mem.width)
@@ -814,10 +817,15 @@ struct Backend(Movable):
     every command's transform starts from; set by `begin_frame`. A read
     composes it in front of its own screen-to-target mapping, as a capture
     does."""
-    var screen_w: Int
-    var screen_h: Int
+    var screen_w: Float64
+    var screen_h: Float64
     """This frame's screen extent in design units, `canvas.width()` and
     `canvas.height()`."""
+    var frame_w: Int
+    var frame_h: Int
+    """The screen extent rounded to whole units: the size of a read at
+    design size, `frame_read`'s and `last_frame`'s, centred on the
+    screen."""
     var recorded: Int
     """Records ever made, a clock for `frame_read`: a read is current while
     nothing has been recorded since. A count of commands would not do, since
@@ -869,8 +877,10 @@ struct Backend(Movable):
         self.clips = List[_Clip]()
         self.clip = 0
         self.screen_inv = identity[3]()
-        self.screen_w = 0
-        self.screen_h = 0
+        self.screen_w = 0.0
+        self.screen_h = 0.0
+        self.frame_w = 0
+        self.frame_h = 0
         self.recorded = 0
         self.autoclear_head = False
         self.frame_read = None
@@ -1030,12 +1040,16 @@ struct Backend(Movable):
         )
         mem.save(request.path, opaque=not request.transparent)
 
-    def begin_frame(mut self, screen: Matrix[3, 3], width: Int, height: Int):
+    def begin_frame(
+        mut self, screen: Matrix[3, 3], width: Float64, height: Float64
+    ):
         """Note the frame's screen-to-window mapping and extent, for reads
         and for keeping the finished frame."""
         self.screen_inv = inverse(screen)
         self.screen_w = width
         self.screen_h = height
+        self.frame_w = Int(width + 0.5)
+        self.frame_h = Int(height + 0.5)
         self.autoclear_head = False
 
     def read(
@@ -1087,10 +1101,10 @@ struct Backend(Movable):
         time."""
         if not self.frame_read or self.frame_read_at != self.recorded:
             self.frame_read = self.read(
-                self.screen_w,
-                self.screen_h,
+                self.frame_w,
+                self.frame_h,
                 1.0,
-                _design_pixels(self.screen_w, self.screen_h),
+                _design_pixels(self.frame_w, self.frame_h),
                 seeded,
             )
             self.frame_read_at = self.recorded
@@ -1098,13 +1112,13 @@ struct Backend(Movable):
     def _keep_frame[o: Origin[mut=True]](mut self, s: Surface[o]):
         """Sample the finished frame on `s` (window pixels) down or up to
         design size, nearest pixel, into `last_frame`."""
-        var mem = MemorySurface(self.screen_w, self.screen_h)
+        var mem = MemorySurface(self.frame_w, self.frame_h)
         var to_window = inverse(self.screen_inv)
         var from_design = to_window @ inverse(
-            _design_pixels(self.screen_w, self.screen_h)
+            _design_pixels(self.frame_w, self.frame_h)
         )
-        for y in range(self.screen_h):
-            for x in range(self.screen_w):
+        for y in range(self.frame_h):
+            for x in range(self.frame_w):
                 var p = mat_apply(
                     from_design, Float64(x) + 0.5, Float64(y) + 0.5
                 )
@@ -1113,7 +1127,7 @@ struct Backend(Movable):
                 if wx < 0 or wy < 0 or wx >= s.width or wy >= s.height:
                     continue
                 var src = s.offset(wx, wy)
-                var dst = (y * self.screen_w + x) * 4
+                var dst = (y * self.frame_w + x) * 4
                 for k in range(4):
                     mem.data[dst + k] = s.px[unsafe_offset=src + k]
         self.last_frame = mem^
