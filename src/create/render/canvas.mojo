@@ -6,7 +6,7 @@ from create.color.gradient import Gradient
 from .align import Align
 from create.color.blend_mode import BlendMode
 from .antialiasing import Antialiasing
-from .autoscale import AutoScale
+from .autoscale import Autoscale
 from create.text.font import Font, FontWeight
 from ._surface import MemorySurface
 from ._viewport import Viewport
@@ -80,7 +80,7 @@ struct _PersistentCanvasState(Movable):
     frame from `Context`. A `Canvas` copies it; `Canvas._release` deliberately
     does not write it back, which would undo the loop's own resize handling."""
     var letterbox_color: Color
-    """The colour of the bars outside the design area under `AutoScale.FIT`,
+    """The colour of the bars outside the design area under `Autoscale.FIT`,
     set through `canvas.letterbox_color`."""
     var autoclear: Bool
     """Whether each frame opens with a clear, set through
@@ -96,7 +96,7 @@ struct _PersistentCanvasState(Movable):
 
     def _set_viewport(
         mut self,
-        autoscale: AutoScale,
+        autoscale: Autoscale,
         design_w: Float64,
         design_h: Float64,
         pixel_w: Int,
@@ -357,7 +357,7 @@ struct Canvas(DrawTarget, Movable):
         var state = _PersistentCanvasState(RenderBackend.CPU)
         state.autoclear = False
         state._backend.antialiasing = antialiasing
-        state._set_viewport(AutoScale.FIT, width, height, pixel_w, pixel_h)
+        state._set_viewport(Autoscale.FIT, width, height, pixel_w, pixel_h)
         state._backend.target = MemorySurface(pixel_w, pixel_h)
         self = Canvas(_state=state^)
 
@@ -380,7 +380,7 @@ struct Canvas(DrawTarget, Movable):
 
     def width(self) -> Float64:
         """The width in screen units, `right() - left()`: the design width
-        under `AutoScale.FIT`, more under `EXTEND` as the window grows — by
+        under `Autoscale.FIT`, more under `EXTEND` as the window grows — by
         a fraction of a unit too, as the window's pixels divide out — the
         window's pixels under `OFF`. Rebuilt every frame."""
         return self._width
@@ -419,7 +419,7 @@ struct Canvas(DrawTarget, Movable):
         """Record the window area outside the design bounds.
 
         Runs after render, so it doubles as the clip for anything rendered past
-        the edges of the design area. Nothing to do under `AutoScale.EXTEND`:
+        the edges of the design area. Nothing to do under `Autoscale.EXTEND`:
         the design covers the whole frame, so there is neither a bar to paint
         nor an out-of-bounds region to clip — and rounding the extended size
         could otherwise leave a one-pixel seam along an edge.
@@ -428,7 +428,7 @@ struct Canvas(DrawTarget, Movable):
         frame's clip rather than something the program drew, so no transform
         applies to it.
         """
-        if not self._view.scaled() or self._view.autoscale == AutoScale.EXTEND:
+        if not self._view.scaled() or self._view.autoscale == Autoscale.EXTEND:
             return
         var cx0 = Float64(Int(self._view.offset_x))
         var cy0 = Float64(Int(self._view.offset_y))
@@ -815,7 +815,7 @@ struct Canvas(DrawTarget, Movable):
         var capture = Viewport()
         # The design size, not the window's: under `EXTEND` that is the
         # extended space, which is exactly the area the program drew into.
-        capture.autoscale = AutoScale.FIT
+        capture.autoscale = Autoscale.FIT
         capture.set_design(self._width, self._height)
         var pw = Int(self._width * scale + 0.5)
         var ph = Int(self._height * scale + 0.5)
@@ -1474,7 +1474,7 @@ struct Canvas(DrawTarget, Movable):
         return self._state.letterbox_color
 
     def letterbox_color(mut self, color: Color):
-        """Colour the bars outside the design area under `AutoScale.FIT`.
+        """Colour the bars outside the design area under `Autoscale.FIT`.
 
         A frame-wide setting: the bars are painted after the frame is drawn,
         so this frame's bars take it wherever in the frame it is called, and

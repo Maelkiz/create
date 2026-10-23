@@ -48,7 +48,7 @@ from create.render._tessellate import (
     emit_triangle,
 )
 from create.math.matrix import rotate, scale
-from create.render.autoscale import AutoScale
+from create.render.autoscale import Autoscale
 from create.color.color import Color
 from create.render._viewport import Viewport
 from create.render._curve import bezier_device_points, stroke_quads
@@ -65,7 +65,7 @@ format fails here rather than silently re-slicing these assertions."""
 def _viewport(design: Int, pixels: Int) -> Viewport:
     """A `FIT` viewport of `design` world units across `pixels` pixels."""
     var v = Viewport()
-    v.autoscale = AutoScale.FIT
+    v.autoscale = Autoscale.FIT
     v.set_design(Float64(design), Float64(design))
     v.set_size(pixels, pixels)
     return v^

@@ -16,7 +16,7 @@ from create._window import GLWindow
 from create.render._gl import GL
 from create.render._gl_target import _GLTarget
 from create.render.antialiasing import Antialiasing
-from create.render.autoscale import AutoScale
+from create.render.autoscale import Autoscale
 from create.render.render_backend import RenderBackend
 from create.render.canvas import _PersistentCanvasState
 from create.core.context import Context
@@ -47,7 +47,7 @@ def _run_headless_gl[
     pixel_width: Int = 0,
     pixel_height: Int = 0,
     antialiasing: Antialiasing = Antialiasing.OFF,
-    autoscale: AutoScale = AutoScale.FIT,
+    autoscale: Autoscale = Autoscale.FIT,
 ) raises -> MemorySurface:
     """Run `P` through the GPU backend — `create`'s frame, then `frames`
     calls to `update` — and return the last frame as a `MemorySurface`.

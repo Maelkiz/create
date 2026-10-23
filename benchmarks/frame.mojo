@@ -128,7 +128,7 @@ def main() raises:
             cpu = True
     if cpu:
         run[Bench](
-            "Bench (CPU)", width=1920, height=1080, autoscale=AutoScale.OFF
+            "Bench (CPU)", width=1920, height=1080, autoscale=Autoscale.OFF
         )
     else:
         run_gl[Bench](
@@ -136,5 +136,5 @@ def main() raises:
             width=1920,
             height=1080,
             vsync=False,
-            autoscale=AutoScale.OFF,
+            autoscale=Autoscale.OFF,
         )

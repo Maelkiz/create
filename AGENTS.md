@@ -416,7 +416,7 @@ scale by `canvas.scale()`. See [examples/autoscale.mojo](examples/autoscale.mojo
 
 `Context` dials are the run's, not the drawing's: `design_size`, `autoscale`, `title`,
 `window_mode`, `resizable`, `quit_on_escape`, `max_frame_rate`. They are methods
-(`context.autoscale(AutoScale.EXTEND)`, like the canvas setters), each read back with no arguments;
+(`context.autoscale(Autoscale.EXTEND)`, like the canvas setters), each read back with no arguments;
 `Context`'s only fields are the readings `time` and `input`. Every `run` argument but `backend`
 has a setter — a dial here, or `canvas.antialiasing` — and the argument is only the starting value.
 

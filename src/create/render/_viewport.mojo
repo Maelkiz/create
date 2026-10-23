@@ -5,7 +5,7 @@ from create.math.matrix import (
     translate as mat_translate,
 )
 from create.math.point2d import Point2D
-from .autoscale import AutoScale
+from .autoscale import Autoscale
 
 
 struct Viewport(Copyable, ImplicitlyCopyable, Movable):
@@ -18,7 +18,7 @@ struct Viewport(Copyable, ImplicitlyCopyable, Movable):
 
     var width: Float64
     var height: Float64
-    var autoscale: AutoScale
+    var autoscale: Autoscale
     var scale: Float64
     var pixel_w: Int
     var pixel_h: Int
@@ -30,7 +30,7 @@ struct Viewport(Copyable, ImplicitlyCopyable, Movable):
     def __init__(out self):
         self.width = 0.0
         self.height = 0.0
-        self.autoscale = AutoScale.OFF
+        self.autoscale = Autoscale.OFF
         self.scale = 1.0
         self.pixel_w = 0
         self.pixel_h = 0
@@ -62,7 +62,7 @@ struct Viewport(Copyable, ImplicitlyCopyable, Movable):
         self.pixel_w = pixel_w
         self.pixel_h = pixel_h
         if (
-            self.autoscale != AutoScale.OFF
+            self.autoscale != Autoscale.OFF
             and self._design_w > 1.0
             and self._design_h > 1.0
         ):
@@ -70,7 +70,7 @@ struct Viewport(Copyable, ImplicitlyCopyable, Movable):
                 Float64(pixel_w) / self._design_w,
                 Float64(pixel_h) / self._design_h,
             )
-            if self.autoscale == AutoScale.EXTEND:
+            if self.autoscale == Autoscale.EXTEND:
                 # The axis that constrained the scale divides back out to its
                 # design size; the other one gains the slack as world space.
                 # Not rounded: the extent is the window's, which a whole

@@ -1,7 +1,7 @@
 from create.render.canvas import _PersistentCanvasState
 from create.core.context import Context
 from create.render.antialiasing import Antialiasing
-from create.render.autoscale import AutoScale
+from create.render.autoscale import Autoscale
 from create.render.render_backend import RenderBackend
 from ._step import first_step, step
 from ._headless_gl import _run_headless_gl
@@ -26,7 +26,7 @@ def run_headless[
     pixel_height: Int = 0,
     backend: RenderBackend = RenderBackend.CPU,
     antialiasing: Antialiasing = Antialiasing.MEDIUM,
-    autoscale: AutoScale = AutoScale.FIT,
+    autoscale: Autoscale = Autoscale.FIT,
 ) raises -> Image:
     """Run `P` without a window — `create`'s frame, then `frames` calls to
     `update` — and return the last frame as an `Image`, read back with

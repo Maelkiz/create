@@ -1,4 +1,4 @@
-struct AutoScale(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
+struct Autoscale(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """How the program's design size maps onto the window.
 
     The design size is the coordinate space a program is authored in --
@@ -36,28 +36,28 @@ struct AutoScale(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     var value: Int
 
-    comptime OFF = AutoScale(0)
+    comptime OFF = Autoscale(0)
     # the window is the world; a resize moves the extent
-    comptime FIT = AutoScale(1)
+    comptime FIT = Autoscale(1)
     # uniform scale to fit, centred, bars on the short axis
-    comptime EXTEND = AutoScale(2)
+    comptime EXTEND = Autoscale(2)
     # same scale as FIT, no bars — leftover becomes extra world
 
     def __init__(out self, value: Int):
         self.value = value
 
-    def __eq__(self, other: AutoScale) -> Bool:
+    def __eq__(self, other: Autoscale) -> Bool:
         return self.value == other.value
 
-    def __ne__(self, other: AutoScale) -> Bool:
+    def __ne__(self, other: Autoscale) -> Bool:
         return self.value != other.value
 
     def write_to[W: Writer](self, mut writer: W):
-        if self == AutoScale.OFF:
-            writer.write("AutoScale.OFF")
-        elif self == AutoScale.FIT:
-            writer.write("AutoScale.FIT")
-        elif self == AutoScale.EXTEND:
-            writer.write("AutoScale.EXTEND")
+        if self == Autoscale.OFF:
+            writer.write("Autoscale.OFF")
+        elif self == Autoscale.FIT:
+            writer.write("Autoscale.FIT")
+        elif self == Autoscale.EXTEND:
+            writer.write("Autoscale.EXTEND")
         else:
-            writer.write("AutoScale(", self.value, ")")
+            writer.write("Autoscale(", self.value, ")")
