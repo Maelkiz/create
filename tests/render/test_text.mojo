@@ -10,8 +10,8 @@ from create.color.color import Color
 from create.text.font import (
     Font,
     FontWeight,
-    default_font_path,
-    fallback_font_path,
+    _default_font_path,
+    _fallback_font_path,
     _GlyphInfo,
 )
 from create.render.style import Style
@@ -258,8 +258,8 @@ def test_the_default_italic_is_the_packaged_one() raises -> None:
 def test_italic_falls_back_to_an_italic() raises -> None:
     # Aries is in the symbols face only; italic text gets it slanted.
     var symbol = "\u2648"
-    assert_false(Font.load(default_font_path()).has_glyph(0x2648))
-    assert_true(Font.load(fallback_font_path()).has_glyph(0x2648))
+    assert_false(Font.load(_default_font_path()).has_glyph(0x2648))
+    assert_true(Font.load(_fallback_font_path()).has_glyph(0x2648))
     var t = TextRenderer()
     var upright = _style(Align.TOP_LEFT)
     var a = MemorySurface(200, 120)
@@ -286,8 +286,8 @@ def test_switching_fonts_keeps_the_cache() raises -> None:
     # Each face keys its glyphs by its own slot, so going back to a face finds
     # its masks still there rather than rasterising them again.
     var t = TextRenderer()
-    var a = Font.load(default_font_path())
-    var b = Font.load(default_font_path())
+    var a = Font.load(_default_font_path())
+    var b = Font.load(_default_font_path())
     _ = _render_with(t, _in(a))
     var after_a = len(t._glyphs)
     assert_true(after_a > 0, "nothing was cached")
@@ -301,8 +301,8 @@ def test_switching_fonts_keeps_the_cache() raises -> None:
 
 def test_the_same_glyph_in_two_faces_has_two_keys() raises -> None:
     var t = TextRenderer()
-    var a = t._slot(Font.load(default_font_path()))
-    var b = t._slot(Font.load(default_font_path()))
+    var a = t._slot(Font.load(_default_font_path()))
+    var b = t._slot(Font.load(_default_font_path()))
     assert_true(a != b)
     assert_true(
         t._glyph_key(a, ord("H"), 24, 400) != t._glyph_key(b, ord("H"), 24, 400)
@@ -311,7 +311,7 @@ def test_the_same_glyph_in_two_faces_has_two_keys() raises -> None:
 
 def test_running_out_of_slots_starts_over() raises -> None:
     var t = TextRenderer()
-    var f = Font.load(default_font_path())
+    var f = Font.load(_default_font_path())
     for i in range(_FONT_SLOTS):
         # Distinct identities on one open face: slots, not faces, are tested.
         var copy = f.copy()
@@ -328,7 +328,7 @@ def test_an_oversized_font_is_clamped_not_overflowed() raises -> None:
     big.font_size = 5000
     assert_equal(_pixel_size(big, 1.0), _MAX_SIZE)
     var t = TextRenderer()
-    var slot = t._slot(Font.load(default_font_path()))
+    var slot = t._slot(Font.load(_default_font_path()))
     var key = t._glyph_key(slot, 0x10FFFF, _MAX_SIZE, _MAX_WEIGHT, _MAX_BLUR)
     assert_true(key > 0, "the packed key overflowed into the sign bit")
 

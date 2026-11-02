@@ -162,7 +162,7 @@ from ._transform import (
 )
 from create.color.blend_mode import BlendMode
 from create.color.color import Color
-from create.color.gradient import Gradient, RAMP_SIZE
+from create.color.gradient import Gradient, _RAMP_SIZE
 
 comptime _VERTEX_FLOATS = 13
 """Mirrors `_tessellate._VERTEX_FLOATS`, which the attribute layout below
@@ -566,7 +566,7 @@ struct GLRenderer(Movable):
     have no stable key to cache by — deleted once the frame's last batch has
     drawn."""
     var ramps: UInt32
-    """Gradient ramps, `RAMP_SIZE` texels a row, permanently on unit 2."""
+    """Gradient ramps, `_RAMP_SIZE` texels a row, permanently on unit 2."""
     var ramp_rows: Dict[Int, List[Int]]
     """`Gradient._stops_key` to the rows holding ramps of that key — usually
     one; more only on a hash collision, told apart by `ramp_gradients`."""
@@ -732,12 +732,12 @@ struct GLRenderer(Movable):
         """
         self.gl.active_texture(GL_TEXTURE2)
         self.gl.bind_texture(GL_TEXTURE_2D, self.ramps)
-        var blank = List[UInt8](length=RAMP_SIZE * _RAMP_ROWS * 4, fill=0)
+        var blank = List[UInt8](length=_RAMP_SIZE * _RAMP_ROWS * 4, fill=0)
         self.gl.tex_image_2d(
             GL_TEXTURE_2D,
             0,
             GL_RGBA8,
-            Int32(RAMP_SIZE),
+            Int32(_RAMP_SIZE),
             Int32(_RAMP_ROWS),
             0,
             GL_RGBA,
@@ -776,7 +776,7 @@ struct GLRenderer(Movable):
         if key not in self.ramp_rows:
             self.ramp_rows[key] = List[Int]()
         self.ramp_rows[key].append(row)
-        var texels = List[UInt8](capacity=RAMP_SIZE * 4)
+        var texels = List[UInt8](capacity=_RAMP_SIZE * 4)
         for ref color in gradient._ramp[]:
             texels.append(color.r)
             texels.append(color.g)
@@ -789,7 +789,7 @@ struct GLRenderer(Movable):
             0,
             0,
             Int32(row),
-            Int32(RAMP_SIZE),
+            Int32(_RAMP_SIZE),
             1,
             GL_RGBA,
             GL_UNSIGNED_BYTE,

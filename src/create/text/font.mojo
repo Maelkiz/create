@@ -25,19 +25,19 @@ def _packaged_font(name: String) -> String:
     return here[byte = : here.rfind("/") + 1] + "fonts/" + name
 
 
-def default_font_path() -> String:
+def _default_font_path() -> String:
     """Noto Sans, the face every text render uses unless `canvas.font` swaps
     it."""
     return _packaged_font("NotoSans.ttf")
 
 
-def default_italic_font_path() -> String:
+def _default_italic_font_path() -> String:
     """Noto Sans Italic, the default face's italic: variable on the same
     axes, so `font_weight` reaches it too."""
     return _packaged_font("NotoSans-Italic.ttf")
 
 
-def fallback_font_path() -> String:
+def _fallback_font_path() -> String:
     """Noto Sans Symbols, consulted for codepoints the default face lacks."""
     return _packaged_font("NotoSansSymbols.ttf")
 

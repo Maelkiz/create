@@ -5,9 +5,9 @@ from create.color.color import Color
 from create.text.font import (
     Font,
     _GlyphInfo,
-    default_font_path,
-    default_italic_font_path,
-    fallback_font_path,
+    _default_font_path,
+    _default_italic_font_path,
+    _fallback_font_path,
 )
 from ._blur import blur_alpha
 from ._raster import blit_alpha_mapped, blit_glyph
@@ -120,12 +120,12 @@ struct TextRenderer(Movable):
         """
         if not self._default:
             self._default = Font.load(
-                default_font_path(), italic_path=default_italic_font_path()
+                _default_font_path(), italic_path=_default_italic_font_path()
             )
         if not self._fallback_attempted:
             self._fallback_attempted = True
             try:
-                self._fallback_font.append(Font.load(fallback_font_path()))
+                self._fallback_font.append(Font.load(_fallback_font_path()))
             except:
                 pass
 

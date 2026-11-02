@@ -151,7 +151,7 @@ struct Animation(Copyable, ImplicitlyCopyable, Movable):
         var names = List[String]()
         for entry in listdir(path):
             var ext = Image._extension(entry)
-            if Image.supports_extension(ext):
+            if Image._supports_extension(ext):
                 names.append(entry)
         if len(names) == 0:
             raise Error("no BMP, PNG or JPEG files in " + path)

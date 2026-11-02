@@ -85,7 +85,7 @@ bumps `recorded` either way.
 A fill gradient rides on the command's `Style` (`fill_gradient`); tint and opacity multiply its stops at
 record time. Everything a replay needs comes from three pieces in `create/color/gradient.mojo`, shared so the
 backends agree:
-- **The ramp:** `RAMP_SIZE` (256) colours sampled from the stops at construction, behind an
+- **The ramp:** `_RAMP_SIZE` (256) colours sampled from the stops at construction, behind an
   `ArcPointer` with the stops, so copying a `Gradient` (and the `Style` holding one) is a refcount.
 - **The device mapping:** `_device_mapping(inverse(m), center, half)`, with the box from
   `_fill_box(c)`. The parameter (linear) or the position whose length it is (radial) is **affine
