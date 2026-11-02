@@ -415,6 +415,11 @@ struct Rectangle(
         var r = self._radius()
         return self.w * self.h - (4.0 - PI) * r * r
 
+    def bounds(self) -> Rectangle:
+        """The tightest axis-aligned rectangle around this one: itself,
+        sharp, since rounding never pulls in an edge's middle."""
+        return Rectangle(self.position, self.w, self.h)
+
     def closest_point(self, p: Point2D) -> Point2D:
         var r = self._radius()
         if r > 0.0:
@@ -578,6 +583,10 @@ struct Circle(
 
     def diameter(self) -> Float64:
         return self.r * 2.0
+
+    def bounds(self) -> Rectangle:
+        """The tightest axis-aligned rectangle around the circle."""
+        return Rectangle(self.position, self.diameter(), self.diameter())
 
     def closest_point(self, p: Point2D) -> Point2D:
         var d = p - self.position
@@ -1498,6 +1507,22 @@ struct Triangle(
             )
             return inner.area() + perimeter * r + PI * r * r
         return abs(self._signed_area2()) / 2.0
+
+    def bounds(self) -> Rectangle:
+        """The tightest axis-aligned rectangle around the triangle. Rounded,
+        it is the inner triangle's grown by the radius, so a sharp tip's
+        rounding pulls it in."""
+        var r = self._radius()
+        var t = self._inner() if r > 0.0 else self
+        var lo = Point2D(
+            min(min(t.a.x, t.b.x), t.c.x) - r,
+            min(min(t.a.y, t.b.y), t.c.y) - r,
+        )
+        var hi = Point2D(
+            max(max(t.a.x, t.b.x), t.c.x) + r,
+            max(max(t.a.y, t.b.y), t.c.y) + r,
+        )
+        return Rectangle(lo.lerp(hi, 0.5), hi.x - lo.x, hi.y - lo.y)
 
     def closest_point(self, p: Point2D) -> Point2D:
         var r = self._radius()
