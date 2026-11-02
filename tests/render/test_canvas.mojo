@@ -1962,18 +1962,40 @@ struct ToWorldRoundTrip(Program):
             var origin = canvas.to_local((10.0, 20.0))
             assert_almost_equal(origin.x, 0.0)
             assert_almost_equal(origin.y, 0.0)
-            var back = canvas.to_world((0.0, 0.0))
+            var back = canvas.to_screen((0.0, 0.0))
             assert_almost_equal(back.x, 10.0)
             assert_almost_equal(back.y, 20.0)
 
         with canvas.transform(translate(5.0, -8.0) @ rotate(PI / 3.0)):
-            var world = canvas.to_world((7.0, -2.0))
-            var local = canvas.to_local(world)
+            var screen = canvas.to_screen((7.0, -2.0))
+            var local = canvas.to_local(screen)
             assert_almost_equal(local.x, 7.0)
             assert_almost_equal(local.y, -2.0)
 
+        # The camera is part of the trip: zoom 2 about (5, 0), then the
+        # transform, and back.
+        var camera = Camera((5.0, 0.0), zoom=2.0)
+        canvas.camera(camera)
+        with canvas.transform(translate(10.0, 20.0)):
+            var screen = canvas.to_screen((0.0, 0.0))
+            assert_almost_equal(screen.x, 10.0)
+            assert_almost_equal(screen.y, 40.0)
+            var local = canvas.to_local(screen)
+            assert_almost_equal(local.x, 0.0)
+            assert_almost_equal(local.y, 0.0)
+            var world = camera.to_world(screen)
+            assert_almost_equal(world.x, 10.0)
+            assert_almost_equal(world.y, 20.0)
+            # The overlay suspends the camera, and the conversions with it.
+            with canvas.overlay():
+                var plain = canvas.to_screen((0.0, 0.0))
+                assert_almost_equal(plain.x, 0.0)
+                assert_almost_equal(plain.y, 0.0)
 
-def test_to_world_and_to_local_round_trip_through_a_transform() raises -> None:
+
+def test_to_local_and_to_screen_round_trip_through_camera_and_transform() raises -> (
+    None
+):
     # Asserted inline in `update` — `run_headless` hands the buffer back, not
     # the program, so there is no field the test function could read after.
     _ = run_headless[ToWorldRoundTrip](100, 100)
