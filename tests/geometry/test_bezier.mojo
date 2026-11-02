@@ -230,6 +230,56 @@ def test_beziers_is_itself() raises -> None:
     assert_equal(curves[0], b)
 
 
+def _brute_closest(b: Bezier, p: Point2D) -> Point2D:
+    var best = b.start
+    for i in range(10001):
+        var q = b.at(Float64(i) / 10000.0)
+        if q.distance_squared(p) < best.distance_squared(p):
+            best = q
+    return best
+
+
+def test_closest_point_on_the_curve_is_itself() raises -> None:
+    var b = Bezier((0.0, 0.0), (1.0, 2.0), (3.0, 2.0), (4.0, 0.0))
+    var on = b.at(0.3)
+    var q = b.closest_point(on)
+    assert_almost_equal(q.x, on.x, atol=1e-9)
+    assert_almost_equal(q.y, on.y, atol=1e-9)
+
+
+def test_closest_point_past_an_end_is_that_end() raises -> None:
+    var b = Bezier((0.0, 0.0), (1.0, 2.0), (3.0, 2.0), (4.0, 0.0))
+    assert_equal(b.closest_point((-5.0, -1.0)), b.start)
+    assert_equal(b.closest_point((9.0, -1.0)), b.end)
+
+
+def test_closest_point_matches_brute_force() raises -> None:
+    var curves: List[Bezier] = [
+        Bezier((0.0, 0.0), (1.0, 2.0), (3.0, 2.0), (4.0, 0.0)),
+        # An S-bend, with two dips in distance from points between.
+        Bezier((0.0, 0.0), (6.0, 4.0), (-2.0, 4.0), (4.0, 0.0)),
+        # A loop.
+        Bezier((0.0, 0.0), (5.0, 5.0), (-1.0, 5.0), (4.0, 0.0)),
+    ]
+    var points: List[Point2D] = [
+        (2.0, 1.0),
+        (2.0, 3.0),
+        (0.5, 2.5),
+        (-1.0, 4.0),
+        (3.0, -2.0),
+    ]
+    for c in curves:
+        for p in points:
+            var q = c.closest_point(p)
+            var expected = _brute_closest(c, p)
+            assert_almost_equal(q.distance(p), expected.distance(p), atol=1e-6)
+
+
+def test_closest_point_on_a_collapsed_curve() raises -> None:
+    var b = Bezier((1.0, 1.0), (1.0, 1.0), (1.0, 1.0), (1.0, 1.0))
+    assert_equal(b.closest_point((5.0, 5.0)), Point2D(1.0, 1.0))
+
+
 def test_translate_moves_every_point() raises -> None:
     var b = _s_curve()
     b.translate(Vector2D(10.0, -5.0))

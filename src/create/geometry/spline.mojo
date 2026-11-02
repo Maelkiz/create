@@ -9,7 +9,7 @@ from create.math import Vector2D
 struct Spline(Copyable, Drawable, Equatable, Movable, Writable):
     """A smooth curve through every one of `points`, in order: `at`,
     `tangent`, `length`, `at_distance`, `bounds`, `flatten`, `beziers`,
-    `translate`.
+    `closest_point`, `translate`.
 
     It is a Catmull-Rom spline: each stretch between two neighbouring points
     is a cubic whose direction at each point is set by that point's
@@ -199,6 +199,23 @@ struct Spline(Copyable, Drawable, Equatable, Movable, Writable):
             for i in range(first, len(part)):
                 points.append(part[i])
         return points^
+
+    def closest_point(self, p: Point2D) -> Point2D:
+        """The point on the curve nearest `p`: the nearest of each
+        stretch's `Bezier.closest_point`. A spline with no curve gives its
+        one point."""
+        var curves = self.beziers()
+        if len(curves) == 0:
+            return self._lone_point()
+        var best = curves[0].closest_point(p)
+        var best_distance = best.distance_squared(p)
+        for i in range(1, len(curves)):
+            var q = curves[i].closest_point(p)
+            var d = q.distance_squared(p)
+            if d < best_distance:
+                best = q
+                best_distance = d
+        return best
 
     def translate(mut self, delta: Vector2D):
         for i in range(len(self.points)):
