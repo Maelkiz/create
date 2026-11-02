@@ -494,23 +494,23 @@ def test_load_bmp_alpha_channel() raises -> None:
 
 
 def test_supports_extension_accepts_every_decoded_format() raises -> None:
-    assert_true(Image.supports_extension("png"))
-    assert_true(Image.supports_extension("jpg"))
-    assert_true(Image.supports_extension("jpeg"))
-    assert_true(Image.supports_extension("bmp"))
+    assert_true(Image._supports_extension("png"))
+    assert_true(Image._supports_extension("jpg"))
+    assert_true(Image._supports_extension("jpeg"))
+    assert_true(Image._supports_extension("bmp"))
 
 
 def test_supports_extension_rejects_other_formats() raises -> None:
-    assert_false(Image.supports_extension("gif"))
-    assert_false(Image.supports_extension("txt"))
-    assert_false(Image.supports_extension(""))
+    assert_false(Image._supports_extension("gif"))
+    assert_false(Image._supports_extension("txt"))
+    assert_false(Image._supports_extension(""))
 
 
 def test_supports_extension_pairs_with_extension() raises -> None:
     # The two are used together -- `_extension` lowercases, so the list needs
     # no uppercase spellings of its own.
-    assert_true(Image.supports_extension(Image._extension("frame_01.PNG")))
-    assert_false(Image.supports_extension(Image._extension("notes.md")))
+    assert_true(Image._supports_extension(Image._extension("frame_01.PNG")))
+    assert_false(Image._supports_extension(Image._extension("notes.md")))
 
 
 def test_stem_end_finds_the_last_dot() raises -> None:

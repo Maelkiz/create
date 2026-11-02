@@ -226,7 +226,7 @@ struct Image(Copyable, Movable):
         return ext
 
     @staticmethod
-    def supports_extension(ext: String) -> Bool:
+    def _supports_extension(ext: String) -> Bool:
         """Whether `load` has a decoder for this lowercase extension.
 
         The one list of formats the library reads. `from_folder` filters a

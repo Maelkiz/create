@@ -27,8 +27,8 @@ def _byte(v: Float64) -> UInt8:
     return UInt8(Int(min(max(v, 0.0), 255.0) + 0.5))
 
 
-comptime RAMP_SIZE = 256
-"""Entries in a gradient's colour ramp, at `t = i / (RAMP_SIZE - 1)`. Both
+comptime _RAMP_SIZE = 256
+"""Entries in a gradient's colour ramp, at `t = i / (_RAMP_SIZE - 1)`. Both
 replays read between neighbouring entries linearly — the CPU by hand, the GPU
 by texture filtering — so this is the ramp the GL backend uploads, entry for
 texel."""
@@ -145,7 +145,7 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     var _kind: Int
     var _stops: ArcPointer[List[Tuple[Float64, Color]]]
     var _ramp: ArcPointer[List[Color]]
-    """`RAMP_SIZE` colours sampled evenly from the stops, built once with
+    """`_RAMP_SIZE` colours sampled evenly from the stops, built once with
     them, so neither replay walks the stops per pixel."""
     var direction: Vector2D
     """`linear` only: which way the colours run, first stop to last."""
@@ -166,9 +166,9 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             var position = max(min(stops[i][0], 1.0), floor)
             stops[i] = (position, stops[i][1])
             floor = position
-        var ramp = List[Color](capacity=RAMP_SIZE)
-        for i in range(RAMP_SIZE):
-            ramp.append(_color_at(stops, Float64(i) / Float64(RAMP_SIZE - 1)))
+        var ramp = List[Color](capacity=_RAMP_SIZE)
+        for i in range(_RAMP_SIZE):
+            ramp.append(_color_at(stops, Float64(i) / Float64(_RAMP_SIZE - 1)))
         self._kind = _kind
         self._ramp = ArcPointer(ramp^)
         self._stops = ArcPointer(stops^)
@@ -285,8 +285,8 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         gradient doesn't band. A colour the ramp holds exactly comes out
         unchanged."""
         ref ramp = self._ramp[]
-        var f = min(max(t, 0.0), 1.0) * Float64(RAMP_SIZE - 1)
-        var i = min(Int(f), RAMP_SIZE - 2)
+        var f = min(max(t, 0.0), 1.0) * Float64(_RAMP_SIZE - 1)
+        var i = min(Int(f), _RAMP_SIZE - 2)
         var fraction = f - Float64(i)
         var a = ramp[i]
         var b = ramp[i + 1]

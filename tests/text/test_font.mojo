@@ -6,10 +6,10 @@ from create.text.font import (
     Font,
     FontWeight,
     _Face,
-    default_italic_font_path,
+    _default_italic_font_path,
     _GlyphInfo,
-    default_font_path,
-    fallback_font_path,
+    _default_font_path,
+    _fallback_font_path,
 )
 
 comptime _SLNT_FIXTURE = "tests/fixtures/fonts/RobotoFlex-slnt.ttf"
@@ -34,15 +34,15 @@ def _lean(g: _GlyphInfo) -> Int:
 def test_the_packaged_faces_load_from_the_text_package() raises -> None:
     # They are located from font.mojo's own path, so moving the file must
     # take them with it.
-    assert_true(default_font_path().endswith("text/fonts/NotoSans.ttf"))
-    var f = Font.load(default_font_path())
+    assert_true(_default_font_path().endswith("text/fonts/NotoSans.ttf"))
+    var f = Font.load(_default_font_path())
     assert_true(f.has_glyph(ord("A")))
     # Loading raises if the file is not where the path says.
-    _ = Font.load(fallback_font_path())
+    _ = Font.load(_fallback_font_path())
 
 
 def test_a_glyph_renders() raises -> None:
-    var f = Font.load(default_font_path())
+    var f = Font.load(_default_font_path())
     var g = f._render(ord("A"), 24)
     assert_true(g.width > 0 and g.height > 0)
     assert_true(g.advance_x > 0)
@@ -56,15 +56,15 @@ def test_font_weights_are_design_space_values() raises -> None:
 
 
 def test_an_upright_face_does_not_lean() raises -> None:
-    var face = _Face(default_font_path(), 48, FontWeight.REGULAR.value)
+    var face = _Face(_default_font_path(), 48, FontWeight.REGULAR.value)
     assert_equal(_lean(face.render(ord("I"), 48)), 0)
     assert_true(not face.sheared)
 
 
 def test_a_face_without_an_italic_is_sheared() raises -> None:
-    var upright = _Face(default_font_path(), 48, FontWeight.REGULAR.value)
+    var upright = _Face(_default_font_path(), 48, FontWeight.REGULAR.value)
     var slanted = _Face(
-        default_font_path(), 48, FontWeight.REGULAR.value, slanted=True
+        _default_font_path(), 48, FontWeight.REGULAR.value, slanted=True
     )
     assert_true(slanted.sheared)
     var g = slanted.render(ord("I"), 48)
@@ -89,7 +89,7 @@ def test_a_slnt_axis_is_the_italic_of_its_own_file() raises -> None:
 
 
 def test_the_packaged_italic_is_variable_in_weight() raises -> None:
-    var face = _Face(default_italic_font_path(), 48, FontWeight.REGULAR.value)
+    var face = _Face(_default_italic_font_path(), 48, FontWeight.REGULAR.value)
     var regular = face.render(ord("l"), 48).width
     face._set_weight(FontWeight.BLACK.value)
     assert_true(face.render(ord("l"), 48).width > regular)
@@ -99,10 +99,10 @@ def test_the_packaged_italic_is_a_true_italic() raises -> None:
     # A real italic redraws the letter rather than leaning it: a true italic
     # "a" is not the upright one sheared.
     var true_italic = _Face(
-        default_italic_font_path(), 48, FontWeight.REGULAR.value
+        _default_italic_font_path(), 48, FontWeight.REGULAR.value
     )
     var sheared = _Face(
-        default_font_path(), 48, FontWeight.REGULAR.value, slanted=True
+        _default_font_path(), 48, FontWeight.REGULAR.value, slanted=True
     )
     assert_true(not true_italic.sheared)
     var a = true_italic.render(ord("a"), 48)
@@ -123,7 +123,7 @@ def test_load_of_a_missing_file_raises() raises -> None:
 
 
 def test_a_copy_shares_the_face() raises -> None:
-    var a = Font.load(default_font_path())
+    var a = Font.load(_default_font_path())
     var b = a.copy()
     assert_equal(b._id, a._id)
     assert_equal(Int(a._faces.count()), 2, "one face, two holders")
@@ -131,23 +131,23 @@ def test_a_copy_shares_the_face() raises -> None:
 
 
 def test_each_load_is_its_own_font() raises -> None:
-    var a = Font.load(default_font_path())
-    var b = Font.load(default_font_path())
+    var a = Font.load(_default_font_path())
+    var b = Font.load(_default_font_path())
     assert_true(a._id != b._id)
     assert_true(a._id > 0)
 
 
 def test_a_font_prints_as_it_is_loaded() raises -> None:
-    var f = Font.load(default_font_path())
-    assert_equal(String(f), 'Font.load("' + default_font_path() + '")')
+    var f = Font.load(_default_font_path())
+    assert_equal(String(f), 'Font.load("' + _default_font_path() + '")')
 
 
 def test_an_italic_partner_prints_with_the_font() raises -> None:
-    var f = Font.load(default_font_path(), italic_path=_SLNT_FIXTURE)
+    var f = Font.load(_default_font_path(), italic_path=_SLNT_FIXTURE)
     assert_equal(
         String(f),
         'Font.load("'
-        + default_font_path()
+        + _default_font_path()
         + '", italic_path="'
         + _SLNT_FIXTURE
         + '")',
@@ -156,12 +156,12 @@ def test_an_italic_partner_prints_with_the_font() raises -> None:
 
 def test_a_missing_italic_partner_raises_at_load() raises -> None:
     with assert_raises(contains="not found"):
-        _ = Font.load(default_font_path(), italic_path="/nonexistent.ttf")
+        _ = Font.load(_default_font_path(), italic_path="/nonexistent.ttf")
 
 
 def test_the_italic_has_an_identity_of_its_own() raises -> None:
-    var a = Font.load(default_font_path())
-    var b = Font.load(default_font_path())
+    var a = Font.load(_default_font_path())
+    var b = Font.load(_default_font_path())
     var italic = a._italic()
     assert_true(italic._id != a._id)
     assert_true(italic._id != b._id and italic._id != b._italic()._id)
@@ -170,21 +170,21 @@ def test_the_italic_has_an_identity_of_its_own() raises -> None:
 
 def test_an_italic_partner_is_drawn_as_it_is() raises -> None:
     # The partner file is italic already: drawn as given, never sheared.
-    var f = Font.load(_SLNT_FIXTURE, italic_path=default_font_path())
+    var f = Font.load(_SLNT_FIXTURE, italic_path=_default_font_path())
     var italic = f._italic()
     assert_equal(_lean(italic._render(ord("I"), 48)), 0)
     assert_true(not f._faces[].face(True).sheared)
 
 
 def test_without_a_partner_the_italic_is_the_fonts_own() raises -> None:
-    var f = Font.load(default_font_path())
+    var f = Font.load(_default_font_path())
     var italic = f._italic()
     assert_true(_lean(italic._render(ord("I"), 48)) >= 5)
     assert_equal(_lean(f._render(ord("I"), 48)), 0, "the upright is kept")
 
 
 def test_copies_share_the_italic_once_opened() raises -> None:
-    var a = Font.load(default_font_path())
+    var a = Font.load(_default_font_path())
     var b = a.copy()
     assert_true(not a._faces[].italic, "opened on first use")
     _ = a._italic().has_glyph(ord("I"))
@@ -192,7 +192,7 @@ def test_copies_share_the_italic_once_opened() raises -> None:
 
 
 def _copy_of_a_dropped_font() raises -> Font:
-    var original = Font.load(default_font_path())
+    var original = Font.load(_default_font_path())
     return original.copy()
 
 
@@ -206,7 +206,7 @@ def test_fonts_are_closed_when_dropped() raises -> None:
     # A smoke test for `_Face.__del__`: opening and dropping many faces must
     # neither fail nor crash. It cannot prove nothing leaks.
     for _ in range(50):
-        var f = Font.load(default_font_path())
+        var f = Font.load(_default_font_path())
         _ = f.has_glyph(ord("A"))
 
 
