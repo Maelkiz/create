@@ -29,12 +29,12 @@ struct App(Program):
         return App(100.0, 1.0, Autoscale.FIT)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        if context.input.key_pressed("f11"):
+        if context.input.key_pressed(Key.F11):
             if context.window_mode() == WindowMode.FULLSCREEN:
                 context.window_mode(WindowMode.WINDOWED)
             else:
                 context.window_mode(WindowMode.FULLSCREEN)
-        if context.input.key_pressed("space"):
+        if context.input.key_pressed(Key.SPACE):
             if self.mode == Autoscale.FIT:
                 self.mode = Autoscale.EXTEND
             elif self.mode == Autoscale.EXTEND:

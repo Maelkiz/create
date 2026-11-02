@@ -13,15 +13,15 @@ struct CameraDemo(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         self.elapsed = context.time.elapsed
         var speed = 300.0 * context.time.delta
-        if context.input.key_down("right"):
+        if context.input.key_down(Key.RIGHT):
             self.camera.position += Vector2D(speed, 0.0)
-        if context.input.key_down("left"):
+        if context.input.key_down(Key.LEFT):
             self.camera.position += Vector2D(-speed, 0.0)
-        if context.input.key_down("up"):
+        if context.input.key_down(Key.UP):
             self.camera.zoom = min(
                 3.0, self.camera.zoom + 1.0 * context.time.delta
             )
-        if context.input.key_down("down"):
+        if context.input.key_down(Key.DOWN):
             self.camera.zoom = max(
                 0.3, self.camera.zoom - 1.0 * context.time.delta
             )

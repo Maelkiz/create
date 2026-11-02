@@ -1,10 +1,9 @@
 struct Key(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
-    """A key, for the `Key` overloads of the `Input` queries.
+    """A key, what the `Input` queries take: `input.key_down(Key.UP)`.
 
-    The string overloads cover the same keys by name and read better --
-    `input.key_down("up")` -- so these are for a program storing a key in a
-    field or a table, where a name would have to be re-parsed each frame.
-    `from_name` is the one mapping between the two forms.
+    `from_name` maps a key's name (`"up"`, `"page_up"`, `"a"`) to it, for a
+    binding read from a file; a misspelled constant fails to compile, where
+    a name could only fail to match.
 
     A wrapped SDL keycode rather than a bare `Int`, so a stray number cannot
     be passed where a key is expected. `Key(keycode)` names any key SDL can
@@ -12,6 +11,10 @@ struct Key(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     `NONE` is no key (SDL's unknown keycode), what `Input.key` reads before
     any press; it is never down.
+
+    `CTRL`, `SHIFT`, `ALT` and `SUPER` are either side of a modifier: down
+    while the left or the right one is. They are queries only, never a key
+    SDL sends, so `Input.key` is always the side that was pressed.
     """
 
     var value: Int
@@ -27,6 +30,12 @@ struct Key(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     comptime RIGHT_ALT = Key(1073742054)
     comptime LEFT_SUPER = Key(1073742051)
     comptime RIGHT_SUPER = Key(1073742055)
+
+    # Either side of a modifier. Negative, so no SDL keycode collides.
+    comptime CTRL = Key(-1)
+    comptime SHIFT = Key(-2)
+    comptime ALT = Key(-3)
+    comptime SUPER = Key(-4)
 
     # Arrow keys
     comptime UP = Key(1073741906)
@@ -126,9 +135,6 @@ struct Key(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         """The key whose constant is `name`, case folded: `"up"`,
         `"page_up"`, `"f1"`, `"left_ctrl"`, `"a"`, `"num_0"`. `None` for an
         unknown name.
-
-        Single source for named-key lookups: `Input`'s string overloads call
-        this instead of holding their own copy of the codes.
         """
         var upper = name.upper()
         comptime for i in range(len(_NAMED_KEYS)):
@@ -149,6 +155,10 @@ comptime _NAMED_KEYS = [
     (Key.RIGHT_ALT, StaticString("RIGHT_ALT")),
     (Key.LEFT_SUPER, StaticString("LEFT_SUPER")),
     (Key.RIGHT_SUPER, StaticString("RIGHT_SUPER")),
+    (Key.CTRL, StaticString("CTRL")),
+    (Key.SHIFT, StaticString("SHIFT")),
+    (Key.ALT, StaticString("ALT")),
+    (Key.SUPER, StaticString("SUPER")),
     (Key.UP, StaticString("UP")),
     (Key.DOWN, StaticString("DOWN")),
     (Key.LEFT, StaticString("LEFT")),
@@ -234,7 +244,7 @@ struct _KeySet(Copyable, Movable):
         self._keys = []
 
     def set(mut self, key: Key):
-        if not self.test(key):
+        if not self._has(key):
             self._keys.append(key)
 
     def clear(mut self, key: Key):
@@ -244,6 +254,19 @@ struct _KeySet(Copyable, Movable):
                 return
 
     def test(self, key: Key) -> Bool:
+        """Whether `key` is in the set; an either-side modifier is if
+        either of its sides is."""
+        if key == Key.CTRL:
+            return self._has(Key.LEFT_CTRL) or self._has(Key.RIGHT_CTRL)
+        if key == Key.SHIFT:
+            return self._has(Key.LEFT_SHIFT) or self._has(Key.RIGHT_SHIFT)
+        if key == Key.ALT:
+            return self._has(Key.LEFT_ALT) or self._has(Key.RIGHT_ALT)
+        if key == Key.SUPER:
+            return self._has(Key.LEFT_SUPER) or self._has(Key.RIGHT_SUPER)
+        return self._has(key)
+
+    def _has(self, key: Key) -> Bool:
         for held in self._keys:
             if held == key:
                 return True

@@ -48,7 +48,7 @@ struct Offscreen(Program):
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         ref input = context.input
-        if input.key_pressed("c"):
+        if input.key_pressed(Key.C):
             self.layer.clear()
             self.strokes = self.layer.snapshot()
         if input.mouse_down():

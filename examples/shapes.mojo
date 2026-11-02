@@ -35,7 +35,7 @@ struct App(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         self.angle += context.time.delta
         self.fps = Int(context.frame_rate())
-        if context.input.key_pressed("a"):
+        if context.input.key_pressed(Key.A):
             # The level is the canvas's: it lasts until changed, and covers
             # this whole frame.
             canvas.antialiasing(

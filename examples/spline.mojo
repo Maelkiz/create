@@ -64,13 +64,13 @@ struct App(Program):
             var i = self._point_under(mouse)
             if i >= 0:
                 _ = self.points.pop(i)
-        if context.input.key_pressed("c"):
+        if context.input.key_pressed(Key.C):
             self.closed = not self.closed
-        if context.input.key_pressed("1"):
+        if context.input.key_pressed(Key.NUM_1):
             self.alpha = 0.0
-        if context.input.key_pressed("2"):
+        if context.input.key_pressed(Key.NUM_2):
             self.alpha = 0.5
-        if context.input.key_pressed("3"):
+        if context.input.key_pressed(Key.NUM_3):
             self.alpha = 1.0
 
         var spline = Spline(self.points.copy(), self.alpha, self.closed)
