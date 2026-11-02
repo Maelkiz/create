@@ -116,12 +116,15 @@ struct _PersistentCanvasState(Movable):
 
 
 struct TransformGuard[origin: Origin[mut=True]](Movable):
-    """Pops the matrix `canvas.transform` pushed, on scope exit."""
+    """Pops the matrix `canvas.transform` pushed, on scope exit.
+
+    Only `canvas.transform` builds one: its constructor's `_`-keywords are
+    the library's own."""
 
     var _canvas: Pointer[Canvas, Self.origin]
 
-    def __init__(out self, ref[Self.origin] canvas: Canvas):
-        self._canvas = Pointer(to=canvas)
+    def __init__(out self, *, ref[Self.origin] _canvas: Canvas):
+        self._canvas = Pointer(to=_canvas)
 
     def __enter__(mut self):
         pass
@@ -132,7 +135,7 @@ struct TransformGuard[origin: Origin[mut=True]](Movable):
 
 struct OverlayGuard[origin: Origin[mut=True]](Movable):
     """Restores the camera and transform `canvas.overlay` suspended, on scope
-    exit."""
+    exit. Only `canvas.overlay` builds one."""
 
     var _canvas: Pointer[Canvas, Self.origin]
     var _saved_camera: Camera
@@ -141,18 +144,18 @@ struct OverlayGuard[origin: Origin[mut=True]](Movable):
     var _saved_transform: Matrix[3, 3]
     var _saved_transform_inv: Matrix[3, 3]
 
-    def __init__(out self, ref[Self.origin] canvas: Canvas):
-        self._saved_camera = canvas._camera
-        self._saved_user = canvas._user
-        self._saved_user_inv = canvas._user_inv
-        self._saved_transform = canvas._transform
-        self._saved_transform_inv = canvas._transform_inv
-        canvas._camera = Camera()
-        canvas._user = identity[3]()
-        canvas._user_inv = identity[3]()
-        canvas._transform = canvas._base.copy()
-        canvas._transform_inv = canvas._base_inv.copy()
-        self._canvas = Pointer(to=canvas)
+    def __init__(out self, *, ref[Self.origin] _canvas: Canvas):
+        self._saved_camera = _canvas._camera
+        self._saved_user = _canvas._user
+        self._saved_user_inv = _canvas._user_inv
+        self._saved_transform = _canvas._transform
+        self._saved_transform_inv = _canvas._transform_inv
+        _canvas._camera = Camera()
+        _canvas._user = identity[3]()
+        _canvas._user_inv = identity[3]()
+        _canvas._transform = _canvas._base.copy()
+        _canvas._transform_inv = _canvas._base_inv.copy()
+        self._canvas = Pointer(to=_canvas)
 
     def __enter__(mut self):
         pass
@@ -170,20 +173,21 @@ struct StyleGuard[origin: Origin[mut=True]](Movable):
 
     `Style` is a plain value, so the guard carries its own snapshot and no
     stack is needed — nesting works because each guard restores what it saw.
+    Only `canvas.style` builds one.
     """
 
     var _canvas: Pointer[Canvas, Self.origin]
     var _saved: Style
 
-    def __init__(out self, ref[Self.origin] canvas: Canvas):
-        self._saved = canvas._style
-        self._canvas = Pointer(to=canvas)
+    def __init__(out self, *, ref[Self.origin] _canvas: Canvas):
+        self._saved = _canvas._style
+        self._canvas = Pointer(to=_canvas)
 
-    def __init__(out self, ref[Self.origin] canvas: Canvas, style: Style):
-        """Snapshot, then replace the canvas's style with `style`."""
-        self._saved = canvas._style
-        canvas._style = style
-        self._canvas = Pointer(to=canvas)
+    def __init__(out self, *, ref[Self.origin] _canvas: Canvas, _style: Style):
+        """Snapshot, then replace the canvas's style with `_style`."""
+        self._saved = _canvas._style
+        _canvas._style = _style
+        self._canvas = Pointer(to=_canvas)
 
     def __enter__(mut self):
         pass
@@ -193,7 +197,8 @@ struct StyleGuard[origin: Origin[mut=True]](Movable):
 
 
 struct ClipGuard[origin: Origin[mut=True]](Movable):
-    """Closes the clip `canvas.clip` opened, on scope exit.
+    """Closes the clip `canvas.clip` opened, on scope exit. Only `canvas.clip`
+    builds one.
 
     Holds the clip that was current before it rather than popping a stack, so
     nesting works the way `StyleGuard`'s does.
@@ -204,12 +209,13 @@ struct ClipGuard[origin: Origin[mut=True]](Movable):
 
     def __init__(
         out self,
-        ref[Self.origin] canvas: Canvas,
-        var region: RenderCommand,
-        invert: Bool,
+        *,
+        ref[Self.origin] _canvas: Canvas,
+        var _region: RenderCommand,
+        _invert: Bool,
     ):
-        self._saved = canvas._state._backend.push_clip(region^, invert)
-        self._canvas = Pointer(to=canvas)
+        self._saved = _canvas._state._backend.push_clip(_region^, _invert)
+        self._canvas = Pointer(to=_canvas)
 
     def __enter__(mut self):
         pass
@@ -459,7 +465,7 @@ struct Canvas(DrawTarget, Movable):
         pop shifts every later render in the frame, so go through here.
         """
         self._push_transform(m)
-        return TransformGuard[origin_of(self)](self)
+        return TransformGuard[origin_of(self)](_canvas=self)
 
     def style(
         mut self,
@@ -503,7 +509,7 @@ struct Canvas(DrawTarget, Movable):
             canvas.circle(position, 10)
         ```
         """
-        var guard = StyleGuard[origin_of(self)](self)
+        var guard = StyleGuard[origin_of(self)](_canvas=self)
         if fill:
             self.fill(fill.value())
         # After the colour, which clears a gradient: given both, the gradient
@@ -570,7 +576,7 @@ struct Canvas(DrawTarget, Movable):
             canvas.text("Score", (0, canvas.top() - 20))
         ```
         """
-        return StyleGuard[origin_of(self)](self, style)
+        return StyleGuard[origin_of(self)](_canvas=self, _style=style)
 
     def _push_transform(mut self, m: Matrix[3, 3]):
         # Parent first, then child: a point is mapped by the innermost matrix
@@ -620,7 +626,9 @@ struct Canvas(DrawTarget, Movable):
         """
         var capture = RegionCapture(self._transform, self._scale)
         capture.draw(region)
-        return ClipGuard[origin_of(self)](self, capture.command.take(), invert)
+        return ClipGuard[origin_of(self)](
+            _canvas=self, _region=capture.command.take(), _invert=invert
+        )
 
     def to_local(self, world: Point2D) -> Point2D:
         """Map a world-space point — a mouse position already converted
@@ -652,7 +660,7 @@ struct Canvas(DrawTarget, Movable):
         Pops back to whatever camera and transform were active on exit,
         including on an early return or a raise.
         """
-        return OverlayGuard[origin_of(self)](self)
+        return OverlayGuard[origin_of(self)](_canvas=self)
 
     def fill(mut self, color: Optional[Color] = None):
         """Paint the inside of shapes, switching the fill on. A `color`
