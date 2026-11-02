@@ -75,7 +75,8 @@ struct Bezier(
     Copyable, Drawable, Equatable, ImplicitlyCopyable, Movable, Writable
 ):
     """A cubic Bézier curve from `start` to `end`, shaped by `control1` and
-    `control2`: `at`, `tangent`, `split`, `bounds`, `flatten`, `translate`.
+    `control2`: `at`, `tangent`, `split`, `bounds`, `flatten`, `beziers`,
+    `translate`.
 
     The curve passes through `start` and `end` only; the controls pull it
     towards themselves and set the direction it leaves `start`
@@ -218,6 +219,11 @@ struct Bezier(
             points.append(self.at(Float64(i) / Float64(n)))
         points.append(self.end)
         return points^
+
+    def beziers(self) -> List[Bezier]:
+        """Itself, alone: the form `Arc.beziers`, `Line.beziers` and
+        `Spline.beziers` share, so every curve converts the same way."""
+        return [self]
 
     def length(self) -> Float64:
         """The distance along the curve from `start` to `end`.

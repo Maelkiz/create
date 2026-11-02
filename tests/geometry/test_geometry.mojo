@@ -186,6 +186,55 @@ def test_line_midpoint() raises -> None:
     assert_equal(m.y, 0.0)
 
 
+def test_line_at_runs_start_to_end_and_beyond() raises -> None:
+    var l = Line((0.0, 0.0), (4.0, 2.0))
+    assert_equal(l.at(0.0), l.start)
+    assert_equal(l.at(1.0), l.end)
+    assert_equal(l.at(0.5), l.midpoint())
+    assert_equal(l.at(1.5), Point2D(6.0, 3.0))
+
+
+def test_line_tangent_is_the_whole_line() raises -> None:
+    var l = Line((1.0, 1.0), (4.0, 5.0))
+    assert_equal(l.tangent(0.0), Vector2D(3.0, 4.0))
+    assert_equal(l.tangent(0.7), Vector2D(3.0, 4.0))
+
+
+def test_line_at_distance_clamps_to_its_ends() raises -> None:
+    var l = Line((0.0, 0.0), (3.0, 4.0))
+    assert_equal(l.at_distance(l.length() / 2.0), l.midpoint())
+    assert_equal(l.at_distance(-1.0), l.start)
+    assert_equal(l.at_distance(10.0), l.end)
+    var point = Line((2.0, 2.0), (2.0, 2.0))
+    assert_equal(point.at_distance(1.0), point.start)
+
+
+def test_line_bounds() raises -> None:
+    var b = Line((4.0, -1.0), (0.0, 3.0)).bounds()
+    assert_equal(b, Rectangle((2.0, 1.0), 4.0, 4.0))
+    var flat = Line((0.0, 1.0), (4.0, 1.0)).bounds()
+    assert_equal(flat.h, 0.0)
+
+
+def test_line_flatten_is_its_ends() raises -> None:
+    var l = Line((0.0, 0.0), (4.0, 2.0))
+    var points = l.flatten(0.01)
+    assert_equal(len(points), 2)
+    assert_equal(points[0], l.start)
+    assert_equal(points[1], l.end)
+
+
+def test_line_beziers_trace_it_exactly() raises -> None:
+    var l = Line((0.0, 0.0), (6.0, 3.0))
+    var curves = l.beziers()
+    assert_equal(len(curves), 1)
+    for i in range(11):
+        var t = Float64(i) / 10.0
+        var p = curves[0].at(t)
+        assert_almost_equal(p.x, l.at(t).x, atol=1e-12)
+        assert_almost_equal(p.y, l.at(t).y, atol=1e-12)
+
+
 def test_line_move_to_places_midpoint() raises -> None:
     var l = Line((0.0, 0.0), (4.0, 0.0))
     l.move_to((10.0, 10.0))
