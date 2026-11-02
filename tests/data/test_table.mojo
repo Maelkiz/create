@@ -59,6 +59,13 @@ def test_separator_can_be_named() raises -> None:
     assert_equal(t.row(0).int("b"), 2)
 
 
+def test_load_and_save_take_a_named_separator() raises -> None:
+    var path = _scratch("semicolons.csv")
+    Table.parse("a,b\n1,2\n").save(path, separator=";")
+    assert_equal(_read(path), "a;b\n1;2\n")
+    assert_equal(Table.load(path, separator=";").row(0).int("b"), 2)
+
+
 def test_quoted_fields_keep_separators_quotes_and_newlines() raises -> None:
     var t = Table.load(FIXTURES + "quoted.csv")
     assert_equal(t.columns(), ["name", "quote", "note"])  # BOM stripped
