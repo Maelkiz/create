@@ -59,7 +59,8 @@ struct Matrix[rows: Int, cols: Int](
                 result[r, p] = s
         return result^
 
-    def transposed(self) -> Matrix[Self.cols, Self.rows]:
+    def transpose(self) -> Matrix[Self.cols, Self.rows]:
+        """Rows and columns swapped, as a new matrix."""
         var result = Matrix[Self.cols, Self.rows]()
         for r in range(Self.rows):
             for c in range(Self.cols):
