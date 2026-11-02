@@ -337,6 +337,23 @@ struct Table(Copyable, Movable):
         header.names.append(name)
         self._replace_header(header^)
 
+    def remove_column(mut self, name: String) raises:
+        """Remove the named column from the header and every row; the
+        columns after it move left by one."""
+        self._remove_column(self._header[].index(name))
+
+    def remove_column(mut self, index: Int) raises:
+        """Remove column `index`, from 0, as the named form."""
+        self._remove_column(self._header[].checked(index))
+
+    def _remove_column(mut self, index: Int):
+        var header = self._header[].copy()
+        _ = header.names.pop(index)
+        self._replace_header(header^)
+        for ref row in self._rows:
+            if index < len(row._cells):
+                _ = row._cells.pop(index)
+
     def remove_row(mut self, index: Int) raises:
         """Remove row `index`; the rows after it move up by one."""
         if index < 0 or index >= len(self._rows):
