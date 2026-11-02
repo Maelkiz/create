@@ -24,7 +24,7 @@ struct AudioDemo(Program):
             _ = self.audio.play(self.chime)
 
         if context.input.key_pressed(Key.H):
-            self.loop_id = self.audio.play(self.ambience, loop=True)
+            self.loop_id = self.audio.loop(self.ambience)
             self.looping = True
         if context.input.key_released(Key.H):
             self.audio.stop(self.loop_id)

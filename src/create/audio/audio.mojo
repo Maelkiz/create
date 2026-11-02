@@ -103,10 +103,19 @@ struct Audio(Movable):
             and self._voices[index].stream != 0
         )
 
-    def play(mut self, sound: Sound, loop: Bool = False) raises -> Int:
-        """Play a Sound. Returns a voice id usable with `stop`/`pause`/`resume`/
-        `is_playing`. Looping voices are refilled by `update`, from a copy of
-        `sound` that shares its samples."""
+    def play(mut self, sound: Sound) raises -> Int:
+        """Play `sound` once. Returns a voice id usable with `stop`/`pause`/
+        `resume`/`is_playing`; the voice frees itself when the sound ends."""
+        return self._start(sound, loop=False)
+
+    def loop(mut self, sound: Sound) raises -> Int:
+        """Play `sound` over and over until stopped, as `Animator.loop` and
+        `Tween.loop` repeat. Returns a voice id like `play`'s. The voice is
+        refilled by `update`, from a copy of `sound` that shares its samples.
+        """
+        return self._start(sound, loop=True)
+
+    def _start(mut self, sound: Sound, loop: Bool) raises -> Int:
         var stream = self._sdl.open_device_stream(
             sound._format, Int32(sound._channels), Int32(sound._sample_rate)
         )

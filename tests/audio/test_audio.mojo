@@ -54,13 +54,13 @@ def test_stale_id_after_slot_recycle() raises -> None:
 
 def test_play_loop_returns_valid_id() raises -> None:
     var audio = Audio()
-    var id = audio.play(_tone(), loop=True)
+    var id = audio.loop(_tone())
     assert_true(audio.is_playing(id))
 
 
 def test_looping_voice_stays_live_across_updates() raises -> None:
     var audio = Audio()
-    var id = audio.play(_tone(), loop=True)
+    var id = audio.loop(_tone())
     for _ in range(5):
         audio.update()
     assert_true(audio.is_playing(id))
@@ -68,7 +68,7 @@ def test_looping_voice_stays_live_across_updates() raises -> None:
 
 def test_stop_releases_looping_voice() raises -> None:
     var audio = Audio()
-    var id = audio.play(_tone(), loop=True)
+    var id = audio.loop(_tone())
     audio.stop(id)
     assert_false(audio.is_playing(id))
 
@@ -76,7 +76,7 @@ def test_stop_releases_looping_voice() raises -> None:
 def test_stop_all_releases_looping_and_one_shot_together() raises -> None:
     var audio = Audio()
     var one_shot = audio.play(_tone())
-    var looping = audio.play(_tone(), loop=True)
+    var looping = audio.loop(_tone())
     audio.stop_all()
     assert_false(audio.is_playing(one_shot))
     assert_false(audio.is_playing(looping))
@@ -86,7 +86,7 @@ def test_looping_voice_shares_sound_via_refcount() raises -> None:
     var audio = Audio()
     var sound = _tone()
     assert_equal(sound._pcm.count(), 1)
-    var id = audio.play(sound, loop=True)
+    var id = audio.loop(sound)
     # `play` copies the sound into _Voice.loop_sound, sharing its samples.
     assert_equal(sound._pcm.count(), 2)
     audio.stop(id)
@@ -133,7 +133,7 @@ def test_update_reaps_finished_one_shot_but_keeps_looping_voice() raises -> (
     fix can only be observed by actually waiting for it."""
     var audio = Audio()
     var one_shot = audio.play(_tone())
-    var looping = audio.play(_tone(), loop=True)
+    var looping = audio.loop(_tone())
 
     # Point 1: with no `update()` call, a finished one-shot leaks. There is no
     # public symptom to poll for while `update()` is absent, so this can only
@@ -215,7 +215,7 @@ def test_volume_reads_back_its_default_and_what_was_set() raises -> None:
 def test_volume_reaches_voices_already_playing() raises -> None:
     var audio = Audio()
     var one_shot = audio.play(_tone())
-    var looping = audio.play(_tone(), loop=True)
+    var looping = audio.loop(_tone())
     audio.volume(0.5)
     assert_equal(_gain(audio, one_shot), Float32(0.5))
     assert_equal(_gain(audio, looping), Float32(0.5))
@@ -235,7 +235,7 @@ def test_voice_volume_is_scaled_by_the_volume() raises -> None:
 def _play_and_drop_scope() raises:
     var audio = Audio()
     _ = audio.play(_tone())
-    _ = audio.play(_tone(), loop=True)
+    _ = audio.loop(_tone())
     _ = audio.play(_tone())
 
 
