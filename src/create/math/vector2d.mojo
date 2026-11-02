@@ -114,6 +114,9 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return (self - other).magnitude_squared()
 
     def lerp(self, other: Vector2D, t: Float64) -> Vector2D:
+        """A new vector `t` of the way from this one to `other`; this one is
+        unchanged. Not clamped: `t` outside 0..1 carries on past either end.
+        """
         return Vector2D(
             self.x + (other.x - self.x) * t, self.y + (other.y - self.y) * t
         )
