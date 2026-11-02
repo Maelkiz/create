@@ -122,6 +122,17 @@ def test_text_width_follows_the_font() raises -> None:
     assert_true(canvas.text_width("BDJLO") != sans)
 
 
+def _label_width(canvas: Canvas, label: String) raises -> Float64:
+    return canvas.text_width(label)
+
+
+def test_text_width_reads_through_an_immutable_canvas() raises -> None:
+    var canvas = _canvas()
+    var before = canvas.text_width("Hi")
+    assert_equal(_label_width(canvas, "Hi"), before)
+    assert_true(_label_width(canvas, "H") < before)
+
+
 def test_a_style_prints_its_font() raises -> None:
     var font = _symbols()
     var style = Style(font=font)

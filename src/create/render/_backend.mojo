@@ -769,7 +769,9 @@ struct Backend(Movable):
     var _coverage: CoverageScratch
     """`_shape`'s working memory, kept so a frame of antialiased shapes
     allocates once."""
-    var text: TextRenderer
+    var text: ArcPointer[TextRenderer]
+    """The glyph cache and layout, behind a shared pointer so a measurement
+    (`canvas.text_width`) can fill the cache through a read-only canvas."""
     var images: Dict[Int, _InternedImage]
     """Interned image copies by backend image id, the id a command
     carries. One per image version rendered, dropped by `_expire_images`."""
@@ -867,7 +869,7 @@ struct Backend(Movable):
         self.antialiasing = Antialiasing.OFF
         self._coverage_runs = List[Int]()
         self._coverage = CoverageScratch()
-        self.text = TextRenderer()
+        self.text = ArcPointer(TextRenderer())
         self.images = Dict[Int, _InternedImage]()
         self.interned_ids = Dict[Int, Int]()
         self.next_image = 1
@@ -1213,7 +1215,7 @@ struct Backend(Movable):
             cmds,
             self.clips,
             self.images,
-            self.text,
+            self.text[],
             width,
             height,
             scale,
@@ -2214,9 +2216,9 @@ struct Backend(Movable):
         var sf = text_pixel_scale(m, scale)
         if text_upright(m):
             var p = mat_apply(m, c.geom[0], c.geom[1])
-            self.text.render(s, c.text, p[0], p[1], c.style, sf, blur)
+            self.text[].render(s, c.text, p[0], p[1], c.style, sf, blur)
         else:
-            self.text.render_mapped(
+            self.text[].render_mapped(
                 s,
                 c.text,
                 glyph_transform(m, c.geom[0], c.geom[1], sf),
