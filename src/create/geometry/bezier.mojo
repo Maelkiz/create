@@ -1,5 +1,14 @@
 from std.math import abs, ceil, min, max, sqrt
-from .geometry import Arc, Line, Rectangle, overlaps
+from .geometry import (
+    Arc,
+    Circle,
+    Line,
+    Polygon,
+    Rectangle,
+    Sector,
+    Triangle,
+    overlaps,
+)
 from create.math import Point2D
 from .drawable import Drawable, DrawTarget
 from .spline import Spline
@@ -294,6 +303,48 @@ struct Bezier(
 
     def intersects(self, s: Spline) -> Bool:
         return s.intersects(self)
+
+    # A region is met where the curve enters it or runs inside it: each
+    # segment's `Line.intersects`, which sees the region's rounding.
+    def intersects(self, c: Circle) -> Bool:
+        if not overlaps(self._reach(), c.bounds()):
+            return False
+        for segment in self._segments():
+            if segment.intersects(c):
+                return True
+        return False
+
+    def intersects(self, r: Rectangle) -> Bool:
+        if not overlaps(self._reach(), r.bounds()):
+            return False
+        for segment in self._segments():
+            if segment.intersects(r):
+                return True
+        return False
+
+    def intersects(self, t: Triangle) -> Bool:
+        if not overlaps(self._reach(), t.bounds()):
+            return False
+        for segment in self._segments():
+            if segment.intersects(t):
+                return True
+        return False
+
+    def intersects(self, s: Sector) -> Bool:
+        if not overlaps(self._reach(), s.bounds()):
+            return False
+        for segment in self._segments():
+            if segment.intersects(s):
+                return True
+        return False
+
+    def intersects(self, p: Polygon) -> Bool:
+        if not overlaps(self._reach(), p.bounds()):
+            return False
+        for segment in self._segments():
+            if segment.intersects(p):
+                return True
+        return False
 
     def split(self, t: Float64) -> Tuple[Bezier, Bezier]:
         """The curve cut at `t` into two, together tracing exactly the

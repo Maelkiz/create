@@ -1,6 +1,6 @@
 from std.math import max, min, pow
 from .bezier import Bezier
-from .geometry import Arc, Line, Rectangle
+from .geometry import Arc, Circle, Line, Polygon, Rectangle, Sector, Triangle
 from create.math import Point2D
 from .drawable import Drawable, DrawTarget
 from create.math import Vector2D
@@ -240,6 +240,36 @@ struct Spline(Copyable, Drawable, Equatable, Movable, Writable):
     def intersects(self, b: Bezier) -> Bool:
         for c in self.beziers():
             if c.intersects(b):
+                return True
+        return False
+
+    def intersects(self, c: Circle) -> Bool:
+        for curve in self.beziers():
+            if curve.intersects(c):
+                return True
+        return False
+
+    def intersects(self, r: Rectangle) -> Bool:
+        for curve in self.beziers():
+            if curve.intersects(r):
+                return True
+        return False
+
+    def intersects(self, t: Triangle) -> Bool:
+        for curve in self.beziers():
+            if curve.intersects(t):
+                return True
+        return False
+
+    def intersects(self, s: Sector) -> Bool:
+        for curve in self.beziers():
+            if curve.intersects(s):
+                return True
+        return False
+
+    def intersects(self, p: Polygon) -> Bool:
+        for curve in self.beziers():
+            if curve.intersects(p):
                 return True
         return False
 
