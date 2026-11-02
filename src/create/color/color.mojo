@@ -247,17 +247,17 @@ struct Color(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
             b = x
         return Color(_channel(r + m), _channel(g + m), _channel(b + m))
 
-    @staticmethod
-    def lerp(a: Color, b: Color, t: Float64) -> Color:
-        """Blend two colors, `t` clamped to 0..1. Mixes in sRGB, like a paint
-        program's gradient — not perceptually uniform, but what the eye expects
-        from two swatches."""
+    def lerp(self, other: Color, t: Float64) -> Color:
+        """A new colour `t` of the way from this one to `other`, `t` clamped
+        to 0..1; this one is unchanged. Mixes in sRGB, like a paint program's
+        gradient — not perceptually uniform, but what the eye expects from two
+        swatches."""
         var tt = min(max(t, 0.0), 1.0)
         return Color(
-            _mix(a.r, b.r, tt),
-            _mix(a.g, b.g, tt),
-            _mix(a.b, b.b, tt),
-            _mix(a.a, b.a, tt),
+            _mix(self.r, other.r, tt),
+            _mix(self.g, other.g, tt),
+            _mix(self.b, other.b, tt),
+            _mix(self.a, other.a, tt),
         )
 
     comptime TRANSPARENT = Color(0, 0, 0, 0)

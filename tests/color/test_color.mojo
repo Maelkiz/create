@@ -207,28 +207,28 @@ def test_hsv_clamps_out_of_range() raises -> None:
 
 
 def test_lerp_endpoints() raises -> None:
-    var a = Color.lerp(Color.BLACK, Color.WHITE, 0.0)
+    var a = Color.BLACK.lerp(Color.WHITE, 0.0)
     assert_equal(a.r, UInt8(0))
-    var b = Color.lerp(Color.BLACK, Color.WHITE, 1.0)
+    var b = Color.BLACK.lerp(Color.WHITE, 1.0)
     assert_equal(b.r, UInt8(255))
 
 
 def test_lerp_midpoint() raises -> None:
-    var c = Color.lerp(Color.BLACK, Color.WHITE, 0.5)
+    var c = Color.BLACK.lerp(Color.WHITE, 0.5)
     assert_equal(c.r, UInt8(128))
     assert_equal(c.g, UInt8(128))
     assert_equal(c.b, UInt8(128))
 
 
 def test_lerp_blends_alpha() raises -> None:
-    var c = Color.lerp(Color(0, 0, 0, 0), Color(0, 0, 0, 255), 0.5)
+    var c = Color(0, 0, 0, 0).lerp(Color(0, 0, 0, 255), 0.5)
     assert_equal(c.a, UInt8(128))
 
 
 def test_lerp_clamps_t() raises -> None:
-    var lo = Color.lerp(Color.BLACK, Color.WHITE, -2.0)
+    var lo = Color.BLACK.lerp(Color.WHITE, -2.0)
     assert_equal(lo.r, UInt8(0))
-    var hi = Color.lerp(Color.BLACK, Color.WHITE, 3.0)
+    var hi = Color.BLACK.lerp(Color.WHITE, 3.0)
     assert_equal(hi.r, UInt8(255))
 
 

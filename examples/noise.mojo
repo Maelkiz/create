@@ -46,7 +46,7 @@ struct App(Program):
                 var height = self.terrain.at(center, time=t * 0.3)
                 # Layered octaves average towards 0.5, so stretch the middle
                 # of the range across the whole gradient.
-                canvas.fill(Color.lerp(low, high, smoothstep(0.3, 0.7, height)))
+                canvas.fill(low.lerp(high, smoothstep(0.3, 0.7, height)))
                 canvas.rectangle(center, cell_w, cell_h)
 
         # The same range as Random.float(), so lerp turns it into a position.

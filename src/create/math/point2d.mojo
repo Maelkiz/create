@@ -102,6 +102,9 @@ struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
         return (self - other).magnitude_squared()
 
     def lerp(self, other: Point2D, t: Float64) -> Point2D:
+        """A new point `t` of the way from this one to `other`; this one is
+        unchanged. Not clamped: `t` outside 0..1 carries on past either end.
+        """
         return Point2D(
             self.x + (other.x - self.x) * t, self.y + (other.y - self.y) * t
         )
