@@ -267,7 +267,7 @@ def test_the_camera_leaves_the_background_alone() raises -> None:
 
 
 def test_fit_spans_the_design_and_bars_cover_the_rest() raises -> None:
-    var m = run_headless[LaidOut[False]](100, 100, 1, 200, 100)
+    var m = run_headless[LaidOut[False]](100, 100, 1, window_size=(200, 100))
     _near(m.pixel(50, 50), Color(254, 0, 1))
     _near(m.pixel(149, 50), Color(1, 0, 254))
     assert_equal(m.pixel(10, 50), Color.BLACK)
@@ -275,7 +275,7 @@ def test_fit_spans_the_design_and_bars_cover_the_rest() raises -> None:
 
 
 def test_extend_spans_the_whole_window() raises -> None:
-    var m = run_headless[LaidOut[True]](100, 100, 1, 200, 100)
+    var m = run_headless[LaidOut[True]](100, 100, 1, window_size=(200, 100))
     _near(m.pixel(0, 50), Color(254, 0, 1))
     _near(m.pixel(199, 50), Color(1, 0, 254))
 
@@ -306,11 +306,15 @@ def _gpu_matches_cpu_for[
     var gpu: Image
     try:
         gpu = run_headless[P](
-            100, 100, 1, pixel_w, pixel_h, backend=RenderBackend.GPU
+            100,
+            100,
+            1,
+            window_size=(pixel_w, pixel_h),
+            backend=RenderBackend.GPU,
         )
     except:
         return False
-    var cpu = run_headless[P](100, 100, 1, pixel_w, pixel_h)
+    var cpu = run_headless[P](100, 100, 1, window_size=(pixel_w, pixel_h))
     var compared = 0
     for y in range(2, pixel_h - 2):
         for x in range(2, pixel_w - 2):

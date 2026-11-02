@@ -35,7 +35,7 @@ def test_letterbox_clips_a_shape_rendered_past_the_design_edge() raises -> None:
     # The rect covers every framebuffer pixel, so a bar pixel reading the
     # letterbox colour proves _render_letterbox clips rather than merely fills
     # an otherwise-empty margin.
-    var m = run_headless[OverflowingRect](100, 50, 1, 100, 100)
+    var m = run_headless[OverflowingRect](100, 50, 1, window_size=(100, 100))
     assert_equal(m.pixel(50, 5), Color.BLACK)
     assert_equal(m.pixel(50, 95), Color.BLACK)
     assert_equal(m.pixel(50, 50), Color.GREEN)
@@ -61,10 +61,14 @@ struct RedBarsFromCreate(Program):
 
 def test_a_letterbox_colour_set_in_create_lasts() raises -> None:
     # 100x50 design in a 100x100 buffer: 25-row bars top and bottom.
-    var first = run_headless[RedBarsFromCreate](100, 50, 0, 100, 100)
+    var first = run_headless[RedBarsFromCreate](
+        100, 50, 0, window_size=(100, 100)
+    )
     assert_equal(first.pixel(50, 5), Color.RED)
     assert_equal(first.pixel(50, 50), Color.GREEN)
-    var later = run_headless[RedBarsFromCreate](100, 50, 3, 100, 100)
+    var later = run_headless[RedBarsFromCreate](
+        100, 50, 3, window_size=(100, 100)
+    )
     assert_equal(later.pixel(50, 5), Color.RED)
     assert_equal(later.pixel(50, 95), Color.RED)
 
@@ -88,7 +92,7 @@ struct BarsChangedLate(Program):
 
 
 def test_a_letterbox_colour_set_mid_frame_paints_that_frame() raises -> None:
-    var m = run_headless[BarsChangedLate](100, 50, 1, 100, 100)
+    var m = run_headless[BarsChangedLate](100, 50, 1, window_size=(100, 100))
     assert_equal(m.pixel(50, 5), Color.BLUE)
 
 

@@ -22,8 +22,7 @@ def run_headless[
     width: Int,
     height: Int,
     frames: Int = 1,
-    pixel_width: Int = 0,
-    pixel_height: Int = 0,
+    window_size: Optional[Tuple[Int, Int]] = None,
     backend: RenderBackend = RenderBackend.CPU,
     antialiasing: Antialiasing = Antialiasing.MEDIUM,
     autoscale: Autoscale = Autoscale.FIT,
@@ -35,10 +34,10 @@ def run_headless[
     The same sequence as `run`, minus the window: `create` draws frame 1,
     then `update` draws one frame per call, with the letterbox painted after
     each. `frames=0` returns `create`'s frame alone. `width`
-    and `height` are the design size; `pixel_width`/`pixel_height` are
-    the framebuffer, defaulting to the same size — pass a different shape to
-    exercise autoscale, since a design that matches the framebuffer maps 1:1
-    and leaves no bars.
+    and `height` are the design size; `window_size` is the pixel size of
+    the window it stands in for, the design size when `None` — pass a
+    different shape to exercise autoscale, since a design that matches the
+    window maps 1:1 and leaves no bars. The returned image is that size.
 
     Time is synthetic and the input is empty, so the result depends only on
     the program.
@@ -60,14 +59,13 @@ def run_headless[
                 width,
                 height,
                 frames,
-                pixel_width,
-                pixel_height,
+                window_size,
                 antialiasing,
                 autoscale,
             )
         )
-    var pw = pixel_width if pixel_width > 0 else width
-    var ph = pixel_height if pixel_height > 0 else height
+    var pw = window_size.value()[0] if window_size else width
+    var ph = window_size.value()[1] if window_size else height
     var mem = MemorySurface(pw, ph)
     var state = _PersistentCanvasState()
     state._backend.antialiasing = antialiasing

@@ -76,7 +76,7 @@ def test_the_gpu_backend_paints_letterbox_bars() raises -> None:
     var m: Image
     try:
         m = run_headless[GPURect](
-            64, 64, pixel_width=128, pixel_height=64, backend=RenderBackend.GPU
+            64, 64, window_size=(128, 64), backend=RenderBackend.GPU
         )
     except e:
         print("SKIP — no GL context:", e)

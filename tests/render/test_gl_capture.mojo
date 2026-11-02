@@ -65,7 +65,7 @@ def test_gpu_screenshot_has_the_framebuffer_resolution_and_is_opaque() raises ->
 ):
     try:
         _ = run_headless[GPUScreenshot](
-            200, 100, 1, 640, 480, backend=RenderBackend.GPU
+            200, 100, 1, window_size=(640, 480), backend=RenderBackend.GPU
         )
     except e:
         print("SKIP — no GL context:", e)
@@ -119,12 +119,7 @@ def test_gpu_save_image_matches_cpu_save_image_byte_for_byte() raises -> None:
     var gpu_m: Image
     try:
         gpu_m = run_headless[CaptureImageGPU](
-            200,
-            100,
-            1,
-            640,
-            480,
-            backend=RenderBackend.GPU,
+            200, 100, 1, window_size=(640, 480), backend=RenderBackend.GPU
         )
     except e:
         print("SKIP — no GL context:", e)
@@ -133,7 +128,9 @@ def test_gpu_save_image_matches_cpu_save_image_byte_for_byte() raises -> None:
 
     # The CPU backend runs unconditionally: it needs no GL context, and the
     # comparison is meaningless without both files present.
-    var cpu_m = run_headless[CaptureImageCPU](200, 100, 1, 640, 480)
+    var cpu_m = run_headless[CaptureImageCPU](
+        200, 100, 1, window_size=(640, 480)
+    )
     _ = cpu_m^
 
     var cpu = _saved(_IMG_CPU)

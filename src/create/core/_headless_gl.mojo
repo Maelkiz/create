@@ -44,8 +44,7 @@ def _run_headless_gl[
     width: Int,
     height: Int,
     frames: Int = 1,
-    pixel_width: Int = 0,
-    pixel_height: Int = 0,
+    window_size: Optional[Tuple[Int, Int]] = None,
     antialiasing: Antialiasing = Antialiasing.OFF,
     autoscale: Autoscale = Autoscale.FIT,
 ) raises -> MemorySurface:
@@ -62,8 +61,8 @@ def _run_headless_gl[
     `antialiasing` multisamples as in a window: the renderer draws into its
     own multisampled framebuffer and resolves into the `_GLTarget`.
     """
-    var pw = pixel_width if pixel_width > 0 else width
-    var ph = pixel_height if pixel_height > 0 else height
+    var pw = window_size.value()[0] if window_size else width
+    var ph = window_size.value()[1] if window_size else height
 
     var win = _open_headless_window()
     var target = _GLTarget(GL(), pw, ph)
