@@ -41,7 +41,7 @@ def _blue(s: Image, x: Int, y: Int) -> Int:
 
 def test_from_sheet_cuts_every_cell() raises -> None:
     var anim = Animation.from_sheet(_sheet(2, 2, 3), 3, 3)
-    assert_equal(anim.count(), 4)
+    assert_equal(anim.frame_count(), 4)
     for i in range(4):
         assert_equal(anim.frame(i).width(), 3)
         assert_equal(anim.frame(i).height(), 3)
@@ -57,14 +57,14 @@ def test_from_sheet_is_row_major() raises -> None:
 
 def test_from_sheet_window() raises -> None:
     var anim = Animation.from_sheet(_sheet(2, 2, 3), 3, 3, start=2, count=2)
-    assert_equal(anim.count(), 2)
+    assert_equal(anim.frame_count(), 2)
     assert_equal(_red(anim.frame(0), 0, 0), 3)
     assert_equal(_red(anim.frame(1), 0, 0), 4)
 
 
 def test_from_sheet_count_zero_takes_the_rest() raises -> None:
     var anim = Animation.from_sheet(_sheet(2, 2, 3), 3, 3, start=1)
-    assert_equal(anim.count(), 3)
+    assert_equal(anim.frame_count(), 3)
     assert_equal(_red(anim.frame(0), 0, 0), 2)
 
 
@@ -113,7 +113,7 @@ def test_count_past_the_end_raises() raises -> None:
 def test_from_folder_frame_count() raises -> None:
     var anim = Animation.from_folder("tests/fixtures/anim")
     # notes.txt in the same directory is skipped.
-    assert_equal(anim.count(), 3)
+    assert_equal(anim.frame_count(), 3)
 
 
 def test_from_folder_orders_naturally() raises -> None:

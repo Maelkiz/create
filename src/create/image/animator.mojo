@@ -133,7 +133,7 @@ struct Animator(Copyable, Movable, Writable):
         self._elapsed += dt
         while self._elapsed >= duration:
             self._elapsed -= duration
-            if self._frame_index + 1 < self._animation.count():
+            if self._frame_index + 1 < self._animation.frame_count():
                 self._frame_index += 1
             elif self._looping:
                 self._frame_index = 0

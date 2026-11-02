@@ -123,14 +123,14 @@ def test_use_of_another_animation_rewinds_and_stops() raises -> None:
     a.use(_animation(2, fps=10.0))
     assert_equal(a.frame_index(), 0)
     assert_false(a.is_playing())
-    assert_equal(a.animation().count(), 2)
+    assert_equal(a.animation().frame_count(), 2)
 
 
 def test_play_with_an_animation_switches_and_starts() raises -> None:
     var a = Animator(_animation(4, fps=10.0))
     a.play(_animation(2, fps=10.0))
     assert_true(a.is_playing())
-    assert_equal(a.animation().count(), 2)
+    assert_equal(a.animation().frame_count(), 2)
     a.update(0.1)
     assert_equal(a.frame_index(), 1)
 
