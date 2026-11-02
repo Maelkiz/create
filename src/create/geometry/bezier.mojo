@@ -48,6 +48,19 @@ follows the curve: the tolerance it flattens at. A curve passing nearer
 another shape than this, without touching, may count as meeting it, and
 one only grazing it may not."""
 
+
+def _curve_segments[C: Curve](curve: C) -> List[Line]:
+    """`curve` as straight segments, end to end, within
+    `_INTERSECT_PRECISION` of its larger side: how `intersects` and a
+    region's `contains` follow a curve with no closed form against it."""
+    var b = curve.bounds()
+    var points = curve.flatten(_INTERSECT_PRECISION * max(b.w, b.h))
+    var segments = List[Line](capacity=len(points) - 1)
+    for i in range(1, len(points)):
+        segments.append(Line(points[i - 1], points[i]))
+    return segments^
+
+
 comptime _ON_CURVE_PRECISION = 1e-9
 """How far, as a fraction of the curve's larger side, a point may lie off
 the curve and still count as on it: `closest_point` is a search, and its
@@ -256,11 +269,7 @@ struct Bezier(
     def _segments(self) -> List[Line]:
         """The curve as straight segments, within `_INTERSECT_PRECISION`
         of its size."""
-        var points = self.flatten(_INTERSECT_PRECISION * self._size())
-        var segments = List[Line](capacity=len(points) - 1)
-        for i in range(1, len(points)):
-            segments.append(Line(points[i - 1], points[i]))
-        return segments^
+        return _curve_segments(self)
 
     # A Bézier meets another curve where they cross or touch. There is no
     # closed form for a cubic meeting most shapes, so each test below
