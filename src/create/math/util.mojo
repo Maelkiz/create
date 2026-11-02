@@ -63,11 +63,12 @@ def wrap(value: Float64, period: Float64) -> Float64:
     return value - floor(value / period) * period
 
 
-def degrees(r: Float64) -> Float64:
-    """Radians to degrees. Rotations take radians, so this is for display."""
-    return r * (180.0 / PI)
+def degrees(radians: Float64) -> Float64:
+    """`radians` in degrees. Rotations take radians, so this is for display."""
+    return radians * (180.0 / PI)
 
 
-def radians(d: Float64) -> Float64:
-    """Degrees to radians, for feeding `rotate` an angle written in degrees."""
-    return d * (PI / 180.0)
+def radians(degrees: Float64) -> Float64:
+    """`degrees` in radians, for feeding `rotate` an angle written in degrees.
+    """
+    return degrees * (PI / 180.0)
