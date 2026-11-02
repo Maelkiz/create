@@ -52,6 +52,7 @@ def test_font_weights_are_design_space_values() raises -> None:
     assert_equal(FontWeight.REGULAR.value, 400)
     assert_equal(FontWeight.BOLD.value, 700)
     assert_equal(String(FontWeight.BOLD), "FontWeight.BOLD")
+    assert_equal(String(FontWeight(600)), "FontWeight.SEMI_BOLD")
     assert_equal(String(FontWeight(450)), "FontWeight(450)")
 
 
