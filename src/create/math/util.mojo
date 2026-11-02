@@ -56,10 +56,11 @@ def fractional_part(x: Float64) -> Float64:
     return x - floor(x)
 
 
-def wrap(x: Float64, y: Float64) -> Float64:
-    """`x` wrapped into `[0, y)`. Floored, so a negative `x` wraps forward
-    instead of staying negative — what an angle or a scrolling offset wants."""
-    return x - floor(x / y) * y
+def wrap(value: Float64, period: Float64) -> Float64:
+    """`value` wrapped into `[0, period)`. Floored, so a negative `value`
+    wraps forward instead of staying negative — what an angle or a scrolling
+    offset wants."""
+    return value - floor(value / period) * period
 
 
 def degrees(r: Float64) -> Float64:
