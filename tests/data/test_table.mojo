@@ -231,6 +231,23 @@ def test_add_column_leaves_a_copy_alone() raises -> None:
     assert_false(before.has_column("time"))
 
 
+def test_remove_column_reaches_every_row() raises -> None:
+    var t = Table.load(FIXTURES + "scores.csv")
+    var before = t.copy()
+    t.remove_column("score")
+    assert_equal(t.columns(), ["name", "level"])
+    assert_equal(t.row(2).string("level"), "4")
+    assert_equal(t.row(2).string(1), "4")
+    t.remove_column(0)
+    assert_equal(t.columns(), ["level"])
+    assert_equal(t.row(0).string(0), t.row(0).string("level"))
+    assert_equal(before.column_count(), 3)
+    with assert_raises(contains='no column "name"'):
+        t.remove_column("name")
+    with assert_raises(contains="no column 1"):
+        t.remove_column(1)
+
+
 def test_remove_row() raises -> None:
     var t = Table.load(FIXTURES + "scores.csv")
     t.remove_row(0)
