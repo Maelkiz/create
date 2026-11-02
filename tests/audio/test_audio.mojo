@@ -3,7 +3,7 @@
 
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 from std.time import sleep
-from create.audio import Audio, Sound
+from create.audio import Audio, Sound, Voice
 
 
 def _tone() -> Sound:
@@ -93,30 +93,30 @@ def test_looping_voice_shares_sound_via_refcount() raises -> None:
     assert_equal(sound._pcm.count(), 1)
 
 
-def test_id_zero_is_never_valid() raises -> None:
+def test_voice_none_is_never_valid() raises -> None:
     var audio = Audio()
-    assert_false(audio.is_playing(0))
-    audio.stop(0)
-    audio.pause(0)
-    audio.resume(0)
-    audio.volume(0, 1.0)
+    assert_false(audio.is_playing(Voice.NONE))
+    audio.stop(Voice.NONE)
+    audio.pause(Voice.NONE)
+    audio.resume(Voice.NONE)
+    audio.volume(Voice.NONE, 1.0)
     var id = audio.play(_tone())
-    assert_false(audio.is_playing(0))
+    assert_false(audio.is_playing(Voice.NONE))
     assert_true(audio.is_playing(id))
 
 
-def test_negative_id_is_invalid() raises -> None:
+def test_a_negative_id_is_invalid() raises -> None:
     var audio = Audio()
     var id = audio.play(_tone())
-    assert_false(audio.is_playing(-1))
-    audio.stop(-1)
+    assert_false(audio.is_playing(Voice(_id=-1)))
+    audio.stop(Voice(_id=-1))
     assert_true(audio.is_playing(id))
 
 
 def test_out_of_range_id_is_invalid() raises -> None:
     var audio = Audio()
     var id = audio.play(_tone())
-    var out_of_range = (1 << 32) | 9999  # index past the end of _voices
+    var out_of_range = Voice(_id=(1 << 32) | 9999)  # past the end of _voices
     assert_false(audio.is_playing(out_of_range))
     audio.stop(out_of_range)
     audio.pause(out_of_range)
@@ -158,7 +158,7 @@ def test_update_reaps_finished_one_shot_but_keeps_looping_voice() raises -> (
 
 def test_many_concurrent_voices() raises -> None:
     var audio = Audio()
-    var ids = List[Int]()
+    var ids = List[Voice]()
     for _ in range(16):
         ids.append(audio.play(_tone()))
 
@@ -176,7 +176,7 @@ def test_many_concurrent_voices() raises -> None:
         else:
             assert_true(audio.is_playing(ids[i]))
 
-    var more = List[Int]()
+    var more = List[Voice]()
     for _ in range(8):
         more.append(audio.play(_tone()))
     for i in range(8):
@@ -201,8 +201,18 @@ def test_voice_volume_on_stale_id_is_a_no_op() raises -> None:
     assert_true(audio.is_playing(second))
 
 
-def _gain(audio: Audio, id: Int) raises -> Float32:
-    return audio._sdl.gain(audio._voices[Audio._decode(id)[0]].stream)
+def _gain(audio: Audio, voice: Voice) raises -> Float32:
+    return audio._sdl.gain(audio._voices[Audio._decode(voice._id)[0]].stream)
+
+
+def test_voice_volume_reads_back() raises -> None:
+    var audio = Audio()
+    var voice = audio.play(_tone())
+    assert_equal(audio.volume(voice), 1.0)
+    audio.volume(voice, 0.4)
+    assert_equal(audio.volume(voice), 0.4)
+    audio.stop(voice)
+    assert_equal(audio.volume(voice), 0.0)
 
 
 def test_volume_reads_back_its_default_and_what_was_set() raises -> None:
