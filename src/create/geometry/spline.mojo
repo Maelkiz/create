@@ -281,9 +281,11 @@ struct Spline(Copyable, Curve, Equatable, Movable, Writable):
                     return True
         return False
 
-    def translate(mut self, delta: Vector2D):
-        for i in range(len(self.points)):
-            self.points[i] = self.points[i] + delta
+    def translate(self, delta: Vector2D) -> Self:
+        var moved = self.copy()
+        for i in range(len(moved.points)):
+            moved.points[i] = moved.points[i] + delta
+        return moved^
 
     def _segment(
         self, p0: Point2D, p1: Point2D, p2: Point2D, p3: Point2D

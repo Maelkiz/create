@@ -194,14 +194,14 @@ def test_closest_point() raises -> None:
 
 def test_move_to_moves_the_centroid() raises -> None:
     var l = _l_shape()
-    l.move_to(Point2D(0, 0))
+    l = l.move_to(Point2D(0, 0))
     _assert_point_near(l.center(), Point2D(0.0, 0.0))
     _assert_point_near(l.vertices[0], Point2D(-12.5 / 3.0, -12.5 / 3.0))
 
 
 def test_translate() raises -> None:
     var sq = _square()
-    sq.translate(Vector2D(1, -2))
+    sq = sq.translate(Vector2D(1, -2))
     assert_equal(sq.vertices[0], Point2D(1.0, -2.0))
     assert_equal(sq.vertices[2], Point2D(11.0, 8.0))
 

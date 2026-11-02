@@ -519,11 +519,15 @@ struct Rectangle(
     def draw_to[T: DrawTarget](self, mut target: T):
         target._rectangle(self)
 
-    def move_to(mut self, position: Point2D):
-        self.position = position
+    def move_to(self, position: Point2D) -> Self:
+        var moved = self.copy()
+        moved.position = position
+        return moved^
 
-    def translate(mut self, delta: Vector2D):
-        self.position = self.position + delta
+    def translate(self, delta: Vector2D) -> Self:
+        var moved = self.copy()
+        moved.position = moved.position + delta
+        return moved^
 
     def _radius(self) -> Float64:
         """The corner radius as drawn: clamped to half the shorter side."""
@@ -666,11 +670,15 @@ struct Circle(
     def draw_to[T: DrawTarget](self, mut target: T):
         target._circle(self)
 
-    def move_to(mut self, position: Point2D):
-        self.position = position
+    def move_to(self, position: Point2D) -> Self:
+        var moved = self.copy()
+        moved.position = position
+        return moved^
 
-    def translate(mut self, delta: Vector2D):
-        self.position = self.position + delta
+    def translate(self, delta: Vector2D) -> Self:
+        var moved = self.copy()
+        moved.position = moved.position + delta
+        return moved^
 
 
 struct Line(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
@@ -870,12 +878,14 @@ struct Line(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
     def draw_to[T: DrawTarget](self, mut target: T):
         target._line(self)
 
-    def move_to(mut self, position: Point2D):
-        self.translate(position - self.midpoint())
+    def move_to(self, position: Point2D) -> Self:
+        return self.translate(position - self.midpoint())
 
-    def translate(mut self, delta: Vector2D):
-        self.start = self.start + delta
-        self.end = self.end + delta
+    def translate(self, delta: Vector2D) -> Self:
+        var moved = self.copy()
+        moved.start = moved.start + delta
+        moved.end = moved.end + delta
+        return moved^
 
 
 struct Arc(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
@@ -1217,11 +1227,15 @@ struct Arc(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
         # exactly, so a non-uniform scale draws the arc of an ellipse.
         target._curves(self.beziers())
 
-    def move_to(mut self, position: Point2D):
-        self.position = position
+    def move_to(self, position: Point2D) -> Self:
+        var moved = self.copy()
+        moved.position = position
+        return moved^
 
-    def translate(mut self, delta: Vector2D):
-        self.position = self.position + delta
+    def translate(self, delta: Vector2D) -> Self:
+        var moved = self.copy()
+        moved.position = moved.position + delta
+        return moved^
 
 
 struct Sector(
@@ -1521,11 +1535,15 @@ struct Sector(
     def draw_to[T: DrawTarget](self, mut target: T):
         target._sector(self)
 
-    def move_to(mut self, position: Point2D):
-        self.position = position
+    def move_to(self, position: Point2D) -> Self:
+        var moved = self.copy()
+        moved.position = position
+        return moved^
 
-    def translate(mut self, delta: Vector2D):
-        self.position = self.position + delta
+    def translate(self, delta: Vector2D) -> Self:
+        var moved = self.copy()
+        moved.position = moved.position + delta
+        return moved^
 
 
 struct Triangle(
@@ -1765,13 +1783,15 @@ struct Triangle(
     def draw_to[T: DrawTarget](self, mut target: T):
         target._triangle(self)
 
-    def move_to(mut self, position: Point2D):
-        self.translate(position - self.center())
+    def move_to(self, position: Point2D) -> Self:
+        return self.translate(position - self.center())
 
-    def translate(mut self, delta: Vector2D):
-        self.a = self.a + delta
-        self.b = self.b + delta
-        self.c = self.c + delta
+    def translate(self, delta: Vector2D) -> Self:
+        var moved = self.copy()
+        moved.a = moved.a + delta
+        moved.b = moved.b + delta
+        moved.c = moved.c + delta
+        return moved^
 
     def _radius(self) -> Float64:
         """The corner radius as drawn, clamped as `canvas.triangle` clamps
@@ -2142,12 +2162,14 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
     def draw_to[T: DrawTarget](self, mut target: T):
         target._polygon(self)
 
-    def move_to(mut self, position: Point2D):
-        self.translate(position - self.center())
+    def move_to(self, position: Point2D) -> Self:
+        return self.translate(position - self.center())
 
-    def translate(mut self, delta: Vector2D):
-        for i in range(len(self.vertices)):
-            self.vertices[i] = self.vertices[i] + delta
+    def translate(self, delta: Vector2D) -> Self:
+        var moved = self.copy()
+        for i in range(len(moved.vertices)):
+            moved.vertices[i] = moved.vertices[i] + delta
+        return moved^
 
     def _is_rounded(self) -> Bool:
         return self.corner_radius > 0.0 and len(self.vertices) >= 3

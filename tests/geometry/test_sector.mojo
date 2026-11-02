@@ -166,9 +166,9 @@ def test_zero_sweep_is_one_radius() raises -> None:
 
 def test_move_to_and_translate_move_the_tip() raises -> None:
     var s = Sector((0, 0), 5, 0.0, 1.0)
-    s.move_to((3.0, 4.0))
+    s = s.move_to((3.0, 4.0))
     assert_equal(s.position, Point2D(3.0, 4.0))
-    s.translate(Vector2D(1.0, -1.0))
+    s = s.translate(Vector2D(1.0, -1.0))
     assert_equal(s.position, Point2D(4.0, 3.0))
 
 
