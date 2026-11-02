@@ -189,9 +189,9 @@ def test_zero_radius_is_the_centre() raises -> None:
 
 def test_move_to_and_translate_move_the_centre() raises -> None:
     var a = Arc((0, 0), 5, 0.0, 1.0)
-    a.move_to((3.0, 4.0))
+    a = a.move_to((3.0, 4.0))
     assert_equal(a.position, Point2D(3.0, 4.0))
-    a.translate(Vector2D(1.0, -1.0))
+    a = a.translate(Vector2D(1.0, -1.0))
     assert_equal(a.position, Point2D(4.0, 3.0))
 
 

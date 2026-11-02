@@ -477,8 +477,10 @@ struct Bezier(
                 )
         return total * half
 
-    def translate(mut self, delta: Vector2D):
-        self.start = self.start + delta
-        self.control1 = self.control1 + delta
-        self.control2 = self.control2 + delta
-        self.end = self.end + delta
+    def translate(self, delta: Vector2D) -> Self:
+        var moved = self.copy()
+        moved.start = moved.start + delta
+        moved.control1 = moved.control1 + delta
+        moved.control2 = moved.control2 + delta
+        moved.end = moved.end + delta
+        return moved^

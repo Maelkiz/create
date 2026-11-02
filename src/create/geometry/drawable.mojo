@@ -53,8 +53,8 @@ trait Shape(Copyable, Deinitable, Drawable):
         """The point of the shape nearest `p`: `p` itself inside a region."""
         ...
 
-    def translate(mut self, delta: Vector2D):
-        """Move the shape by `delta`."""
+    def translate(self, delta: Vector2D) -> Self:
+        """The shape moved by `delta`; this one is unchanged."""
         ...
 
 
@@ -73,9 +73,9 @@ trait Region(Shape):
         """Whether `p` is inside, its boundary included."""
         ...
 
-    def move_to(mut self, position: Point2D):
-        """Move the region so its `position` (or, without one, its
-        `center()`) is at `position`."""
+    def move_to(self, position: Point2D) -> Self:
+        """The region moved so its `position` (or, without one, its
+        `center()`) is at `position`; this one is unchanged."""
         ...
 
 

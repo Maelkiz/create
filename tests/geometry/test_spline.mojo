@@ -352,7 +352,7 @@ def test_intersects_regions_on_any_stretch() raises -> None:
 
 def test_translate_moves_every_point() raises -> None:
     var s = Spline([(0.0, 0.0), (1.0, 2.0)], alpha=0.0, closed=True)
-    s.translate(Vector2D(3.0, -1.0))
+    s = s.translate(Vector2D(3.0, -1.0))
     assert_true(s == Spline([(3.0, -1.0), (4.0, 1.0)], alpha=0.0, closed=True))
 
 

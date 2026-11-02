@@ -403,7 +403,7 @@ def test_intersects_sees_a_rounded_corner() raises -> None:
 
 def test_translate_moves_every_point() raises -> None:
     var b = _s_curve()
-    b.translate(Vector2D(10.0, -5.0))
+    b = b.translate(Vector2D(10.0, -5.0))
     assert_equal(b.start, Point2D(10.0, -5.0))
     assert_equal(b.control1, Point2D(110.0, 95.0))
     assert_equal(b.control2, Point2D(10.0, 95.0))

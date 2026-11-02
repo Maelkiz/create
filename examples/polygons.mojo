@@ -68,7 +68,7 @@ struct App(Program):
         if context.input.mouse_released():
             self.dragging = False
         if self.dragging:
-            self.pentagram.translate(mouse + self.grab - first)
+            self.pentagram = self.pentagram.translate(mouse + self.grab - first)
 
         canvas.background(_BACKGROUND)
         canvas.outline_enabled(False)

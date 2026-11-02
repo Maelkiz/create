@@ -73,7 +73,7 @@ struct App(Program):
             self.respawn_in -= context.time.delta
             if self.respawn_in <= 0.0:
                 self.respawn_in = 0.0
-                self.ball.move_to(_BALL_HOME)
+                self.ball = self.ball.move_to(_BALL_HOME)
         var eaten = self.respawn_in > 0.0
 
         if not eaten:
@@ -82,7 +82,7 @@ struct App(Program):
             if context.input.mouse_released():
                 self.dragging = False
             if self.dragging:
-                self.ball.move_to(mouse)
+                self.ball = self.ball.move_to(mouse)
 
         # The mouth is most shut where the sine crosses zero, once per bite:
         # a ball let go in it then is swallowed; one still held is safe.
@@ -107,7 +107,9 @@ struct App(Program):
             var slice = Sector(_PIE, _PIE_RADIUS, start, -TAU * shares[i])
             if slice.contains(mouse):
                 var middle = start - PI * shares[i]
-                slice.translate(Vector2D(cos(middle), sin(middle)) * _POP)
+                slice = slice.translate(
+                    Vector2D(cos(middle), sin(middle)) * _POP
+                )
             canvas.fill(_slice_color(i))
             canvas.draw(slice)
             start = slice.end_angle()

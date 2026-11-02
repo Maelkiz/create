@@ -23,23 +23,26 @@ from create.math import PI, Point2D, Vector2D
 
 # Each helper is generic over one trait, so every shape below reaching it
 # is checked by the compiler to conform, and the result is checked here.
-def _moves_with_its_bounds[S: Shape](var shape: S) raises:
+def _moves_with_its_bounds[S: Shape](shape: S) raises:
     var before = shape.bounds()
-    shape.translate(Vector2D(3.0, -2.0))
-    var after = shape.bounds()
+    var moved = shape.translate(Vector2D(3.0, -2.0))
+    var after = moved.bounds()
+    # A verb returns a new shape and leaves this one where it was.
+    assert_equal(shape.bounds().position, before.position)
     assert_almost_equal(after.position.x, before.position.x + 3.0, atol=1e-9)
     assert_almost_equal(after.position.y, before.position.y - 2.0, atol=1e-9)
     assert_almost_equal(after.w, before.w, atol=1e-9)
     assert_almost_equal(after.h, before.h, atol=1e-9)
     var far = Point2D(100.0, 100.0)
-    assert_true(after.contains(shape.closest_point(far)))
+    assert_true(after.contains(moved.closest_point(far)))
 
 
-def _holds_its_center[R: Region](var region: R) raises:
+def _holds_its_center[R: Region](region: R) raises:
     assert_true(region.contains(region.center()))
     assert_true(region.area() > 0.0)
-    region.move_to((10.0, 10.0))
-    assert_true(region.contains((10.0, 10.0)))
+    var moved = region.move_to((10.0, 10.0))
+    assert_true(moved.contains((10.0, 10.0)))
+    assert_true(region.contains(region.center()))
 
 
 def _runs_end_to_end[C: Curve](curve: C) raises:

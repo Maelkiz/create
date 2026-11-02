@@ -76,14 +76,14 @@ def test_rect_int_constructor() raises -> None:
 
 def test_rect_move_to() raises -> None:
     var r = Rectangle((0.0, 0.0), 10.0, 10.0)
-    r.move_to((5.0, 5.0))
+    r = r.move_to((5.0, 5.0))
     assert_equal(r.position.x, 5.0)
     assert_equal(r.position.y, 5.0)
 
 
 def test_rect_translate() raises -> None:
     var r = Rectangle((0.0, 0.0), 10.0, 10.0)
-    r.translate(Vector2D(2.0, 3.0))
+    r = r.translate(Vector2D(2.0, 3.0))
     assert_equal(r.position.x, 2.0)
     assert_equal(r.position.y, 3.0)
 
@@ -135,14 +135,14 @@ def test_circle_closest_point_vector2d() raises -> None:
 
 def test_circle_move_to() raises -> None:
     var c = Circle((0.0, 0.0), 5.0)
-    c.move_to((3.0, 4.0))
+    c = c.move_to((3.0, 4.0))
     assert_equal(c.position.x, 3.0)
     assert_equal(c.position.y, 4.0)
 
 
 def test_circle_translate() raises -> None:
     var c = Circle((0.0, 0.0), 5.0)
-    c.translate(Vector2D(2.0, 3.0))
+    c = c.translate(Vector2D(2.0, 3.0))
     assert_equal(c.position.x, 2.0)
     assert_equal(c.position.y, 3.0)
 
@@ -239,7 +239,7 @@ def test_line_beziers_trace_it_exactly() raises -> None:
 
 def test_line_move_to_places_midpoint() raises -> None:
     var l = Line((0.0, 0.0), (4.0, 0.0))
-    l.move_to((10.0, 10.0))
+    l = l.move_to((10.0, 10.0))
     assert_almost_equal(l.length(), 4.0, atol=1e-9)
     var m = l.midpoint()
     assert_equal(m.x, 10.0)
@@ -252,7 +252,7 @@ def test_line_move_to_places_midpoint() raises -> None:
 
 def test_line_translate() raises -> None:
     var l = Line((0.0, 0.0), (4.0, 0.0))
-    l.translate(Vector2D(1.0, 2.0))
+    l = l.translate(Vector2D(1.0, 2.0))
     assert_equal(l.start.x, 1.0)
     assert_equal(l.start.y, 2.0)
     assert_equal(l.end.x, 5.0)
@@ -397,7 +397,7 @@ def test_triangle_contains_vertex() raises -> None:
 
 def test_triangle_translate() raises -> None:
     var t = Triangle((0.0, 0.0), (2.0, 0.0), (1.0, 2.0))
-    t.translate(Vector2D(1.0, 1.0))
+    t = t.translate(Vector2D(1.0, 1.0))
     assert_equal(t.a.x, 1.0)
     assert_equal(t.a.y, 1.0)
     assert_equal(t.b.x, 3.0)
@@ -407,7 +407,7 @@ def test_triangle_translate() raises -> None:
 def test_triangle_move_to() raises -> None:
     # Triangle with center (1.5, 1.0); move center to (4.5, 4.0)
     var t = Triangle((0.0, 0.0), (3.0, 0.0), (1.5, 3.0))
-    t.move_to((4.5, 4.0))
+    t = t.move_to((4.5, 4.0))
     assert_almost_equal(t.a.x, 3.0, atol=1e-9)
     assert_almost_equal(t.a.y, 3.0, atol=1e-9)
     assert_almost_equal(t.b.x, 6.0, atol=1e-9)
@@ -928,22 +928,22 @@ def test_move_to_a_displaced_center() raises -> None:
     """`move_to(center() + delta)` is the round trip the split has to allow:
     a position plus a displacement is a position."""
     var r = Rectangle(Point2D(1.0, 2.0), 4.0, 4.0)
-    r.move_to(r.center() + Vector2D(3.0, 4.0))
+    r = r.move_to(r.center() + Vector2D(3.0, 4.0))
     assert_equal(r.center(), Point2D(4.0, 6.0))
 
 
 def test_translate_by_a_displacement() raises -> None:
     var r = Rectangle(Point2D(1.0, 2.0), 4.0, 4.0)
-    r.translate(Vector2D(2.0, 3.0))
+    r = r.translate(Vector2D(2.0, 3.0))
     assert_equal(r.center(), Point2D(3.0, 5.0))
     var c = Circle(Point2D(1.0, 2.0), 1.0)
-    c.translate(Vector2D(2.0, 3.0))
+    c = c.translate(Vector2D(2.0, 3.0))
     assert_equal(c.center(), Point2D(3.0, 5.0))
     var l = Line(Point2D(0.0, 0.0), Point2D(2.0, 0.0))
-    l.translate(Vector2D(1.0, 1.0))
+    l = l.translate(Vector2D(1.0, 1.0))
     assert_equal(l.midpoint(), Point2D(2.0, 1.0))
     var t = Triangle(Point2D(0.0, 0.0), Point2D(4.0, 0.0), Point2D(0.0, 3.0))
-    t.translate(Vector2D(1.0, 1.0))
+    t = t.translate(Vector2D(1.0, 1.0))
     assert_equal(t.center(), Point2D(1.0 + 4.0 / 3.0, 2.0))
 
 
@@ -1014,7 +1014,7 @@ def test_shapes_copy_implicitly() raises -> None:
     independent of the original."""
     var original = _Entity(Rectangle(Point2D(0.0, 0.0), 2.0, 2.0))
     var copy = original.copy()
-    copy.hitbox.translate(Vector2D(1.0, 0.0))
+    copy.hitbox = copy.hitbox.translate(Vector2D(1.0, 0.0))
     var r = original.hitbox
     assert_false(copy.hitbox == r)
     assert_equal(r.position.x, 0.0)

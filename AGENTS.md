@@ -150,6 +150,15 @@ prints as it is loaded, `Font.load("path")` (with `, italic_path="..."` when it 
 prints as compact JSON text, its own source form; `Table` and `TableRow` are containers and not
 printable.
 
+### Verbs on values
+
+A value type's verb method returns a new value and leaves the receiver as it was:
+`rect = rect.translate(delta)`, `v.normalize()`, `line.split(t)`, `color.with_alpha(a)`. A
+shape, vector, point, colour or matrix is never changed in place by a method; assign a field to
+change one. What mutates is what has state over time — `Tween`, `Animator`, `Audio`,
+`EditableText`, `Random`, a `Table`, `PixelBuffer`, `Canvas`, `Context` — whose methods act
+(`tween.play()`, `table.sort(...)`).
+
 ### Imports and public surface
 
 A program writes `from create import *`. Otherwise import by name from the owning package
