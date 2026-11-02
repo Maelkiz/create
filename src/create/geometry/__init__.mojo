@@ -10,4 +10,4 @@ from .geometry import (
 )
 from .bezier import Bezier
 from .spline import Spline
-from .drawable import Drawable, DrawTarget, Region
+from .drawable import Curve, Drawable, DrawTarget, Region, Shape

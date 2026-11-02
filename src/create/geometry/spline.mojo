@@ -2,11 +2,11 @@ from std.math import max, min, pow
 from .bezier import Bezier
 from .geometry import Arc, Circle, Line, Polygon, Rectangle, Sector, Triangle
 from create.math import Point2D
-from .drawable import Drawable, DrawTarget
+from .drawable import Curve, DrawTarget
 from create.math import Vector2D
 
 
-struct Spline(Copyable, Drawable, Equatable, Movable, Writable):
+struct Spline(Copyable, Curve, Equatable, Movable, Writable):
     """A smooth curve through every one of `points`, in order: `at`,
     `tangent`, `length`, `at_distance`, `bounds`, `flatten`, `beziers`,
     `closest_point`, `intersects`, `translate`.

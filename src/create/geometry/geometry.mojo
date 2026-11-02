@@ -20,7 +20,7 @@ from ._fillet import (
 )
 from .bezier import Bezier
 from .spline import Spline
-from .drawable import Drawable, DrawTarget, Region
+from .drawable import Curve, DrawTarget, Region
 from create.math import Point2D
 from create.math import Vector2D
 
@@ -653,9 +653,7 @@ struct Circle(
         self.position = self.position + delta
 
 
-struct Line(
-    Copyable, Drawable, Equatable, ImplicitlyCopyable, Movable, Writable
-):
+struct Line(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A line segment from `start` to `end`: `length`, `length_squared`,
     `at`, `tangent`, `at_distance`, `midpoint`, `bounds`, `flatten`,
     `beziers`, `closest_point`, `intersects`, `move_to`, `translate`.
@@ -855,9 +853,7 @@ struct Line(
         self.end = self.end + delta
 
 
-struct Arc(
-    Copyable, Drawable, Equatable, ImplicitlyCopyable, Movable, Writable
-):
+struct Arc(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A circular arc: part of the circle around `position` with radius `r`,
     from `start_angle` round by `sweep_angle`. `end_angle`, `at`, `tangent`,
     `length`, `at_distance`, `bounds`, `flatten`, `beziers`,
