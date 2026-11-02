@@ -654,8 +654,8 @@ struct Circle(
 
 
 struct Line(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
-    """A line segment from `start` to `end`: `length`, `length_squared`,
-    `at`, `tangent`, `at_distance`, `midpoint`, `bounds`, `flatten`,
+    """A line segment from `start` to `end`: `length`, `at`, `tangent`,
+    `at_distance`, `split`, `midpoint`, `bounds`, `flatten`,
     `beziers`, `closest_point`, `intersects`, `move_to`, `translate`.
 
     A `Curve`, like `Arc`, `Bezier` and `Spline`: a straight one, as in
@@ -687,11 +687,8 @@ struct Line(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
     def write_to[W: Writer](self, mut writer: W):
         writer.write("Line(start=", self.start, ", end=", self.end, ")")
 
-    def length_squared(self) -> Float64:
-        return _distance_squared(self.end, self.start)
-
     def length(self) -> Float64:
-        return sqrt(self.length_squared())
+        return sqrt(_distance_squared(self.end, self.start))
 
     def at(self, t: Float64) -> Point2D:
         """The point at parameter `t`: `start` at 0, `end` at 1, and
@@ -714,6 +711,13 @@ struct Line(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
         if distance >= total:
             return self.end
         return self.at(distance / total)
+
+    def split(self, t: Float64) -> Tuple[Line, Line]:
+        """The line cut at `t` into two, together tracing exactly the
+        original: the first runs `start` to `at(t)`, the second `at(t)` to
+        `end`."""
+        var cut = self.at(t)
+        return (Line(self.start, cut), Line(cut, self.end))
 
     def bounds(self) -> Rectangle:
         """The tightest axis-aligned rectangle around the line: the box its
@@ -857,7 +861,7 @@ struct Line(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
 struct Arc(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A circular arc: part of the circle around `position` with radius `r`,
     from `start_angle` round by `sweep_angle`. `end_angle`, `at`, `tangent`,
-    `length`, `at_distance`, `bounds`, `flatten`, `beziers`,
+    `length`, `at_distance`, `split`, `bounds`, `flatten`, `beziers`,
     `closest_point`, `intersects`, `move_to`, `translate`.
 
     Angles are radians, counted counter-clockwise from the +x axis: y is up,
@@ -963,6 +967,18 @@ struct Arc(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
         if distance >= total:
             return self.at(1.0)
         return self.at(distance / total)
+
+    def split(self, t: Float64) -> Tuple[Arc, Arc]:
+        """The arc cut at `t` into two on the same circle, together tracing
+        exactly the original: the first runs from the start to `at(t)`, the
+        second from `at(t)` to the end. A sweep past a full turn is clamped
+        to one first, as everywhere else."""
+        var sweep = self._sweep()
+        var cut = self.start_angle + sweep * t
+        return (
+            Arc(self.position, self.r, self.start_angle, sweep * t),
+            Arc(self.position, self.r, cut, sweep * (1.0 - t)),
+        )
 
     def bounds(self) -> Rectangle:
         """The tightest axis-aligned rectangle around the arc: its two ends,

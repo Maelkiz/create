@@ -77,6 +77,18 @@ def test_at_distance_is_exact_and_clamped() raises -> None:
     _assert_point_near(a.at_distance(100.0), a.at(1.0))
 
 
+def test_split_halves_trace_the_original() raises -> None:
+    var a = Arc((1.0, 2.0), 3.0, 0.5, -2.0)
+    var t = 0.3
+    var halves = a.split(t)
+    _assert_point_near(halves[0].at(1.0), a.at(t))
+    _assert_point_near(halves[1].at(0.0), a.at(t))
+    for i in range(11):
+        var u = Float64(i) / 10.0
+        _assert_point_near(halves[0].at(u), a.at(u * t))
+        _assert_point_near(halves[1].at(u), a.at(t + u * (1.0 - t)))
+
+
 def test_bounds_widen_to_extremes_passed() raises -> None:
     # From 45° to 135°: passes the top of the circle, not the sides.
     var b = Arc((0, 0), 10, PI / 4.0, PI / 2.0).bounds()
