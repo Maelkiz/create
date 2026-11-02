@@ -284,6 +284,32 @@ def test_no_curve_sits_at_its_one_point() raises -> None:
     assert_equal(none.tangent(0.5), Vector2D(0.0, 0.0))
 
 
+def test_closest_point_is_the_nearest_stretch() raises -> None:
+    var s = Spline(_zigzag())
+    var p = Point2D(1.5, 0.0)
+    var q = s.closest_point(p)
+    var best = s.at(0.0)
+    for c in s.beziers():
+        for i in range(10001):
+            var r = c.at(Float64(i) / 10000.0)
+            if r.distance_squared(p) < best.distance_squared(p):
+                best = r
+    assert_almost_equal(q.distance(p), best.distance(p), atol=1e-6)
+
+
+def test_closest_point_on_the_spline_is_itself() raises -> None:
+    var s = Spline(_zigzag())
+    var on = s.at(0.4)
+    var q = s.closest_point(on)
+    assert_almost_equal(q.x, on.x, atol=1e-9)
+    assert_almost_equal(q.y, on.y, atol=1e-9)
+
+
+def test_closest_point_without_a_curve_is_the_lone_point() raises -> None:
+    var s = Spline([Point2D(2.0, 3.0)])
+    assert_equal(s.closest_point((0.0, 0.0)), Point2D(2.0, 3.0))
+
+
 def test_translate_moves_every_point() raises -> None:
     var s = Spline([(0.0, 0.0), (1.0, 2.0)], alpha=0.0, closed=True)
     s.translate(Vector2D(3.0, -1.0))

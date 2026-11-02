@@ -32,6 +32,15 @@ comptime _MAX_DISTANCE_ITERATIONS = 50
 """Bound on `at_distance`'s search. Newton converges in a handful; the
 bound only matters for bisection on a curve with a stationary stretch."""
 
+comptime _CLOSEST_SAMPLES = 32
+"""Equal steps in `t` that `closest_point` samples to find each dip in
+distance before refining it. A cubic has at most three such dips, so this
+many keeps them apart on all but a curve folded tightly on itself."""
+
+comptime _CLOSEST_ITERATIONS = 8
+"""Newton steps `closest_point` takes from each dip; it converges in a
+few."""
+
 
 def _axis_extremes(
     p0: Float64, p1: Float64, p2: Float64, p3: Float64
@@ -76,7 +85,7 @@ struct Bezier(
 ):
     """A cubic Bézier curve from `start` to `end`, shaped by `control1` and
     `control2`: `at`, `tangent`, `split`, `bounds`, `flatten`, `beziers`,
-    `translate`.
+    `closest_point`, `translate`.
 
     The curve passes through `start` and `end` only; the controls pull it
     towards themselves and set the direction it leaves `start`
@@ -165,6 +174,52 @@ struct Bezier(
         var b = self.control2 - self.control1
         var c = self.end - self.control2
         return (a * (mt * mt) + b * (2.0 * mt * t) + c * (t * t)) * 3.0
+
+    def _acceleration(self, t: Float64) -> Vector2D:
+        """The second derivative at `t`."""
+        var a = (self.control2 - self.control1) - (self.control1 - self.start)
+        var b = (self.end - self.control2) - (self.control2 - self.control1)
+        return (a * (1.0 - t) + b * t) * 6.0
+
+    def closest_point(self, p: Point2D) -> Point2D:
+        """The point on the curve nearest `p`.
+
+        Samples the curve at even steps in `t`, then refines every sample
+        nearer than its neighbours with Newton's method on the distance's
+        derivative, kept within the curve, and keeps the nearest result. Exact to
+        rounding for any curve that fits on a screen, though a search, not
+        a formula.
+        """
+        var samples = List[Float64](capacity=_CLOSEST_SAMPLES + 1)
+        for i in range(_CLOSEST_SAMPLES + 1):
+            samples.append(
+                self.at(Float64(i) / _CLOSEST_SAMPLES).distance_squared(p)
+            )
+        var best = self.start
+        var best_distance = samples[0]
+        for i in range(_CLOSEST_SAMPLES + 1):
+            if i > 0 and samples[i] > samples[i - 1]:
+                continue
+            if i < _CLOSEST_SAMPLES and samples[i] > samples[i + 1]:
+                continue
+            var t = Float64(i) / _CLOSEST_SAMPLES
+            for _ in range(_CLOSEST_ITERATIONS):
+                # Distance is least where the offset from `p` is square to
+                # the direction of travel: f(t) = (B(t) - p) · B'(t) = 0.
+                var offset = self.at(t) - p
+                var velocity = self.tangent(t)
+                var slope = velocity.dot(velocity) + offset.dot(
+                    self._acceleration(t)
+                )
+                if slope <= 0.0:
+                    break
+                t = max(0.0, min(t - offset.dot(velocity) / slope, 1.0))
+            var q = self.at(t)
+            var d = q.distance_squared(p)
+            if d < best_distance:
+                best = q
+                best_distance = d
+        return best
 
     def split(self, t: Float64) -> Tuple[Bezier, Bezier]:
         """The curve cut at `t` into two, together tracing exactly the
