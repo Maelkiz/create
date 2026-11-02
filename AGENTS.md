@@ -145,7 +145,7 @@ A public value type implements `Writable` and prints as it would be written in s
 `Int`-wrapping enum (an unnamed value falls back to `Easing(99)`); keyword form otherwise, labelled
 by the constructor's keywords where it has them (`Circle(position=Point2D(0.0, 0.0), r=5.0)`) and by
 public field names where it doesn't (`Time`, `Tween`). Private fields are left out. Resource handles
-(`Image`, `PixelBuffer`, `Sound`, `Audio`) and shared assets (`Animation`) are not printable; a `Font`
+(`Image`, `PixelBuffer`, `Sound`, `Audio`, `Voice`) and shared assets (`Animation`) are not printable; a `Font`
 prints as it is loaded, `Font.load("path")` (with `, italic_path="..."` when it has one). `JSON`
 prints as compact JSON text, its own source form; `Table` and `TableRow` are containers and not
 printable.
@@ -464,7 +464,7 @@ frame body returns. Headless runs ignore the window dials, like `rumble`.
 | Screen space | Origin-centred, y-up, camera-independent. `canvas.left()`…`top()`, `context.input.mouse` and `canvas.color_at` live here, and it is what `canvas.to_local` takes and `to_screen` gives |
 | World space | What render calls use once a `Camera` is set; identical to screen space without one. Only the camera converts into it: `camera.to_world`/`to_screen` |
 | Local space | The current transform's frame, where a render call's coordinates are read. `canvas.to_local(screen)`/`to_screen(local)` convert through the transform and the camera together |
-| Asset vs. playhead | `Image`/`Font`/`Animation`/`Sound` are shared immutable assets; `Animator`/an `Audio` voice are one entity's position in one. `fps` belongs to the asset |
+| Asset vs. playhead | `Image`/`Font`/`Animation`/`Sound` are shared immutable assets; `Animator`/a `Voice` (what `audio.play` and `audio.loop` return) are one entity's position in one. `fps` belongs to the asset |
 | `Easing` / `Tween` | An `Easing` is a stateless curve over a 0-to-1 fraction (`ease(curve, t)`); a `Tween` walks that fraction over a duration. Each entity owns its own `Tween`. Frame-by-frame animation is `Animation`/`Animator` (in `image`), not a tween |
 | `Time` / `DateTime` | `context.time` is the run's clock: ticked by the loop, zero at the first frame, synthetic in headless runs. `DateTime.now()` is the computer's local wall clock, read once into consistent fields (`year` … `millisecond`) — take one reading per frame rather than calling it per field |
 | `Random` / `Noise` | Both seeded, both in `[0, 1]`. `Random` is stateful (`mut`, `Movable`): each call is an independent sample. `Noise` is immutable (`Copyable`): `at(...)` is a pure function of its input, and nearby inputs give nearby values. `feature_size` divides space only; `at(position, time)` leaves `time` for the caller to scale. Averaged octaves cluster around 0.5 — stretch with `smoothstep` for contrast |

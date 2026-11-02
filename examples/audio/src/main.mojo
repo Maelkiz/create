@@ -6,7 +6,7 @@ struct AudioDemo(Program):
     var audio: Audio
     var chime: Sound
     var ambience: Sound
-    var loop_id: Int
+    var ambience_voice: Voice
     var looping: Bool
 
     @staticmethod
@@ -15,7 +15,7 @@ struct AudioDemo(Program):
         var audio = Audio()
         var chime = Sound.load(source_path("../assets/chime.wav"))
         var ambience = Sound.load(source_path("../assets/ambience.wav"))
-        return AudioDemo(audio^, chime, ambience, 0, False)
+        return AudioDemo(audio^, chime, ambience, Voice.NONE, False)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         self.audio.update()
@@ -24,10 +24,10 @@ struct AudioDemo(Program):
             _ = self.audio.play(self.chime)
 
         if context.input.key_pressed(Key.H):
-            self.loop_id = self.audio.loop(self.ambience)
+            self.ambience_voice = self.audio.loop(self.ambience)
             self.looping = True
         if context.input.key_released(Key.H):
-            self.audio.stop(self.loop_id)
+            self.audio.stop(self.ambience_voice)
             self.looping = False
 
         canvas.background(Color.WHITE)

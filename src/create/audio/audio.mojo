@@ -45,6 +45,31 @@ struct _Voice(Movable):
         self.loop_sound = None
 
 
+struct Voice(Copyable, Equatable, ImplicitlyCopyable, Movable):
+    """One playback of a `Sound`, as `audio.play` and `audio.loop` return it:
+    the handle `stop`, `pause`, `resume`, `volume` and `is_playing` take.
+
+    A `Sound` can play as several voices at once. A voice that has ended or
+    been stopped is stale: every call on it does nothing, even after its slot
+    plays another sound. `Voice.NONE` is no voice, for a field before
+    anything plays. A handle, like `Sound`, so not printable.
+    """
+
+    var _id: Int
+    """The slot index and its generation, as `Audio._encode` packs them."""
+
+    comptime NONE = Voice(_id=0)
+
+    def __init__(out self, *, _id: Int):
+        self._id = _id
+
+    def __eq__(self, other: Voice) -> Bool:
+        return self._id == other._id
+
+    def __ne__(self, other: Voice) -> Bool:
+        return self._id != other._id
+
+
 struct Audio(Movable):
     """Program-owned playback device. Construct once, hold as a Program field,
     call `play` from `update`.
@@ -106,19 +131,19 @@ struct Audio(Movable):
             and self._voices[index].stream != 0
         )
 
-    def play(mut self, sound: Sound) raises -> Int:
-        """Play `sound` once. Returns a voice id usable with `stop`/`pause`/
-        `resume`/`is_playing`; the voice frees itself when the sound ends."""
+    def play(mut self, sound: Sound) raises -> Voice:
+        """Play `sound` once, as a new `Voice`; it frees itself when the
+        sound ends."""
         return self._start(sound, loop=False)
 
-    def loop(mut self, sound: Sound) raises -> Int:
-        """Play `sound` over and over until stopped, as `Animator.loop` and
-        `Tween.loop` repeat. Returns a voice id like `play`'s. The voice is
-        refilled by `update`, from a copy of `sound` that shares its samples.
+    def loop(mut self, sound: Sound) raises -> Voice:
+        """Play `sound` over and over until stopped, as a new `Voice`, as
+        `Animator.loop` and `Tween.loop` repeat. The voice is refilled by
+        `update`, from a copy of `sound` that shares its samples.
         """
         return self._start(sound, loop=True)
 
-    def _start(mut self, sound: Sound, loop: Bool) raises -> Int:
+    def _start(mut self, sound: Sound, loop: Bool) raises -> Voice:
         var stream = self._sdl.open_device_stream(
             sound._format, Int32(sound._channels), Int32(sound._sample_rate)
         )
@@ -148,15 +173,15 @@ struct Audio(Movable):
             self._voices[index].looping = loop
             self._voices[index].loop_sound = loop_sound
 
-        return Self._encode(index, self._voices[index].generation)
+        return Voice(_id=Self._encode(index, self._voices[index].generation))
 
     def _free_slot(mut self, index: Int) raises:
         self._sdl.destroy_stream(self._voices[index].stream)
         self._voices[index].reset()
 
-    def stop(mut self, id: Int) raises:
-        """Stop and release the voice with the given id. No-op if already
-        stopped or the id is stale (from a since-recycled slot)."""
+    def stop(mut self, voice: Voice) raises:
+        """Stop and release `voice`. No-op if it is already stale."""
+        var id = voice._id
         if not self._valid(id):
             return
         self._free_slot(Self._decode(id)[0])
@@ -166,31 +191,43 @@ struct Audio(Movable):
             if self._voices[i].stream != 0:
                 self._free_slot(i)
 
-    def pause(mut self, id: Int) raises:
+    def pause(mut self, voice: Voice) raises:
+        """Hold `voice` where it is; `resume` continues it."""
+        var id = voice._id
         if not self._valid(id):
             return
         var index = Self._decode(id)[0]
         self._sdl.pause_stream(self._voices[index].stream)
         self._voices[index].paused = True
 
-    def volume(mut self, id: Int, volume: Float64) raises:
-        """Set one live voice's own volume, which `volume()` scales: a voice
-        at `0.5` under a volume of `0.5` plays at a quarter. No-op if stopped
-        or the id is stale."""
+    def volume(self, voice: Voice) -> Float64:
+        """`voice`'s own volume, `1.0` unless set; `0.0` once it is stale."""
+        if not self._valid(voice._id):
+            return 0.0
+        return self._voices[Self._decode(voice._id)[0]].gain
+
+    def volume(mut self, voice: Voice, volume: Float64) raises:
+        """Set `voice`'s own volume, which `volume()` scales: a voice at
+        `0.5` under a volume of `0.5` plays at a quarter. No-op if stale."""
+        var id = voice._id
         if not self._valid(id):
             return
         var index = Self._decode(id)[0]
         self._voices[index].gain = volume
         self._apply_gain(index)
 
-    def resume(mut self, id: Int) raises:
+    def resume(mut self, voice: Voice) raises:
+        """Continue a paused `voice` from where it was held."""
+        var id = voice._id
         if not self._valid(id):
             return
         var index = Self._decode(id)[0]
         self._sdl.resume_stream(self._voices[index].stream)
         self._voices[index].paused = False
 
-    def is_playing(self, id: Int) raises -> Bool:
+    def is_playing(self, voice: Voice) -> Bool:
+        """Whether `voice` is sounding: false once paused or stale."""
+        var id = voice._id
         if not self._valid(id):
             return False
         return not self._voices[Self._decode(id)[0]].paused
