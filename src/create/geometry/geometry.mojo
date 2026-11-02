@@ -1882,6 +1882,23 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
         return Polygon(vertices^, corner_radius=corner_radius)
 
     @staticmethod
+    def regular(
+        position: Point2D,
+        r: Int,
+        sides: Int,
+        start_angle: Float64 = TAU / 4.0,
+        *,
+        corner_radius: Float64 = 0.0,
+    ) -> Polygon:
+        return Polygon.regular(
+            position,
+            Float64(r),
+            sides,
+            start_angle,
+            corner_radius=corner_radius,
+        )
+
+    @staticmethod
     def star(
         position: Point2D,
         r: Float64,
@@ -1902,6 +1919,25 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
                 position + _unit(angle) * (r if i % 2 == 0 else inner_radius)
             )
         return Polygon(vertices^, corner_radius=corner_radius)
+
+    @staticmethod
+    def star(
+        position: Point2D,
+        r: Int,
+        inner_radius: Int,
+        tips: Int,
+        start_angle: Float64 = TAU / 4.0,
+        *,
+        corner_radius: Float64 = 0.0,
+    ) -> Polygon:
+        return Polygon.star(
+            position,
+            Float64(r),
+            Float64(inner_radius),
+            tips,
+            start_angle,
+            corner_radius=corner_radius,
+        )
 
     def __eq__(self, other: Polygon) -> Bool:
         return (
