@@ -36,12 +36,12 @@ struct Animation(Copyable, ImplicitlyCopyable, Movable):
         self._frames = ArcPointer(frames^)
         self.fps = fps
 
-    def count(self) -> Int:
+    def frame_count(self) -> Int:
         """The number of frames."""
         return len(self._frames[])
 
     def frame(self, index: Int) -> Image:
-        """Frame `index`, from 0 to `count() - 1`. Cheap: an `Image` copy
+        """Frame `index`, from 0 to `frame_count() - 1`. Cheap: an `Image` copy
         shares its pixels."""
         return self._frames[][index].copy()
 
