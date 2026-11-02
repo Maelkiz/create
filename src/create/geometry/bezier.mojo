@@ -10,7 +10,7 @@ from .geometry import (
     overlaps,
 )
 from create.math import Point2D
-from .drawable import Drawable, DrawTarget
+from .drawable import Curve, DrawTarget
 from .spline import Spline
 from create.math import Vector2D
 
@@ -102,7 +102,7 @@ def _axis_extremes(
 
 
 struct Bezier(
-    Copyable, Drawable, Equatable, ImplicitlyCopyable, Movable, Writable
+    Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable
 ):
     """A cubic Bézier curve from `start` to `end`, shaped by `control1` and
     `control2`: `at`, `tangent`, `split`, `bounds`, `flatten`, `beziers`,

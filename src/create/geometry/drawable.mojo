@@ -25,6 +25,8 @@ fill, outline and transform the canvas has when `draw` is called.
 
 from .bezier import Bezier
 from .geometry import Circle, Line, Polygon, Rectangle, Sector, Triangle
+from create.math import Point2D
+from create.math import Vector2D
 
 
 trait Drawable:
@@ -37,12 +39,80 @@ trait Drawable:
         ...
 
 
-trait Region(Drawable):
-    """A drawable with an inside: `Rectangle`, `Circle`, `Triangle`,
-    `Sector` and `Polygon`, the region types of `overlaps` and `contains`,
-    and what `canvas.clip` takes. A curve has no inside, so it is not one."""
+trait Shape(Copyable, Deinitable, Drawable):
+    """A geometric shape: a `Region` or a `Curve`. What every one of them
+    answers, whichever it is, and a plain value generic code can keep, copy
+    and drop. Tests between two shapes (`contains`, `intersects`,
+    `overlaps`) are overloads per pair, not part of this."""
 
-    pass
+    def bounds(self) -> Rectangle:
+        """The tightest axis-aligned rectangle around the shape."""
+        ...
+
+    def closest_point(self, p: Point2D) -> Point2D:
+        """The point of the shape nearest `p`: `p` itself inside a region."""
+        ...
+
+    def translate(mut self, delta: Vector2D):
+        """Move the shape by `delta`."""
+        ...
+
+
+trait Region(Shape):
+    """A shape with an inside: `Rectangle`, `Circle`, `Triangle`, `Sector`
+    and `Polygon`, the region types of `overlaps` and `contains`, and what
+    `canvas.clip` takes. A curve has no inside, so it is not one."""
+
+    def center(self) -> Point2D:
+        ...
+
+    def area(self) -> Float64:
+        ...
+
+    def contains(self, p: Point2D) -> Bool:
+        """Whether `p` is inside, its boundary included."""
+        ...
+
+    def move_to(mut self, position: Point2D):
+        """Move the region so its `position` (or, without one, its
+        `center()`) is at `position`."""
+        ...
+
+
+trait Curve(Shape):
+    """A shape with no inside, traced from one end to the other: `Line`,
+    `Arc`, `Bezier` and `Spline`. A straight line is a curve too, as in
+    mathematics.
+
+    `t` runs from 0 at the start to 1 at the end; only on a `Line` and an
+    `Arc` is it proportional to distance, which `at_distance` always is."""
+
+    def at(self, t: Float64) -> Point2D:
+        """The point at parameter `t`."""
+        ...
+
+    def tangent(self, t: Float64) -> Vector2D:
+        """The derivative at `t`: the direction of travel, with the speed
+        per unit of `t` as its magnitude."""
+        ...
+
+    def length(self) -> Float64:
+        """The distance along the curve from start to end."""
+        ...
+
+    def at_distance(self, distance: Float64) -> Point2D:
+        """The point `distance` along the curve from its start, clamped to
+        its ends."""
+        ...
+
+    def flatten(self, tolerance: Float64) -> List[Point2D]:
+        """Points along the curve, start to end, whose straight segments
+        stray from it by at most `tolerance`."""
+        ...
+
+    def beziers(self) -> List[Bezier]:
+        """The curve as cubic Béziers, each ending where the next starts."""
+        ...
 
 
 trait DrawTarget:
