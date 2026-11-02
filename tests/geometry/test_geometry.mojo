@@ -850,6 +850,21 @@ def test_triangle_area_degenerate_is_zero() raises -> None:
     assert_equal(t.area(), 0.0)
 
 
+def test_rect_bounds_is_itself() raises -> None:
+    var r = Rectangle((4.0, 2.0), 10.0, 6.0)
+    assert_equal(r.bounds(), r)
+
+
+def test_circle_bounds() raises -> None:
+    var b = Circle((1.0, -2.0), 3.0).bounds()
+    assert_equal(b, Rectangle((1.0, -2.0), 6.0, 6.0))
+
+
+def test_triangle_bounds() raises -> None:
+    var b = Triangle((0.0, 0.0), (4.0, 1.0), (1.0, 3.0)).bounds()
+    assert_equal(b, Rectangle((2.0, 1.5), 4.0, 3.0))
+
+
 # The Point2D/Vector2D boundary — positions are locations, displacements
 # are vectors, and these are the signatures naming both.
 def test_center_difference_is_a_displacement() raises -> None:

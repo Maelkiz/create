@@ -199,6 +199,28 @@ def test_a_rounded_triangle_area_matches_its_outline() raises -> None:
     assert_almost_equal(t._outline().area(), t.area(), atol=t.area() * 1e-3)
 
 
+def test_a_rounded_rectangle_bounds_keep_its_edges() raises -> None:
+    var b = _rounded_square().bounds()
+    assert_equal(b, Rectangle((0.0, 0.0), 20.0, 20.0))
+
+
+def test_a_rounded_triangle_bounds_hug_its_outline() raises -> None:
+    var t = _rounded_right_triangle()
+    var b = t.bounds()
+    var sharp = Triangle(t.a, t.b, t.c).bounds()
+    assert_equal(b.left(), sharp.left())
+    assert_true(b.right() < sharp.right() and b.top() < sharp.top())
+    # The outline's flattened fillets lie on the true curve, so they reach
+    # the exact bounds and never pass them.
+    var o = t._outline().bounds()
+    assert_almost_equal(o.left(), b.left(), atol=1e-9)
+    assert_almost_equal(o.right(), b.right(), atol=1e-2)
+    assert_almost_equal(o.bottom(), b.bottom(), atol=1e-9)
+    assert_almost_equal(o.top(), b.top(), atol=1e-2)
+    for v in t._outline().vertices:
+        assert_true(b.contains(v))
+
+
 def test_a_rounded_triangle_closest_point_lands_on_the_fillet() raises -> None:
     var q = _rounded_right_triangle().closest_point((-10.0, -10.0))
     # Fillet centred on (3, 3), radius 3, straight back towards the point.
