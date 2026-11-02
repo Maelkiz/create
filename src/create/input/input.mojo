@@ -169,73 +169,23 @@ struct Input(Copyable, Movable):
         if slot != -1:
             self._gamepads[slot]._release(button)
 
-    def _check(self, key: String, bits: _KeySet) -> Bool:
-        """Resolve a key name against `bits`.
-
-        Accepts a single character (`"a"`, `"7"`, `"/"`) or a named key
-        (`"up"`, `"space"`, `"f1"`). Case is folded, so `"A"` and `"a"` are the
-        same key — a key is a physical thing and shift is queried separately.
-
-        A bare modifier name matches either side (`"ctrl"` is left or right),
-        with `"left_ctrl"`/`"right_ctrl"` and friends to tell them apart. An
-        unknown name is `False` rather than an error, so a typo is a key that
-        never fires.
-        """
-        var k = key.lower()
-
-        # Single printable char — SDL keycode == ASCII for a-z, 0-9, punctuation
-        if key.byte_length() == 1:
-            return bits.test(Key(ord(k)))
-
-        # Bare modifier name matches either side; `from_name` has the sides
-        if k == "ctrl":
-            return bits.test(Key.LEFT_CTRL) or bits.test(Key.RIGHT_CTRL)
-        if k == "shift":
-            return bits.test(Key.LEFT_SHIFT) or bits.test(Key.RIGHT_SHIFT)
-        if k == "alt":
-            return bits.test(Key.LEFT_ALT) or bits.test(Key.RIGHT_ALT)
-        if k == "super":
-            return bits.test(Key.LEFT_SUPER) or bits.test(Key.RIGHT_SUPER)
-
-        var named = Key.from_name(k)
-        if not named:
-            return False
-        return bits.test(named.value())
-
     def key_down(self, key: Key) -> Bool:
         """Whether this key is held right now — true every frame it stays down.
         """
         return self._held_keys.test(key)
 
-    def key_down(self, key: String) -> Bool:
-        """Whether this key is held right now. See `_check` for the names."""
-        return self._check(key, self._held_keys)
-
     def key_pressed(self, key: Key) -> Bool:
         """Whether this key went down this frame — true once per press."""
         return self._pressed_keys.test(key)
-
-    def key_pressed(self, key: String) -> Bool:
-        """Whether this key went down this frame. See `_check` for the names."""
-        return self._check(key, self._pressed_keys)
 
     def key_released(self, key: Key) -> Bool:
         """Whether this key came up this frame — true once per release."""
         return self._released_keys.test(key)
 
-    def key_released(self, key: String) -> Bool:
-        """Whether this key came up this frame. See `_check` for the names."""
-        return self._check(key, self._released_keys)
-
     def key_typed(self, key: Key) -> Bool:
         """Whether this key went down or auto-repeated this frame — true once
         per press, then at the system's repeat rate while held."""
         return self._typed_keys.test(key)
-
-    def key_typed(self, key: String) -> Bool:
-        """Whether this key went down or auto-repeated this frame. See
-        `_check` for the names."""
-        return self._check(key, self._typed_keys)
 
     def mouse_down(self, button: MouseButton = MouseButton.LEFT) -> Bool:
         """Whether this mouse button is held right now.

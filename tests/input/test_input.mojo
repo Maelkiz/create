@@ -13,6 +13,7 @@ from create.math.vector2d import Vector2D
 def test_key_prints_as_its_constant() raises -> None:
     assert_equal(String(Key.PAGE_UP), "Key.PAGE_UP")
     assert_equal(String(Key.NUM_0), "Key.NUM_0")
+    assert_equal(String(Key.SHIFT), "Key.SHIFT")
     assert_equal(String(Key(0x0444)), "Key(1092)")
 
 
@@ -37,7 +38,7 @@ def test_initial_mouse_not_pressed() raises -> None:
 def test_no_keys_down_initially() raises -> None:
     var input = Input()
     assert_equal(input.key_down(Key(65)), False)
-    assert_equal(input.key_down("a"), False)
+    assert_equal(input.key_down(Key.A), False)
 
 
 def test_key_down_by_keycode() raises -> None:
@@ -47,30 +48,11 @@ def test_key_down_by_keycode() raises -> None:
     assert_equal(input.key_down(Key(66)), False)
 
 
-def test_key_down_by_string() raises -> None:
-    var input = Input()
-    input._held_keys.set(Key(ord("a")))
-    assert_true(input.key_down("a"))
-    assert_equal(input.key_down("b"), False)
-
-
-def test_key_down_case_insensitive() raises -> None:
-    var input = Input()
-    input._held_keys.set(Key(ord("z")))
-    assert_true(input.key_down("Z"))
-
-
 def test_key_pressed_keycode() raises -> None:
     var input = Input()
     input._pressed_keys.set(Key(65))
     assert_true(input.key_pressed(Key(65)))
     assert_equal(input.key_pressed(Key(66)), False)
-
-
-def test_key_pressed_string() raises -> None:
-    var input = Input()
-    input._pressed_keys.set(Key(ord("w")))
-    assert_true(input.key_pressed("w"))
 
 
 def test_key_released_keycode() raises -> None:
@@ -80,52 +62,46 @@ def test_key_released_keycode() raises -> None:
     assert_equal(input.key_released(Key(66)), False)
 
 
-def test_key_released_string() raises -> None:
-    var input = Input()
-    input._released_keys.set(Key(ord("s")))
-    assert_true(input.key_released("s"))
-
-
 def test_multiple_keys_held() raises -> None:
     var input = Input()
     input._held_keys.set(Key(ord("a")))
     input._held_keys.set(Key(ord("d")))
-    assert_true(input.key_down("a"))
-    assert_true(input.key_down("d"))
-    assert_equal(input.key_down("w"), False)
+    assert_true(input.key_down(Key.A))
+    assert_true(input.key_down(Key.D))
+    assert_equal(input.key_down(Key.W), False)
 
 
 def test_named_key_escape() raises -> None:
     var input = Input()
     input._held_keys.set(Key.ESCAPE)
-    assert_true(input.key_down("escape"))
+    assert_true(input.key_down(Key.ESCAPE))
 
 
 def test_named_key_space() raises -> None:
     var input = Input()
     input._held_keys.set(Key.SPACE)
-    assert_true(input.key_down("space"))
+    assert_true(input.key_down(Key.SPACE))
 
 
 def test_named_key_enter() raises -> None:
     var input = Input()
     input._held_keys.set(Key.ENTER)
-    assert_true(input.key_down("enter"))
+    assert_true(input.key_down(Key.ENTER))
 
 
 def test_named_key_arrow_up() raises -> None:
     var input = Input()
     input._held_keys.set(Key.UP)
-    assert_true(input.key_down("up"))
+    assert_true(input.key_down(Key.UP))
 
 
 def test_named_key_ctrl_both_sides() raises -> None:
     var input = Input()
     input._held_keys.set(Key.LEFT_CTRL)
-    assert_true(input.key_down("ctrl"))
+    assert_true(input.key_down(Key.CTRL))
     input._held_keys.clear_all()
     input._held_keys.set(Key.RIGHT_CTRL)
-    assert_true(input.key_down("ctrl"))
+    assert_true(input.key_down(Key.CTRL))
 
 
 def test_mouse_button_initial() raises -> None:
@@ -169,10 +145,10 @@ def test_key_typed_counts_a_press_and_each_auto_repeat() raises -> None:
     # Held, then auto-repeated: typed again, but not a new press.
     events.clear()
     _ = apply_events(events, Viewport(), context)
-    assert_false(context.input.key_typed("backspace"))
+    assert_false(context.input.key_typed(Key.BACKSPACE))
     events.append(KeyDown(Key.BACKSPACE.value))
     _ = apply_events(events, Viewport(), context)
-    assert_true(context.input.key_typed("backspace"))
+    assert_true(context.input.key_typed(Key.BACKSPACE))
     assert_false(context.input.key_pressed(Key.BACKSPACE))
 
 
@@ -213,139 +189,133 @@ def test_keycodes_outside_ascii_and_named_keys() raises -> None:
 def test_named_key_shift_both_sides() raises -> None:
     var input = Input()
     input._held_keys.set(Key(1073742049))  # left shift
-    assert_true(input.key_down("shift"))
+    assert_true(input.key_down(Key.SHIFT))
     input._held_keys.clear_all()
     input._held_keys.set(Key(1073742053))  # right shift
-    assert_true(input.key_down("shift"))
+    assert_true(input.key_down(Key.SHIFT))
 
 
 def test_named_key_left_shift_specific() raises -> None:
     var input = Input()
     input._held_keys.set(Key(1073742049))
-    assert_true(input.key_down("left_shift"))
-    assert_equal(input.key_down("right_shift"), False)
+    assert_true(input.key_down(Key.LEFT_SHIFT))
+    assert_equal(input.key_down(Key.RIGHT_SHIFT), False)
 
 
 def test_named_key_alt_both_sides() raises -> None:
     var input = Input()
     input._held_keys.set(Key(1073742050))  # left alt
-    assert_true(input.key_down("alt"))
+    assert_true(input.key_down(Key.ALT))
     input._held_keys.clear_all()
     input._held_keys.set(Key(1073742054))  # right alt
-    assert_true(input.key_down("alt"))
+    assert_true(input.key_down(Key.ALT))
 
 
 def test_named_key_super_both_sides() raises -> None:
     var input = Input()
     input._held_keys.set(Key(1073742051))  # left super
-    assert_true(input.key_down("super"))
+    assert_true(input.key_down(Key.SUPER))
     input._held_keys.clear_all()
     input._held_keys.set(Key(1073742055))  # right super
-    assert_true(input.key_down("super"))
+    assert_true(input.key_down(Key.SUPER))
 
 
 def test_named_key_arrow_down() raises -> None:
     var input = Input()
     input._held_keys.set(Key(1073741905))
-    assert_true(input.key_down("down"))
+    assert_true(input.key_down(Key.DOWN))
 
 
 def test_named_key_arrow_left() raises -> None:
     var input = Input()
     input._held_keys.set(Key(1073741904))
-    assert_true(input.key_down("left"))
+    assert_true(input.key_down(Key.LEFT))
 
 
 def test_named_key_arrow_right() raises -> None:
     var input = Input()
     input._held_keys.set(Key(1073741903))
-    assert_true(input.key_down("right"))
+    assert_true(input.key_down(Key.RIGHT))
 
 
 def test_named_key_home() raises -> None:
     var input = Input()
     input._held_keys.set(Key(1073741898))
-    assert_true(input.key_down("home"))
+    assert_true(input.key_down(Key.HOME))
 
 
 def test_named_key_end() raises -> None:
     var input = Input()
     input._held_keys.set(Key(1073741901))
-    assert_true(input.key_down("end"))
+    assert_true(input.key_down(Key.END))
 
 
 def test_named_key_page_up() raises -> None:
     var input = Input()
     input._held_keys.set(Key(1073741899))
-    assert_true(input.key_down("page_up"))
+    assert_true(input.key_down(Key.PAGE_UP))
 
 
 def test_named_key_page_down() raises -> None:
     var input = Input()
     input._held_keys.set(Key(1073741902))
-    assert_true(input.key_down("page_down"))
+    assert_true(input.key_down(Key.PAGE_DOWN))
 
 
 def test_named_key_insert() raises -> None:
     var input = Input()
     input._held_keys.set(Key(1073741897))
-    assert_true(input.key_down("insert"))
+    assert_true(input.key_down(Key.INSERT))
 
 
 def test_named_key_backspace() raises -> None:
     var input = Input()
     input._held_keys.set(Key(8))
-    assert_true(input.key_down("backspace"))
+    assert_true(input.key_down(Key.BACKSPACE))
 
 
 def test_named_key_tab() raises -> None:
     var input = Input()
     input._held_keys.set(Key(9))
-    assert_true(input.key_down("tab"))
+    assert_true(input.key_down(Key.TAB))
 
 
 def test_named_key_delete() raises -> None:
     var input = Input()
     input._held_keys.set(Key(127))
-    assert_true(input.key_down("delete"))
+    assert_true(input.key_down(Key.DELETE))
 
 
 def test_named_key_caps_lock() raises -> None:
     var input = Input()
     input._held_keys.set(Key.CAPS_LOCK)
-    assert_true(input.key_down("caps_lock"))
+    assert_true(input.key_down(Key.CAPS_LOCK))
 
 
 def test_named_key_f1() raises -> None:
     var input = Input()
     input._held_keys.set(Key.F1)
-    assert_true(input.key_down("f1"))
+    assert_true(input.key_down(Key.F1))
 
 
 def test_named_key_f12() raises -> None:
     var input = Input()
     input._held_keys.set(Key.F12)
-    assert_true(input.key_down("f12"))
+    assert_true(input.key_down(Key.F12))
 
 
 def test_key_pressed_named_key() raises -> None:
     var input = Input()
     input._pressed_keys.set(Key.ESCAPE)
-    assert_true(input.key_pressed("escape"))
-    assert_equal(input.key_pressed("space"), False)
+    assert_true(input.key_pressed(Key.ESCAPE))
+    assert_equal(input.key_pressed(Key.SPACE), False)
 
 
 def test_key_released_named_key() raises -> None:
     var input = Input()
     input._released_keys.set(Key.SPACE)
-    assert_true(input.key_released("space"))
-    assert_equal(input.key_released("escape"), False)
-
-
-def test_unknown_named_key_returns_false() raises -> None:
-    var input = Input()
-    input._held_keys.set(Key(65))
-    assert_equal(input.key_down("nonexistent_key"), False)
+    assert_true(input.key_released(Key.SPACE))
+    assert_equal(input.key_released(Key.ESCAPE), False)
 
 
 def test_initial_wheel_and_press_pos_zero() raises -> None:

@@ -54,9 +54,9 @@ struct App(Program):
         # No camera, so the mouse is already in the space the shapes are in.
         var mouse = context.input.mouse
 
-        if context.input.key_down("up"):
+        if context.input.key_down(Key.UP):
             self.inner_ratio = min(self.inner_ratio + context.time.delta, 1.0)
-        if context.input.key_down("down"):
+        if context.input.key_down(Key.DOWN):
             self.inner_ratio = max(self.inner_ratio - context.time.delta, 0.1)
 
         # Held where it was grabbed, so the pentagram doesn't jump to put

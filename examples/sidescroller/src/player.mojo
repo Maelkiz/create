@@ -22,16 +22,16 @@ struct Player:
     def update(mut self, context: Context, canvas: Canvas):
         var dt = context.time.delta
 
-        if context.input.key_down("a"):
+        if context.input.key_down(Key.A):
             self.x -= self.SPEED * dt
-        if context.input.key_down("d"):
+        if context.input.key_down(Key.D):
             self.x += self.SPEED * dt
 
-        if context.input.key_pressed("w") and self.jumps_left > 0:
+        if context.input.key_pressed(Key.W) and self.jumps_left > 0:
             self.vel_y = self.JUMP_FORCE
             self.jumps_left -= 1
 
-        if context.input.key_down("w") and self.vel_y > 0:
+        if context.input.key_down(Key.W) and self.vel_y > 0:
             self.vel_y += self.JUMP_HOLD_FORCE * dt
 
         self.vel_y += self.GRAVITY * dt
