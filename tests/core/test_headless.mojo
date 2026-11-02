@@ -30,11 +30,11 @@ def test_autoscale_set_in_create_applies_from_the_next_frame() raises -> None:
     # A 100x50 design in a 100x100 buffer: FIT leaves 25 rows of bar top and
     # bottom, EXTEND grows the world into them.
     var first = run_headless[ExtendAfterFirst](
-        100, 50, 0, 100, 100, antialiasing=Antialiasing.OFF
+        100, 50, 0, window_size=(100, 100), antialiasing=Antialiasing.OFF
     )
     assert_equal(first.pixel(50, 5), Color.BLACK)
     var second = run_headless[ExtendAfterFirst](
-        100, 50, 1, 100, 100, antialiasing=Antialiasing.OFF
+        100, 50, 1, window_size=(100, 100), antialiasing=Antialiasing.OFF
     )
     assert_equal(second.pixel(50, 5), Color.BLUE)
     assert_equal(second.pixel(50, 95), Color.BLUE)

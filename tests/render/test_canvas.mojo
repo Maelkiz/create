@@ -200,7 +200,7 @@ struct ThickLine(Program):
 def test_outline_thickness_scales_to_pixels() raises -> None:
     # 50x50 design in a 100x100 buffer is a 2x scale, so a 3-unit outline is 6
     # pixels thick: rows 47..52 around the centre row.
-    var m = run_headless[ThickLine](50, 50, 1, 100, 100)
+    var m = run_headless[ThickLine](50, 50, 1, window_size=(100, 100))
     for row in range(47, 53):
         assert_equal(m.pixel(50, row), Color.WHITE, "pixel 50," + String(row))
     assert_equal(m.pixel(50, 46), Color.BLACK)
@@ -234,7 +234,7 @@ struct ExtendNoBars(Program):
 def test_fit_paints_letterbox_bars() raises -> None:
     # A 100x50 design in a 100x100 buffer scales by 1 and leaves 25 rows of bar
     # top and bottom, painted after render so they also clip the design area.
-    var m = run_headless[FitBars](100, 50, 1, 100, 100)
+    var m = run_headless[FitBars](100, 50, 1, window_size=(100, 100))
     assert_equal(m.pixel(50, 5), Color.BLACK)
     assert_equal(m.pixel(50, 95), Color.BLACK)
     assert_equal(m.pixel(50, 50), Color.BLUE)
@@ -243,7 +243,7 @@ def test_fit_paints_letterbox_bars() raises -> None:
 def test_extend_has_no_letterbox_bars() raises -> None:
     # Same shape under EXTEND: the world grows into the leftover instead.
     var m = run_headless[ExtendNoBars](
-        100, 50, 1, 100, 100, autoscale=Autoscale.EXTEND
+        100, 50, 1, window_size=(100, 100), autoscale=Autoscale.EXTEND
     )
     assert_equal(m.pixel(50, 5), Color.BLUE)
     assert_equal(m.pixel(50, 95), Color.BLUE)
@@ -385,7 +385,7 @@ def test_corner_radius_scales_to_pixels() raises -> None:
     # 50x50 design in a 100x100 buffer is a 2x scale: a 20x20 world rect with
     # a 5-unit corner_radius covers the same device pixels — [30, 70) with a
     # 10-pixel fillet — as RoundedRect's own 40x40-at-1x case above.
-    var m = run_headless[ScaledRoundedRect](50, 50, 1, 100, 100)
+    var m = run_headless[ScaledRoundedRect](50, 50, 1, window_size=(100, 100))
     assert_equal(m.pixel(31, 31), Color.BLACK)
     assert_equal(m.pixel(39, 39), Color.RED)
 
@@ -2003,7 +2003,9 @@ def test_outline_thickness_under_non_uniform_transform_follows_autoscale() raise
     # fall back to canvas.scale() (the autoscale factor, 2x here) rather than
     # the local transform's own 3x — a 3-unit outline comes out 6 pixels
     # thick, not 18.
-    var m = run_headless[ThickLineUnderNonUniformScale](50, 50, 1, 100, 100)
+    var m = run_headless[ThickLineUnderNonUniformScale](
+        50, 50, 1, window_size=(100, 100)
+    )
     for row in range(47, 53):
         assert_equal(m.pixel(50, row), Color.WHITE, "pixel 50," + String(row))
     assert_equal(m.pixel(50, 46), Color.BLACK)
@@ -2587,7 +2589,7 @@ struct SaveImageTransparent(Program):
 
 
 def test_save_image_writes_the_design_size() raises -> None:
-    var m = run_headless[SaveImage](200, 100, 1, 640, 480)
+    var m = run_headless[SaveImage](200, 100, 1, window_size=(640, 480))
     # The framebuffer it was captured from is neither that size nor bar-free.
     assert_equal(m.width(), 640)
     assert_equal(m.pixel(320, 5), Color.BLACK)
@@ -2597,7 +2599,7 @@ def test_save_image_writes_the_design_size() raises -> None:
 
 
 def test_save_image_lays_out_in_design_coordinates() raises -> None:
-    _ = run_headless[SaveImage](200, 100, 1, 640, 480)
+    _ = run_headless[SaveImage](200, 100, 1, window_size=(640, 480))
     var img = _saved(_IMG_1X)
     assert_equal(_px(img, 100, 50), Color.RED)
     assert_equal(_px(img, 91, 41), Color.RED)
@@ -2606,7 +2608,7 @@ def test_save_image_lays_out_in_design_coordinates() raises -> None:
 
 
 def test_save_image_has_no_letterbox_bars() raises -> None:
-    _ = run_headless[SaveImage](200, 100, 1, 640, 480)
+    _ = run_headless[SaveImage](200, 100, 1, window_size=(640, 480))
     var img = _saved(_IMG_1X)
     # Every corner is the program's own background, not the bar colour the
     # live frame carries at the same relative position.
@@ -2617,7 +2619,7 @@ def test_save_image_has_no_letterbox_bars() raises -> None:
 
 
 def test_save_image_scales_the_whole_export() raises -> None:
-    _ = run_headless[SaveImage2x](200, 100, 1, 640, 480)
+    _ = run_headless[SaveImage2x](200, 100, 1, window_size=(640, 480))
     var img = _saved(_IMG_2X)
     assert_equal(img.width(), 400)
     assert_equal(img.height(), 200)
@@ -2629,7 +2631,7 @@ def test_save_image_scales_the_whole_export() raises -> None:
 
 
 def test_save_image_can_keep_the_background_clear() raises -> None:
-    _ = run_headless[SaveImageTransparent](200, 100, 1, 640, 480)
+    _ = run_headless[SaveImageTransparent](200, 100, 1, window_size=(640, 480))
     var img = _saved(_IMG_ALPHA)
     assert_equal(_px(img, 100, 50), Color.RED)
     # Nothing was rendered here and the clear was dropped, so the buffer's own
@@ -2672,7 +2674,7 @@ struct SaveBoth(Program):
 
 
 def test_save_screenshot_writes_the_framebuffer_resolution() raises -> None:
-    _ = run_headless[SaveScreenshot](200, 100, 1, 640, 480)
+    _ = run_headless[SaveScreenshot](200, 100, 1, window_size=(640, 480))
     var shot = _saved(_SHOT)
     assert_equal(shot.width(), 640)
     assert_equal(shot.height(), 480)
@@ -2681,7 +2683,7 @@ def test_save_screenshot_writes_the_framebuffer_resolution() raises -> None:
 def test_save_screenshot_keeps_the_letterbox_bars() raises -> None:
     # The exact complement of the save_image assertion: same frame, and the
     # corner that is the program's background there is bar here.
-    _ = run_headless[SaveScreenshot](200, 100, 1, 640, 480)
+    _ = run_headless[SaveScreenshot](200, 100, 1, window_size=(640, 480))
     var shot = _saved(_SHOT)
     assert_equal(_px(shot, 320, 5), Color.BLACK)
     assert_equal(_px(shot, 320, 474), Color.BLACK)
@@ -2690,7 +2692,7 @@ def test_save_screenshot_keeps_the_letterbox_bars() raises -> None:
 
 
 def test_both_captures_can_be_pending_in_one_frame() raises -> None:
-    _ = run_headless[SaveBoth](200, 100, 1, 640, 480)
+    _ = run_headless[SaveBoth](200, 100, 1, window_size=(640, 480))
     var shot = _saved(_BOTH_SHOT)
     var img = _saved(_BOTH_IMG)
     assert_equal(shot.width(), 640)
