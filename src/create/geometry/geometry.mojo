@@ -658,13 +658,11 @@ struct Line(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
     `at`, `tangent`, `at_distance`, `midpoint`, `bounds`, `flatten`,
     `beziers`, `closest_point`, `intersects`, `move_to`, `translate`.
 
-    Unlike `Rectangle`/`Circle`/`Triangle`/`Sector`/`Polygon`, `Line` has
-    no interior
-    and is not a shape: it has no `center()`, `contains(region)` beyond the
-    two endpoint-based overloads below, `area()`, or `overlaps` overload.
-    With `Arc`, it is a curve, the *subject* of the asymmetric relation
-    `l.intersects(x)` -- see the comment above `intersects` for why that
-    method exists only on curves.
+    A `Curve`, like `Arc`, `Bezier` and `Spline`: a straight one, as in
+    mathematics, with `t` proportional to distance. It has no interior, so
+    unlike the `Region`s it has no `center()`, `area()` or `overlaps`, and
+    is the *subject* of `l.intersects(x)` -- see the comment above
+    `intersects` for why that method exists only on curves.
 
     `intersects` and `_point_on_segment`-based checks treat the endpoints
     and any touching/collinear-overlapping point as inclusive. A
@@ -771,8 +769,8 @@ struct Line(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
             return True
         return False
 
-    # `x.intersects(y)` is the curve-as-subject relation, for `Line` and
-    # `Arc` -- asymmetric, unlike `overlaps`, because a curve has no interior
+    # `x.intersects(y)` is the curve-as-subject relation, for every
+    # `Curve` -- asymmetric, unlike `overlaps`, because a curve has no interior
     # and cannot be an operand of a symmetric region test. Two curves meet
     # where they cross or touch: exactly for two `Line`s, within
     # `_RADIUS_EPSILON` once an `Arc` is involved, since its points are
@@ -782,7 +780,10 @@ struct Line(Copyable, Curve, Equatable, ImplicitlyCopyable, Movable, Writable):
     # and `Triangle` via endpoint containment (covers a curve wholly inside,
     # which no edge test would catch) plus their edges as `Line`s, and
     # `Sector` and `Polygon` the same way, a sector's edges being two radii
-    # and an `Arc`.
+    # and an `Arc`. `Bezier` and `Spline` have no exact test against most
+    # shapes, so they flatten themselves and test the segments (see
+    # `Bezier.intersects`); a `Line` or `Arc` hands a test against one back
+    # to it.
     def intersects(self, p: Point2D) -> Bool:
         return _point_on_segment(p, self.start, self.end)
 
