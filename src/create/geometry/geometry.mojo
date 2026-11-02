@@ -18,7 +18,7 @@ from ._fillet import (
     sector_corner_radii,
     triangle_corner_radius,
 )
-from .bezier import Bezier
+from .bezier import Bezier, _curve_segments
 from .spline import Spline
 from .drawable import Curve, DrawTarget, Region
 from create.math import Point2D
@@ -491,6 +491,16 @@ struct Rectangle(
             return self._outline().contains(l)
         return self.contains(l.start) and self.contains(l.end)
 
+    def contains[C: Curve](self, curve: C) -> Bool:
+        """Whether the whole of `curve` (an `Arc`, `Bezier` or `Spline`) is
+        inside: every segment of it flattened to within 1e-4 of its size,
+        as `intersects` follows it, so a curve grazing the edge from inside
+        is decided only that closely."""
+        for segment in _curve_segments(curve):
+            if not self.contains(segment):
+                return False
+        return True
+
     def contains(self, s: Sector) -> Bool:
         if self._radius() > 0.0:
             return self._outline().contains(s)
@@ -621,6 +631,16 @@ struct Circle(
 
     def contains(self, l: Line) -> Bool:
         return self.contains(l.start) and self.contains(l.end)
+
+    def contains[C: Curve](self, curve: C) -> Bool:
+        """Whether the whole of `curve` (an `Arc`, `Bezier` or `Spline`) is
+        inside: every segment of it flattened to within 1e-4 of its size,
+        as `intersects` follows it, so a curve grazing the edge from inside
+        is decided only that closely."""
+        for segment in _curve_segments(curve):
+            if not self.contains(segment):
+                return False
+        return True
 
     def contains(self, s: Sector) -> Bool:
         # A sector is its tip fanned out to its arc, and a disc is convex,
@@ -1411,6 +1431,16 @@ struct Sector(
                 return False
         return True
 
+    def contains[C: Curve](self, curve: C) -> Bool:
+        """Whether the whole of `curve` (an `Arc`, `Bezier` or `Spline`) is
+        inside: every segment of it flattened to within 1e-4 of its size,
+        as `intersects` follows it, so a curve grazing the edge from inside
+        is decided only that closely."""
+        for segment in _curve_segments(curve):
+            if not self.contains(segment):
+                return False
+        return True
+
     def _contains_arc(self, a: Arc) -> Bool:
         if not (self.contains(a.at(0.0)) and self.contains(a.at(1.0))):
             return False
@@ -1688,6 +1718,16 @@ struct Triangle(
         if self._radius() > 0.0:
             return self._outline().contains(l)
         return self.contains(l.start) and self.contains(l.end)
+
+    def contains[C: Curve](self, curve: C) -> Bool:
+        """Whether the whole of `curve` (an `Arc`, `Bezier` or `Spline`) is
+        inside: every segment of it flattened to within 1e-4 of its size,
+        as `intersects` follows it, so a curve grazing the edge from inside
+        is decided only that closely."""
+        for segment in _curve_segments(curve):
+            if not self.contains(segment):
+                return False
+        return True
 
     def contains(self, s: Sector) -> Bool:
         if self._radius() > 0.0:
@@ -1980,6 +2020,16 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
             _cut_at_line(l, self._edge(i), cuts)
         for middle in _segment_middles(l, cuts^):
             if not self.contains(middle):
+                return False
+        return True
+
+    def contains[C: Curve](self, curve: C) -> Bool:
+        """Whether the whole of `curve` (an `Arc`, `Bezier` or `Spline`) is
+        inside: every segment of it flattened to within 1e-4 of its size,
+        as `intersects` follows it, so a curve grazing the edge from inside
+        is decided only that closely."""
+        for segment in _curve_segments(curve):
+            if not self.contains(segment):
                 return False
         return True
 

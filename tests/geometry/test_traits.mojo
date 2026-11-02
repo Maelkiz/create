@@ -91,5 +91,46 @@ def test_every_curve_runs_end_to_end() raises -> None:
     )
 
 
+def test_regions_contain_a_curve_wholly_inside() raises -> None:
+    # A bulge reaching y = 3 between ends at y = 0: inside a box to y = 4,
+    # not one to y = 2, though both hold its ends.
+    var bulge = Bezier((-2.0, 0.0), (-2.0, 4.0), (2.0, 4.0), (2.0, 0.0))
+    assert_true(Rectangle((0.0, 1.0), 6.0, 6.0).contains(bulge))
+    assert_equal(Rectangle((0.0, 0.0), 6.0, 4.0).contains(bulge), False)
+    var arc = Arc((0.0, 0.0), 2.0, 0.0, PI)
+    assert_true(Circle((0.0, 0.0), 2.1).contains(arc))
+    assert_equal(Circle((0.0, -1.0), 2.5).contains(arc), False)
+    var spline = Spline(
+        [Point2D(-1.0, 0.0), Point2D(0.0, 1.0), Point2D(1.0, 0.0)]
+    )
+    assert_true(
+        Triangle((-4.0, -1.0), (4.0, -1.0), (0.0, 4.0)).contains(spline)
+    )
+    assert_true(Polygon.regular(Point2D(0.0, 0.0), 3.0, sides=6).contains(arc))
+    assert_true(Sector((0.0, 0.0), 3.0, 0.0, PI).contains(arc))
+    assert_equal(Sector((0.0, 0.0), 3.0, 0.0, PI / 2.0).contains(arc), False)
+
+
+def test_a_concave_polygon_rejects_a_curve_across_its_notch() raises -> None:
+    # A U whose notch runs down to y = 0 between x = -1 and 1: the bulge's
+    # ends sit in the arms, its middle crosses the notch.
+    var u = Polygon(
+        [
+            Point2D(-3.0, -2.0),
+            Point2D(3.0, -2.0),
+            Point2D(3.0, 4.0),
+            Point2D(1.0, 4.0),
+            Point2D(1.0, 0.0),
+            Point2D(-1.0, 0.0),
+            Point2D(-1.0, 4.0),
+            Point2D(-3.0, 4.0),
+        ]
+    )
+    var across = Bezier((-2.0, 1.0), (-2.0, 3.0), (2.0, 3.0), (2.0, 1.0))
+    var under = Bezier((-2.0, -1.0), (-1.0, -1.5), (1.0, -1.5), (2.0, -1.0))
+    assert_equal(u.contains(across), False)
+    assert_true(u.contains(under))
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
