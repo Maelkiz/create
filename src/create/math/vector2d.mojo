@@ -2,14 +2,13 @@ from std.math import atan2, cos, sin, sqrt
 from .constants import PI
 
 from .point2d import Point2D
-from .vector3d import Vector3D
 
 
 struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     """A 2D displacement or direction: arithmetic operators, `magnitude`, `normalize`,
     `dot`, `distance`, `lerp`, the angle helpers `from_angle`, `angle` and
-    `rotate`, the length helpers `with_length` and `limit`, and explicit
-    constructors from a `Point2D` or a `Vector3D`.
+    `rotate`, the length helpers `with_length` and `limit`, and an explicit
+    constructor from a `Point2D`.
 
     Unlike `Point2D`, a bare tuple does not convert to one implicitly: a
     displacement literal names its type, `rect.translate(Vector2D(3, 4))`.
@@ -19,8 +18,8 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     already yields a `Vector2D`.
 
     Crossing to another type is an explicit constructor: `Vector2D(p)` is
-    the displacement from the origin to the position `p`, `Vector2D(v3)`
-    drops `z`, and `Vector3D(v, z)` widens. Naming the target type is what
+    the displacement from the origin to the position `p`, and `Point2D(v)`
+    the reverse. Naming the target type is what
     keeps the conversion visible. `xy` returns the components as a plain
     tuple, to destructure: `var (x, y) = v.xy()`.
 
@@ -50,10 +49,6 @@ struct Vector2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     def __init__(out self, p: Point2D):
         """The displacement from the origin to `p`."""
         self = Vector2D(p.x, p.y)
-
-    def __init__(out self, v: Vector3D):
-        """`v` without its `z`."""
-        self = Vector2D(v.x, v.y)
 
     def __add__(self, other: Vector2D) -> Vector2D:
         return Vector2D(self.x + other.x, self.y + other.y)

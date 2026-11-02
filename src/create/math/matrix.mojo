@@ -1,4 +1,4 @@
-from std.math import sin, cos, tan, abs, min, max
+from std.math import sin, cos, abs, min, max
 
 from .point2d import Point2D
 from .vector2d import Vector2D
@@ -9,12 +9,12 @@ struct Matrix[rows: Int, cols: Int](
 ):
     """A fixed-size matrix, row-major, sized at compile time.
 
-    Transforms are homogeneous, so 2D work uses `Matrix[3, 3]` and 3D
-    `Matrix[4, 4]` — the extra row and column is what lets a translation be a
+    Transforms are homogeneous, so the library's 2D transforms are
+    `Matrix[3, 3]` — the extra row and column is what lets a translation be a
     multiplication like any other, and so compose into a single matrix.
 
     Build them with the free functions below rather than by hand:
-    `identity`, `translate`, `rotate`, `scale`, `perspective`. Compose with
+    `identity`, `translate`, `rotate`, `scale`. Compose with
     `@`, which applies right to left — `translate(x, y) @ rotate(a)` rotates
     first, then moves the rotated result. `apply(m, point)` maps a `Point2D`
     through it, translation included; `apply(m, vector)` maps a `Vector2D`,
@@ -144,22 +144,6 @@ def scale(s: Float64) -> Matrix[3, 3]:
     return scale(s, s)
 
 
-def perspective(
-    fov: Float64, aspect: Float64, near: Float64, far: Float64
-) -> Matrix[4, 4]:
-    """A 3D projection: vertical field of view in radians, width/height aspect,
-    and the near and far clip distances. `Canvas` renders in 2D, so this is for a
-    program doing its own 3D projection before it hands over coordinates."""
-    var m = Matrix[4, 4]()
-    var f = 1.0 / tan(fov / 2.0)
-    m[0, 0] = f / aspect
-    m[1, 1] = f
-    m[2, 2] = (far + near) / (near - far)
-    m[2, 3] = (2.0 * far * near) / (near - far)
-    m[3, 2] = -1.0
-    return m^
-
-
 def apply(m: Matrix[3, 3], point: Point2D) -> Point2D:
     """`point` mapped through `m`, translation included."""
     var p = _apply(m, point.x, point.y)
@@ -171,7 +155,8 @@ def apply(m: Matrix[3, 3], vector: Vector2D) -> Vector2D:
     translation: a displacement, unlike a position, is the same wherever it
     starts. So a velocity turns with a `rotate` and stretches with a `scale`,
     and a `translate` leaves it as it is. Meant for the affine matrices
-    `translate`, `rotate` and `scale` build; a perspective row is ignored."""
+    `translate`, `rotate` and `scale` build; a projective bottom row is
+    ignored."""
     return Vector2D(
         m[0, 0] * vector.x + m[0, 1] * vector.y,
         m[1, 0] * vector.x + m[1, 1] * vector.y,
@@ -187,18 +172,6 @@ def _apply(m: Matrix[3, 3], x: Float64, y: Float64) -> Tuple[Float64, Float64]:
     var oy = m[1, 0] * x + m[1, 1] * y + m[1, 2]
     var ow = m[2, 0] * x + m[2, 1] * y + m[2, 2]
     return (ox / ow, oy / ow)
-
-
-def apply(
-    m: Matrix[4, 4], x: Float64, y: Float64, z: Float64
-) -> Tuple[Float64, Float64, Float64]:
-    """Transform a 3D point by `m`, dividing through by the homogeneous w — so
-    a `perspective` matrix divides by depth here, not at construction."""
-    var ox = m[0, 0] * x + m[0, 1] * y + m[0, 2] * z + m[0, 3]
-    var oy = m[1, 0] * x + m[1, 1] * y + m[1, 2] * z + m[1, 3]
-    var oz = m[2, 0] * x + m[2, 1] * y + m[2, 2] * z + m[2, 3]
-    var ow = m[3, 0] * x + m[3, 1] * y + m[3, 2] * z + m[3, 3]
-    return (ox / ow, oy / ow, oz / ow)
 
 
 def inverse[N: Int](m: Matrix[N, N]) -> Matrix[N, N]:
