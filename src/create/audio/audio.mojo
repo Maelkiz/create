@@ -17,7 +17,7 @@ struct _Voice(Movable):
     var generation: Int
     # This voice's own volume, from `volume(id, ...)`; it plays at this times
     # `Audio`'s volume.
-    var gain: Float32
+    var gain: Float64
     var paused: Bool
     var looping: Bool
     var loop_sound: Optional[Sound]
@@ -58,7 +58,7 @@ struct Audio(Movable):
 
     var _sdl: SDLAudio
     var _voices: List[_Voice]
-    var _volume: Float32
+    var _volume: Float64
 
     def __init__(out self) raises:
         self._sdl = SDLAudio()
@@ -66,11 +66,11 @@ struct Audio(Movable):
         self._voices = List[_Voice]()
         self._volume = 1.0
 
-    def volume(self) -> Float32:
+    def volume(self) -> Float64:
         """The volume every voice plays at, `1.0` unless set."""
         return self._volume
 
-    def volume(mut self, volume: Float32) raises:
+    def volume(mut self, volume: Float64) raises:
         """Set the volume every voice plays at, `0.0` silent and `1.0` as
         recorded. Applies at once, to the voices already playing as well as
         later ones; each voice's own `volume(id, ...)` scales it."""
@@ -80,8 +80,11 @@ struct Audio(Movable):
                 self._apply_gain(i)
 
     def _apply_gain(mut self, index: Int) raises:
+        # SDL takes its gain as a Float32; the API stays in Float64 like
+        # every other fraction, and narrows here, at the boundary.
         self._sdl.set_gain(
-            self._voices[index].stream, self._volume * self._voices[index].gain
+            self._voices[index].stream,
+            Float32(self._volume * self._voices[index].gain),
         )
 
     @staticmethod
@@ -119,7 +122,7 @@ struct Audio(Movable):
         var stream = self._sdl.open_device_stream(
             sound._format, Int32(sound._channels), Int32(sound._sample_rate)
         )
-        self._sdl.set_gain(stream, self._volume)
+        self._sdl.set_gain(stream, Float32(self._volume))
         self._sdl.put_data(
             stream, sound._pcm[].unsafe_ptr(), Int32(len(sound._pcm[]))
         )
@@ -170,7 +173,7 @@ struct Audio(Movable):
         self._sdl.pause_stream(self._voices[index].stream)
         self._voices[index].paused = True
 
-    def volume(mut self, id: Int, volume: Float32) raises:
+    def volume(mut self, id: Int, volume: Float64) raises:
         """Set one live voice's own volume, which `volume()` scales: a voice
         at `0.5` under a volume of `0.5` plays at a quarter. No-op if stopped
         or the id is stale."""
