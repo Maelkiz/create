@@ -1089,9 +1089,18 @@ struct Canvas(DrawTarget, Movable):
         var points = List[Point2D](capacity=len(vertices))
         for v in vertices:
             points.append(v)
+        self.polygon(points^, corner_radius=corner_radius)
+
+    def polygon(
+        mut self,
+        var vertices: List[Point2D],
+        corner_radius: _OptionalFloat64 = None,
+    ):
+        """Draw the polygon through `vertices`, a list built at run time:
+        otherwise as the variadic `polygon`, and like `spline`'s `points`."""
         self.draw(
             Polygon(
-                points^,
+                vertices^,
                 corner_radius=corner_radius.or_else(self._style.corner_radius),
             )
         )
