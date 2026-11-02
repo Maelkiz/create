@@ -365,25 +365,34 @@ struct Table(Copyable, Movable):
             )
         _ = self._rows.pop(index)
 
-    def find_row(self, column: String, value: String) raises -> Optional[Int]:
+    def find_row_index(
+        self, column: String, value: String
+    ) raises -> Optional[Int]:
         """The index of the first row whose cell in the named column is
-        exactly `value`, or `None`."""
-        return self._find_row(self._header[].index(column), value)
+        exactly `value`, or `None`; `row(index)` reaches it by reference.
 
-    def find_row(self, column: Int, value: String) raises -> Optional[Int]:
+        An index rather than the row, since there is no optional reference:
+        `ref row = t.row(t.find_row_index("name", "Ada").value())`."""
+        return self._find_row_index(self._header[].index(column), value)
+
+    def find_row_index(
+        self, column: Int, value: String
+    ) raises -> Optional[Int]:
         """The index of the first row whose cell in column `column` is
         exactly `value`, or `None`."""
-        return self._find_row(self._header[].checked(column), value)
+        return self._find_row_index(self._header[].checked(column), value)
 
-    def find_rows(self, column: String, value: String) raises -> List[Int]:
+    def find_row_indices(
+        self, column: String, value: String
+    ) raises -> List[Int]:
         """The indices of every row whose cell in the named column is
         exactly `value`, in order."""
-        return self._find_rows(self._header[].index(column), value)
+        return self._find_row_indices(self._header[].index(column), value)
 
-    def find_rows(self, column: Int, value: String) raises -> List[Int]:
+    def find_row_indices(self, column: Int, value: String) raises -> List[Int]:
         """The indices of every row whose cell in column `column` is
         exactly `value`, in order."""
-        return self._find_rows(self._header[].checked(column), value)
+        return self._find_row_indices(self._header[].checked(column), value)
 
     def sort(mut self, column: String, descending: Bool = False) raises:
         """Order the rows by the named column, smallest first.
@@ -397,13 +406,13 @@ struct Table(Copyable, Movable):
         """Order the rows by column `column`, from 0, as the named form."""
         self._sort(self._header[].checked(column), descending)
 
-    def _find_row(self, index: Int, value: String) -> Optional[Int]:
+    def _find_row_index(self, index: Int, value: String) -> Optional[Int]:
         for i in range(len(self._rows)):
             if self._rows[i]._cell(index) == value:
                 return i
         return None
 
-    def _find_rows(self, index: Int, value: String) -> List[Int]:
+    def _find_row_indices(self, index: Int, value: String) -> List[Int]:
         var found = List[Int]()
         for i in range(len(self._rows)):
             if self._rows[i]._cell(index) == value:

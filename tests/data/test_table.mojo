@@ -308,29 +308,31 @@ def _names(t: Table) raises -> List[String]:
     return names^
 
 
-def test_find_row() raises -> None:
+def test_find_row_index() raises -> None:
     var t = Table.load(FIXTURES + "scores.csv")
-    assert_equal(t.find_row("name", "Bob").value(), 1)
-    assert_equal(t.find_row("score", "95").value(), 1)  # the first match
-    assert_equal(t.find_row(0, "Cy").value(), 2)
-    assert_false(t.find_row("name", "Dee"))
+    assert_equal(t.find_row_index("name", "Bob").value(), 1)
+    assert_equal(t.find_row_index("score", "95").value(), 1)  # the first match
+    assert_equal(t.find_row_index(0, "Cy").value(), 2)
+    assert_false(t.find_row_index("name", "Dee"))
     with assert_raises(contains='no column "time"'):
-        _ = t.find_row("time", "1")
+        _ = t.find_row_index("time", "1")
 
 
-def test_find_row_on_an_empty_table_still_checks_the_column() raises -> None:
+def test_find_row_index_on_an_empty_table_still_checks_the_column() raises -> (
+    None
+):
     var t = Table(["name"])
-    assert_false(t.find_row("name", "Ada"))
+    assert_false(t.find_row_index("name", "Ada"))
     with assert_raises(contains='no column "time"'):
-        _ = t.find_row("time", "1")
+        _ = t.find_row_index("time", "1")
     with assert_raises(contains="no column 1"):
-        _ = t.find_rows(1, "1")
+        _ = t.find_row_indices(1, "1")
 
 
-def test_find_rows() raises -> None:
+def test_find_row_indices() raises -> None:
     var t = Table.load(FIXTURES + "scores.csv")
-    assert_equal(t.find_rows("score", "95"), [1, 2])
-    assert_equal(len(t.find_rows("score", "1")), 0)
+    assert_equal(t.find_row_indices("score", "95"), [1, 2])
+    assert_equal(len(t.find_row_indices("score", "1")), 0)
 
 
 def test_sort_is_numeric_when_the_column_is() raises -> None:
