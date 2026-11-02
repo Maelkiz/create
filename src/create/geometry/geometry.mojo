@@ -1829,7 +1829,7 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
     def star(
         position: Point2D,
         r: Float64,
-        inner_r: Float64,
+        inner_radius: Float64,
         tips: Int,
         start_angle: Float64 = TAU / 4.0,
         *,
@@ -1837,13 +1837,13 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
     ) -> Polygon:
         """A star of `tips` points about `position`: its tips on radius `r`,
         the first at `start_angle` (straight up by default), and between
-        each two tips a vertex on radius `inner_r`, halfway round. The
+        each two tips a vertex on radius `inner_radius`, halfway round. The
         outline does not cross itself, so it is a simple polygon."""
         var vertices = List[Point2D](capacity=max(2 * tips, 0))
         for i in range(2 * tips):
             var angle = start_angle + PI * Float64(i) / Float64(tips)
             vertices.append(
-                position + _unit(angle) * (r if i % 2 == 0 else inner_r)
+                position + _unit(angle) * (r if i % 2 == 0 else inner_radius)
             )
         return Polygon(vertices^, corner_radius=corner_radius)
 
