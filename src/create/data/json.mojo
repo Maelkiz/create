@@ -100,7 +100,7 @@ struct JSON(Copyable, Movable, Sized, Writable):
     ```mojo
     var config = JSON.load(source_path("config.json"))
     var speed = config["player"]["speed"].float()
-    for enemy in config["enemies"].items():
+    for enemy in config["enemies"].values():
         canvas.text(enemy["name"].string(), (0, y))
     ```
 
@@ -110,7 +110,7 @@ struct JSON(Copyable, Movable, Sized, Writable):
 
     ```mojo
     config["player"]["speed"] = 3.0
-    for enemy in config["enemies"].items():
+    for enemy in config["enemies"].values():
         enemy["hp"] = enemy["hp"].int() - 1
     var player = config["player"]          # still part of config
     var snapshot = config.copy()           # a document of its own
@@ -308,7 +308,7 @@ struct JSON(Copyable, Movable, Sized, Writable):
         """An object's keys, in the order the document has them."""
         return self._expect(JSONKind.OBJECT, ".keys()").keys.copy()
 
-    def items(self) raises -> List[JSON]:
+    def values(self) raises -> List[JSON]:
         """An array's items, or an object's values, in order.
 
         Each is a handle into this document, like `[]`'s.
@@ -316,11 +316,25 @@ struct JSON(Copyable, Movable, Sized, Writable):
         ref node = self._node()
         if node.kind != JSONKind.ARRAY and node.kind != JSONKind.OBJECT:
             raise Error(
-                ".items() needs an array or an object, not " + node.kind._name()
+                ".values() needs an array or an object, not "
+                + node.kind._name()
             )
-        var items = List[JSON](capacity=len(node.children))
+        var values = List[JSON](capacity=len(node.children))
         for child in node.children:
-            items.append(self._at(child))
+            values.append(self._at(child))
+        return values^
+
+    def items(self) raises -> List[Tuple[String, JSON]]:
+        """An object's keys, each with its value, in the order the document
+        has them, as Python's `dict.items()`:
+        `for name, value in doc.items()`.
+
+        Each value is a handle into this document, like `[]`'s.
+        """
+        ref node = self._expect(JSONKind.OBJECT, ".items()")
+        var items = List[Tuple[String, JSON]](capacity=len(node.children))
+        for i in range(len(node.children)):
+            items.append((node.keys[i], self._at(node.children[i])))
         return items^
 
     def float(self) raises -> Float64:

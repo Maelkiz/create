@@ -60,17 +60,28 @@ def test_keys_keep_document_order() raises -> None:
     )
 
 
-def test_items_of_an_array_and_an_object() raises -> None:
+def test_values_of_an_array_and_an_object() raises -> None:
     var config = JSON.load(FIXTURES + "config.json")
     var total = 0
-    for enemy in config["enemies"].items():
+    for enemy in config["enemies"].values():
         total += enemy["hp"].int()
     assert_equal(total, 6)
-    var values = config["player"].items()
+    var values = config["player"].values()
     assert_equal(len(values), 3)
     assert_equal(values[0].float(), 2.5)
-    with assert_raises(contains=".items() needs an array or an object"):
-        _ = config["title"].items()
+    with assert_raises(contains=".values() needs an array or an object"):
+        _ = config["title"].values()
+
+
+def test_items_pair_an_objects_keys_with_its_values() raises -> None:
+    var config = JSON.load(FIXTURES + "config.json")
+    var keys = List[String]()
+    for key, value in config["player"].items():
+        keys.append(key)
+        assert_equal(String(value), String(config["player"][key]))
+    assert_equal(keys, config["player"].keys())
+    with assert_raises(contains=".items()"):
+        _ = config["enemies"].items()
 
 
 def test_int_is_exact_and_strict() raises -> None:
@@ -220,7 +231,7 @@ def test_nested_assignment_lands_in_the_document() raises -> None:
 
 def test_editing_items_in_a_loop() raises -> None:
     var config = JSON.load(FIXTURES + "config.json")
-    for enemy in config["enemies"].items():
+    for enemy in config["enemies"].values():
         enemy["hp"] = enemy["hp"].int() - 1
     assert_equal(
         String(config["enemies"]),
