@@ -166,7 +166,10 @@ A program writes `from create import *`. Otherwise import by name from the ownin
 
 - The root has no names of its own — it star-imports the ten subpackages. Never add a name there;
   add it to the owning subpackage.
-- A subpackage exports only what it owns, never a lower layer's symbol.
+- A subpackage exports only what it owns, never a lower layer's symbol. The one exception is
+  `math`, which also re-exports common `std.math` functions (`sqrt`, `sin`, `cos`, `atan2`, `clamp`,
+  `floor`, …) so a sketch has them without a second import, as in Processing. Mojo builtins
+  (`abs`, `min`, `max`, `round`, `pow`) are already in scope and are not re-exported.
 - Public surface is exactly what an `__init__.mojo` lists. A new declaration is internal unless it is
   added to one in the same change: `_module.mojo` for a wholly internal file, `_name` for an internal
   declaration in a public module. Tests reach internals by explicit path.
