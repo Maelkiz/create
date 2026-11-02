@@ -223,6 +223,13 @@ def test_at_distance_on_degenerate_curve() raises -> None:
     assert_equal(b.at_distance(1.0), Point2D(5.0, 5.0))
 
 
+def test_beziers_is_itself() raises -> None:
+    var b = Bezier((0.0, 0.0), (1.0, 2.0), (3.0, 2.0), (4.0, 0.0))
+    var curves = b.beziers()
+    assert_equal(len(curves), 1)
+    assert_equal(curves[0], b)
+
+
 def test_translate_moves_every_point() raises -> None:
     var b = _s_curve()
     b.translate(Vector2D(10.0, -5.0))

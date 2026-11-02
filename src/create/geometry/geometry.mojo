@@ -656,7 +656,8 @@ struct Line(
     Copyable, Drawable, Equatable, ImplicitlyCopyable, Movable, Writable
 ):
     """A line segment from `start` to `end`: `length`, `length_squared`,
-    `midpoint`, `closest_point`, `intersects`, `move_to`, `translate`.
+    `at`, `tangent`, `at_distance`, `midpoint`, `bounds`, `flatten`,
+    `beziers`, `closest_point`, `intersects`, `move_to`, `translate`.
 
     Unlike `Rectangle`/`Circle`/`Triangle`/`Sector`/`Polygon`, `Line` has
     no interior
@@ -694,6 +695,56 @@ struct Line(
 
     def length(self) -> Float64:
         return sqrt(self.length_squared())
+
+    def at(self, t: Float64) -> Point2D:
+        """The point at parameter `t`: `start` at 0, `end` at 1, and
+        proportional to distance in between. Not clamped: outside 0..1 it
+        carries on along the line, as `lerp` extrapolates."""
+        return self.start.lerp(self.end, t)
+
+    def tangent(self, t: Float64) -> Vector2D:
+        """The derivative at `t`: `end - start`, the same everywhere — the
+        direction of travel, with the line's length as its magnitude. Zero
+        for a zero-length line."""
+        return self.end - self.start
+
+    def at_distance(self, distance: Float64) -> Point2D:
+        """The point `distance` along the line from `start`, clamped to the
+        line's ends. Exact, and as cheap as `at`."""
+        var total = self.length()
+        if distance <= 0.0 or total == 0.0:
+            return self.start
+        if distance >= total:
+            return self.end
+        return self.at(distance / total)
+
+    def bounds(self) -> Rectangle:
+        """The tightest axis-aligned rectangle around the line: the box its
+        two ends span, zero-width or zero-height when it is axis-aligned."""
+        var lo = Point2D(
+            min(self.start.x, self.end.x), min(self.start.y, self.end.y)
+        )
+        var hi = Point2D(
+            max(self.start.x, self.end.x), max(self.start.y, self.end.y)
+        )
+        return Rectangle(lo.lerp(hi, 0.5), hi.x - lo.x, hi.y - lo.y)
+
+    def flatten(self, tolerance: Float64) -> List[Point2D]:
+        """`start` and `end`: a line is already straight, whatever the
+        tolerance."""
+        return [self.start, self.end]
+
+    def beziers(self) -> List[Bezier]:
+        """The line as one cubic Bézier, its controls at the thirds, so it
+        traces the line exactly and at the same speed."""
+        return [
+            Bezier(
+                self.start,
+                self.start.lerp(self.end, 1.0 / 3.0),
+                self.start.lerp(self.end, 2.0 / 3.0),
+                self.end,
+            )
+        ]
 
     def intersects(self, other: Line) -> Bool:
         var o1 = _orientation(self.start, self.end, other.start)
