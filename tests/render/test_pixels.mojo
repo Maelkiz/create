@@ -1,4 +1,4 @@
-"""Reading pixels back: `canvas.pixel`, `canvas.snapshot`, and the `Image`
+"""Reading pixels back: `canvas.color_at`, `canvas.snapshot`, and the `Image`
 pixels they hand back, edits included.
 
 A 200 x 100 design: screen x in -100..100, y in -50..50, y up. Most tests
@@ -44,12 +44,14 @@ def _square(mut canvas: Canvas, position: Point2D, color: Color):
 def test_pixel_reads_what_is_drawn_so_far() raises -> None:
     var context = Context()
     var canvas = _canvas(context)
-    assert_equal(canvas.pixel((0, 0)), _GRAY, "the autoclear")
+    assert_equal(canvas.color_at((0, 0)), _GRAY, "the autoclear")
     canvas.background(Color.RED)
-    assert_equal(canvas.pixel((0, 0)), Color.RED)
+    assert_equal(canvas.color_at((0, 0)), Color.RED)
     _square(canvas, (0, 0), Color.BLUE)
-    assert_equal(canvas.pixel((0, 0)), Color.BLUE, "read again after drawing")
-    assert_equal(canvas.pixel((50, 0)), Color.RED)
+    assert_equal(
+        canvas.color_at((0, 0)), Color.BLUE, "read again after drawing"
+    )
+    assert_equal(canvas.color_at((50, 0)), Color.RED)
 
 
 def test_pixel_is_in_screen_space_and_transparent_off_it() raises -> None:
@@ -58,10 +60,10 @@ def test_pixel_is_in_screen_space_and_transparent_off_it() raises -> None:
     with canvas.transform(translate(50.0, 20.0)):
         _square(canvas, (0, 0), Color.BLUE)
         # The transform moves what is drawn, not where a read looks.
-        assert_equal(canvas.pixel((50, 20)), Color.BLUE)
-        assert_equal(canvas.pixel((0, 0)), _GRAY)
-    assert_equal(canvas.pixel((150, 0)), Color.TRANSPARENT)
-    assert_equal(canvas.pixel((0, -60)), Color.TRANSPARENT)
+        assert_equal(canvas.color_at((50, 20)), Color.BLUE)
+        assert_equal(canvas.color_at((0, 0)), _GRAY)
+    assert_equal(canvas.color_at((150, 0)), Color.TRANSPARENT)
+    assert_equal(canvas.color_at((0, -60)), Color.TRANSPARENT)
 
 
 def test_a_read_is_at_design_size_on_a_bigger_window() raises -> None:
@@ -150,14 +152,14 @@ def test_with_the_autoclear_off_reads_start_from_the_last_frame() raises -> (
     canvas.autoclear(False)
     canvas.background(Color.RED)
     # The first read switches keeping frames on; it sees only this frame.
-    assert_equal(canvas.pixel((0, 0)), Color.RED)
+    assert_equal(canvas.color_at((0, 0)), Color.RED)
     canvas = _present(context, canvas^, mem)
     # Nothing drawn yet, but the frame starts from the red one, and so does
     # the read.
-    assert_equal(canvas.pixel((0, 0)), Color.RED)
+    assert_equal(canvas.color_at((0, 0)), Color.RED)
     _square(canvas, (0, 0), Color.BLUE)
-    assert_equal(canvas.pixel((0, 0)), Color.BLUE)
-    assert_equal(canvas.pixel((50, 0)), Color.RED)
+    assert_equal(canvas.color_at((0, 0)), Color.BLUE)
+    assert_equal(canvas.color_at((50, 0)), Color.RED)
     canvas = _present(context, canvas^, mem)
     assert_equal(canvas.snapshot().pixel(100, 50), Color.BLUE)
 
@@ -167,9 +169,9 @@ def test_with_the_autoclear_on_reads_start_clear() raises -> None:
     var mem = MemorySurface(200, 100)
     var canvas = _canvas(context)
     canvas.background(Color.RED)
-    _ = canvas.pixel((0, 0))
+    _ = canvas.color_at((0, 0))
     canvas = _present(context, canvas^, mem)
-    assert_equal(canvas.pixel((0, 0)), _GRAY)
+    assert_equal(canvas.color_at((0, 0)), _GRAY)
 
 
 def test_clear_starts_the_frame_over() raises -> None:
@@ -178,9 +180,9 @@ def test_clear_starts_the_frame_over() raises -> None:
     canvas.background(Color.RED)
     _square(canvas, (0, 0), Color.BLUE)
     canvas.clear()
-    assert_equal(canvas.pixel((0, 0)), _GRAY, "the autoclear again")
+    assert_equal(canvas.color_at((0, 0)), _GRAY, "the autoclear again")
     _square(canvas, (50, 0), Color.BLUE)
-    assert_equal(canvas.pixel((50, 0)), Color.BLUE)
+    assert_equal(canvas.color_at((50, 0)), Color.BLUE)
 
 
 def test_with_the_autoclear_off_clear_returns_to_the_last_frame() raises -> (
@@ -220,8 +222,8 @@ def test_images_built_from_buffers_draw_their_own_pixels() raises -> None:
             blue.set(x, y, Color.BLUE)
     canvas.image(Image(red^), (-30, 0))
     canvas.image(Image(blue^), (30, 0))
-    assert_equal(canvas.pixel((-30, 0)), Color.RED)
-    assert_equal(canvas.pixel((30, 0)), Color.BLUE)
+    assert_equal(canvas.color_at((-30, 0)), Color.RED)
+    assert_equal(canvas.color_at((30, 0)), Color.BLUE)
 
 
 def test_an_image_drawn_every_frame_is_interned_once() raises -> None:

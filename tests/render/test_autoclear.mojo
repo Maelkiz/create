@@ -136,7 +136,7 @@ def _frame(mut context: Context) raises -> Canvas:
 def test_switching_off_mid_frame_takes_the_opening_clear_out() raises -> None:
     var context = Context()
     var canvas = _frame(context)
-    _ = canvas.pixel((0, 0))
+    _ = canvas.color_at((0, 0))
     canvas.autoclear(False)
     assert_true(not canvas.autoclear())
     var out = canvas^._release()
@@ -174,8 +174,8 @@ def test_switching_on_mid_frame_clears_under_what_is_drawn() raises -> None:
     with canvas.style(fill=Color.RED, outline_enabled=False):
         canvas.rectangle((0, 0), 20, 20)
     canvas.autoclear(True)
-    assert_equal(canvas.pixel((0, 0)), Color.RED)
-    assert_equal(canvas.pixel((50, 0)), Color(200))
+    assert_equal(canvas.color_at((0, 0)), Color.RED)
+    assert_equal(canvas.color_at((50, 0)), Color(200))
 
 
 def _commands_after_background(gradient: Gradient) raises -> Int:
@@ -242,10 +242,10 @@ struct OffPartway(Program):
         return OffPartway(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        assert_equal(canvas.pixel((0, 0)), Color(200), "cleared so far")
+        assert_equal(canvas.color_at((0, 0)), Color(200), "cleared so far")
         canvas.autoclear(False)
         # The read is replayed, not cached: this frame no longer clears.
-        assert_true(canvas.pixel((0, 0)) != Color(200), "read again")
+        assert_true(canvas.color_at((0, 0)) != Color(200), "read again")
 
 
 def test_switching_off_partway_through_keeps_the_last_frame() raises -> None:

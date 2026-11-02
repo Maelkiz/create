@@ -833,7 +833,7 @@ struct Backend(Movable):
     nothing has been recorded since. A count of commands would not do, since
     `record_clear` can replace one without adding any."""
     var frame_read: Optional[MemorySurface]
-    """The frame so far at design size, as `canvas.pixel` last read
+    """The frame so far at design size, as `canvas.color_at` last read
     it; `frame_read_at` is the `recorded` it was read at."""
     var frame_read_at: Int
     var keep_frames: Bool

@@ -348,17 +348,17 @@ what is outside it (fog, a spotlight). `region` is any `Region` — a `Rectangle
 
 ### Reading pixels
 
-`canvas.pixel(position) -> Color` and `canvas.snapshot([region], scale=1.0) -> Image` read what the
+`canvas.color_at(position) -> Color` and `canvas.snapshot([region], scale=1.0) -> Image` read what the
 frame has drawn **so far**. They are a CPU replay of the commands recorded up to the call, like
 `save_image`, so both backends read the same pixels and the GPU is never stalled. See
 [examples/pixels.mojo](examples/pixels.mojo).
-- **Screen space**, not world: the transform and camera don't apply. `canvas.pixel(context.input.mouse)`
+- **Screen space**, not world: the transform and camera don't apply. `canvas.color_at(context.input.mouse)`
   picks under the mouse as it is, and a snapshot region is always upright. Off the screen reads
   transparent.
 - **Design size × `scale`**, without the letterbox. `snapshot()` drawn back with
   `canvas.image(shot, (0, 0), canvas.width(), canvas.height())` lines up exactly;
   `scale=canvas.scale()` gives window pixels.
-- **One replay per drawing**: reads are cached until something more is recorded, so many `pixel`
+- **One replay per drawing**: reads are cached until something more is recorded, so many `color_at`
   calls in a row cost one. A full-frame replay costs about a CPU frame. Fine for picking, a
   capture, or a feedback effect; read once rather than per object.
 - **With `canvas.autoclear(False)`** a read starts from the last frame's pixels, as the frame did,
@@ -367,7 +367,7 @@ frame has drawn **so far**. They are a CPU replay of the commands recorded up to
 
 **Offscreen canvas:** `Canvas(width, height, scale=1.0, antialiasing=Antialiasing.MEDIUM)` builds a
 canvas of the program's own, drawn into with every render call and guard and read back with
-`pixel`/`snapshot` — the way to draw into an image. Build it anywhere, `create` included; keep it as a
+`color_at`/`snapshot` — the way to draw into an image. Build it anywhere, `create` included; keep it as a
 field to draw into across frames. See [examples/offscreen.mojo](examples/offscreen.mojo).
 - **Starts transparent**, no autoclear; screen space as usual (origin centred, y up). Always
   rasterised on the CPU, whatever the program's backend; the `Image` it gives draws on either.
@@ -390,7 +390,10 @@ frame's pixels). Style, transform and settings are untouched; `background()` pai
 **An `Image` is immutable**, an asset like `Sound`: `image.pixel(x, y)` reads it, nothing writes it.
 Build one pixel by pixel in a `PixelBuffer` — `set(x, y, color)`/`pixel(x, y)`, transparent to start
 — then `Image(buffer^)` takes the pixels over without copying. Both use **image coordinates**
-(top-left origin, y down); off the image, reads are transparent and writes do nothing.
+(top-left origin, y down, whole `Int` cells — the one place a position is two numbers rather than a
+`Point2D`, since a cell is not a point in the program's space); off the image, reads are
+transparent and writes do nothing. "Pixel" always names such a cell; a colour at a screen point is
+`canvas.color_at`.
 `image.resize(w, h)` returns a new image, nearest pixel. Copying an image shares its pixels, and so
 does a backend's cache of it, so drawing a new image costs no copy. An image not drawn for
 `IMAGE_KEEP_FRAMES` (120) frames is dropped from the backends' caches, so a fresh snapshot every
@@ -458,7 +461,7 @@ frame body returns. Headless runs ignore the window dials, like `rumble`.
 
 | Term | Meaning |
 |---|---|
-| Screen space | Origin-centred, y-up, camera-independent. `canvas.left()`…`top()`, `context.input.mouse` and `canvas.pixel` live here, and it is what `canvas.to_local` takes and `to_screen` gives |
+| Screen space | Origin-centred, y-up, camera-independent. `canvas.left()`…`top()`, `context.input.mouse` and `canvas.color_at` live here, and it is what `canvas.to_local` takes and `to_screen` gives |
 | World space | What render calls use once a `Camera` is set; identical to screen space without one. Only the camera converts into it: `camera.to_world`/`to_screen` |
 | Local space | The current transform's frame, where a render call's coordinates are read. `canvas.to_local(screen)`/`to_screen(local)` convert through the transform and the camera together |
 | Asset vs. playhead | `Image`/`Font`/`Animation`/`Sound` are shared immutable assets; `Animator`/an `Audio` voice are one entity's position in one. `fps` belongs to the asset |
