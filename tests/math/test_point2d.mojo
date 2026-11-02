@@ -6,7 +6,6 @@ from std.testing import (
 )
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
-from create.math.vector3d import Vector3D
 
 
 def test_init_float() raises -> None:
@@ -154,11 +153,6 @@ def test_constructs_from_a_vector2d() raises -> None:
 def test_vector2d_round_trip() raises -> None:
     var p = Point2D(1.5, 2.5)
     assert_equal(Point2D(Vector2D(p)), p)
-
-
-def test_converts_to_a_vector3d() raises -> None:
-    assert_equal(Vector3D(Point2D(1.5, 2.5), 3.5), Vector3D(1.5, 2.5, 3.5))
-    assert_equal(Vector3D(Point2D(1.5, 2.5)), Vector3D(1.5, 2.5, 0.0))
 
 
 def test_subtracting_a_bare_tuple_is_a_displacement() raises -> None:

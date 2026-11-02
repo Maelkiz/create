@@ -6,7 +6,6 @@ from std.testing import (
 )
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
-from create.math.vector3d import Vector3D
 from std.math import isnan, isinf
 from create.math import PI
 
@@ -223,15 +222,6 @@ def test_constructs_from_a_point2d() raises -> None:
     """The displacement from the origin to the position."""
     var p = Point2D(1.5, -2.5)
     assert_equal(Vector2D(p), p - Point2D(0.0, 0.0))
-
-
-def test_widens_to_a_vector3d() raises -> None:
-    assert_equal(Vector3D(Vector2D(1.5, 2.5), 3.5), Vector3D(1.5, 2.5, 3.5))
-    assert_equal(Vector3D(Vector2D(1.5, 2.5)), Vector3D(1.5, 2.5, 0.0))
-
-
-def test_narrows_from_a_vector3d() raises -> None:
-    assert_equal(Vector2D(Vector3D(1.5, 2.5, 3.5)), Vector2D(1.5, 2.5))
 
 
 def test_float_tuple_still_takes_the_tuple_constructor() raises -> None:

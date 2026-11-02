@@ -32,7 +32,7 @@ struct Point2D(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
 
     Crossing to another type is an explicit constructor, never an implicit
     one: `Vector2D(p)` is the displacement from the origin to `p`,
-    `Point2D(v)` the origin moved by `v`, and `Vector3D(p, z)` widens. Naming
+    and `Point2D(v)` the origin moved by `v`. Naming
     the target type is what keeps the conversion visible; an `@implicit` one
     would undo the split. `xy` returns the components as a plain tuple, to
     destructure: `var (x, y) = p.xy()`.
