@@ -68,6 +68,19 @@ def test_draw_matches_polygons() raises -> None:
     _assert_same(drawn, named, "polygon")
 
 
+def test_polygon_takes_a_list() raises -> None:
+    var listed = _canvas()
+    var named = _canvas()
+    var vertices = List[Point2D]()
+    for i in range(5):
+        vertices.append(
+            Point2D(Vector2D.from_angle(TAU * Float64(i) / 5.0, 40.0))
+        )
+    listed.polygon(vertices.copy(), corner_radius=3.0)
+    named.draw(Polygon(vertices^, corner_radius=3.0))
+    _assert_same(listed, named, "polygon list")
+
+
 def test_draw_matches_lines_and_curves() raises -> None:
     var drawn = _canvas()
     var named = _canvas()
