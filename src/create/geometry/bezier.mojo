@@ -1,7 +1,8 @@
 from std.math import abs, ceil, min, max, sqrt
-from .geometry import Rectangle
+from .geometry import Arc, Line, Rectangle, overlaps
 from create.math import Point2D
 from .drawable import Drawable, DrawTarget
+from .spline import Spline
 from create.math import Vector2D
 
 comptime _MAX_FLATTEN_SEGMENTS = 1024
@@ -31,6 +32,17 @@ comptime _GAUSS_WEIGHTS: Array[Float64, 4] = [
 comptime _MAX_DISTANCE_ITERATIONS = 50
 """Bound on `at_distance`'s search. Newton converges in a handful; the
 bound only matters for bisection on a curve with a stationary stretch."""
+
+comptime _INTERSECT_PRECISION = 1e-4
+"""How closely, as a fraction of the curve's larger side, `intersects`
+follows the curve: the tolerance it flattens at. A curve passing nearer
+another shape than this, without touching, may count as meeting it, and
+one only grazing it may not."""
+
+comptime _ON_CURVE_PRECISION = 1e-9
+"""How far, as a fraction of the curve's larger side, a point may lie off
+the curve and still count as on it: `closest_point` is a search, and its
+answer rounds."""
 
 comptime _CLOSEST_SAMPLES = 32
 """Equal steps in `t` that `closest_point` samples to find each dip in
@@ -85,7 +97,7 @@ struct Bezier(
 ):
     """A cubic Bézier curve from `start` to `end`, shaped by `control1` and
     `control2`: `at`, `tangent`, `split`, `bounds`, `flatten`, `beziers`,
-    `closest_point`, `translate`.
+    `closest_point`, `intersects`, `translate`.
 
     The curve passes through `start` and `end` only; the controls pull it
     towards themselves and set the direction it leaves `start`
@@ -220,6 +232,68 @@ struct Bezier(
                 best = q
                 best_distance = d
         return best
+
+    def _size(self) -> Float64:
+        var b = self.bounds()
+        return max(b.w, b.h)
+
+    def _reach(self) -> Rectangle:
+        """The bounds grown by the flattening tolerance on every side: no
+        shape outside it can meet the flattened curve."""
+        var b = self.bounds()
+        var grow = 2.0 * _INTERSECT_PRECISION * max(b.w, b.h)
+        return Rectangle(b.position, b.w + grow, b.h + grow)
+
+    def _segments(self) -> List[Line]:
+        """The curve as straight segments, within `_INTERSECT_PRECISION`
+        of its size."""
+        var points = self.flatten(_INTERSECT_PRECISION * self._size())
+        var segments = List[Line](capacity=len(points) - 1)
+        for i in range(1, len(points)):
+            segments.append(Line(points[i - 1], points[i]))
+        return segments^
+
+    # A Bézier meets another curve where they cross or touch. There is no
+    # closed form for a cubic meeting most shapes, so each test below
+    # flattens the curve to segments within `_INTERSECT_PRECISION` of its
+    # size and tests those as `Line`s, after a bounds check that rejects
+    # most misses cheaply. A crossing is always found, since the segments
+    # meet the curve at their ends; a near miss or a graze is decided to
+    # within that tolerance.
+    def intersects(self, p: Point2D) -> Bool:
+        var q = self.closest_point(p)
+        return q.distance(p) <= _ON_CURVE_PRECISION * self._size()
+
+    def intersects(self, l: Line) -> Bool:
+        if not overlaps(self._reach(), l.bounds()):
+            return False
+        for s in self._segments():
+            if s.intersects(l):
+                return True
+        return False
+
+    def intersects(self, a: Arc) -> Bool:
+        if not overlaps(self._reach(), a.bounds()):
+            return False
+        for s in self._segments():
+            if s.intersects(a):
+                return True
+        return False
+
+    def intersects(self, other: Bezier) -> Bool:
+        if not overlaps(self._reach(), other._reach()):
+            return False
+        var theirs = other._segments()
+        for s in self._segments():
+            if not overlaps(s.bounds(), other._reach()):
+                continue
+            for o in theirs:
+                if s.intersects(o):
+                    return True
+        return False
+
+    def intersects(self, s: Spline) -> Bool:
+        return s.intersects(self)
 
     def split(self, t: Float64) -> Tuple[Bezier, Bezier]:
         """The curve cut at `t` into two, together tracing exactly the

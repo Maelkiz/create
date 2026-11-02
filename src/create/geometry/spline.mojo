@@ -1,6 +1,6 @@
 from std.math import max, min, pow
 from .bezier import Bezier
-from .geometry import Rectangle
+from .geometry import Arc, Line, Rectangle
 from create.math import Point2D
 from .drawable import Drawable, DrawTarget
 from create.math import Vector2D
@@ -9,7 +9,7 @@ from create.math import Vector2D
 struct Spline(Copyable, Drawable, Equatable, Movable, Writable):
     """A smooth curve through every one of `points`, in order: `at`,
     `tangent`, `length`, `at_distance`, `bounds`, `flatten`, `beziers`,
-    `closest_point`, `translate`.
+    `closest_point`, `intersects`, `translate`.
 
     It is a Catmull-Rom spline: each stretch between two neighbouring points
     is a cubic whose direction at each point is set by that point's
@@ -216,6 +216,40 @@ struct Spline(Copyable, Drawable, Equatable, Movable, Writable):
                 best = q
                 best_distance = d
         return best
+
+    # A spline meets a shape where one of its stretches does: see
+    # `Bezier.intersects` for how closely each follows the curve.
+    def intersects(self, p: Point2D) -> Bool:
+        for c in self.beziers():
+            if c.intersects(p):
+                return True
+        return False
+
+    def intersects(self, l: Line) -> Bool:
+        for c in self.beziers():
+            if c.intersects(l):
+                return True
+        return False
+
+    def intersects(self, a: Arc) -> Bool:
+        for c in self.beziers():
+            if c.intersects(a):
+                return True
+        return False
+
+    def intersects(self, b: Bezier) -> Bool:
+        for c in self.beziers():
+            if c.intersects(b):
+                return True
+        return False
+
+    def intersects(self, other: Spline) -> Bool:
+        var theirs = other.beziers()
+        for c in self.beziers():
+            for o in theirs:
+                if c.intersects(o):
+                    return True
+        return False
 
     def translate(mut self, delta: Vector2D):
         for i in range(len(self.points)):

@@ -2,11 +2,14 @@ from std.testing import (
     TestSuite,
     assert_equal,
     assert_true,
+    assert_false,
     assert_almost_equal,
 )
 from std.math import abs
 from create.math import PI
 from create.geometry.bezier import Bezier
+from create.geometry.geometry import Arc, Line
+from create.geometry.spline import Spline
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
 
@@ -278,6 +281,73 @@ def test_closest_point_matches_brute_force() raises -> None:
 def test_closest_point_on_a_collapsed_curve() raises -> None:
     var b = Bezier((1.0, 1.0), (1.0, 1.0), (1.0, 1.0), (1.0, 1.0))
     assert_equal(b.closest_point((5.0, 5.0)), Point2D(1.0, 1.0))
+
+
+def _hump() -> Bezier:
+    # Rises from (0, 0) to a peak of y = 3 at x = 2, back down at (4, 0).
+    return Bezier((0.0, 0.0), (0.0, 4.0), (4.0, 4.0), (4.0, 0.0))
+
+
+def test_intersects_a_point_on_it_and_not_off_it() raises -> None:
+    var b = _hump()
+    assert_true(b.intersects(b.at(0.37)))
+    assert_true(b.intersects(b.start))
+    assert_false(b.intersects(Point2D(2.0, 2.0)))
+
+
+def test_intersects_a_line_crossing_its_bulge() raises -> None:
+    var b = _hump()
+    # Runs across the hump at y = 2, crossing it twice.
+    var across = Line((-1.0, 2.0), (5.0, 2.0))
+    assert_true(b.intersects(across))
+    assert_true(across.intersects(b))
+
+
+def test_intersects_a_line_under_its_bulge_only_if_it_reaches() raises -> None:
+    var b = _hump()
+    # Wholly inside the hump, touching nothing.
+    var inside = Line((1.0, 1.0), (3.0, 1.0))
+    assert_false(b.intersects(inside))
+    assert_false(inside.intersects(b))
+    # Just over the peak.
+    var over = Line((0.0, 3.01), (4.0, 3.01))
+    assert_false(b.intersects(over))
+    # Just under the peak, past the flattening tolerance (4e-4 here).
+    var under_peak = Line((0.0, 2.999), (4.0, 2.999))
+    assert_true(b.intersects(under_peak))
+
+
+def test_intersects_a_line_touching_an_end() raises -> None:
+    var b = _hump()
+    assert_true(b.intersects(Line((4.0, 0.0), (6.0, -1.0))))
+
+
+def test_intersects_an_arc() raises -> None:
+    var b = _hump()
+    # A circle round the peak, radius 1, crossed by the hump.
+    var crossing = Arc((2.0, 3.0), 1.0, 0.0, 2.0 * PI)
+    assert_true(b.intersects(crossing))
+    assert_true(crossing.intersects(b))
+    var far = Arc((2.0, 10.0), 1.0, 0.0, 2.0 * PI)
+    assert_false(b.intersects(far))
+    assert_false(far.intersects(b))
+
+
+def test_intersects_another_bezier() raises -> None:
+    var b = _hump()
+    var dip = Bezier((0.0, 4.0), (0.0, 0.0), (4.0, 0.0), (4.0, 4.0))
+    assert_true(b.intersects(dip))
+    assert_true(dip.intersects(b))
+    var above = Bezier((0.0, 5.0), (0.0, 9.0), (4.0, 9.0), (4.0, 5.0))
+    assert_false(b.intersects(above))
+    assert_false(above.intersects(b))
+
+
+def test_intersects_a_spline() raises -> None:
+    var b = _hump()
+    var s = Spline([Point2D(-1.0, 2.0), Point2D(2.0, 1.5), Point2D(5.0, 2.0)])
+    assert_true(b.intersects(s))
+    assert_true(s.intersects(b))
 
 
 def test_translate_moves_every_point() raises -> None:

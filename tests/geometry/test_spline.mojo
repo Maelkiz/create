@@ -2,10 +2,12 @@ from std.testing import (
     TestSuite,
     assert_equal,
     assert_true,
+    assert_false,
     assert_almost_equal,
 )
 from std.math import pow
 from create.geometry.bezier import Bezier
+from create.geometry.geometry import Arc, Line
 from create.geometry.spline import Spline
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
@@ -308,6 +310,36 @@ def test_closest_point_on_the_spline_is_itself() raises -> None:
 def test_closest_point_without_a_curve_is_the_lone_point() raises -> None:
     var s = Spline([Point2D(2.0, 3.0)])
     assert_equal(s.closest_point((0.0, 0.0)), Point2D(2.0, 3.0))
+
+
+def test_intersects_a_point_on_any_stretch() raises -> None:
+    var s = Spline(_zigzag())
+    assert_true(s.intersects(s.at(0.1)))
+    assert_true(s.intersects(s.at(0.9)))
+    assert_false(s.intersects(Point2D(50.0, 60.0)))
+
+
+def test_intersects_a_line_and_an_arc() raises -> None:
+    var s = Spline(_zigzag())
+    var across = Line((50.0, -50.0), (50.0, 50.0))
+    assert_true(s.intersects(across))
+    assert_true(across.intersects(s))
+    var away = Line((0.0, 100.0), (90.0, 100.0))
+    assert_false(s.intersects(away))
+    assert_false(away.intersects(s))
+    var ring = Arc((80.0, -20.0), 5.0, 0.0, 6.5)
+    assert_true(s.intersects(ring))
+    assert_true(ring.intersects(s))
+
+
+def test_intersects_another_spline() raises -> None:
+    var s = Spline(_zigzag())
+    var flat = Spline([Point2D(0.0, 10.0), Point2D(90.0, 10.0)])
+    assert_true(s.intersects(flat))
+    assert_true(flat.intersects(s))
+    var high = Spline([Point2D(0.0, 90.0), Point2D(90.0, 90.0)])
+    assert_false(s.intersects(high))
+    assert_false(high.intersects(s))
 
 
 def test_translate_moves_every_point() raises -> None:

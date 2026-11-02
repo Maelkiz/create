@@ -19,6 +19,7 @@ from ._fillet import (
     triangle_corner_radius,
 )
 from .bezier import Bezier
+from .spline import Spline
 from .drawable import Drawable, DrawTarget, Region
 from create.math import Point2D
 from create.math import Vector2D
@@ -790,6 +791,12 @@ struct Line(
     def intersects(self, a: Arc) -> Bool:
         return a.intersects(self)
 
+    def intersects(self, b: Bezier) -> Bool:
+        return b.intersects(self)
+
+    def intersects(self, s: Spline) -> Bool:
+        return s.intersects(self)
+
     def intersects(self, s: Sector) -> Bool:
         if s._is_rounded():
             return self.intersects(s._outline())
@@ -1165,6 +1172,12 @@ struct Arc(
         if p.contains(self.at(0.0)) or p.contains(self.at(1.0)):
             return True
         return p._boundary_meets(self)
+
+    def intersects(self, b: Bezier) -> Bool:
+        return b.intersects(self)
+
+    def intersects(self, s: Spline) -> Bool:
+        return s.intersects(self)
 
     def draw_to[T: DrawTarget](self, mut target: T):
         # Converted here, in local space: the transform maps Béziers
