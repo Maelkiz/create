@@ -95,7 +95,7 @@ def test_transpose_square() raises -> None:
     m[0, 1] = 2.0
     m[1, 0] = 3.0
     m[1, 1] = 4.0
-    var t = m.transposed()
+    var t = m.transpose()
     assert_equal(t[0, 0], 1.0)
     assert_equal(t[0, 1], 3.0)
     assert_equal(t[1, 0], 2.0)
@@ -111,7 +111,7 @@ def test_transpose_non_square() raises -> None:
     m[1, 0] = 4.0
     m[1, 1] = 5.0
     m[1, 2] = 6.0
-    var t = m.transposed()
+    var t = m.transpose()
     assert_equal(t[0, 0], 1.0)
     assert_equal(t[1, 0], 2.0)
     assert_equal(t[2, 0], 3.0)
