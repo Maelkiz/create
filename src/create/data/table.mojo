@@ -233,7 +233,9 @@ struct Table(Copyable, Movable):
 
     @staticmethod
     def load(
-        path: String, header: Bool = True, separator: String = ""
+        path: String,
+        header: Bool = True,
+        separator: Optional[String] = None,
     ) raises -> Table:
         """Load a CSV or TSV file.
 
@@ -244,11 +246,11 @@ struct Table(Copyable, Movable):
         var text: String
         with open(path, "r") as f:
             text = f.read()
-        var chosen = separator
-        if chosen == "":
-            chosen = "\t" if _is_tsv(path) else ","
         return Table(
-            _records=_parse_delimited(text, chosen, path), _has_header=header
+            _records=_parse_delimited(
+                text, _separator_for(path, separator), path
+            ),
+            _has_header=header,
         )
 
     @staticmethod
@@ -439,17 +441,14 @@ struct Table(Copyable, Movable):
             sorted.append(self._rows[i].copy())
         self._rows = sorted^
 
-    def save(self, path: String, separator: String = "") raises:
+    def save(self, path: String, separator: Optional[String] = None) raises:
         """Write the table as CSV or TSV, the header line first.
 
         The separator follows `load`'s rule. A field is quoted only when it
         holds the separator, a quote or a line break, so a file `load` read
         is written back as it was.
         """
-        var chosen = separator
-        if chosen == "":
-            chosen = "\t" if _is_tsv(path) else ","
-        var text = self._format(chosen)
+        var text = self._format(_separator_for(path, separator))
         with open(path, "w") as f:
             f.write(text)
 
@@ -545,6 +544,14 @@ def _quoted_if_needed(field: String, separator: String) -> String:
     if separator in field or '"' in field or "\n" in field or "\r" in field:
         return '"' + field.replace('"', '""') + '"'
     return field
+
+
+def _separator_for(path: String, separator: Optional[String]) -> String:
+    """`separator` if given, else a tab for a `.tsv` or `.tab` path and a
+    comma otherwise."""
+    if separator:
+        return separator.value()
+    return "\t" if _is_tsv(path) else ","
 
 
 def _is_tsv(path: String) -> Bool:
