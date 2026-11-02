@@ -200,6 +200,7 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def linear(
         stops: List[Tuple[Float64, Color]],
+        *,
         direction: Vector2D = Vector2D.DOWN,
     ) -> Gradient:
         """Colours at the given positions along `direction`:
@@ -227,6 +228,7 @@ struct Gradient(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def radial(
         stops: List[Tuple[Float64, Color]],
+        *,
         center: Point2D = Point2D(0.0, 0.0),
     ) -> Gradient:
         """Colours at the given positions out from `center` to the box's
