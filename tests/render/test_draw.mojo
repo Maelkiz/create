@@ -152,8 +152,8 @@ def test_draw_uses_the_current_style() raises -> None:
         canvas.draw(Rectangle((0.0, 0.0), 40.0, 40.0))
     canvas.fill(Color.GREEN)
     canvas.draw(Circle((35.0, 35.0), 8.0))
-    assert_equal(canvas.pixel((0.0, 0.0)), Color.RED)
-    assert_equal(canvas.pixel((35.0, 35.0)), Color.GREEN)
+    assert_equal(canvas.color_at((0.0, 0.0)), Color.RED)
+    assert_equal(canvas.color_at((35.0, 35.0)), Color.GREEN)
 
 
 def main() raises:

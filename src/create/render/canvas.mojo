@@ -245,7 +245,7 @@ struct Canvas(DrawTarget, Movable):
     survive the frame goes in and out through `_PersistentCanvasState`.
 
     `Canvas(width, height)` builds an *offscreen* canvas instead: a program's
-    own, drawn into with the same calls and read back with `pixel` and
+    own, drawn into with the same calls and read back with `color_at` and
     `snapshot`, which may be kept as a field across frames. It starts
     transparent, and has no frames to present: each read replays what has
     been drawn since the last one onto its own pixels, so drawing after a
@@ -294,7 +294,7 @@ struct Canvas(DrawTarget, Movable):
     # `_user` is the composition of the matrices the program pushed, mapping
     # local coordinates to world. `_base` maps screen to pixels, `_camera`
     # world to screen. Rendering uses the full product; `to_local`/`to_screen`
-    # stop at screen space, the space of `input.mouse` and `pixel`, so a
+    # stop at screen space, the space of `input.mouse` and `color_at`, so a
     # program never sees the window's pixel mapping it did not ask for.
     var _user: Matrix[3, 3]
     var _user_inv: Matrix[3, 3]
@@ -850,12 +850,12 @@ struct Canvas(DrawTarget, Movable):
             )
         )
 
-    def pixel(mut self, position: Point2D) raises -> Color:
+    def color_at(mut self, position: Point2D) raises -> Color:
         """The colour at `position` in what this frame has drawn so far.
 
         `position` is in screen space, whatever the camera or transform —
         a read is of the screen, not the scene — so
-        `canvas.pixel(context.input.mouse)` picks under the mouse as it is.
+        `canvas.color_at(context.input.mouse)` picks under the mouse as it is.
         Outside the screen it is `Color.TRANSPARENT`.
 
         Reads what is drawn *so far*: a render call after this one does not
@@ -898,7 +898,7 @@ struct Canvas(DrawTarget, Movable):
         canvas.height())` it lines up with the frame exactly — a feedback
         effect is a snapshot kept as a field and drawn under the next frame.
         `scale=canvas.scale()` gives the window's own resolution instead.
-        Everything `pixel` says about what is read applies.
+        Everything `color_at` says about what is read applies.
         """
         return self.snapshot(self.bounds(), scale)
 
@@ -908,7 +908,7 @@ struct Canvas(DrawTarget, Movable):
         """What this frame has drawn so far inside `region`, as an `Image`
         of `region.w * scale` by `region.h * scale` pixels.
 
-        `region` is in screen space, like `pixel`'s position, so it is always
+        `region` is in screen space, like `color_at`'s position, so it is always
         upright; outside the screen the image is transparent.
 
         On an offscreen canvas `scale=canvas.scale()` reads its pixels as they
@@ -933,7 +933,7 @@ struct Canvas(DrawTarget, Movable):
             and ph == backend.frame_h
             and region.position == Point2D(0.0, 0.0)
         ):
-            # The whole screen at design size is what `pixel` reads,
+            # The whole screen at design size is what `color_at` reads,
             # so the two share one replay.
             backend.read_frame(seeded=not self._state.autoclear)
             return Image.from_rgba(pw, ph, backend.frame_read.value().data)

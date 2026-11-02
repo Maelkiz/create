@@ -146,11 +146,11 @@ struct SwitchedOffLate[backend: Int](Program):
         canvas.rectangle((0.25, 0.0), 20.0, 20.0)
         comptime if Self.backend == 0:
             # Column 40, a quarter uncovered: read at MEDIUM, then again.
-            assert_equal(canvas.pixel((-9.6, 0.0)), Color(191, 0, 0, 255))
+            assert_equal(canvas.color_at((-9.6, 0.0)), Color(191, 0, 0, 255))
         canvas.antialiasing(Antialiasing.OFF)
         assert_true(canvas.antialiasing() == Antialiasing.OFF)
         comptime if Self.backend == 0:
-            assert_equal(canvas.pixel((-9.6, 0.0)), Color.RED, "read again")
+            assert_equal(canvas.color_at((-9.6, 0.0)), Color.RED, "read again")
 
 
 def test_switching_off_late_covers_the_whole_frame() raises -> None:

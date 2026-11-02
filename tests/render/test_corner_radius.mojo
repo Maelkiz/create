@@ -176,7 +176,7 @@ def test_a_rounded_sector_keeps_its_circle_for_a_gradient() raises -> None:
     rounded.sector((0.0, 0.0), 45.0, 0.2, 1.2, corner_radius=8.0)
     # Away from the corners, the same colour: both span the whole circle.
     for p in [Point2D(20.0, 15.0), Point2D(30.0, 25.0), Point2D(12.0, 30.0)]:
-        assert_equal(rounded.pixel(p), sharp.pixel(p))
+        assert_equal(rounded.color_at(p), sharp.color_at(p))
 
 
 def test_the_keyword_rounds_like_the_shape() raises -> None:
@@ -196,9 +196,9 @@ def test_a_rounded_clip_keeps_only_the_rounded_shape() raises -> None:
     with canvas.clip(Rectangle((0.0, 0.0), 60.0, 60.0, corner_radius=20.0)):
         canvas.background(Color.RED)
     # The sharp corner is cut away, the middle of each edge kept.
-    assert_equal(canvas.pixel((29.0, 29.0)), Color.TRANSPARENT)
-    assert_equal(canvas.pixel((0.0, 29.0)), Color.RED)
-    assert_equal(canvas.pixel((29.0, 0.0)), Color.RED)
+    assert_equal(canvas.color_at((29.0, 29.0)), Color.TRANSPARENT)
+    assert_equal(canvas.color_at((0.0, 29.0)), Color.RED)
+    assert_equal(canvas.color_at((29.0, 0.0)), Color.RED)
 
 
 # The style's radius rounds what the canvas builds from numbers, and only that.
@@ -285,7 +285,7 @@ def test_draw_and_clip_ignore_the_style_radius() raises -> None:
     with canvas.clip(Rectangle((0.0, 0.0), 60.0, 60.0)):
         canvas.background(Color.RED)
     # A sharp clip keeps its corner.
-    assert_equal(canvas.pixel((29.0, 29.0)), Color.RED)
+    assert_equal(canvas.color_at((29.0, 29.0)), Color.RED)
 
 
 def test_a_style_block_radius_unwinds() raises -> None:
@@ -294,8 +294,8 @@ def test_a_style_block_radius_unwinds() raises -> None:
         canvas.rectangle((-25.0, 0.0), 40.0, 40.0)
     canvas.rectangle((25.0, 0.0), 40.0, 40.0)
     # Rounded inside the block, sharp after it.
-    assert_equal(canvas.pixel((-44.0, 19.0)), Color.TRANSPARENT)
-    assert_equal(canvas.pixel((44.0, 19.0)), Color.RED)
+    assert_equal(canvas.color_at((-44.0, 19.0)), Color.TRANSPARENT)
+    assert_equal(canvas.color_at((44.0, 19.0)), Color.RED)
 
 
 def main() raises:

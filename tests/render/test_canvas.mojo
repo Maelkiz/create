@@ -2814,15 +2814,15 @@ def test_image_draws_at_a_fractional_size() raises -> None:
     var canvas = Canvas(10, 10, antialiasing=Antialiasing.OFF)
     var dot = Image.solid(1, 1, Color.RED)
     canvas.image(dot, (0, 0), 2.5, 2.5)
-    assert_equal(canvas.pixel((0.0, 0.0)), Color.RED)
-    assert_equal(canvas.pixel((3.0, 0.0)), Color.TRANSPARENT)
+    assert_equal(canvas.color_at((0.0, 0.0)), Color.RED)
+    assert_equal(canvas.color_at((3.0, 0.0)), Color.TRANSPARENT)
 
 
 def test_image_still_takes_whole_unit_sizes() raises -> None:
     var canvas = Canvas(10, 10, antialiasing=Antialiasing.OFF)
     var dot = Image.solid(1, 1, Color.RED)
     canvas.image(dot, (0, 0), canvas.width(), canvas.height())
-    assert_equal(canvas.pixel((4.0, -4.0)), Color.RED)
+    assert_equal(canvas.color_at((4.0, -4.0)), Color.RED)
 
 
 def main() raises:
