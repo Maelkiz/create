@@ -469,5 +469,18 @@ def test_regions_contain_a_polygon() raises -> None:
     assert_true(Sector((10, 10), 20, PI, PI / 2.0).contains(l))
 
 
+def test_regular_and_star_take_int_radii() raises -> None:
+    var r = 10
+    var inner = 4
+    assert_equal(
+        Polygon.regular(Point2D(0.0, 0.0), r, 6),
+        Polygon.regular(Point2D(0.0, 0.0), 10.0, 6),
+    )
+    assert_equal(
+        Polygon.star(Point2D(0.0, 0.0), r, inner, 5),
+        Polygon.star(Point2D(0.0, 0.0), 10.0, 4.0, 5),
+    )
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
