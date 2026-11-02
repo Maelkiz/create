@@ -198,6 +198,20 @@ def test_set_by_index_and_float() raises -> None:
         t.row(0).set("z", 1)
 
 
+def test_bool_reads_and_writes_truth_values() raises -> None:
+    var t = Table.parse("done,flag\nTrue,0\n1,FALSE\nmaybe,\n")
+    assert_true(t.row(0).bool("done"))
+    assert_false(t.row(0).bool(1))
+    assert_true(t.row(1).bool("done"))
+    assert_false(t.row(1).bool("flag"))
+    with assert_raises(contains='"maybe", not true or false'):
+        _ = t.row(2).bool("done")
+    t.row(2).set("flag", True)
+    assert_equal(t.row(2).string("flag"), "true")
+    t.row(2).set(0, False)
+    assert_false(t.row(2).bool("done"))
+
+
 def test_add_column_reaches_every_row() raises -> None:
     var t = Table.load(FIXTURES + "scores.csv")
     t.add_column("time")
