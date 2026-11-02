@@ -84,6 +84,15 @@ struct TableRow(Copyable, Movable):
         """The cell in column `column`, from 0, parsed as a whole number."""
         return self._int(self._checked_index(column), String(column))
 
+    def bool(self, column: String) raises -> Bool:
+        """The cell in the named column as a truth value: `true` or `1`,
+        `false` or `0`, case folded."""
+        return self._bool(self._column_index(column), column)
+
+    def bool(self, column: Int) raises -> Bool:
+        """The cell in column `column`, from 0, as a truth value."""
+        return self._bool(self._checked_index(column), String(column))
+
     def set(mut self, column: String, var value: String) raises:
         """Set the cell in the named column."""
         self._set(self._column_index(column), value^)
@@ -107,6 +116,14 @@ struct TableRow(Copyable, Movable):
     def set(mut self, column: Int, value: Int) raises:
         """Set the cell in column `column`, from 0, to a whole number."""
         self._set(self._header[].checked(column), String(value))
+
+    def set(mut self, column: String, value: Bool) raises:
+        """Set the cell in the named column to `true` or `false`."""
+        self._set(self._column_index(column), _bool_text(value))
+
+    def set(mut self, column: Int, value: Bool) raises:
+        """Set the cell in column `column`, from 0, to `true` or `false`."""
+        self._set(self._header[].checked(column), _bool_text(value))
 
     def _set(mut self, index: Int, var value: String):
         while len(self._cells) <= index:
@@ -153,6 +170,21 @@ struct TableRow(Copyable, Movable):
                 + text
                 + '", not a whole number'
             )
+
+    def _bool(self, index: Int, column: String) raises -> Bool:
+        var text = self._cell(index)
+        var folded = String(text.strip()).lower()
+        if folded == "true" or folded == "1":
+            return True
+        if folded == "false" or folded == "0":
+            return False
+        raise Error(
+            'column "' + column + '" holds "' + text + '", not true or false'
+        )
+
+
+def _bool_text(value: Bool) -> String:
+    return "true" if value else "false"
 
 
 struct Table(Copyable, Movable):
