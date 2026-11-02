@@ -8,7 +8,15 @@ from std.testing import (
 from std.math import abs
 from create.math import PI
 from create.geometry.bezier import Bezier
-from create.geometry.geometry import Arc, Line
+from create.geometry.geometry import (
+    Arc,
+    Circle,
+    Line,
+    Polygon,
+    Rectangle,
+    Sector,
+    Triangle,
+)
 from create.geometry.spline import Spline
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
@@ -348,6 +356,49 @@ def test_intersects_a_spline() raises -> None:
     var s = Spline([Point2D(-1.0, 2.0), Point2D(2.0, 1.5), Point2D(5.0, 2.0)])
     assert_true(b.intersects(s))
     assert_true(s.intersects(b))
+
+
+def test_intersects_a_circle_its_bulge_dips_into() raises -> None:
+    var b = _hump()
+    # Both ends are well outside; only the peak reaches in.
+    var c = Circle((2.0, 3.5), 0.75)
+    assert_false(c.contains(b.start) or c.contains(b.end))
+    assert_true(b.intersects(c))
+    assert_false(b.intersects(Circle((2.0, 4.5), 0.75)))
+
+
+def test_intersects_a_region_holding_it_whole() raises -> None:
+    var b = _hump()
+    assert_true(b.intersects(Rectangle((2.0, 1.5), 10.0, 10.0)))
+    assert_true(b.intersects(Circle((2.0, 1.5), 10.0)))
+
+
+def test_intersects_a_region_crossing_its_edge() raises -> None:
+    var b = _hump()
+    assert_true(b.intersects(Rectangle((2.0, 3.5), 2.0, 2.0)))
+    assert_true(b.intersects(Triangle((1.0, 4.0), (3.0, 4.0), (2.0, 2.0))))
+    assert_true(b.intersects(Sector((2.0, 5.0), 3.0, -2.0, 1.0)))
+    assert_true(b.intersects(Polygon.regular(Point2D(2.0, 4.0), 1.5, sides=5)))
+
+
+def test_intersects_misses_regions_beside_it() raises -> None:
+    var b = _hump()
+    assert_false(b.intersects(Rectangle((2.0, 1.0), 1.0, 1.0)))
+    assert_false(b.intersects(Triangle((1.0, 1.0), (3.0, 1.0), (2.0, 2.0))))
+    assert_false(b.intersects(Sector((2.0, 6.0), 2.0, 0.0, PI)))
+    assert_false(b.intersects(Polygon.regular(Point2D(8.0, 0.0), 1.0, sides=6)))
+
+
+def test_intersects_sees_a_rounded_corner() raises -> None:
+    # At t = 1/sqrt(2) the hump runs diagonally down-right, through about
+    # (3.17, 2.49). The square's corner sits 0.1 inside the hump from
+    # there: the sharp corner reaches over the curve, the rounded one is
+    # pulled back about 0.41 along the diagonal and clears it.
+    var b = _hump()
+    var sharp = Rectangle((4.1, 3.414), 2.0, 2.0)
+    var rounded = Rectangle((4.1, 3.414), 2.0, 2.0, corner_radius=1.0)
+    assert_true(b.intersects(sharp))
+    assert_false(b.intersects(rounded))
 
 
 def test_translate_moves_every_point() raises -> None:

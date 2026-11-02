@@ -7,7 +7,7 @@ from std.testing import (
 )
 from std.math import pow
 from create.geometry.bezier import Bezier
-from create.geometry.geometry import Arc, Line
+from create.geometry.geometry import Arc, Circle, Line, Rectangle
 from create.geometry.spline import Spline
 from create.math.point2d import Point2D
 from create.math.vector2d import Vector2D
@@ -340,6 +340,14 @@ def test_intersects_another_spline() raises -> None:
     var high = Spline([Point2D(0.0, 90.0), Point2D(90.0, 90.0)])
     assert_false(s.intersects(high))
     assert_false(high.intersects(s))
+
+
+def test_intersects_regions_on_any_stretch() raises -> None:
+    var s = Spline(_zigzag())
+    assert_true(s.intersects(Circle((80.0, -20.0), 3.0)))
+    assert_true(s.intersects(Rectangle((45.0, 10.0), 100.0, 100.0)))
+    assert_false(s.intersects(Circle((50.0, 60.0), 5.0)))
+    assert_false(s.intersects(Rectangle((50.0, 80.0), 10.0, 10.0)))
 
 
 def test_translate_moves_every_point() raises -> None:
