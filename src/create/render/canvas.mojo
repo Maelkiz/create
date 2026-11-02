@@ -293,9 +293,9 @@ struct Canvas(DrawTarget, Movable):
     var _camera: Camera
     # `_user` is the composition of the matrices the program pushed, mapping
     # local coordinates to world. `_base` maps screen to pixels, `_camera`
-    # world to screen. Rendering uses the full product; `to_world`/`to_local`
-    # use `_user` alone, so a program never sees the mapping below world space
-    # it did not ask for.
+    # world to screen. Rendering uses the full product; `to_local`/`to_screen`
+    # stop at screen space, the space of `input.mouse` and `pixel`, so a
+    # program never sees the window's pixel mapping it did not ask for.
     var _user: Matrix[3, 3]
     var _user_inv: Matrix[3, 3]
     var _transform: Matrix[3, 3]
@@ -598,9 +598,15 @@ struct Canvas(DrawTarget, Movable):
         self._transform = self._base @ cam_m @ self._user
         self._transform_inv = self._user_inv @ inverse(cam_m) @ self._base_inv
 
-    def to_world(self, local: Point2D) -> Point2D:
-        """Map a point from the current transform's frame into world space."""
-        return apply(self._user, local)
+    def to_screen(self, local: Point2D) -> Point2D:
+        """A point in the current transform's frame, in screen space: through
+        the transform, then the camera (none inside `overlay`). Where
+        something drawn at `local` lands on screen.
+
+        For its position in world space, ask the camera:
+        `camera.to_world(canvas.to_screen(local))`.
+        """
+        return apply(self._camera.matrix() @ self._user, local)
 
     def clip[
         R: Region
@@ -630,11 +636,13 @@ struct Canvas(DrawTarget, Movable):
             _canvas=self, _region=capture.command.take(), _invert=invert
         )
 
-    def to_local(self, world: Point2D) -> Point2D:
-        """Map a world-space point — a mouse position already converted
-        through `Camera.to_world`, say — into the current transform's frame.
+    def to_local(self, screen: Point2D) -> Point2D:
+        """A screen-space point — `context.input.mouse`, say — in the current
+        transform's frame: back through the camera (none inside `overlay`),
+        then the transform. So `canvas.to_local(context.input.mouse)` picks
+        in the frame a shape is drawn in, with or without a camera.
         """
-        return apply(self._user_inv, world)
+        return apply(self._user_inv, self._camera.to_world(screen))
 
     def camera(mut self, camera: Camera):
         """Set the active camera. Applies to every render call and every nested

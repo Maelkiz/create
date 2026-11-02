@@ -19,8 +19,8 @@ struct Transforms(Program):
 
         # Solar system: the sun sits at the origin, so it needs no transform of
         # its own — the nesting below is what the demo is about.
-        # Hit-test the sun in the frame it is rendered in. `to_local` maps a world
-        # position (which is what `context.input.mouse` already is) into that frame.
+        # Hit-test the sun in the frame it is rendered in. `to_local` maps a
+        # screen position, which is what `context.input.mouse` is, into it.
         var local = canvas.to_local(context.input.mouse)
         var sun_hovered = local.x * local.x + local.y * local.y <= 40.0 * 40.0
 
