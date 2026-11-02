@@ -1511,7 +1511,7 @@ struct Canvas(DrawTarget, Movable):
         """
         self._style.font = font
 
-    def text_width(mut self, text: String) raises -> Float64:
+    def text_width(self, text: String) raises -> Float64:
         """How wide `text(text, ...)` would render under the current font, size
         and weight, in the units the next render call is positioned in.
 
@@ -1523,7 +1523,7 @@ struct Canvas(DrawTarget, Movable):
         Raises only if the default font has to be loaded and cannot be.
         """
         var scale = pixel_scale(self._transform, self._scale)
-        var pixels = self._state._backend.text.width(text, self._style, scale)
+        var pixels = self._state._backend.text[].width(text, self._style, scale)
         return Float64(pixels) / scale
 
     def text(mut self, text: String, position: Point2D):
