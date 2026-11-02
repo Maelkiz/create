@@ -113,6 +113,20 @@ struct Key(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     comptime NUM_8 = Key(56)
     comptime NUM_9 = Key(57)
 
+    # Punctuation: the unshifted character, so `MINUS` is also `_` with
+    # shift held. Positions follow the keyboard layout, as letters do.
+    comptime MINUS = Key(45)
+    comptime EQUALS = Key(61)
+    comptime LEFT_BRACKET = Key(91)
+    comptime RIGHT_BRACKET = Key(93)
+    comptime BACKSLASH = Key(92)
+    comptime SEMICOLON = Key(59)
+    comptime APOSTROPHE = Key(39)
+    comptime GRAVE = Key(96)
+    comptime COMMA = Key(44)
+    comptime PERIOD = Key(46)
+    comptime SLASH = Key(47)
+
     def __init__(out self, value: Int):
         self.value = value
 
@@ -133,14 +147,17 @@ struct Key(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def from_name(name: String) -> Optional[Key]:
         """The key whose constant is `name`, case folded: `"up"`,
-        `"page_up"`, `"f1"`, `"left_ctrl"`, `"a"`, `"num_0"`. `None` for an
-        unknown name.
+        `"page_up"`, `"f1"`, `"left_ctrl"`, `"a"`, `"num_0"`, `"slash"`.
+        A single character is the key that types it unshifted, so `"/"`,
+        `"7"` and `"A"` work too. `None` for an unknown name.
         """
         var upper = name.upper()
         comptime for i in range(len(_NAMED_KEYS)):
             comptime entry = _NAMED_KEYS[i]
             if upper == entry[1]:
                 return entry[0]
+        if name.byte_length() == 1:
+            return Key(ord(name.lower()))
         return None
 
 
@@ -223,6 +240,17 @@ comptime _NAMED_KEYS = [
     (Key.NUM_7, StaticString("NUM_7")),
     (Key.NUM_8, StaticString("NUM_8")),
     (Key.NUM_9, StaticString("NUM_9")),
+    (Key.MINUS, StaticString("MINUS")),
+    (Key.EQUALS, StaticString("EQUALS")),
+    (Key.LEFT_BRACKET, StaticString("LEFT_BRACKET")),
+    (Key.RIGHT_BRACKET, StaticString("RIGHT_BRACKET")),
+    (Key.BACKSLASH, StaticString("BACKSLASH")),
+    (Key.SEMICOLON, StaticString("SEMICOLON")),
+    (Key.APOSTROPHE, StaticString("APOSTROPHE")),
+    (Key.GRAVE, StaticString("GRAVE")),
+    (Key.COMMA, StaticString("COMMA")),
+    (Key.PERIOD, StaticString("PERIOD")),
+    (Key.SLASH, StaticString("SLASH")),
 ]
 
 

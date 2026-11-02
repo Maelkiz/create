@@ -14,6 +14,7 @@ def test_key_prints_as_its_constant() raises -> None:
     assert_equal(String(Key.PAGE_UP), "Key.PAGE_UP")
     assert_equal(String(Key.NUM_0), "Key.NUM_0")
     assert_equal(String(Key.SHIFT), "Key.SHIFT")
+    assert_equal(String(Key(ord("/"))), "Key.SLASH")
     assert_equal(String(Key(0x0444)), "Key(1092)")
 
 
@@ -22,6 +23,11 @@ def test_key_from_name() raises -> None:
     assert_equal(Key.from_name("Left_Ctrl").value(), Key.LEFT_CTRL)
     assert_equal(Key.from_name("a").value(), Key.A)
     assert_false(Key.from_name("nonexistent_key"))
+    assert_equal(Key.from_name("slash").value(), Key.SLASH)
+    assert_equal(Key.from_name("/").value(), Key.SLASH)
+    assert_equal(Key.from_name("7").value(), Key.NUM_7)
+    assert_equal(Key.from_name("A").value(), Key.A)
+    assert_false(Key.from_name(""))
 
 
 def test_initial_mouse_position() raises -> None:
