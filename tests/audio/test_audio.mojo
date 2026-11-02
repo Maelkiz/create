@@ -207,9 +207,9 @@ def _gain(audio: Audio, id: Int) raises -> Float32:
 
 def test_volume_reads_back_its_default_and_what_was_set() raises -> None:
     var audio = Audio()
-    assert_equal(audio.volume(), Float32(1.0))
+    assert_equal(audio.volume(), 1.0)
     audio.volume(0.25)
-    assert_equal(audio.volume(), Float32(0.25))
+    assert_equal(audio.volume(), 0.25)
 
 
 def test_volume_reaches_voices_already_playing() raises -> None:
