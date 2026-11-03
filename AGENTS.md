@@ -135,8 +135,10 @@ the loop carries both into the next frame.
   never moves.
 
 Shared assets (`Image`, `Font`, `Animation`, `Sound`) share their data themselves, so a plain
-field or copy is cheap and nothing is wrapped in an `ArcPointer`. Read
-[`Animator.use`](src/create/image/animator.mojo) before driving an animator.
+field or copy is cheap and nothing is wrapped in an `ArcPointer`. An animator's `use(anim)` is
+the per-frame selector (the animation already held is left as it is, paused or finished included);
+`play`/`loop`, with or without an animation, are commands and always start from frame 0. Read
+[`Animator`](src/create/image/animator.mojo) before driving one.
 
 ### Printing
 

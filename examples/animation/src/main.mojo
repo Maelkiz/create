@@ -70,12 +70,13 @@ struct Game(Program):
             self.x += dx
 
             # Called every single frame with whichever animation applies.
-            # Switching to the one already playing is a no-op by design, so
-            # this does not rewind to frame 0 sixty times a second.
+            # `use` of the one already showing is a no-op, so this neither
+            # rewinds to frame 0 sixty times a second nor undoes a pause;
+            # `loop(...)` here would restart it every frame.
             if dx != 0.0:
-                self.animator.loop(self.run)
+                self.animator.use(self.run)
             else:
-                self.animator.loop(self.idle)
+                self.animator.use(self.idle)
 
         if context.input.key_pressed(Key.P):
             if self.animator.is_playing():

@@ -100,30 +100,73 @@ def test_use_of_the_current_animation_is_a_no_op() raises -> None:
     a.update(0.2)
     assert_equal(a.frame_index(), 2)
     # The call every frame from a movement branch -- must not rewind.
-    a.use(anim)
-    assert_equal(a.frame_index(), 2)
-    assert_true(a.is_playing())
-
-
-def test_loop_of_the_current_animation_is_a_no_op() raises -> None:
-    var anim = _animation(4, fps=10.0)
-    var a = Animator(anim)
-    a.loop(anim)
-    a.update(0.2)
     for _ in range(3):
-        a.loop(anim)
+        a.use(anim)
         assert_equal(a.frame_index(), 2)
         assert_true(a.is_playing())
 
 
-def test_use_of_another_animation_rewinds_and_stops() raises -> None:
+def test_use_every_frame_keeps_playing() raises -> None:
+    var anim = _animation(4, fps=10.0)
+    var a = Animator(anim)
+    for _ in range(6):
+        a.use(anim)
+        a.update(0.1)
+    # Started by the first use, never rewound since: 6 steps over 4 frames.
+    assert_equal(a.frame_index(), 2)
+    assert_true(a.is_playing())
+
+
+def test_use_starts_a_stopped_animator() raises -> None:
+    var anim = _animation(4, fps=10.0)
+    var a = Animator(anim)
+    a.use(anim)
+    assert_true(a.is_playing())
+    a.update(0.2)
+    a.stop()
+    a.use(anim)
+    assert_true(a.is_playing())
+    assert_equal(a.frame_index(), 0)
+
+
+def test_use_leaves_a_pause_alone() raises -> None:
+    var anim = _animation(4, fps=10.0)
+    var a = Animator(anim)
+    a.use(anim)
+    a.update(0.1)
+    a.pause()
+    for _ in range(3):
+        a.use(anim)
+        a.update(0.1)
+    assert_false(a.is_playing())
+    assert_equal(a.frame_index(), 1)
+    a.resume()
+    a.update(0.1)
+    assert_equal(a.frame_index(), 2)
+
+
+def test_use_leaves_a_finished_one_shot_on_its_last_frame() raises -> None:
+    var anim = _animation(2, fps=10.0)
+    var a = Animator(anim)
+    a.play()
+    a.update(1.0)
+    a.use(anim)
+    assert_true(a.is_finished())
+    assert_equal(a.frame_index(), 1)
+
+
+def test_use_of_another_animation_switches_and_loops() raises -> None:
     var a = Animator(_animation(4, fps=10.0))
     a.loop()
     a.update(0.2)
     a.use(_animation(2, fps=10.0))
     assert_equal(a.frame_index(), 0)
-    assert_false(a.is_playing())
+    assert_true(a.is_playing())
     assert_equal(a.animation().frame_count(), 2)
+    for _ in range(3):
+        a.update(0.1)
+    assert_equal(a.frame_index(), 1)
+    assert_false(a.is_finished())
 
 
 def test_play_with_an_animation_switches_and_starts() raises -> None:
@@ -141,6 +184,28 @@ def test_play_restarts_the_current_animation() raises -> None:
     a.loop()
     a.update(0.2)
     a.play(anim)
+    assert_equal(a.frame_index(), 0)
+    assert_true(a.is_playing())
+
+
+def test_play_replays_a_finished_one_shot() raises -> None:
+    var anim = _animation(2, fps=10.0)
+    var a = Animator(anim)
+    a.play(anim)
+    a.update(1.0)
+    assert_true(a.is_finished())
+    a.play(anim)
+    assert_equal(a.frame_index(), 0)
+    assert_true(a.is_playing())
+    assert_false(a.is_finished())
+
+
+def test_loop_restarts_the_current_animation() raises -> None:
+    var anim = _animation(4, fps=10.0)
+    var a = Animator(anim)
+    a.loop(anim)
+    a.update(0.2)
+    a.loop(anim)
     assert_equal(a.frame_index(), 0)
     assert_true(a.is_playing())
 

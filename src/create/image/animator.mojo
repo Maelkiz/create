@@ -13,11 +13,24 @@ struct Animator(Copyable, Movable, Writable):
         self.animator.update(context.time.delta)
     ```
 
-    Constructed stopped on frame 0 -- nothing advances until `play` or `loop`.
-    `play` runs the animation once and holds the last frame; `loop` wraps
-    forever. `pause` freezes where it is and `resume` continues from there,
-    while `play` always restarts from the beginning, so the two are never
-    confused with one another.
+    Constructed stopped on frame 0 -- nothing advances until `play`, `loop`
+    or `use`. Two kinds of call drive it:
+
+    - **Commands**, for something that just happened (a key, a hit): `play`
+      runs the animation once and holds the last frame, `loop` wraps forever,
+      and both always start from frame 0, with or without a new animation, as
+      `Tween.play` and `Audio.play` always start. `pause` freezes where it is
+      and `resume` continues from there; `stop` rewinds.
+    - **`use`**, for what should be showing now, called every frame from the
+      branch that decides it. Naming the animation already held changes
+      nothing, so it never rewinds a running loop or undoes a `pause`.
+
+    ```mojo
+    if context.input.key_pressed(Key.SPACE):
+        self.animator.play(self.spin)    # a command: starts every time
+    elif not self.spinning:
+        self.animator.use(self.run if moving else self.idle)   # a state
+    ```
     """
 
     var _animation: Animation
@@ -25,6 +38,11 @@ struct Animator(Copyable, Movable, Writable):
     var _playing: Bool
     var _looping: Bool
     var _finished: Bool
+    var _started: Bool
+    """Whether `play`, `loop`, `use` or `resume` has set the playhead going
+    since construction, the last `stop` or the last switch -- what tells a
+    paused or finished animation, which `use` leaves be, from a stopped one,
+    which it starts."""
     var _elapsed: Float64
 
     def __init__(out self, var animation: Animation):
@@ -38,6 +56,7 @@ struct Animator(Copyable, Movable, Writable):
         self._playing = False
         self._looping = False
         self._finished = False
+        self._started = False
         self._elapsed = 0.0
 
     def animation(self) -> Animation:
@@ -55,30 +74,26 @@ struct Animator(Copyable, Movable, Writable):
         writer.write("Animator(frame_index=", self._frame_index, ")")
 
     def use(mut self, var animation: Animation):
-        """Switch to `animation`, rewound to frame 0 and stopped.
-
-        Switching to the animation already held does nothing at all. That
-        matters: the natural way to drive an animator is to call `use` every
-        frame from the branch that decided which animation applies --
+        """Show `animation`, looping: the call to make every frame from the
+        branch that decides which animation applies.
 
         ```mojo
         if self.velocity.x != 0.0:
-            self.animator.loop(self.run)
+            self.animator.use(self.run)
         else:
-            self.animator.loop(self.idle)
+            self.animator.use(self.idle)
         ```
 
-        -- and without this guard every frame would rewind to frame 0 and the
-        animation would never visibly move.
+        Naming the animation already held, once it has been started, does
+        nothing at all: a loop keeps its place, a `pause` holds and a
+        finished `play` stays on its last frame. Otherwise -- another
+        animation, or this one stopped -- it starts `animation` looping from
+        frame 0. A one-shot is a command, not a state: `play` it when the
+        thing that triggers it happens.
         """
-        if self._animation._is(animation):
+        if self._animation._is(animation) and self._started:
             return
-        self._animation = animation^
-        self._frame_index = 0
-        self._playing = False
-        self._looping = False
-        self._finished = False
-        self._elapsed = 0.0
+        self.loop(animation^)
 
     def play(mut self):
         """Play once from frame 0, holding the last frame at the end."""
@@ -87,10 +102,12 @@ struct Animator(Copyable, Movable, Writable):
         self._playing = True
         self._looping = False
         self._finished = False
+        self._started = True
 
     def play(mut self, var animation: Animation):
-        """`use` then `play` -- restarts even if the animation is unchanged."""
-        self.use(animation^)
+        """Switch to `animation` and play it once from frame 0 -- restarting
+        it if it is the one already held."""
+        self._animation = animation^
         self.play()
 
     def loop(mut self):
@@ -99,10 +116,10 @@ struct Animator(Copyable, Movable, Writable):
         self._looping = True
 
     def loop(mut self, var animation: Animation):
-        """`use` then `loop`, and a no-op restart-wise if already looping it."""
-        if self._animation._is(animation) and self._playing and self._looping:
-            return
-        self.use(animation^)
+        """Switch to `animation` and loop it from frame 0 -- restarting it if
+        it is the one already held. To keep a running loop's place, `use`
+        it."""
+        self._animation = animation^
         self.loop()
 
     def pause(mut self):
@@ -113,6 +130,7 @@ struct Animator(Copyable, Movable, Writable):
         """Continue a paused animation without rewinding."""
         if not self._finished:
             self._playing = True
+            self._started = True
 
     def stop(mut self):
         """Halt and rewind to frame 0."""
@@ -120,6 +138,7 @@ struct Animator(Copyable, Movable, Writable):
         self._elapsed = 0.0
         self._playing = False
         self._finished = False
+        self._started = False
 
     def update(mut self, dt: Float64):
         """Advance the playhead by `dt` seconds. Call once per frame.
