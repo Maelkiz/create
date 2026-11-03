@@ -63,7 +63,7 @@ def _jpeg_dimensions(data: List[UInt8]) raises -> Tuple[Int, Int]:
     raise Error("No SOF marker found in JPEG")
 
 
-struct Image(Copyable, Movable):
+struct Image(Copyable, ImplicitlyCopyable, Movable):
     """An RGBA image, row-major, 8 bits per channel: an asset, never
     changed once made.
 

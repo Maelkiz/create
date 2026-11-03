@@ -543,6 +543,11 @@ def test_a_copied_image_shares_its_identity_and_pixels() raises -> None:
     var b = a.copy()
     assert_equal(b._id, a._id)
     assert_equal(Int(b._pixels[].unsafe_ptr()), Int(a._pixels[].unsafe_ptr()))
+    # Implicitly copyable like every shared asset: a plain assignment
+    # shares too.
+    var c = a
+    assert_equal(c._id, a._id)
+    assert_equal(Int(c._pixels[].unsafe_ptr()), Int(a._pixels[].unsafe_ptr()))
 
 
 def test_a_moved_image_keeps_its_identity() raises -> None:

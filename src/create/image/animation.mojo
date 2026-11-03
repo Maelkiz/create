@@ -43,7 +43,7 @@ struct Animation(Copyable, ImplicitlyCopyable, Movable):
     def frame(self, index: Int) -> Image:
         """Frame `index`, from 0 to `frame_count() - 1`. Cheap: an `Image` copy
         shares its pixels."""
-        return self._frames[][index].copy()
+        return self._frames[][index]
 
     def _is(self, other: Animation) -> Bool:
         """Whether both are copies of one animation, sharing its frames."""
