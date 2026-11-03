@@ -101,17 +101,17 @@ struct Key(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     comptime Y = Key(121)
     comptime Z = Key(122)
 
-    # Number keys
-    comptime NUM_0 = Key(48)
-    comptime NUM_1 = Key(49)
-    comptime NUM_2 = Key(50)
-    comptime NUM_3 = Key(51)
-    comptime NUM_4 = Key(52)
-    comptime NUM_5 = Key(53)
-    comptime NUM_6 = Key(54)
-    comptime NUM_7 = Key(55)
-    comptime NUM_8 = Key(56)
-    comptime NUM_9 = Key(57)
+    # Digits on the main row, named in words as the punctuation keys are.
+    comptime ZERO = Key(48)
+    comptime ONE = Key(49)
+    comptime TWO = Key(50)
+    comptime THREE = Key(51)
+    comptime FOUR = Key(52)
+    comptime FIVE = Key(53)
+    comptime SIX = Key(54)
+    comptime SEVEN = Key(55)
+    comptime EIGHT = Key(56)
+    comptime NINE = Key(57)
 
     # Punctuation: the unshifted character, so `MINUS` is also `_` with
     # shift held. Positions follow the keyboard layout, as letters do.
@@ -147,7 +147,7 @@ struct Key(Copyable, Equatable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def from_name(name: String) -> Optional[Key]:
         """The key whose constant is `name`, case folded: `"up"`,
-        `"page_up"`, `"f1"`, `"left_ctrl"`, `"a"`, `"num_0"`, `"slash"`.
+        `"page_up"`, `"f1"`, `"left_ctrl"`, `"a"`, `"zero"`, `"slash"`.
         A single character is the key that types it unshifted, so `"/"`,
         `"7"` and `"A"` work too. `None` for an unknown name.
         """
@@ -230,16 +230,16 @@ comptime _NAMED_KEYS = [
     (Key.X, StaticString("X")),
     (Key.Y, StaticString("Y")),
     (Key.Z, StaticString("Z")),
-    (Key.NUM_0, StaticString("NUM_0")),
-    (Key.NUM_1, StaticString("NUM_1")),
-    (Key.NUM_2, StaticString("NUM_2")),
-    (Key.NUM_3, StaticString("NUM_3")),
-    (Key.NUM_4, StaticString("NUM_4")),
-    (Key.NUM_5, StaticString("NUM_5")),
-    (Key.NUM_6, StaticString("NUM_6")),
-    (Key.NUM_7, StaticString("NUM_7")),
-    (Key.NUM_8, StaticString("NUM_8")),
-    (Key.NUM_9, StaticString("NUM_9")),
+    (Key.ZERO, StaticString("ZERO")),
+    (Key.ONE, StaticString("ONE")),
+    (Key.TWO, StaticString("TWO")),
+    (Key.THREE, StaticString("THREE")),
+    (Key.FOUR, StaticString("FOUR")),
+    (Key.FIVE, StaticString("FIVE")),
+    (Key.SIX, StaticString("SIX")),
+    (Key.SEVEN, StaticString("SEVEN")),
+    (Key.EIGHT, StaticString("EIGHT")),
+    (Key.NINE, StaticString("NINE")),
     (Key.MINUS, StaticString("MINUS")),
     (Key.EQUALS, StaticString("EQUALS")),
     (Key.LEFT_BRACKET, StaticString("LEFT_BRACKET")),

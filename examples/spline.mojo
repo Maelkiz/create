@@ -66,11 +66,11 @@ struct App(Program):
                 _ = self.points.pop(i)
         if context.input.key_pressed(Key.C):
             self.closed = not self.closed
-        if context.input.key_pressed(Key.NUM_1):
+        if context.input.key_pressed(Key.ONE):
             self.alpha = 0.0
-        if context.input.key_pressed(Key.NUM_2):
+        if context.input.key_pressed(Key.TWO):
             self.alpha = 0.5
-        if context.input.key_pressed(Key.NUM_3):
+        if context.input.key_pressed(Key.THREE):
             self.alpha = 1.0
 
         var spline = Spline(self.points.copy(), self.alpha, self.closed)
