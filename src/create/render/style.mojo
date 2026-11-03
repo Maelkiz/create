@@ -6,49 +6,7 @@ from create.color.color import Color
 from create.color.gradient import Gradient
 from create.text.font import Font, FontWeight
 from create.math.vector2d import Vector2D
-
-
-struct _OptionalFloat64(Boolable, Copyable, ImplicitlyCopyable, Movable):
-    """An optional `Float64` keyword (a thickness, a size, a shadow part, an
-    opacity): `None` when left unset, like every other optional keyword.
-
-    Not `Optional[Float64]`, which a bare `blur=12` cannot reach — an integer
-    literal converts to `Float64` or to an `Optional`, not through both. This
-    takes each in one step, so `blur=12`, `blur=1.5`, `blur=n` and
-    `blur=None` all work and a program never names the type. Read it like an
-    `Optional`: truth for "given", `value()`, `or_else(default)`.
-    """
-
-    var _value: Optional[Float64]
-
-    @implicit
-    def __init__(out self, value: Float64):
-        self._value = value
-
-    @implicit
-    def __init__(out self, value: Int):
-        self._value = Float64(value)
-
-    @implicit
-    def __init__(out self, value: IntLiteral):
-        self._value = Float64(value)
-
-    @implicit
-    def __init__(out self, value: Optional[Float64]):
-        self._value = value
-
-    @implicit
-    def __init__(out self, none: NoneType._mlir_type):
-        self._value = None
-
-    def __bool__(self) -> Bool:
-        return Bool(self._value)
-
-    def value(self) -> Float64:
-        return self._value.value()
-
-    def or_else(self, default: Float64) -> Float64:
-        return self._value.or_else(default)
+from create.math._optional_float64 import _OptionalFloat64
 
 
 struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
@@ -131,15 +89,15 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         outline: Optional[Color] = None,
         outline_thickness: _OptionalFloat64 = None,
         outline_enabled: Optional[Bool] = None,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = None,
         text_color: Color = Color.BLACK,
         font: Optional[Font] = None,
-        font_size: Float64 = 16.0,
+        font_size: _OptionalFloat64 = None,
         font_weight: FontWeight = FontWeight.REGULAR,
         font_italic: Bool = False,
         text_align: Align = Align.CENTER,
         tint: Color = Color.WHITE,
-        opacity: Float64 = 1.0,
+        opacity: _OptionalFloat64 = None,
         blend_mode: BlendMode = BlendMode.NORMAL,
         shadow: Optional[Color] = None,
         shadow_offset: Optional[Vector2D] = None,
@@ -157,15 +115,15 @@ struct Style(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.outline_color = outline.or_else(Color.BLACK)
         self.outline_thickness = outline_thickness.or_else(1.0)
         self.outline_enabled = outline_enabled.or_else(True)
-        self.corner_radius = corner_radius
+        self.corner_radius = corner_radius.or_else(0.0)
         self.text_color = text_color
         self.font = font
-        self.font_size = font_size
+        self.font_size = font_size.or_else(16.0)
         self.font_weight = font_weight
         self.font_italic = font_italic
         self.text_align = text_align
         self.tint = tint
-        self.opacity = opacity
+        self.opacity = opacity.or_else(1.0)
         self.blend_mode = blend_mode
         self.shadow_color = shadow.or_else(Color(0, 0, 0, 96))
         self.shadow_offset = shadow_offset.or_else(Vector2D(4, -4))

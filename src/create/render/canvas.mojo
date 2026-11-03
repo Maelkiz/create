@@ -44,7 +44,8 @@ from ._command import (
     image_command,
     text_command,
 )
-from .style import Style, _OptionalFloat64
+from .style import Style
+from create.math._optional_float64 import _OptionalFloat64
 from ._command import RenderCommand
 from ._shape_command import RegionCapture, curves_command, shape_command
 from ._transform import pixel_scale
@@ -366,6 +367,21 @@ struct Canvas(DrawTarget, Movable):
         state._set_viewport(Autoscale.FIT, width, height, pixel_w, pixel_h)
         state._backend.target = MemorySurface(pixel_w, pixel_h)
         self = Canvas(_state=state^)
+
+    def __init__(
+        out self,
+        width: Int,
+        height: Int,
+        *,
+        scale: Float64 = 1.0,
+        antialiasing: Antialiasing = Antialiasing.MEDIUM,
+    ) raises:
+        self = Canvas(
+            Float64(width),
+            Float64(height),
+            scale=scale,
+            antialiasing=antialiasing,
+        )
 
     def _offscreen(self) -> Bool:
         """Whether this is a program's own canvas rather than a frame's."""
@@ -737,6 +753,9 @@ struct Canvas(DrawTarget, Movable):
         a shape is what its `contains` tests. Clamped per shape as the shape
         describes."""
         self._style.corner_radius = radius
+
+    def corner_radius(mut self, radius: Int):
+        self.corner_radius(Float64(radius))
 
     def clear(mut self):
         """Discard everything drawn so far, back to how the canvas started.
@@ -1314,6 +1333,12 @@ struct Canvas(DrawTarget, Movable):
             animator.animation().frame(animator.frame_index()), position, w, h
         )
 
+    def image(mut self, image: Image, position: Point2D, w: Int, h: Int):
+        self.image(image, position, Float64(w), Float64(h))
+
+    def image(mut self, animator: Animator, position: Point2D, w: Int, h: Int):
+        self.image(animator, position, Float64(w), Float64(h))
+
     def text_color(mut self, color: Color):
         """Paint glyphs in `color`. Separate from `fill`, so a shape colour and
         a label colour do not have to be set in turn; a fully transparent one
@@ -1325,6 +1350,9 @@ struct Canvas(DrawTarget, Movable):
         Glyphs are rasterised at whole pixel sizes, so a fractional size rounds
         once scaled."""
         self._style.font_size = size
+
+    def font_size(mut self, size: Int):
+        self.font_size(Float64(size))
 
     def font_weight(mut self, weight: FontWeight):
         """Stroke weight of the face, a `FontWeight`. The packaged Noto

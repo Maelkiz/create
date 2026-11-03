@@ -252,5 +252,19 @@ def test_a_snapshot_draws_on_the_gpu_too() raises -> None:
     _check_badge(m)
 
 
+def test_int_variables_size_the_canvas_and_its_calls() raises -> None:
+    var width: Int = 100
+    var height: Int = 60
+    var size: Int = 20
+    var canvas = Canvas(width, height)
+    assert_equal(canvas.width(), 100.0)
+    assert_equal(canvas.height(), 60.0)
+    canvas.corner_radius(size)
+    canvas.font_size(size)
+    canvas.image(Image.solid(1, 1, Color.RED), (0, 0), size, size)
+    assert_equal(canvas.color_at((0, 0)), Color.RED)
+    assert_equal(canvas.color_at((15, 0)), Color.TRANSPARENT)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
