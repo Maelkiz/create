@@ -23,6 +23,7 @@ from .spline import Spline
 from .drawable import Curve, DrawTarget, Region
 from create.math import Point2D
 from create.math import Vector2D
+from create.math._optional_float64 import _OptionalFloat64
 
 comptime _ANGLE_EPSILON = 1e-12
 """How far, in radians, a direction may fall outside a sweep and still count
@@ -366,12 +367,12 @@ struct Rectangle(
         w: Float64,
         h: Float64,
         *,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = 0.0,
     ):
         self.position = position
         self.w = w
         self.h = h
-        self.corner_radius = corner_radius
+        self.corner_radius = corner_radius.or_else(0.0)
 
     def __init__(
         out self,
@@ -379,7 +380,7 @@ struct Rectangle(
         w: Int,
         h: Int,
         *,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = 0.0,
     ):
         self = Rectangle(
             position, Float64(w), Float64(h), corner_radius=corner_radius
@@ -1282,13 +1283,13 @@ struct Sector(
         start_angle: Float64,
         sweep_angle: Float64,
         *,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = 0.0,
     ):
         self.position = position
         self.r = r
         self.start_angle = start_angle
         self.sweep_angle = sweep_angle
-        self.corner_radius = corner_radius
+        self.corner_radius = corner_radius.or_else(0.0)
 
     def __init__(
         out self,
@@ -1297,7 +1298,7 @@ struct Sector(
         start_angle: Float64,
         sweep_angle: Float64,
         *,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = 0.0,
     ):
         self = Sector(
             position,
@@ -1584,12 +1585,12 @@ struct Triangle(
         b: Point2D,
         c: Point2D,
         *,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = 0.0,
     ):
         self.a = a
         self.b = b
         self.c = c
-        self.corner_radius = corner_radius
+        self.corner_radius = corner_radius.or_else(0.0)
 
     def __eq__(self, other: Triangle) -> Bool:
         return (
@@ -1870,17 +1871,22 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
     var corner_radius: Float64
     """How far each corner is rounded; 0 is sharp."""
 
-    def __init__(out self, *vertices: Point2D, corner_radius: Float64 = 0.0):
+    def __init__(
+        out self, *vertices: Point2D, corner_radius: _OptionalFloat64 = 0.0
+    ):
         self.vertices = List[Point2D](capacity=len(vertices))
         for v in vertices:
             self.vertices.append(v)
-        self.corner_radius = corner_radius
+        self.corner_radius = corner_radius.or_else(0.0)
 
     def __init__(
-        out self, var vertices: List[Point2D], *, corner_radius: Float64 = 0.0
+        out self,
+        var vertices: List[Point2D],
+        *,
+        corner_radius: _OptionalFloat64 = 0.0,
     ):
         self.vertices = vertices^
-        self.corner_radius = corner_radius
+        self.corner_radius = corner_radius.or_else(0.0)
 
     @staticmethod
     def regular(
@@ -1889,7 +1895,7 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
         sides: Int,
         start_angle: Float64 = TAU / 4.0,
         *,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = 0.0,
     ) -> Polygon:
         """A regular polygon of `sides` vertices on the circle around
         `position` with radius `r`, the first at `start_angle` (radians
@@ -1908,7 +1914,7 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
         sides: Int,
         start_angle: Float64 = TAU / 4.0,
         *,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = 0.0,
     ) -> Polygon:
         return Polygon.regular(
             position,
@@ -1926,7 +1932,7 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
         tips: Int,
         start_angle: Float64 = TAU / 4.0,
         *,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = 0.0,
     ) -> Polygon:
         """A star of `tips` points about `position`: its tips on radius `r`,
         the first at `start_angle` (straight up by default), and between
@@ -1948,7 +1954,7 @@ struct Polygon(Copyable, Equatable, Movable, Region, Writable):
         tips: Int,
         start_angle: Float64 = TAU / 4.0,
         *,
-        corner_radius: Float64 = 0.0,
+        corner_radius: _OptionalFloat64 = 0.0,
     ) -> Polygon:
         return Polygon.star(
             position,

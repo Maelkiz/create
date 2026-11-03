@@ -454,5 +454,32 @@ def test_a_rounded_sector_compares_and_prints_its_radius() raises -> None:
     )
 
 
+def test_corner_radius_takes_an_int_variable() raises -> None:
+    var radius: Int = 4
+    assert_equal(
+        Rectangle((0, 0), 20, 10, corner_radius=radius).corner_radius, 4.0
+    )
+    assert_equal(
+        Triangle((0, 0), (10, 0), (0, 10), corner_radius=radius).corner_radius,
+        4.0,
+    )
+    assert_equal(
+        Sector((0, 0), 10, 0.0, 1.0, corner_radius=radius).corner_radius, 4.0
+    )
+    assert_equal(
+        Polygon((0, 0), (10, 0), (0, 10), corner_radius=radius).corner_radius,
+        4.0,
+    )
+    assert_equal(
+        Polygon.regular((0, 0), 10, 5, corner_radius=radius).corner_radius,
+        4.0,
+    )
+    assert_equal(
+        Polygon.star((0, 0), 10, 5, 5, corner_radius=radius).corner_radius,
+        4.0,
+    )
+    assert_equal(Rectangle((0, 0), 20, 10).corner_radius, 0.0)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

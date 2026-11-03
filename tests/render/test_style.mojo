@@ -190,5 +190,19 @@ def test_unset_number_keywords_take_none_or_any_number() raises -> None:
     assert_equal(Style(outline_thickness=forwarded).outline_thickness, 3.0)
 
 
+def test_float_keywords_take_an_int_variable() raises -> None:
+    var radius: Int = 6
+    var size: Int = 24
+    var opacity: Int = 0
+    var s = Style(corner_radius=radius, font_size=size, opacity=opacity)
+    assert_equal(s.corner_radius, 6.0)
+    assert_equal(s.font_size, 24.0)
+    assert_equal(s.opacity, 0.0)
+    var defaults = Style()
+    assert_equal(defaults.corner_radius, 0.0)
+    assert_equal(defaults.font_size, 16.0)
+    assert_equal(defaults.opacity, 1.0)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
