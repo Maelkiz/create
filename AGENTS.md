@@ -25,13 +25,13 @@ it makes the library better.
 | root | `src/create/__init__.mojo` | The preamble: star-imports all ten subpackages below |
 | `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path`, `DateTime` |
 | `input` | `src/create/input/` | `Input` (keyboard, mouse, gamepads, typed text), `Key`, `MouseButton`, `Gamepad`, `GamepadButton`, `EditableText` |
-| `render` | `src/create/render/` | `Canvas`, `Camera`, `Antialiasing`, style, text layout, the command buffer, both backends (CPU rasteriser, GL 3.3) |
+| `render` | `src/create/render/` | `Canvas` and its `with`-block guards, `Style`, `Camera`, `Antialiasing`, `Autoscale`, `Align` (text anchoring), `RenderBackend` (`run`'s CPU/GPU choice), text layout, the command buffer, both backends (CPU rasteriser, GL 3.3) |
 | `color` | `src/create/color/` | `Color`, `Gradient` (with the ramp and dither both backends share), `BlendMode` |
-| `math` | `src/create/math/` | `Point2D`, `Vector2D`, `Matrix`, `Random`, `Noise`, easing and `Tween`, util functions |
-| `geometry` | `src/create/geometry/` | The shapes (`Rectangle`, `Circle`, `Triangle`, `Sector`, `Polygon`, `Line`, `Arc`), `Bezier`, `Spline`, the `Shape`/`Region`/`Curve` traits, `overlaps`/`contains`/`intersects`, corner rounding's maths |
+| `math` | `src/create/math/` | `Point2D`, `Vector2D`, `Matrix` and its functions, `Random`, `Noise`, `Easing`/`ease` and `Tween`, `PI`/`TAU`, util functions, re-exported `std.math` functions |
+| `geometry` | `src/create/geometry/` | The shapes (`Rectangle`, `Circle`, `Triangle`, `Sector`, `Polygon`, `Line`, `Arc`), `Bezier`, `Spline`, the `Shape`/`Region`/`Curve` and `Drawable`/`DrawTarget` traits, `overlaps`/`contains`/`intersects`, corner rounding's maths |
 | `image` | `src/create/image/` | `Image` (BMP/PNG/JPEG), `PixelBuffer`, `Animation`, `Animator` |
 | `text` | `src/create/text/` | `Font` (FreeType faces, glyph rasterisation), `FontWeight`, the packaged Noto faces |
-| `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback |
+| `audio` | `src/create/audio/` | `Sound` (WAV/OGG/FLAC/MP3), `Audio` playback, `Voice` |
 | `data` | `src/create/data/` | `Table`/`TableRow` (CSV/TSV), `JSON`, `JSONKind` |
 | `_bytes` | `src/create/_bytes.mojo` | Internal leaf: little-endian integer decoding |
 | `_library` | `src/create/_library.mojo` | Internal leaf: `load_library`, every FFI binding's way to open a shared library (`.so`/`.dylib`, the pixi environment first) |
@@ -196,7 +196,7 @@ A program writes `from create import *`. Otherwise import by name from the ownin
 - **`input`** depends only on `math`; `core` imports it. `Input` is plain state: `core`'s
   `apply_events` folds each window event in through one `_`-prefixed method per kind (`_key_down`,
   `_mouse_button_down`, …), so `input` never sees an `Event` and `_window` stays `core`'s alone.
-- **`_bytes`** is a leaf imported by `image`, `text` and `render`, re-exported by nothing.
+- **`_bytes`** is a leaf imported by `image`, `text`, `audio` and `render`, re-exported by nothing.
 - **`_library`** is a leaf imported by every package with FFI bindings, `_window` included. A
   binding opens its library with `load_library("libname")`, never `_DLHandle("libname.so")`: the
   platform suffix and search path are decided there.
