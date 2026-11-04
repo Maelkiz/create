@@ -29,4 +29,4 @@ struct App(Program):
 
 
 def main() raises:
-    run[App]("Circle Overlap", width=800, height=600)
+    run[App]("Overlap", width=800, height=600)
