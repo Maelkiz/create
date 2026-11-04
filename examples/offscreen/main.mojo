@@ -18,11 +18,11 @@ def _badge() raises -> Image:
     crisp on a window scaled up to 2x."""
     var badge = Canvas(_BADGE_SIZE, _BADGE_SIZE, scale=2.0)
     badge.shadow(blur=6)
-    badge.fill(Gradient.radial(Color(160, 235, 180), Color(40, 150, 100)))
-    badge.outline(Color(20, 80, 50), thickness=3)
+    badge.fill(Gradient.radial(Color(236, 196, 202), Color(170, 90, 104)))
+    badge.outline(Color(90, 40, 50), thickness=3)
     badge.circle((0, 0), 32)
     badge.shadow_enabled(False)
-    badge.text_color(Color(10, 60, 30))
+    badge.text_color(Color(60, 20, 30))
     badge.font_size(28)
     badge.text("1st", (0, 0))
     return badge.snapshot(scale=badge.scale())
@@ -55,7 +55,10 @@ struct Offscreen(Program):
                 input.mouse if input.mouse_pressed() else self.last_mouse
             )
             with self.layer.style(
-                outline=Color.hsv(context.time.elapsed * 60.0, 0.7, 1.0),
+                outline=Color(98, 104, 168).lerp(
+                    Color(201, 140, 150),
+                    0.5 + 0.5 * sin(context.time.elapsed * 2.0),
+                ),
                 outline_thickness=12,
             ):
                 self.layer.line(start, input.mouse)
@@ -65,15 +68,15 @@ struct Offscreen(Program):
         self.last_mouse = input.mouse
 
         # The frame under the layer, redrawn and cleared every frame.
-        canvas.background(Color(24, 26, 34))
+        canvas.background(Color(40, 40, 44))
         var t = context.time.elapsed
-        with canvas.style(fill=Color(60, 70, 90), outline_enabled=False):
+        with canvas.style(fill=Color(62, 62, 68), outline_enabled=False):
             canvas.circle((cos(t) * 200, sin(t * 1.3) * 120), 40)
 
         canvas.image(self.strokes, (0, 0), canvas.width(), canvas.height())
         canvas.image(self.badge, input.mouse, _BADGE_SIZE, _BADGE_SIZE)
 
-        with canvas.style(text_color=Color(0x90, 0x98, 0xA8), font_size=18):
+        with canvas.style(text_color=Color(176, 172, 162), font_size=18):
             canvas.text("Drag to paint, C to clear", (0, canvas.bottom() + 30))
 
 

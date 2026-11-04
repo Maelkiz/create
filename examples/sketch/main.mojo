@@ -12,8 +12,8 @@ struct Sketch(Program):
         return Sketch()
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        canvas.background(Color.WHITE)
-        canvas.outline(Color.GREEN, thickness=3)
+        canvas.background(Color(240, 236, 222))
+        canvas.outline(Color(40, 40, 44), thickness=3)
 
         var circle = Circle((-100, 0), 50)
         var triangle = Triangle(
@@ -22,18 +22,18 @@ struct Sketch(Program):
         var rectangle = Rectangle((-250, 150), 100, 100, corner_radius=10)
         var line = Line((-250, 150), triangle.center())
 
-        canvas.fill(Color.BLUE)
+        canvas.fill(Color(98, 104, 168))
         canvas.draw(circle)
 
         canvas.draw(line)
 
-        canvas.fill(Color.RED)
+        canvas.fill(Color(226, 46, 56))
         canvas.draw(rectangle)
 
-        canvas.fill(Color.BLACK)
+        canvas.fill(Color(201, 140, 150))
         canvas.draw(triangle)
 
-        canvas.text_color(Color.BLACK)
+        canvas.text_color(Color(40, 40, 44))
         canvas.font_size(54)
         canvas.text("Create!", (50, 100))
 

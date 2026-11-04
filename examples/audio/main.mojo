@@ -12,12 +12,12 @@ it, Up and Down set its volume, Left and Right the overall volume.
 
 from create import *
 
-comptime _BACKGROUND = Color(40, 42, 56)
-comptime _TRACK = Color(62, 64, 82)
-comptime _LEVEL = Color(90, 170, 255)
-comptime _CHIME = Color(120, 210, 140)
-comptime _TEXT = Color(200, 200, 212)
-comptime _HINT = Color(150, 160, 180)
+comptime _BACKGROUND = Color(40, 40, 44)
+comptime _TRACK = Color(62, 62, 68)
+comptime _LEVEL = Color(98, 104, 168)
+comptime _CHIME = Color(226, 46, 56)
+comptime _TEXT = Color(240, 236, 222)
+comptime _HINT = Color(176, 172, 162)
 comptime _BAR_WIDTH = 360.0
 comptime _VOLUME_STEP = 0.6
 """How far a held arrow key turns a volume, per second."""

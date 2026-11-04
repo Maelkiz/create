@@ -72,28 +72,30 @@ struct Capture(Program):
             canvas.cancel_recording()
             self.saved = ""
 
-        canvas.background(Color(0x14, 0x1C, 0x26))
+        canvas.background(Color(40, 40, 44))
 
         with canvas.style(outline_enabled=False):
             with canvas.transform(rotate(self.angle)):
-                canvas.fill(Color(0x3A, 0x86, 0xFF))
+                canvas.fill(Color(98, 104, 168))
                 canvas.rectangle((0, 0), 220, 220)
-                canvas.fill(Color(0x78, 0xD2, 0x8C))
+                canvas.fill(Color(201, 140, 150))
                 canvas.circle((0, 0), 70)
 
         with canvas.style(
-            text_color=Color.WHITE, font_size=24, text_align=Align.TOP
+            text_color=Color(240, 236, 222), font_size=24, text_align=Align.TOP
         ):
             canvas.text(
                 "S: screenshot   I: image   Shift+I: image at 2x   R: record",
                 (0, 220),
             )
-        with canvas.style(text_color=Color.WHITE, font_size=20):
+        with canvas.style(text_color=Color(240, 236, 222), font_size=20):
             if canvas.recording():
                 var label = String("Recording; R to stop, X to discard")
                 # Drawn like everything else, so it is in the recording too.
                 var dot = -canvas.text_width(label) / 2.0 - 16.0
-                with canvas.style(fill=Color.RED, outline_enabled=False):
+                with canvas.style(
+                    fill=Color(226, 46, 56), outline_enabled=False
+                ):
                     canvas.circle((dot, -200), 8)
                 canvas.text(label, (0, -200))
             elif self.saved:

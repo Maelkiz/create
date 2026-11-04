@@ -41,14 +41,14 @@ struct App(Program):
                 Antialiasing((canvas.antialiasing().value + 1) % 4)
             )
 
-        canvas.background(Color(0x20, 0x24, 0x2C))
+        canvas.background(Color(40, 40, 44))
 
         # A plain filled rect and an outlined one, side by side.
-        with canvas.style(fill=Color(0x3D, 0x8B, 0xFD), outline_enabled=False):
+        with canvas.style(fill=Color(98, 104, 168), outline_enabled=False):
             canvas.rectangle((-260, 180), 160, 100)
 
         with canvas.style(
-            fill=Color(0x4C, 0xC9, 0x8A),
+            fill=Color(201, 140, 150),
             outline=Color.BLACK,
             outline_thickness=6,
         ):
@@ -56,25 +56,27 @@ struct App(Program):
 
         # An outline wider than the shape: all outline, no interior.
         with canvas.style(
-            fill=Color.RED, outline=Color.WHITE, outline_thickness=30
+            fill=Color(226, 46, 56),
+            outline=Color(240, 236, 222),
+            outline_thickness=30,
         ):
             canvas.rectangle((160, 180), 40, 40)
 
-        # Translucent over the blue rect — the case a double-blended fill
+        # Translucent over the indigo rect — the case a double-blended fill
         # under its own outline would get visibly wrong.
         with canvas.style(
-            fill=Color(0x00, 0xFF, 0x88, 0x80),
-            outline=Color(0xFF, 0xFF, 0xFF, 0x80),
+            fill=Color(201, 140, 150, 0x80),
+            outline=Color(240, 236, 222, 0x80),
             outline_thickness=8,
         ):
             canvas.circle((-260, 180), 70)
 
-        with canvas.style(fill=Color(0x3A, 0x86, 0xFF), outline_enabled=False):
+        with canvas.style(fill=Color(226, 46, 56), outline_enabled=False):
             canvas.circle((0, 0), 90)
 
         with canvas.style(
-            fill=Color(0x30, 0x30, 0x38),
-            outline=Color(0x9C, 0xE8, 0x6E),
+            fill=Color(30, 30, 33),
+            outline=Color(201, 140, 150),
             outline_thickness=10,
         ):
             canvas.circle((220, 0), 80)
@@ -83,18 +85,18 @@ struct App(Program):
         # outline ring has to follow the shape rather than stay axis-aligned.
         with canvas.transform(translate(-230, 0) @ rotate(self.angle)):
             with canvas.style(
-                fill=Color(0x7B, 0xE0, 0xAD),
+                fill=Color(240, 236, 222),
                 outline=Color.BLACK,
                 outline_thickness=4,
             ):
                 canvas.rectangle((0, 0), 120, 120)
 
-        with canvas.style(outline=Color(0x6E, 0xD8, 0xE8), outline_thickness=5):
+        with canvas.style(outline=Color(150, 154, 206), outline_thickness=5):
             canvas.line((-340, -140), (340, -260))
 
         with canvas.style(
-            fill=Color(0x2E, 0x9E, 0x6A),
-            outline=Color.WHITE,
+            fill=Color(150, 154, 206),
+            outline=Color(240, 236, 222),
             outline_thickness=3,
         ):
             canvas.triangle((-140, -180), (40, -180), (-50, -30))
@@ -104,19 +106,21 @@ struct App(Program):
         # Text before the images: solids and glyphs share the atlas binding
         # and so share one batch, which the image texture then breaks.
         with canvas.style(
-            text_color=Color.WHITE, font_size=28, text_align=Align.CENTER
+            text_color=Color(240, 236, 222),
+            font_size=28,
+            text_align=Align.CENTER,
         ):
             canvas.text("Centre / middle", (0, 0))
 
         with canvas.style(
-            text_color=Color(0x9C, 0xE8, 0x6E),
+            text_color=Color(201, 140, 150),
             font_size=20,
             text_align=Align.TOP_LEFT,
         ):
             canvas.text("Left / top", (canvas.left() + 12, canvas.top() - 12))
 
         with canvas.style(
-            text_color=Color(0x7B, 0xE0, 0xAD, 0xA0),
+            text_color=Color(240, 236, 222, 0xA0),
             font_size=20,
             text_align=Align.BOTTOM_RIGHT,
         ):
@@ -129,7 +133,9 @@ struct App(Program):
         canvas.image(self.logo, (90, -230), 70, 70)
 
         with canvas.style(
-            text_color=Color.WHITE, font_size=20, text_align=Align.TOP_RIGHT
+            text_color=Color(240, 236, 222),
+            font_size=20,
+            text_align=Align.TOP_RIGHT,
         ):
             canvas.text(
                 "FPS: " + String(self.fps),

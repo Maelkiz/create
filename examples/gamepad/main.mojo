@@ -28,8 +28,13 @@ struct Gamepads(Program):
         return Gamepads(positions^, colors^, "", 0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        canvas.background(Color(30, 30, 40))
-        var palette = [Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW]
+        canvas.background(Color(40, 40, 44))
+        var palette = [
+            Color(226, 46, 56),
+            Color(98, 104, 168),
+            Color(201, 140, 150),
+            Color(240, 236, 222),
+        ]
 
         for i in range(_PLAYERS):
             var pad = context.input.gamepad(i)
@@ -53,10 +58,10 @@ struct Gamepads(Program):
 
             canvas.fill(palette[self.colors[i]])
             canvas.circle(self.positions[i], 30 + 20 * pad.left_trigger)
-            canvas.text_color(Color.WHITE)
+            canvas.text_color(Color(240, 236, 222))
             canvas.text(String(i + 1), self.positions[i] + Vector2D(0, 45))
 
-        canvas.text_color(Color.WHITE)
+        canvas.text_color(Color(240, 236, 222))
         canvas.text_align(Align.LEFT)
         var connected = 0
         for i in range(_PLAYERS):

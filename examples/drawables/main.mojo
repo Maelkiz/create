@@ -40,15 +40,15 @@ struct App(Program):
         return App([button((-260, 110)), button((0, 110)), button((260, 110))])
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        canvas.background(Color(0xF4, 0xF5, 0xF8))
-        canvas.outline(Color(0x30, 0x38, 0x48), thickness=3)
+        canvas.background(Color(240, 236, 222))
+        canvas.outline(Color(40, 40, 44), thickness=3)
 
         for b in self.buttons:
             var hovered = b.plate.contains(context.input.mouse)
-            canvas.fill(Color(0x78, 0xD2, 0x8C) if hovered else Color.WHITE)
+            canvas.fill(Color(201, 140, 150) if hovered else Color.WHITE)
             canvas.draw(b)
 
-        with canvas.style(fill=Color(0x60, 0x90, 0xE0)):
+        with canvas.style(fill=Color(98, 104, 168)):
             canvas.corner_radius(8)
             canvas.rectangle((-300, -110), 120, 80)
             canvas.rectangle((-150, -110), 120, 80)
@@ -57,7 +57,7 @@ struct App(Program):
             canvas.rectangle((150, -110), 120, 80)
             canvas.rectangle((300, -110), 120, 80, corner_radius=0)
 
-        with canvas.style(text_color=Color(0x50, 0x58, 0x68), font_size=18):
+        with canvas.style(text_color=Color(80, 78, 74), font_size=18):
             canvas.text("canvas.draw(button)", (0, 200))
             canvas.text(
                 "canvas.corner_radius(8), then (30); the last names 0",

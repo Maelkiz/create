@@ -23,11 +23,11 @@ struct Paint:
         self.back_pressed = context.input.mouse_pressed(MouseButton.RIGHT)
 
         if self._entering:
-            canvas.background(Color(24, 24, 28))
+            canvas.background(Color(40, 40, 44))
             self._entering = False
 
         if context.input.mouse_down(MouseButton.LEFT):
-            with canvas.style(fill=Color(120, 210, 140), outline_enabled=False):
+            with canvas.style(fill=Color(201, 140, 150), outline_enabled=False):
                 canvas.circle(context.input.mouse, 14.0)
 
         # Align.BOTTOM anchors the text box's bottom edge at y, so it grows
@@ -35,7 +35,7 @@ struct Paint:
         # Align.CENTER would hang half the line below the margin, its
         # descenders against canvas.bottom() and the letterbox clip.
         with canvas.style(
-            text_color=Color(180, 180, 190),
+            text_color=Color(176, 172, 162),
             font_size=18,
             text_align=Align.BOTTOM,
         ):

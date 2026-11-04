@@ -66,9 +66,9 @@ struct App(Program):
         # Not pure primaries: with every channel at 0 or 255, SCREEN and ADD
         # give identical results.
         var colors = [
-            Color(220, 60, 60),
-            Color(60, 220, 60),
-            Color(60, 60, 220),
+            Color(226, 46, 56),
+            Color(201, 140, 150),
+            Color(98, 104, 168),
         ]
         with canvas.style(blend_mode=self.mode):
             for i in range(3):
@@ -82,7 +82,7 @@ struct App(Program):
         # A plain panel behind the label, so it reads over any bar.
         canvas.fill(Color(0, 0, 0, 180))
         canvas.rectangle((0.0, canvas.bottom() + 60.0), 360.0, 100.0)
-        canvas.text_color(Color.WHITE)
+        canvas.text_color(Color(240, 236, 222))
         canvas.font_size(28)
         canvas.text(String(self.mode), (0.0, canvas.bottom() + 75.0))
         canvas.font_size(18)

@@ -16,13 +16,13 @@ or not, F cycles the frame-rate cap.
 
 from create import *
 
-comptime _BACKGROUND = Color(40, 42, 56)
-comptime _BARS = Color(70, 40, 64)
+comptime _BACKGROUND = Color(40, 40, 44)
+comptime _BARS = Color(56, 58, 92)
 """Not black, so the bars FIT leaves are plain to see."""
-comptime _BALL = Color(120, 210, 140)
-comptime _BOX = Color(90, 170, 255)
-comptime _TEXT = Color(200, 200, 212)
-comptime _HINT = Color(150, 160, 180)
+comptime _BALL = Color(226, 46, 56)
+comptime _BOX = Color(98, 104, 168)
+comptime _TEXT = Color(240, 236, 222)
+comptime _HINT = Color(176, 172, 162)
 
 
 def _frame_caps() -> List[Int]:

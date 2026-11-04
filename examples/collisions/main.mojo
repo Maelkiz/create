@@ -8,11 +8,11 @@ shape's `closest_point`, which inside a region is the mouse itself.
 
 from create import *
 
-comptime _BACKGROUND = Color(40, 42, 56)
-comptime _SHAPE = Color(90, 170, 255)
-comptime _HIT = Color(120, 210, 140)
-comptime _GUIDE = Color(120, 124, 150)
-comptime _TEXT = Color(200, 200, 212)
+comptime _BACKGROUND = Color(40, 40, 44)
+comptime _SHAPE = Color(98, 104, 168)
+comptime _HIT = Color(226, 46, 56)
+comptime _GUIDE = Color(176, 172, 162)
+comptime _TEXT = Color(240, 236, 222)
 
 
 def _reach[S: Shape](mut canvas: Canvas, shape: S, mouse: Point2D):
@@ -75,7 +75,7 @@ struct Collisions(Program):
             canvas.draw(self.arc)
 
         with canvas.style(
-            fill=Color(200, 200, 212, 60), outline=_TEXT, outline_thickness=2
+            fill=Color(240, 236, 222, 60), outline=_TEXT, outline_thickness=2
         ):
             canvas.draw(self.probe)
 
