@@ -27,7 +27,7 @@ struct Game(Program):
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> Game:
-        var sheet = Image.load(source_path("../assets/character.png"))
+        var sheet = Image.load(source_path("assets/character.png"))
 
         # Row-major: the first four cells are the idle cycle, the next four
         # the run cycle. One sheet, two animations, no sheet type.
@@ -40,9 +40,7 @@ struct Game(Program):
 
         # spin_1.png .. spin_8.png, ordered by their trailing number rather
         # than lexicographically, so spin_10 would follow spin_9.
-        var spin = Animation.from_folder(
-            source_path("../assets/spin"), fps=16.0
-        )
+        var spin = Animation.from_folder(source_path("assets/spin"), fps=16.0)
 
         var animator = Animator(idle)
         animator.loop()

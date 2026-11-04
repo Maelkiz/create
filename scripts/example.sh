@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Resolve an example name to a path and run it.
 #
-#   pixi run example sketch          -> examples/sketch.mojo
-#   pixi run example sidescroller    -> examples/sidescroller/src/main.mojo
+#   pixi run example sketch          -> examples/sketch/main.mojo
 #   pixi run example shadows gpu     -> extra arguments are passed through
+#
+# Every example is a folder of that name, run from its main.mojo, beside any
+# modules and assets of its own.
 #
 # A path that exists as given is run as-is, so the long form still works.
 #
@@ -15,17 +17,13 @@ name="$1"
 if [ -z "$name" ]; then
     echo "usage: pixi run example <name> [args...]" >&2
     echo >&2
-    # A _-named file is a module the examples share, not an example.
-    ls examples/*.mojo | sed 's|examples/||; s|\.mojo$||' | grep -v '^_' >&2
     ls -d examples/*/ | sed 's|examples/||; s|/$||' >&2
     exit 1
 fi
 shift
 
-if [ -f "examples/$name.mojo" ]; then
-    file="examples/$name.mojo"
-elif [ -f "examples/$name/src/main.mojo" ]; then
-    file="examples/$name/src/main.mojo"
+if [ -f "examples/$name/main.mojo" ]; then
+    file="examples/$name/main.mojo"
 elif [ -f "$name" ]; then
     file="$name"
 else
