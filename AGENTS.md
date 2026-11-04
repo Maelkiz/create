@@ -404,7 +404,7 @@ frame costs bounded memory. Shapes, text and gradients go into an image through 
 
 ### Recording
 
-`canvas.record(path, seconds=, frames=, fps=30, scale=1.0, dither=False)` records the frames from
+`canvas.start_recording(path, seconds=, frames=, fps=30, scale=1.0, dither=False)` records the frames from
 the one it is called in as an animated GIF (the only format; the path must end in `.gif`). See
 [examples/capture/main.mojo](examples/capture/main.mojo).
 - **Each frame is a `save_image`:** design size × `scale`, no letterbox, replayed on the CPU, so
@@ -412,7 +412,7 @@ the one it is called in as an animated GIF (the only format; the path must end i
   deterministically. With the autoclear off a frame holds only its own drawing, as an image does.
 - **Lasts across frames**, like the canvas settings above: until `seconds` of the run's time or
   `frames` frames, `canvas.stop_recording()` (the file is complete when it returns), or the end of
-  the run, which finishes it. `canvas.recording()` reads it back; a new `record` finishes the one in
+  the run, which finishes it. `canvas.recording()` reads it back; a new `start_recording` finishes the one in
   progress first.
 - **Timed by the run's clock**, sampled `fps` times a second (at most 50): a display faster than
   `fps` skips frames, and a slow frame stays on screen longer, so the GIF plays at the program's

@@ -152,7 +152,7 @@ struct RecordFrames[path: StaticString](Program):
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> Self:
         _scene(canvas)
-        canvas.record(String(Self.path), frames=3)
+        canvas.start_recording(String(Self.path), frames=3)
         return Self(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

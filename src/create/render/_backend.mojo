@@ -756,7 +756,7 @@ def _centiseconds(slot: Int, fps: Float64) -> Int:
 
 
 struct _Recording(Movable):
-    """A `canvas.record` in progress, captured at each present it is due.
+    """A `canvas.start_recording` in progress, captured at each present it is due.
 
     The run's clock is cut into slots `1 / fps` long from the frame the
     recording starts in; a frame is captured in each slot the clock enters,
@@ -871,7 +871,7 @@ struct Backend(Movable):
     replay is the same entry the GL path will key a texture from.
     """
     var recording: Optional[_Recording]
-    """A `canvas.record` in progress; see `_record_frame`."""
+    """A `canvas.start_recording` in progress; see `_record_frame`."""
     var clock: Float64
     """The run's elapsed time at the frame being recorded, handed in by the
     loops (render never imports core): what a recording is timed by."""

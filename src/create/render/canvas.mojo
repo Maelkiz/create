@@ -1015,7 +1015,7 @@ struct Canvas(DrawTarget, Movable):
             return
         self._state._backend.request_screenshot(path)
 
-    def record(
+    def start_recording(
         mut self,
         path: String,
         *,
@@ -1034,7 +1034,7 @@ struct Canvas(DrawTarget, Movable):
         in, captured whole however early in `update` it was called, and runs
         until `seconds` of the run's time or `frames` frames, until
         `stop_recording`, or until the run ends, which finishes the file.
-        A new `record` finishes the recording in progress first.
+        A new `start_recording` finishes the recording in progress first.
 
         The run's clock is sampled `fps` times a second, so the GIF plays at
         the program's own speed whatever the display's rate: a window faster
@@ -1057,29 +1057,33 @@ struct Canvas(DrawTarget, Movable):
         """
         if self._offscreen():
             raise Error(
-                "record needs the frame canvas: an offscreen canvas has no"
-                " frames"
+                "start_recording needs the frame canvas: an offscreen canvas"
+                " has no frames"
             )
         if not path.lower().endswith(".gif"):
             raise Error(
-                "record saves GIF files, so its path must end in .gif, got "
+                "start_recording saves GIF files, so its path must end in .gif,"
+                " got "
                 + path
             )
         if seconds and frames:
-            raise Error("record takes seconds or frames, not both")
+            raise Error("start_recording takes seconds or frames, not both")
         if seconds and seconds.value() <= 0.0:
             raise Error(
-                "record needs positive seconds, got " + String(seconds.value())
+                "start_recording needs positive seconds, got "
+                + String(seconds.value())
             )
         if frames and frames.value() <= 0:
             raise Error(
-                "record needs a positive number of frames, got "
+                "start_recording needs a positive number of frames, got "
                 + String(frames.value())
             )
         if fps <= 0.0 or fps > 50.0:
-            raise Error("record's fps must be above 0 and at most 50")
+            raise Error("start_recording's fps must be above 0 and at most 50")
         if scale <= 0.0:
-            raise Error("record needs a positive scale, got " + String(scale))
+            raise Error(
+                "start_recording needs a positive scale, got " + String(scale)
+            )
         var capture = Viewport()
         capture.autoscale = Autoscale.FIT
         capture.set_design(self._width, self._height)
@@ -1108,7 +1112,7 @@ struct Canvas(DrawTarget, Movable):
         self._state._backend.finish_recording()
 
     def recording(self) -> Bool:
-        """Whether a `record` is in progress."""
+        """Whether a recording started by `start_recording` is in progress."""
         return Bool(self._state._backend.recording)
 
     def rectangle(
