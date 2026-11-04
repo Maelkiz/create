@@ -1,3 +1,8 @@
+"""Playing sounds: a one-shot chime and a looping ambience.
+
+Space plays the chime; hold H to loop the ambience.
+"""
+
 from create import *
 
 

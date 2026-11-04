@@ -1,3 +1,15 @@
+"""How the 800x600 design maps onto a window of any size. Resize the window in
+each mode:
+
+    FIT     the whole scene scales, letterboxed
+    EXTEND  same scale, no bars: the leftover becomes extra world, so the
+            circle turns at the new window edge
+    OFF     no scaling at all: the world is the window in pixels, so the
+            scene stays put while the space around it grows
+
+Space cycles the modes; F11 toggles fullscreen.
+"""
+
 from create import *
 
 
@@ -9,15 +21,6 @@ struct App(Program):
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> App:
-        # Everything below is authored against the 800x600 passed to run().
-        # F11 toggles fullscreen. Space cycles the three modes:
-        #   FIT     resize and the whole scene scales, letterboxed
-        #   EXTEND  same scale, no bars — the leftover becomes extra world, so
-        #           the circle turns at the new window edge
-        #   OFF     no scaling at all — the world is the window in pixels, so
-        #           the scene stays put while the space around it grows
-        # The origin is the middle of the design area and y grows upward, so
-        # the labels below centre sit at negative y.
         return App(100.0, 1.0, Autoscale.FIT)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -52,6 +55,8 @@ struct App(Program):
         canvas.fill(Color.BLUE)
         canvas.rectangle((0, 0), 200, 120)
 
+        # The origin is the middle of the design area and y grows upward, so
+        # the labels below centre sit at negative y.
         canvas.text_color(Color.BLACK)
         canvas.font_size(28)
         canvas.text_align(Align.TOP)

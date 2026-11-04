@@ -1,3 +1,8 @@
+"""An `Image` loaded from a file, resized once, and moved with the keyboard.
+
+W, A, S and D move it.
+"""
+
 from create import *
 
 

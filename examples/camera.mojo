@@ -1,3 +1,9 @@
+"""A `Camera` over a world wider than the screen, and a label in
+`canvas.overlay()` that stays put whatever the camera does.
+
+Left and right pan, up and down zoom.
+"""
+
 from create import *
 
 

@@ -1,3 +1,10 @@
+"""A `Spline` through points you place, and a dot travelling along it at
+constant speed.
+
+Click to add a point, drag to move one, right-click to remove one. C closes
+the curve; 1, 2 and 3 set its alpha: uniform, centripetal, chordal.
+"""
+
 from create import *
 
 comptime _GRAB_RADIUS = 18.0

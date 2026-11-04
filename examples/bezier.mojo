@@ -1,3 +1,9 @@
+"""A cubic `Bezier` with handles to drag, and a dot travelling along it at
+constant speed with `at_distance`.
+
+Drag the four handles to reshape the curve.
+"""
+
 from create import *
 
 comptime _GRAB_RADIUS = 18.0

@@ -1,3 +1,7 @@
+"""Arcs as progress rings: one tween sweeps two arcs from the top, one
+clockwise and one counter-clockwise.
+"""
+
 from create import *
 
 comptime _BACKGROUND = Color(40, 42, 56)

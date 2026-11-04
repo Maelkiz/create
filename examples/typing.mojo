@@ -1,3 +1,9 @@
+"""A typing test: `context.input.text` and `EditableText` take what is typed,
+accented letters included, and the result is scored in words per minute.
+
+Type the phrase shown; Enter moves on once it is right.
+"""
+
 from create import *
 
 

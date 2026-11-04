@@ -1,3 +1,9 @@
+"""Sectors: a pie chart whose slice under the mouse slides out, and a chewing
+pac-man that `contains` and `overlaps` test exactly, its mouth outside it.
+
+Drag the blue ball into the pac-man's mouth and let go as it shuts.
+"""
+
 from create import *
 
 comptime _BACKGROUND = Color(40, 42, 56)

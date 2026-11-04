@@ -1,3 +1,10 @@
+"""Nested transforms: a planet orbits the sun and a moon the planet, each a
+rotation inside the one before, beside two spinning clusters.
+
+Hover the sun: `canvas.to_local` tests the mouse in the frame the sun is
+drawn in.
+"""
+
 from create import *
 
 
