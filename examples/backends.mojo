@@ -14,9 +14,9 @@ on a 16:9 display the bars are on screen from the first frame. A cycles
 the antialiasing level, to compare the edges at each. Escape quits.
 """
 
-from std.sys import argv
-
 from create import *
+
+from _arguments import backend_argument, has_argument
 
 
 @fieldwise_init
@@ -142,11 +142,9 @@ struct App(Program):
 
 
 def main() raises:
-    var backend = RenderBackend.CPU
     var mode = WindowMode.WINDOWED
-    for i in range(1, len(argv())):
-        if argv()[i] == "gpu":
-            backend = RenderBackend.GPU
-        elif argv()[i] == "fullscreen":
-            mode = WindowMode.FULLSCREEN
-    run[App]("Backends", mode, width=800, height=600, backend=backend)
+    if has_argument("fullscreen"):
+        mode = WindowMode.FULLSCREEN
+    run[App](
+        "Backends", mode, width=800, height=600, backend=backend_argument()
+    )

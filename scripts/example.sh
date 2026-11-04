@@ -15,7 +15,8 @@ name="$1"
 if [ -z "$name" ]; then
     echo "usage: pixi run example <name> [args...]" >&2
     echo >&2
-    ls examples/*.mojo | sed 's|examples/||; s|\.mojo$||' >&2
+    # A _-named file is a module the examples share, not an example.
+    ls examples/*.mojo | sed 's|examples/||; s|\.mojo$||' | grep -v '^_' >&2
     ls -d examples/*/ | sed 's|examples/||; s|/$||' >&2
     exit 1
 fi

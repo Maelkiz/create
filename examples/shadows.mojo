@@ -6,9 +6,9 @@
 Space toggles every shadow between soft and hard.
 """
 
-from std.sys import argv
-
 from create import *
+
+from _arguments import backend_argument
 
 
 @fieldwise_init
@@ -106,8 +106,4 @@ struct App(Program):
 
 
 def main() raises:
-    var backend = RenderBackend.CPU
-    for i in range(1, len(argv())):
-        if argv()[i] == "gpu":
-            backend = RenderBackend.GPU
-    run[App]("Shadows", width=1280, height=720, backend=backend)
+    run[App]("Shadows", width=1280, height=720, backend=backend_argument())
