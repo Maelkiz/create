@@ -83,6 +83,7 @@ from ._shadow import (
 from create.geometry._fillet import rect_corner_radius, triangle_corner_radius
 from ._tessellate import _arc_segments
 from ._triangle import triangle_pieces
+from ._gif import GifWriter, encode_frame
 from ._png import write_png
 from ._surface import MemorySurface, Surface, _force_opaque
 from ._text import TextRenderer
@@ -748,6 +749,83 @@ struct _ImageRequest(Movable):
     var transparent: Bool
 
 
+def _centiseconds(slot: Int, fps: Float64) -> Int:
+    """When `slot` starts, in a GIF's hundredths of a second from the first.
+    Delays are differences of these, so rounding never accumulates."""
+    return Int(Float64(slot) * 100.0 / fps + 0.5)
+
+
+struct _Recording(Movable):
+    """A `canvas.record` in progress, captured at each present it is due.
+
+    The run's clock is cut into slots `1 / fps` long from the frame the
+    recording starts in; a frame is captured in each slot the clock enters,
+    and a slot no frame entered (a slow frame) extends the frame before it.
+    A frame's delay is written ahead of its pixels, so the latest capture
+    waits in `pending` until the next one says how many slots it covered.
+    """
+
+    var writer: GifWriter
+    var width: Int
+    var height: Int
+    var scale: Float64
+    """The capture's pixel scale, as `_ImageRequest.scale`."""
+    var capture_base: Matrix[3, 3]
+    """Design space to the capture's pixels; composed with each frame's own
+    `screen_inv` at present, so a resized window records the same."""
+    var fps: Float64
+    var dither: Bool
+    var max_slots: Optional[Int]
+    """From `seconds`: the slots the recording may fill."""
+    var max_frames: Optional[Int]
+    var started: Bool
+    var start: Float64
+    """The clock at the first present: slot 0 begins there."""
+    var next_slot: Int
+    var frames: Int
+    """Frames captured so far, the pending one included."""
+    var pending: Optional[List[UInt8]]
+    var pending_slot: Int
+    var written: Int
+    """Centiseconds already given to the frames written."""
+
+    def __init__(
+        out self,
+        var writer: GifWriter,
+        scale: Float64,
+        capture_base: Matrix[3, 3],
+        fps: Float64,
+        dither: Bool,
+        max_slots: Optional[Int],
+        max_frames: Optional[Int],
+    ):
+        self.width = writer.width
+        self.height = writer.height
+        self.writer = writer^
+        self.scale = scale
+        self.capture_base = capture_base
+        self.fps = fps
+        self.dither = dither
+        self.max_slots = max_slots
+        self.max_frames = max_frames
+        self.started = False
+        self.start = 0.0
+        self.next_slot = 0
+        self.frames = 0
+        self.pending = None
+        self.pending_slot = 0
+        self.written = 0
+
+    def write_pending(mut self, until_slot: Int) raises:
+        """Write the waiting frame, shown until `until_slot` begins."""
+        if not self.pending:
+            return
+        var end = _centiseconds(until_slot, self.fps)
+        var frame = self.pending.take()
+        self.writer.write_frame(frame, end - self.written)
+        self.written = end
+
+
 struct Backend(Movable):
     """Where a frame's recorded commands become pixels.
 
@@ -792,6 +870,11 @@ struct Backend(Movable):
     them — `kind` then means what it says, and an image interned for the CPU
     replay is the same entry the GL path will key a texture from.
     """
+    var recording: Optional[_Recording]
+    """A `canvas.record` in progress; see `_record_frame`."""
+    var clock: Float64
+    """The run's elapsed time at the frame being recorded, handed in by the
+    loops (render never imports core): what a recording is timed by."""
     var pending_screenshot: Optional[String]
     """A `save_screenshot` filed by this frame, serviced at present.
 
@@ -892,6 +975,8 @@ struct Backend(Movable):
         self.target = None
         self.pending_image = Optional[_ImageRequest]()
         self.pending_screenshot = Optional[String]()
+        self.recording = None
+        self.clock = 0.0
         self.gl = Optional[GLRenderer]()
         if kind == RenderBackend.GPU:
             self.gl = Optional(GLRenderer())
@@ -1042,6 +1127,68 @@ struct Backend(Movable):
         )
         mem.save(request.path, opaque=not request.transparent)
 
+    def start_recording(mut self, var recording: _Recording) raises:
+        """Make `recording` the one in progress, finishing any before it."""
+        self.finish_recording()
+        self.recording = Optional(recording^)
+
+    def finish_recording(mut self) raises:
+        """Write the last frame and the trailer, and close the file. Nothing
+        happens without a recording in progress."""
+        if not self.recording:
+            return
+        var recording = self.recording.take()
+        recording.write_pending(recording.pending_slot + 1)
+        recording.writer.finish()
+
+    def _record_frame(mut self, cmds: List[RenderCommand]) raises:
+        """Capture the presented frame into the recording, if its slot is due.
+
+        Replayed on the CPU onto a buffer of the recording's own size, as
+        `_flush_image` captures, so both backends record the same pixels.
+        """
+        if not self.recording:
+            return
+        var recording = self.recording.take()
+        if not recording.started:
+            recording.started = True
+            recording.start = self.clock
+        # A hair of slack, so a clock landing exactly on a slot's start
+        # counts as inside it despite rounding.
+        var slot = Int(
+            floor((self.clock - recording.start) * recording.fps + 1e-6)
+        )
+        if slot < recording.next_slot:
+            self.recording = Optional(recording^)
+            return
+        if recording.max_slots and slot >= recording.max_slots.value():
+            recording.write_pending(recording.max_slots.value())
+            recording.writer.finish()
+            return
+        var mem = MemorySurface(recording.width, recording.height)
+        self.replay(
+            mem.surface(),
+            cmds,
+            recording.scale,
+            pre=recording.capture_base @ self.screen_inv,
+            skip_kinds=1 << CMD_LETTERBOX,
+        )
+        var frame = encode_frame(
+            mem.data, recording.width, recording.height, recording.dither
+        )
+        recording.write_pending(slot)
+        recording.pending = Optional(frame^)
+        recording.pending_slot = slot
+        recording.next_slot = slot + 1
+        recording.frames += 1
+        self.recording = Optional(recording^)
+        if (
+            self.recording.value().max_frames
+            and self.recording.value().frames
+            >= self.recording.value().max_frames.value()
+        ):
+            self.finish_recording()
+
     def begin_frame(
         mut self, screen: Matrix[3, 3], width: Float64, height: Float64
     ):
@@ -1149,6 +1296,7 @@ struct Backend(Movable):
         self.replay(s, cmds, scale)
         self._flush_screenshot(s)
         self._flush_image(cmds)
+        self._record_frame(cmds)
         if self.keep_frames:
             self._keep_frame(s)
         cmds.clear()
@@ -1223,6 +1371,7 @@ struct Backend(Movable):
         )
         self._flush_screenshot_gpu(width, height)
         self._flush_image(cmds)
+        self._record_frame(cmds)
         cmds.clear()
         self.commands = cmds^
         self.clips.clear()

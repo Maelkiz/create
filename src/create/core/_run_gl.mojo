@@ -115,6 +115,7 @@ def _run_loop[
         _present(win, state)
         _apply_window_mode(win, applied, context)
         _finish_frame(win, context, frame_start)
+    state._backend.finish_recording()
     # Rule 3 from `_gl.mojo`: the context owner must outlive the last GL call,
     # and the renderer inside `state` makes them when it is destroyed.
     _ = state^

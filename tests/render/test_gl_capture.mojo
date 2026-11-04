@@ -143,5 +143,48 @@ def test_gpu_save_image_matches_cpu_save_image_byte_for_byte() raises -> None:
         assert_equal(Int(a[unsafe_offset=i]), Int(b[unsafe_offset=i]))
 
 
+@fieldwise_init
+struct RecordFrames[path: StaticString](Program):
+    """Records three frames of the scene, moving the square each frame."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context, mut canvas: Canvas) raises -> Self:
+        _scene(canvas)
+        canvas.record(String(Self.path), frames=3)
+        return Self(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        with canvas.transform(translate(Float64(context.frame_count()), 0.0)):
+            _scene(canvas)
+
+
+comptime _GIF_CPU = "/tmp/mojo_create_test_gl_capture_record_cpu.gif"
+comptime _GIF_GPU = "/tmp/mojo_create_test_gl_capture_record_gpu.gif"
+
+
+def test_gpu_recording_matches_cpu_recording_byte_for_byte() raises -> None:
+    # A recording replays each frame on the CPU under either backend, as
+    # save_image does, so the two files are the same bytes.
+    try:
+        _ = run_headless[RecordFrames[_GIF_GPU]](
+            200, 100, 8, window_size=(640, 480), backend=RenderBackend.GPU
+        )
+    except e:
+        print("SKIP — no GL context:", e)
+        return
+    _ = run_headless[RecordFrames[_GIF_CPU]](
+        200, 100, 8, window_size=(640, 480)
+    )
+    var cpu = open(_GIF_CPU, "r").read_bytes()
+    var gpu = open(_GIF_GPU, "r").read_bytes()
+    remove(_GIF_CPU)
+    remove(_GIF_GPU)
+    assert_equal(len(cpu), len(gpu))
+    for i in range(len(cpu)):
+        assert_equal(cpu[i], gpu[i])
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
