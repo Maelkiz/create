@@ -1,5 +1,6 @@
-"""Blend modes. Each is easiest to read against a range of brightness, so the
-circles cross bars from black to white:
+"""Blend modes, each easiest to read against a range of brightness.
+
+The circles cross bars from black to white:
 
     ADD       light: brightens, saturating to white over the light bars
     SUBTRACT  takes light away: vanishes over black, darkens elsewhere
