@@ -1,11 +1,9 @@
-"""Translucency, three ways.
+"""Translucency, two ways.
 
 On the left, three circles whose colours are half transparent mix where
 they cross: alpha belongs to each colour. On the right, a card of fill,
 outline, text and image fades in and out by one `opacity`, which reaches
-every part of a render call at once. And a translucent background, drawn
-over the last frame instead of clearing it, leaves the orbiting dot a
-fading trail.
+every part of a render call at once.
 """
 
 from create import *
@@ -23,28 +21,15 @@ struct App(Program):
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> App:
-        # The trails below are rendered by fading the *previous* frame, so the
-        # per-frame clear has to be off — it would wipe what they fade.
-        canvas.autoclear(False)
-        # With no clear, the first frame is painted the colour the trails
-        # fade towards, once.
-        canvas.background(_BACKGROUND)
         return App(
             Image.load(source_path("../assets/logo/png/logo-cutout.png"))
         )
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        var t = context.time.elapsed
-
-        # A translucent background fades the previous frame instead of
-        # clearing it, leaving motion trails.
-        canvas.background(_BACKGROUND.with_alpha(24))
-
+        canvas.background(_BACKGROUND)
         canvas.outline_enabled(False)
 
-        # Each demonstration sits on an opaque panel, redrawn every frame:
-        # without the clear, anything translucent drawn straight onto the
-        # last frame would pile up on itself until it was solid.
+        # A panel behind each demonstration.
         canvas.fill(_PANEL)
         canvas.rectangle((-185.0, 20.0), 300.0, 240.0, corner_radius=16)
         canvas.rectangle(_CARD, 300.0, 240.0, corner_radius=16)
@@ -59,7 +44,7 @@ struct App(Program):
 
         # One value fades fill, outline, text and image alike. Each shape
         # still composites once, so the outline never shows through the fill.
-        var opacity = 0.5 + 0.5 * sin(t * 1.5)
+        var opacity = 0.5 + 0.5 * sin(context.time.elapsed * 1.5)
         with canvas.style(opacity=opacity):
             with canvas.style(
                 fill=Color(235, 120, 70),
@@ -73,10 +58,6 @@ struct App(Program):
                     String("opacity ", round(opacity, 2)),
                     _CARD - Vector2D(0, 55),
                 )
-
-        # An orbiting dot renders the trail the faded background preserves.
-        canvas.fill(Color.ORANGE)
-        canvas.circle((330 * cos(t * 0.8), 230 * sin(t * 0.8)), 14.0)
 
         with canvas.style(text_color=_HINT, font_size=18):
             canvas.text("alpha: each colour its own", (-185.0, -120.0))
