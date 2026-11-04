@@ -13,8 +13,8 @@ from create import *
 from menu import Menu
 from paint import Paint
 
-comptime MENU = 0
-comptime DRAWING = 1
+comptime _MENU = 0
+comptime _DRAWING = 1
 
 
 @fieldwise_init
@@ -29,18 +29,18 @@ struct App(Program):
         # clear is off for the whole program: `Menu` paints its own background
         # every frame, and `Paint` clears once on entry.
         canvas.autoclear(False)
-        return App(MENU, Menu(False), Paint(False, False))
+        return App(_MENU, Menu(False), Paint(False, False))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        if self.scene == MENU:
+        if self.scene == _MENU:
             self.menu.update(context, canvas)
             if self.menu.start_pressed:
                 self.paint.enter()
-                self.scene = DRAWING
+                self.scene = _DRAWING
         else:
             self.paint.update(context, canvas)
             if self.paint.back_pressed:
-                self.scene = MENU
+                self.scene = _MENU
 
 
 def main() raises:
