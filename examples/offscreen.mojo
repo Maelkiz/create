@@ -7,9 +7,9 @@ it, and the strokes stay while the frame under them is redrawn every frame.
 Press `c` to clear the layer.
 """
 
-from std.sys import argv
-
 from create import *
+
+from _arguments import backend_argument
 
 
 comptime _BADGE_SIZE = 80
@@ -80,8 +80,6 @@ struct Offscreen(Program):
 
 
 def main() raises:
-    var backend = RenderBackend.CPU
-    for i in range(1, len(argv())):
-        if argv()[i] == "gpu":
-            backend = RenderBackend.GPU
-    run[Offscreen]("Offscreen", width=800, height=600, backend=backend)
+    run[Offscreen](
+        "Offscreen", width=800, height=600, backend=backend_argument()
+    )

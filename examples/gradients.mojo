@@ -7,9 +7,9 @@ The background spans the whole window (`EXTEND`), so resize it to watch the
 sky stretch. A gradient spans each shape's own box, so the card's turns with
 it.
 """
-from std.sys import argv
-
 from create import *
+
+from _arguments import backend_argument
 
 
 @fieldwise_init
@@ -113,14 +113,10 @@ struct App(Program):
 
 
 def main() raises:
-    var backend = RenderBackend.CPU
-    for i in range(1, len(argv())):
-        if argv()[i] == "gpu":
-            backend = RenderBackend.GPU
     run[App](
         "Gradients",
         width=1280,
         height=720,
         autoscale=Autoscale.EXTEND,
-        backend=backend,
+        backend=backend_argument(),
     )
