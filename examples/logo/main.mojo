@@ -30,7 +30,7 @@ comptime _DURATION = 1.2
 comptime _STAGGER = 0.25
 """Seconds between one triangle setting off and the next."""
 comptime _DISTANCE = 900.0
-"""How far out each triangle starts: past the corner of the 800x800 screen."""
+"""How far out each triangle starts: past the corner of the 1280x720 screen."""
 comptime _HOLD_SECONDS = 1.5
 """How long the recording keeps the finished logo on screen."""
 
@@ -224,4 +224,4 @@ struct Logo(Program):
 
 def main() raises:
     # Hard edges, pixel for pixel like the points'.
-    run[Logo]("Logo", width=800, height=800, antialiasing=Antialiasing.OFF)
+    run[Logo]("Logo", width=1280, height=720, antialiasing=Antialiasing.OFF)
