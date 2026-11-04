@@ -334,7 +334,7 @@ both the finished framebuffer and the unconsumed command buffer; a failed write 
 - `canvas.save_screenshot(path)` — what the user saw: drawable resolution, bars included. On GPU this
   is a `glReadPixels` stall — fine on a keypress, not per frame.
 
-See [examples/screenshot/main.mojo](../../../examples/screenshot/main.mojo).
+See [examples/capture/main.mojo](../../../examples/capture/main.mojo).
 
 ## Text
 

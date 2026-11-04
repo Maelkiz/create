@@ -10,5 +10,5 @@
 *.mojoc
 /build/
 
-# Written by examples/screenshot when its save keys are pressed
+# Written by examples/capture when its save and record keys are pressed
 out/
