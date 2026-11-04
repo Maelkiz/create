@@ -17,7 +17,7 @@ struct App(Program):
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> App:
-        # Everything below is authored against the 1280x720 passed to run().
+        # Everything below is authored against the 800x600 passed to run().
         # F11 toggles fullscreen. Space cycles the three modes:
         #   FIT     resize and the whole scene scales, letterboxed
         #   EXTEND  same scale, no bars — the leftover becomes extra world, so
