@@ -11,7 +11,15 @@
 **Create** is a creative coding library for rapid prototyping and interactive graphics, inspired by Processing but built to scale — 
 from sketch to game, prototype to full application. It provides a clean, modular API while taking full advantage of Mojo's performance and language features.
 
-## The shape of a program
+## Example program
+
+<p align="center">
+    <img src="assets/gifs/logo-animation.gif" alt="The Create logo assembling: a Sierpinski triangle drawn in points, then the logo's triangles flying in over it">
+    <br>
+    <sub>The logo drawn, animated and recorded to a GIF using the Create library itself. See: <a href="examples/logo/main.mojo">examples/logo</a> for the source code.</sub>
+</p>
+
+## The boilerplate
 
 ```mojo
 from create import *
@@ -43,8 +51,10 @@ run[MyApp]("Hello", backend=RenderBackend.GPU)
 `RenderBackend.from_arguments()` lets the command line choose instead: `GPU` when the program is run with a `gpu` argument, the CPU otherwise.
 
 ```mojo
-run[MyApp]("Hello", backend=RenderBackend.from_arguments())  # ./hello gpu
+run[MyApp]("Hello", backend=RenderBackend.from_arguments())
 ```
+
+## Running examples and benchmarks
 
 The example programs in this repository can be run with the `example` pixi task, which takes a name rather than a path. 
 The name is a folder under `examples/`, and the task runs its `main.mojo`.
