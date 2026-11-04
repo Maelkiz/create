@@ -1,41 +1,64 @@
 """A `Camera` over a world wider than the screen, and a label in
 `canvas.overlay()` that stays put whatever the camera does.
 
-Left and right pan, up and down zoom.
+The mouse is in screen space; `camera.to_world` says where it is in the
+world. Zooming keeps the world point under the cursor where it is, and a
+click drops a marker there, which then stays put in the world.
+
+Left and right pan, the mouse wheel zooms, a click drops a marker, C clears
+them.
 """
 
 from create import *
+
+comptime _BACKGROUND = Color(18, 18, 24)
+comptime _MARKER = Color(235, 120, 70)
+comptime _TEXT = Color(200, 200, 212)
+comptime _PAN_SPEED = 300.0
+"""Screen units per second, so a pan feels the same at any zoom."""
+comptime _ZOOM_STEP = 1.15
+"""How much one notch of the wheel zooms in or out."""
 
 
 @fieldwise_init
 struct CameraDemo(Program):
     var camera: Camera
+    var markers: List[Point2D]
+    """Where the clicks landed, in world space."""
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> CameraDemo:
-        return CameraDemo(Camera())
+        return CameraDemo(Camera(), [])
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        var speed = 300.0 * context.time.delta
-        if context.input.key_down(Key.RIGHT):
-            self.camera.position += Vector2D(speed, 0.0)
-        if context.input.key_down(Key.LEFT):
-            self.camera.position += Vector2D(-speed, 0.0)
-        if context.input.key_down(Key.UP):
-            self.camera.zoom = min(
-                3.0, self.camera.zoom + 1.0 * context.time.delta
-            )
-        if context.input.key_down(Key.DOWN):
-            self.camera.zoom = max(
-                0.3, self.camera.zoom - 1.0 * context.time.delta
-            )
+        ref input = context.input
+        var pan = _PAN_SPEED * context.time.delta / self.camera.zoom
+        if input.key_down(Key.RIGHT):
+            self.camera.position += Vector2D(pan, 0.0)
+        if input.key_down(Key.LEFT):
+            self.camera.position -= Vector2D(pan, 0.0)
 
-        canvas.background(Color(15, 15, 25))
+        # Zoom about the cursor: note the world point under it, zoom, then
+        # move the camera so that point is back under the cursor.
+        if input.mouse_wheel.y != 0.0:
+            var before = self.camera.to_world(input.mouse)
+            self.camera.zoom = clamp(
+                self.camera.zoom * pow(_ZOOM_STEP, input.mouse_wheel.y),
+                0.3,
+                4.0,
+            )
+            self.camera.position += before - self.camera.to_world(input.mouse)
+
+        if input.mouse_pressed():
+            self.markers.append(self.camera.to_world(input.mouse))
+        if input.key_pressed(Key.C):
+            self.markers.clear()
+
+        canvas.background(_BACKGROUND)
         canvas.camera(self.camera)
 
         # World content: a strip of posts stretching far past what any single
-        # screen shows, plus a marker at the world origin — panning the
-        # camera with left/right scrolls this whole strip underneath it.
+        # screen shows, and a marker at the world origin.
         canvas.outline_enabled(False)
         for i in range(-20, 20):
             var x = Float64(i) * 120.0
@@ -46,17 +69,35 @@ struct CameraDemo(Program):
         canvas.fill(Color(230, 190, 40))
         canvas.circle((0.0, 140.0), 14.0)
 
+        # In world units, so a marker grows and shrinks with the zoom.
+        with canvas.style(fill=_MARKER, outline=_TEXT, outline_thickness=2):
+            for marker in self.markers:
+                canvas.circle(marker, 10.0)
+
         # HUD: fixed to the screen regardless of where the camera looks or
         # how far it has zoomed.
         with canvas.overlay():
-            canvas.outline_enabled(False)
-            canvas.fill(Color(230, 230, 230))
-            canvas.rectangle((0.0, canvas.top() - 20.0), 300.0, 30.0)
-            canvas.text_color(Color(20, 20, 20))
-            canvas.text_align(Align.CENTER)
-            canvas.text(
-                "left/right pan, up/down zoom", (0.0, canvas.top() - 20.0)
-            )
+            with canvas.style(
+                text_color=_TEXT, font_size=18, text_align=Align.TOP
+            ):
+                canvas.text(
+                    "left/right pan, wheel zooms, click drops a marker, C"
+                    + " clears",
+                    (0.0, canvas.top() - 16.0),
+                )
+                var world = self.camera.to_world(input.mouse)
+                canvas.text(
+                    String(
+                        "zoom ",
+                        round(self.camera.zoom, 2),
+                        "x   mouse in the world: (",
+                        Int(world.x),
+                        ", ",
+                        Int(world.y),
+                        ")",
+                    ),
+                    (0.0, canvas.top() - 44.0),
+                )
 
 
 def main() raises:
