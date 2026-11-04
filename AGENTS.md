@@ -43,7 +43,7 @@ Package internals are documented in scoped files: [src/create/render/AGENTS.md](
 ## Build & Test
 
 ```bash
-mojo run -I src examples/sketch.mojo      # -I src is required, see Gotcha 1
+mojo run -I src examples/sketch/main.mojo      # -I src is required, see Gotcha 1
 pixi run example sketch                   # by name; no argument lists them
 pixi run benchmark frame                  # benchmarks/, same form; frame cpu for the CPU backend
 pixi run test                             # whole suite, concurrent
@@ -102,7 +102,7 @@ reserved (not usable as a name), and `;` statement separators don't parse.
 
 Implement `Program` (`create(mut context, mut canvas)` + `update(mut self, mut context, mut canvas)`)
 and pass it to `run[T]`. Minimum: [tests/core/test_smoke.mojo](tests/core/test_smoke.mojo); full shape:
-[examples/sidescroller/src/main.mojo](examples/sidescroller/src/main.mojo).
+[examples/sidescroller/main.mojo](examples/sidescroller/main.mojo).
 
 **`create` draws frame 1**, like Processing's `setup`: its `canvas` is a real frame, presented like
 every later one, so drawing there shows and geometry is as valid as on any first frame (Gotcha 3).
@@ -117,7 +117,7 @@ offscreen `Canvas(w, h)` (see Reading pixels) is the program's own and may be ke
 `Program`) and switches with an int field and `if`/`elif`. A scene's `update` takes only what it uses
 (`context` to read input or time, `canvas` to draw); a one-shot reset is a plain `enter(...)` method the parent calls before
 switching, taking whatever that transition carries. No trait: it would force one `update`/`enter`
-signature on every scene, and those must vary. See [examples/scenes/src/main.mojo](examples/scenes/src/main.mojo).
+signature on every scene, and those must vary. See [examples/scenes/main.mojo](examples/scenes/main.mojo).
 (Mojo 1.1 has no dynamic trait dispatch; heterogeneous storage is `Variant` from `std.utils`, with
 `isa[T]()` to dispatch.)
 
@@ -217,7 +217,7 @@ methods build a shape from numbers and draw it: `canvas.rectangle(p, w, h)` is
 `canvas.rectangle(r)`.
 - **A program's own type** is drawn the same way by conforming to `Drawable` and drawing its
   parts: `def draw_to[T: DrawTarget](self, mut target: T): target.draw(self.body)`. Style comes
-  from the canvas, not the parts. See [examples/drawables.mojo](examples/drawables.mojo).
+  from the canvas, not the parts. See [examples/drawables/main.mojo](examples/drawables/main.mojo).
 - `Drawable`, `DrawTarget` and the shape traits live in `geometry`, so a shape never imports `render`:
   `Canvas` is the `DrawTarget`, its `_`-named primitives are the library's own. Dispatch is
   static (one instantiation per type); a mixed list still needs `Variant`.
@@ -336,7 +336,7 @@ colour passes `antialiasing=Antialiasing.OFF`.
 `with canvas.clip(region):` renders only inside `region` for the block; `invert=True` keeps only
 what is outside it (fog, a spotlight). `region` is any `Region` — a `Rectangle`, `Circle`,
 `Triangle`, `Sector` or `Polygon`, the region types of `contains`/`overlaps` — rounded by its own
-`corner_radius` as when drawn; a curve is rejected at compile time. Guard-only: there is no bare clip to forget to undo. See [examples/clipping.mojo](examples/clipping.mojo).
+`corner_radius` as when drawn; a curve is rejected at compile time. Guard-only: there is no bare clip to forget to undo. See [examples/clipping/main.mojo](examples/clipping/main.mojo).
 - **Frozen at the call**, like a render call: placed by the transform and camera current then. A
   `transform` or `overlay` inside the block moves what is drawn, not the clip.
 - **Nested clips intersect.** On exit the enclosing clip is current again.
@@ -353,7 +353,7 @@ what is outside it (fog, a spotlight). `region` is any `Region` — a `Rectangle
 `canvas.color_at(position) -> Color` and `canvas.snapshot([region], scale=1.0) -> Image` read what the
 frame has drawn **so far**. They are a CPU replay of the commands recorded up to the call, like
 `save_image`, so both backends read the same pixels and the GPU is never stalled. See
-[examples/pixels.mojo](examples/pixels.mojo).
+[examples/pixels/main.mojo](examples/pixels/main.mojo).
 - **Screen space**, not world: the transform and camera don't apply. `canvas.color_at(context.input.mouse)`
   picks under the mouse as it is, and a snapshot region is always upright. Off the screen reads
   transparent.
@@ -370,7 +370,7 @@ frame has drawn **so far**. They are a CPU replay of the commands recorded up to
 **Offscreen canvas:** `Canvas(width, height, scale=1.0, antialiasing=Antialiasing.MEDIUM)` builds a
 canvas of the program's own, drawn into with every render call and guard and read back with
 `color_at`/`snapshot` — the way to draw into an image. Build it anywhere, `create` included; keep it as a
-field to draw into across frames. See [examples/offscreen.mojo](examples/offscreen.mojo).
+field to draw into across frames. See [examples/offscreen/main.mojo](examples/offscreen/main.mojo).
 - **Starts transparent**, no autoclear; screen space as usual (origin centred, y up). Always
   rasterised on the CPU, whatever the program's backend; the `Image` it gives draws on either.
 - **Bakes on read:** each read replays what was drawn since the last one onto the canvas's own
@@ -431,7 +431,7 @@ display. `run(..., autoscale=)` (or `context.autoscale(mode)` later) takes `FIT`
 `EXTEND` or `OFF`; `OFF` makes coordinates the window's own pixels. Both decide frame 1's mapping
 only as `run` arguments: the viewport is derived before `create`. Under `EXTEND` the reported size
 grows with the window, so anchor layout to the edges. Font size, outline thickness and image size
-scale by `canvas.scale()`. See [examples/window.mojo](examples/window.mojo).
+scale by `canvas.scale()`. See [examples/window/main.mojo](examples/window/main.mojo).
 
 `Context` dials are the run's, not the drawing's: `design_size`, `autoscale`, `title`,
 `window_mode`, `resizable`, `quit_on_escape`, `max_frame_rate`. They are methods
@@ -475,8 +475,8 @@ frame body returns. Headless runs ignore the window dials, like `rumble`.
 | `JSON` | One type for every JSON value, read with `[]` by key or index and `float`/`int`/`string`/`bool`; `kind()` is a `JSONKind`. `values()` is an array's items or an object's values, `keys()` an object's keys and `items()` its `(key, value)` pairs, as in Python. A value is a **handle into a shared document**: `[]`, `values()` and `items()` copy nothing, edits land in the document (`config["player"]["speed"] = 3.0`, or `enemy["hp"] = ...` in a loop over `values()`), and so **`var p = config["player"]` aliases `config`**, as in Processing, JavaScript and Python — `.copy()` is a deep, independent one. Assigning copies a value in, so one value set under two keys is two values. `int()` is exact to 64 bits for a number written whole and raises on a fraction. Replacing a value leaves the old node behind until `copy()` or `save` drops it, so a document rewritten every frame for long is kept small with `doc = doc.copy()`. `save(path, indent=2)`; `indent=0` is the printed form. Infinite and NaN numbers raise from `save`, print as `null` |
 | `Point2D` / `Vector2D` | Chosen by role. A location is a `Point2D` (`canvas.circle(position, r)`, `context.input.mouse`); a displacement is a `Vector2D` (`translate(delta)`, velocities); an extent is a scalar (`w`, `h`, `r`). Crossing between them is an explicit constructor — `Vector2D(p)`, `Point2D(v)` — never an implicit one. `Point2D` deliberately lacks `magnitude`, `normalize`, `dot`, scalar `*`, unary `-` and `Point2D + Point2D`. Only `Point2D` takes a bare tuple implicitly; a vector literal names its type (`p + Vector2D(1, 2)`), and `p - (1, 2)` is the displacement from `(1, 2)`, not a move. Named vectors are `comptime` constants: `Vector2D.ZERO`, `ONE`, `UP`, `DOWN`, `LEFT`, `RIGHT` (y up, so `DOWN` is `(0, -1)`). Angles are radians counter-clockwise from +x: `Vector2D.from_angle(a, length)`, `v.angle()`, `v.rotate(a)`, with `v.with_length(l)` and `v.limit(max)` for speeds; each returns a new vector, like `normalize` |
 | Down / pressed / released | Input state for keys, mouse and gamepad buttons alike. *Down* is held right now, true every frame (`key_down`, `mouse_down`, `pad.button_down`); *pressed*/*released* are edges, true only in the frame it went down or came up (`key_pressed`, `mouse_released`). Unlike Processing's `mousePressed`, *pressed* never means held. The most recent press is `input.key`, `input.mouse_button` and `pad.button`, each `Key`/`MouseButton`/`GamepadButton.NONE` before any — typed, like every enum, so a bare number never passes for a key, button or `FontWeight` |
-| `Gamepad` | `context.input.gamepad(i)`, a copy of player `i`'s pad (default 0). A pad takes the lowest free slot as it connects and keeps it until it disconnects; an empty slot reads `connected` False and all zero, so no check is needed first. Sticks are `Vector2D`s, **y up**, inside the unit circle, with a rescaled radial dead zone (`Gamepad.STICK_DEAD_ZONE`, 0.2) so a resting stick reads exactly zero; triggers 0..1. Face buttons are positional (`GamepadButton.SOUTH` is Xbox A and PlayStation Cross). `connected_this_frame`/`disconnected_this_frame` are the edges of `connected`, and `name` survives the frame a pad leaves in. `context.rumble(seconds, low_frequency=, high_frequency=, player=)` shakes a pad (both motors full by default; a new rumble replaces the running one); it is an output, so it lives on `Context`, not on the `Gamepad` copy. See [examples/gamepad.mojo](examples/gamepad.mojo) |
-| Typed / `text` | Text entry. `key_typed` is pressed or auto-repeated while held, for editing keys (Backspace, arrows); `context.input.text` is this frame's typed characters, UTF-8, with shift, layout and IME applied — append it, don't rebuild it from keycodes. Both reset every frame. `EditableText` does the editing: fed `context.input` each frame, it keeps `text` and a caret, whole characters at a time; `canvas.text_width(field.before_caret())` places the caret. See [examples/typing.mojo](examples/typing.mojo) |
+| `Gamepad` | `context.input.gamepad(i)`, a copy of player `i`'s pad (default 0). A pad takes the lowest free slot as it connects and keeps it until it disconnects; an empty slot reads `connected` False and all zero, so no check is needed first. Sticks are `Vector2D`s, **y up**, inside the unit circle, with a rescaled radial dead zone (`Gamepad.STICK_DEAD_ZONE`, 0.2) so a resting stick reads exactly zero; triggers 0..1. Face buttons are positional (`GamepadButton.SOUTH` is Xbox A and PlayStation Cross). `connected_this_frame`/`disconnected_this_frame` are the edges of `connected`, and `name` survives the frame a pad leaves in. `context.rumble(seconds, low_frequency=, high_frequency=, player=)` shakes a pad (both motors full by default; a new rumble replaces the running one); it is an output, so it lives on `Context`, not on the `Gamepad` copy. See [examples/gamepad/main.mojo](examples/gamepad/main.mojo) |
+| Typed / `text` | Text entry. `key_typed` is pressed or auto-repeated while held, for editing keys (Backspace, arrows); `context.input.text` is this frame's typed characters, UTF-8, with shift, layout and IME applied — append it, don't rebuild it from keycodes. Both reset every frame. `EditableText` does the editing: fed `context.input` each frame, it keeps `text` and a caret, whole characters at a time; `canvas.text_width(field.before_caret())` places the caret. See [examples/typing/main.mojo](examples/typing/main.mojo) |
 | `overlaps` / `intersects` / `contains` | `overlaps(a, b)`: free, symmetric, regions only (`Rectangle`/`Circle`/`Triangle`/`Sector`/`Polygon`). `curve.intersects(x)`: every curve (`Line`, `Arc`, `Bezier`, `Spline`) against every shape and `Point2D`, both ways round, since a curve has no interior. `region.contains(x)`: asymmetric, every region against every region and every curve. A curve is never a region. All three see a shape's `corner_radius`. `Line` and `Arc` are exact (to `_RADIUS_EPSILON` with an arc); `Bezier` and `Spline` flatten themselves to within 1e-4 of their size, so a crossing is always found but a graze or near miss is decided only that closely; a region's `contains` follows `Arc`, `Bezier` and `Spline` the same way |
 | `Drawable` / `DrawTarget` | `Drawable` is what `canvas.draw` takes: every shape, or a program's own type that draws its parts (`draw_to[T: DrawTarget](self, mut target: T)`). `DrawTarget` is where it draws: `Canvas`, through one `_`-named primitive per kind and the provided `draw` |
 | `Shape` / `Region` / `Curve` | The geometry's traits, so every shape of a kind answers the same methods and generic code takes any (`def f[C: Curve](c: C)`). `Shape(Drawable)`, every one of the nine, `Copyable` and `Deinitable`: `bounds`, `closest_point`, `translate`. `Region(Shape)`, the five with an inside (`Rectangle`, `Circle`, `Triangle`, `Sector`, `Polygon`), which `canvas.clip` takes: `center`, `area`, `contains(Point2D)`, `move_to`. `Curve(Shape)`, the four without (`Line`, `Arc`, `Bezier`, `Spline` — a straight line is a curve, as in mathematics): `at`, `tangent` (the derivative, not unit), `length`, `at_distance`, `flatten`, `beziers`. Tests between two shapes (`overlaps`, `contains(shape)`, `intersects`) stay overloads per pair, so they are not trait methods; nor is a curve's `move_to`, which only `Line` (its midpoint) and `Arc` (its centre) have, or `split(t)`, which `Line`, `Arc` and `Bezier` have — a piece of a `Spline` is not a `Spline` |

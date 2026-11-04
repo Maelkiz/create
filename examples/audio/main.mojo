@@ -55,8 +55,8 @@ struct AudioDemo(Program):
     def create(mut context: Context, mut canvas: Canvas) raises -> AudioDemo:
         return AudioDemo(
             audio=Audio(),
-            chime=Sound.load(source_path("../assets/chime.wav")),
-            ambience=Sound.load(source_path("../assets/ambience.wav")),
+            chime=Sound.load(source_path("assets/chime.wav")),
+            ambience=Sound.load(source_path("assets/ambience.wav")),
             ambience_voice=Voice.NONE,
             ambience_volume=0.8,
             chimed_at=-10.0,

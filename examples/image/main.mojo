@@ -67,9 +67,7 @@ struct Images(Program):
     def create(mut context: Context, mut canvas: Canvas) raises -> Images:
         var pictures = List[Image]()
         for format in _formats():
-            pictures.append(
-                Image.load(source_path("../assets/image." + format))
-            )
+            pictures.append(Image.load(source_path("assets/image." + format)))
         return Images(
             pictures=pictures^,
             sprite=_sprite(),

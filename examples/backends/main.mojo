@@ -28,7 +28,7 @@ struct App(Program):
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> App:
         # Twice, below, from one interned image and so one GL upload.
-        var logo = Image.load(source_path("../assets/logo/png/logo.png"))
+        var logo = Image.load(source_path("../../assets/logo/png/logo.png"))
         return App(0.0, logo^, 0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

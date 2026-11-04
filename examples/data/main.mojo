@@ -19,10 +19,10 @@ struct Chart(Program):
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> Chart:
-        var scores = Table.load(source_path("../assets/scores.csv"))
+        var scores = Table.load(source_path("assets/scores.csv"))
         scores.sort("score", descending=True)
 
-        var style = JSON.load(source_path("../assets/style.json"))
+        var style = JSON.load(source_path("assets/style.json"))
         var colors = style["colors"]
         return Chart(
             scores^,

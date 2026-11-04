@@ -47,11 +47,11 @@ run[MyApp]("Hello", backend=RenderBackend.from_arguments())  # ./hello gpu
 ```
 
 The example programs in this repository can be run with the `example` pixi task, which takes a name rather than a path. 
-The name must correspond to a file or folder under `examples/`. For folders it will find an run their `src/main.mojo`.
+The name is a folder under `examples/`, and the task runs its `main.mojo`.
 
 ```bash
-pixi run example sketch          # examples/sketch.mojo
-pixi run example sidescroller    # examples/sidescroller/src/main.mojo
+pixi run example sketch          # examples/sketch/main.mojo
+pixi run example sidescroller    # examples/sidescroller/main.mojo
 pixi run example                 # lists every example
 ```
 

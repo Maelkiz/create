@@ -69,8 +69,8 @@ struct Poster(Program):
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> Poster:
         var mono = Font.load(
-            source_path("../assets/fonts/JetBrainsMono.ttf"),
-            italic_path=source_path("../assets/fonts/JetBrainsMono-Italic.ttf"),
+            source_path("assets/fonts/JetBrainsMono.ttf"),
+            italic_path=source_path("assets/fonts/JetBrainsMono-Italic.ttf"),
         )
         return Poster(mono=mono, seed=1)
 
