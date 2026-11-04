@@ -1,5 +1,6 @@
-"""How the 800x600 design maps onto a window of any size. Resize the window in
-each mode:
+"""How the 800x600 design maps onto a window of any size.
+
+Resize the window in each mode:
 
     FIT     the whole scene scales, letterboxed
     EXTEND  same scale, no bars: the leftover becomes extra world, so the
