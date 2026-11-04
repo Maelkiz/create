@@ -8,6 +8,10 @@
 # the tests see. --emit llvm stops after type-checking and IR generation:
 # the binaries were never used, and skipping optimisation and linking saves
 # about a third.
+#
+# A warning fails the build too: an unused result is how a discarded
+# `shape.move_to(...)` (a verb returning a new value) shows, and nothing else
+# would catch it.
 set -u
 
 out=$(mktemp -d)
@@ -26,11 +30,15 @@ export OUT="$out"
 # caps a command assembled by -I at 255 bytes, and this one is longer.
 echo "$entrypoints" | xargs -n 1 -P "$jobs" sh -c '
     name=$(echo "$1" | tr / _)
-    if mojo build -I src --emit llvm "$1" -o "$OUT/$name.ll" \
+    if ! mojo build -I src --emit llvm "$1" -o "$OUT/$name.ll" \
         > "$OUT/$name.log" 2>&1; then
-        echo "PASS $1"
-    else
         echo "FAIL $1"
         cat "$OUT/$name.log"
         exit 1
+    elif grep -q "warning:" "$OUT/$name.log"; then
+        echo "FAIL $1 (warnings)"
+        cat "$OUT/$name.log"
+        exit 1
+    else
+        echo "PASS $1"
     fi' sh
