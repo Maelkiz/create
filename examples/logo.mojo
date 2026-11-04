@@ -1,10 +1,15 @@
 """The Create logo: a black triangle cut into four rows of smaller ones, with
 the six pointing down in colour and the middle one left white.
 
-Each small triangle flies in from off screen, spinning, one after another,
-and each on a different easing curve. Press any key to play it again.
+The logo is Pascal's triangle, rows 0 to 3, by parity: the triangles
+pointing up are its entries, black where the entry is odd and white where it
+is even. Pascal's triangle by parity, carried on forever, is the Sierpinski
+triangle, so that is drawn first, in points, with the chaos game: start at a
+corner, then over and over move halfway towards a corner picked at random.
 
-`sierpinski.mojo` builds the same logo out of points.
+Then each small triangle of the logo flies in over it from off screen,
+spinning, one after another, and each on a different easing curve. Press any
+key to play it again.
 """
 
 from create import *
@@ -13,6 +18,9 @@ from create import *
 comptime _SIDE = 640.0
 comptime _PAPER = Color(253, 253, 250)
 
+comptime _POINTS_PER_FRAME = 2000
+comptime _MAX_POINTS = 240_000
+"""Where the points stop and the triangles set off."""
 comptime _DURATION = 1.2
 """Seconds each triangle takes to fly in."""
 comptime _STAGGER = 0.25
@@ -52,7 +60,16 @@ struct _Piece(Copyable):
 @fieldwise_init
 struct Logo(Program):
     var pieces: List[_Piece]
+    var random: Random
+    var point: Point2D
+    """The chaos game's current position."""
+    var layer: Canvas
+    """The points so far, transparent between them."""
+    var picture: Image
+    """`layer` as last read."""
+    var count: Int
     var elapsed: Float64
+    """Seconds since the points stopped and the triangles set off."""
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> Logo:
@@ -116,21 +133,62 @@ struct Logo(Program):
                     delay=Float64(i) * _STAGGER,
                 )
             )
-        return Logo(pieces=pieces^, elapsed=0.0)
+        var layer = Canvas(
+            canvas.width(), canvas.height(), antialiasing=Antialiasing.OFF
+        )
+        var picture = layer.snapshot()
+        return Logo(
+            pieces=pieces^,
+            random=Random(),
+            point=_corner(0, 0),
+            layer=layer^,
+            picture=picture^,
+            count=0,
+            elapsed=0.0,
+        )
+
+    def random_corner(mut self) -> Point2D:
+        var pick = self.random.int(0, 3)
+        if pick == 0:
+            return _corner(0, 0)
+        if pick == 1:
+            return _corner(4, 0)
+        return _corner(4, 4)
+
+    def restart(mut self) raises:
+        self.layer.clear()
+        self.picture = self.layer.snapshot()
+        self.point = _corner(0, 0)
+        self.count = 0
+        self.elapsed = 0.0
+        for ref piece in self.pieces:
+            piece.tween.stop()
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         # `key` is the last key pressed, and pressed only in the frame it
         # went down: so this is any key, this frame.
         if context.input.key_pressed(context.input.key):
-            self.elapsed = 0.0
-            for ref piece in self.pieces:
-                piece.tween.stop()
+            self.restart()
 
-        self.elapsed += context.time.delta
+        if self.count < _MAX_POINTS:
+            # A point on the logo's edge would stick half a pixel out past
+            # it, and nothing drawn later covers the outside: clip to it.
+            var outline = Triangle(_corner(0, 0), _corner(4, 0), _corner(4, 4))
+            with self.layer.clip(outline):
+                with self.layer.style(fill=Color.BLACK, outline_enabled=False):
+                    for _ in range(_POINTS_PER_FRAME):
+                        self.point = self.point.lerp(self.random_corner(), 0.5)
+                        self.layer.rectangle(self.point, 1, 1)
+            self.count += _POINTS_PER_FRAME
+            self.picture = self.layer.snapshot()
+        else:
+            self.elapsed += context.time.delta
+
         var landed = True
         for ref piece in self.pieces:
             if (
-                self.elapsed >= piece.delay
+                self.count >= _MAX_POINTS
+                and self.elapsed >= piece.delay
                 and not piece.tween.is_playing()
                 and not piece.tween.is_finished()
             ):
@@ -139,6 +197,7 @@ struct Logo(Program):
             landed = landed and piece.tween.is_finished()
 
         canvas.background(_PAPER)
+        canvas.image(self.picture, (0, 0), canvas.width(), canvas.height())
         canvas.outline_enabled(False)
         if landed:
             # Under the landed pieces, so no seam shows where two meet.
@@ -162,4 +221,5 @@ struct Logo(Program):
 
 
 def main() raises:
-    run[Logo]("Logo", width=800, height=800)
+    # Hard edges, pixel for pixel like the points'.
+    run[Logo]("Logo", width=800, height=800, antialiasing=Antialiasing.OFF)
