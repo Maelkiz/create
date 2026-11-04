@@ -7,6 +7,8 @@
     Shift+I    the same image at 2x, with a transparent background
     R          start or stop recording an animated GIF of what the program
                draws, as the image is drawn, for up to ten seconds
+    X          throw the recording in progress away, keeping any file
+               saved before
 
 Resize the window and press S and I to see the difference: the screenshot
 follows the window, the image never does. Under `RenderBackend.GPU` the
@@ -66,6 +68,9 @@ struct Capture(Program):
                     source_path("out/recording.gif"), seconds=_RECORD_SECONDS
                 )
                 self.saved = ""
+        elif input.key_pressed(Key.X) and canvas.recording():
+            canvas.cancel_recording()
+            self.saved = ""
 
         canvas.background(Color(0x14, 0x1C, 0x26))
 
@@ -85,7 +90,7 @@ struct Capture(Program):
             )
         with canvas.style(text_color=Color.WHITE, font_size=20):
             if canvas.recording():
-                var label = String("Recording; R to stop")
+                var label = String("Recording; R to stop, X to discard")
                 # Drawn like everything else, so it is in the recording too.
                 var dot = -canvas.text_width(label) / 2.0 - 16.0
                 with canvas.style(fill=Color.RED, outline_enabled=False):
