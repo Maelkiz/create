@@ -1,4 +1,4 @@
-"""Writing animated GIFs, frame by frame: what `canvas.record` saves.
+"""Writing animated GIFs, frame by frame: what `canvas.start_recording` saves.
 
 A GIF frame holds at most 256 colours, so each frame is quantised first:
 exactly, when it has no more than 256 distinct colours (flat graphics stay

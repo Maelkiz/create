@@ -62,7 +62,7 @@ struct Capture(Program):
                 canvas.stop_recording()
                 self.saved = "recording.gif"
             else:
-                canvas.record(
+                canvas.start_recording(
                     source_path("out/recording.gif"), seconds=_RECORD_SECONDS
                 )
                 self.saved = ""

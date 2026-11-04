@@ -1,4 +1,4 @@
-# The GIF writer behind canvas.record, checked against the decoder in
+# The GIF writer behind canvas.start_recording, checked against the decoder in
 # _gif_decode.mojo: LZW round trips at every code size (a full table cleared
 # included), exact and quantised palettes, and a whole file's header,
 # frames, delays and trailer.

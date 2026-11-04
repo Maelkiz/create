@@ -1,4 +1,4 @@
-# canvas.record, run headless: the synthetic clock (16 ms a frame) makes
+# canvas.start_recording, run headless: the synthetic clock (16 ms a frame) makes
 # every recording deterministic, so frame counts and delays are exact. Each
 # scenario is one parameter of the program; the GIF is read back with the
 # decoder in _gif_decode.mojo.
@@ -27,26 +27,26 @@ struct Recorder[scenario: Int](Program):
     def create(mut context: Context, mut canvas: Canvas) raises -> Self:
         canvas.background(Color.RED)
         if Self.scenario == 0:
-            canvas.record(_path(0), frames=5)
+            canvas.start_recording(_path(0), frames=5)
         elif Self.scenario == 1:
-            canvas.record(_path(1), seconds=0.5)
+            canvas.start_recording(_path(1), seconds=0.5)
         elif Self.scenario == 2 or Self.scenario == 3:
-            canvas.record(_path(Self.scenario))
+            canvas.start_recording(_path(Self.scenario))
         elif Self.scenario == 4:
-            canvas.record(_path(4))
+            canvas.start_recording(_path(4))
         elif Self.scenario == 5:
-            canvas.record(_path(5), frames=2, scale=0.5)
+            canvas.start_recording(_path(5), frames=2, scale=0.5)
         elif Self.scenario == 10:
-            canvas.record("/tmp/create_test_record.png")
+            canvas.start_recording("/tmp/create_test_record.png")
         elif Self.scenario == 11:
-            canvas.record(_path(11), seconds=1, frames=10)
+            canvas.start_recording(_path(11), seconds=1, frames=10)
         elif Self.scenario == 12:
-            canvas.record(_path(12), fps=60)
+            canvas.start_recording(_path(12), fps=60)
         elif Self.scenario == 13:
             var offscreen = Canvas(10, 10)
-            offscreen.record(_path(13))
+            offscreen.start_recording(_path(13))
         elif Self.scenario == 14:
-            canvas.record(_path(14), frames=0)
+            canvas.start_recording(_path(14), frames=0)
         return Self(0)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
@@ -54,7 +54,7 @@ struct Recorder[scenario: Int](Program):
         if Self.scenario == 2 and frame == 10:
             canvas.stop_recording()
         if Self.scenario == 4 and frame == 6:
-            canvas.record(_path(41), frames=3)
+            canvas.start_recording(_path(41), frames=3)
         canvas.background(Color(UInt8(frame * 8), UInt8(frame * 8), 100))
         with canvas.style(
             fill=Color.GREEN if canvas.recording() else Color.BLUE,
