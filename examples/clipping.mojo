@@ -50,4 +50,4 @@ struct Clipping(Program):
 
 
 def main() raises:
-    run[Clipping]("Clipping", width=800, height=600, mode=WindowMode.FULLSCREEN)
+    run[Clipping]("Clipping", width=800, height=600)

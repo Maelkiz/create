@@ -68,4 +68,4 @@ struct Game(Program):
 
 
 def main() raises:
-    run[Game]("Sidescroller", WindowMode.FULLSCREEN)
+    run[Game]("Sidescroller")
