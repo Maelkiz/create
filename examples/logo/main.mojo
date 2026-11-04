@@ -8,9 +8,13 @@ triangle, so that is drawn first, in points, with the chaos game: start at a
 corner, then over and over move halfway towards a corner picked at random.
 
 Then each small triangle of the logo flies in over it from off screen,
-spinning, one after another, and each on a different easing curve. Press any
-key to play it again.
+spinning, one after another, and each on a different easing curve.
+
+The whole animation is recorded as it plays, and saved to `out/logo.gif`
+beside this file once the finished logo has been on screen for 1.5 seconds.
 """
+
+from std.os import makedirs
 
 from create import *
 
@@ -27,6 +31,8 @@ comptime _STAGGER = 0.25
 """Seconds between one triangle setting off and the next."""
 comptime _DISTANCE = 900.0
 """How far out each triangle starts: past the corner of the 800x800 screen."""
+comptime _HOLD_SECONDS = 1.5
+"""How long the recording keeps the finished logo on screen."""
 
 
 def _corner(row: Int, index: Int) -> Point2D:
@@ -70,6 +76,8 @@ struct Logo(Program):
     var count: Int
     var elapsed: Float64
     """Seconds since the points stopped and the triangles set off."""
+    var shown: Float64
+    """Seconds the finished logo has been on screen."""
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> Logo:
@@ -137,6 +145,9 @@ struct Logo(Program):
             canvas.width(), canvas.height(), antialiasing=Antialiasing.OFF
         )
         var picture = layer.snapshot()
+        # Saving into a folder that isn't there fails, so make it first.
+        makedirs(source_path("out"), exist_ok=True)
+        canvas.start_recording(source_path("out/logo.gif"))
         return Logo(
             pieces=pieces^,
             random=Random(),
@@ -145,6 +156,7 @@ struct Logo(Program):
             picture=picture^,
             count=0,
             elapsed=0.0,
+            shown=0.0,
         )
 
     def random_corner(mut self) -> Point2D:
@@ -155,21 +167,7 @@ struct Logo(Program):
             return _corner(4, 0)
         return _corner(4, 4)
 
-    def restart(mut self) raises:
-        self.layer.clear()
-        self.picture = self.layer.snapshot()
-        self.point = _corner(0, 0)
-        self.count = 0
-        self.elapsed = 0.0
-        for ref piece in self.pieces:
-            piece.tween.stop()
-
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        # `key` is the last key pressed, and pressed only in the frame it
-        # went down: so this is any key, this frame.
-        if context.input.key_pressed(context.input.key):
-            self.restart()
-
         if self.count < _MAX_POINTS:
             # A point on the logo's edge would stick half a pixel out past
             # it, and nothing drawn later covers the outside: clip to it.
@@ -195,6 +193,10 @@ struct Logo(Program):
                 piece.tween.play()
             piece.tween.update(context.time.delta)
             landed = landed and piece.tween.is_finished()
+        if landed:
+            self.shown += context.time.delta
+            if canvas.recording() and self.shown >= _HOLD_SECONDS:
+                canvas.stop_recording()
 
         canvas.background(_PAPER)
         canvas.image(self.picture, (0, 0), canvas.width(), canvas.height())
