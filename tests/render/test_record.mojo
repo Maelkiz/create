@@ -5,6 +5,9 @@
 
 from std.testing import TestSuite, assert_equal, assert_true
 
+from std.os import remove
+from std.os.path import exists
+
 from _gif_decode import DecodedGif, decode_gif
 from create import *
 
@@ -36,6 +39,8 @@ struct Recorder[scenario: Int](Program):
             canvas.start_recording(_path(4))
         elif Self.scenario == 5:
             canvas.start_recording(_path(5), frames=2, scale=0.5)
+        elif Self.scenario == 6 or Self.scenario == 7:
+            canvas.start_recording(_path(Self.scenario))
         elif Self.scenario == 10:
             canvas.start_recording("/tmp/create_test_record.png")
         elif Self.scenario == 11:
@@ -53,6 +58,12 @@ struct Recorder[scenario: Int](Program):
         var frame = context.frame_count()
         if Self.scenario == 2 and frame == 10:
             canvas.stop_recording()
+        if Self.scenario == 6 and frame == 3:
+            # Mid-recording, the frames go to the .partial file only.
+            if not exists(_path(6) + ".partial"):
+                raise Error("no .partial file while recording")
+        if Self.scenario == 6 and frame == 5:
+            canvas.cancel_recording()
         if Self.scenario == 4 and frame == 6:
             canvas.start_recording(_path(41), frames=3)
         canvas.background(Color(UInt8(frame * 8), UInt8(frame * 8), 100))
@@ -68,6 +79,19 @@ def _delays(gif: DecodedGif) -> Int:
     for frame in gif.frames:
         total += frame.delay
     return total
+
+
+def _no_partial(scenario: Int) raises:
+    assert_true(
+        not exists(_path(scenario) + ".partial"),
+        "a finished recording left its .partial file",
+    )
+
+
+def _write_text(path: String, text: String) raises:
+    var f = open(path, "w")
+    f.write(text)
+    f.close()
 
 
 def _corner(image: Image) -> Color:
@@ -94,6 +118,7 @@ def test_a_frame_limit_records_that_many_frames() raises -> None:
     assert_equal(Int(gif.frames[0].pixels[middle + 2]), 0)
     # Finished at its fifth frame, long before the run ended.
     assert_equal(_corner(last), Color.BLUE)
+    _no_partial(0)
 
 
 def test_a_time_limit_records_that_much_of_the_run() raises -> None:
@@ -118,6 +143,24 @@ def test_the_run_ending_finishes_the_file() raises -> None:
     var gif = decode_gif(_path(3))
     # 21 frames, the last at 0.32 s: slots 0 to 9.
     assert_equal(len(gif.frames), 10)
+    _no_partial(3)
+
+
+def test_cancelling_leaves_no_file_and_the_old_one_untouched() raises -> None:
+    _write_text(_path(6), "an older take")
+    var last = run_headless[Recorder[6]](_WIDTH, _HEIGHT, 20)
+    assert_equal(_corner(last), Color.BLUE)
+    _no_partial(6)
+    assert_equal(open(_path(6), "r").read(), "an older take")
+    remove(_path(6))
+
+
+def test_a_finished_recording_replaces_an_older_file() raises -> None:
+    _write_text(_path(7), "an older take")
+    _ = run_headless[Recorder[7]](_WIDTH, _HEIGHT, 10)
+    var gif = decode_gif(_path(7))
+    assert_true(len(gif.frames) > 0)
+    _no_partial(7)
 
 
 def test_a_new_recording_finishes_the_one_before() raises -> None:

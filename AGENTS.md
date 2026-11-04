@@ -412,8 +412,11 @@ the one it is called in as an animated GIF (the only format; the path must end i
   deterministically. With the autoclear off a frame holds only its own drawing, as an image does.
 - **Lasts across frames**, like the canvas settings above: until `seconds` of the run's time or
   `frames` frames, `canvas.stop_recording()` (the file is complete when it returns), or the end of
-  the run, which finishes it. `canvas.recording()` reads it back; a new `start_recording` finishes the one in
-  progress first.
+  the run, which finishes it. `canvas.cancel_recording()` ends it without saving.
+  `canvas.recording()` reads it back; a new `start_recording` finishes the one in progress first.
+- **Written beside the target first**, to `path` + `.partial`, which replaces `path` when the
+  recording finishes: a file already there survives a cancel, and a crash leaves a `.partial`
+  rather than a broken GIF.
 - **Timed by the run's clock**, sampled `fps` times a second (at most 50): a display faster than
   `fps` skips frames, and a slow frame stays on screen longer, so the GIF plays at the program's
   speed.

@@ -341,7 +341,9 @@ both the finished framebuffer and the unconsumed command buffer; a failed write 
   present, a frame is captured in each slot it enters, and the capture waits in `pending` until the
   next says how many slots it covered, since a GIF frame's delay precedes its pixels. Delays are
   differences of rounded slot times (`_centiseconds`), so they never drift. Every loop calls
-  `finish_recording` after its last frame; `GifWriter` (`_gif.mojo`) streams the file.
+  `finish_recording` after its last frame. `GifWriter` (`_gif.mojo`) streams the file to
+  `path + ".partial"` and renames it into place at `finish` through C's `rename` (the standard
+  library has none); `cancel_recording` deletes the partial file instead.
 
 See [examples/capture/main.mojo](../../../examples/capture/main.mojo).
 
