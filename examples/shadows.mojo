@@ -4,15 +4,11 @@
     pixi run example shadows gpu    # the same scene through the GPU backend
 
 Space toggles every shadow between soft and hard.
-
-`run_gl` is internal while the GPU backend is being built, so this example
-names it by path rather than through the preamble.
 """
 
 from std.sys import argv
 
 from create import *
-from create.core._run_gl import run_gl
 
 
 @fieldwise_init
@@ -93,8 +89,7 @@ struct App(Program):
                 with canvas.transform(translate(430, 110) @ rotate(self.angle)):
                     canvas.draw(square)
 
-        # An image casts its alpha, not its box. Images move with a
-        # transform but are never turned by one, so this one stands still.
+        # An image casts its alpha, not its box.
         canvas.image(self.logo, (300, -170), 150, 150)
         canvas.shadow_enabled(False)
 
@@ -111,11 +106,8 @@ struct App(Program):
 
 
 def main() raises:
-    var gpu = False
+    var backend = RenderBackend.CPU
     for i in range(1, len(argv())):
         if argv()[i] == "gpu":
-            gpu = True
-    if gpu:
-        run_gl[App]("Shadows (GPU)", width=1280, height=720)
-    else:
-        run[App]("Shadows", width=1280, height=720)
+            backend = RenderBackend.GPU
+    run[App]("Shadows", width=1280, height=720, backend=backend)

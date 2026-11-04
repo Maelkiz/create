@@ -1,21 +1,19 @@
-"""The five solid command kinds, rendered on the GPU backend.
+"""The five solid command kinds, for comparing the two backends.
 
-The visual comparison target for the CPU path: run this, then drop the
-`backend=RenderBackend.GPU` argument, and the two frames should be indistinguishable
-apart from the GPU's multisampled edges. Everything on screen is deliberately
-a case the two backends could disagree about — a translucent fill under an
-outline, an outline wider than its shape, a rotated rect, a diagonal line, a
-letterbox bar under `FIT`.
+    pixi run example shapes                 # CPU
+    pixi run example shapes gpu             # the same scene through the GPU
+    pixi run example shapes gpu fullscreen  # letterboxed on a wide display
 
-    pixi run example gl_shapes
-    pixi run example gl_shapes fullscreen
-    mojo build -I src examples/gl_shapes.mojo -o build/gl_shapes && ./build/gl_shapes
-
-`WindowMode.FULLSCREEN` covers the display without changing the design
-size, so the letterbox bars stay in the frame and just get wider — the
-GPU backend takes the mode exactly as the CPU one does. A cycles the
-antialiasing level, to compare the edges at each. Escape quits.
+The two frames should be indistinguishable apart from the GPU's
+multisampled edges. Everything on screen is deliberately a case the two
+backends could disagree about — a translucent fill under an outline, an
+outline wider than its shape, a rotated rect, a diagonal line, and in
+fullscreen a letterbox bar under `FIT`: the 4:3 design keeps its size, so
+on a 16:9 display the bars are on screen from the first frame. A cycles
+the antialiasing level, to compare the edges at each. Escape quits.
 """
+
+from std.sys import argv
 
 from create import *
 
@@ -141,12 +139,11 @@ struct App(Program):
 
 
 def main() raises:
-    run[App](
-        "GL Shapes",
-        WindowMode.FULLSCREEN,
-        # A 4:3 design on a 16:9 display, so the letterbox bars are on screen
-        # from the first frame.
-        width=800,
-        height=600,
-        backend=RenderBackend.GPU,
-    )
+    var backend = RenderBackend.CPU
+    var mode = WindowMode.WINDOWED
+    for i in range(1, len(argv())):
+        if argv()[i] == "gpu":
+            backend = RenderBackend.GPU
+        elif argv()[i] == "fullscreen":
+            mode = WindowMode.FULLSCREEN
+    run[App]("Shapes", mode, width=800, height=600, backend=backend)

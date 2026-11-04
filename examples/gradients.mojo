@@ -6,14 +6,10 @@
 The background spans the whole window (`EXTEND`), so resize it to watch the
 sky stretch. A gradient spans each shape's own box, so the card's turns with
 it.
-
-`run_gl` is internal while the GPU backend is being built, so this example
-names it by path rather than through the preamble.
 """
 from std.sys import argv
 
 from create import *
-from create.core._run_gl import run_gl
 
 
 @fieldwise_init
@@ -117,18 +113,14 @@ struct App(Program):
 
 
 def main() raises:
-    var gpu = False
+    var backend = RenderBackend.CPU
     for i in range(1, len(argv())):
         if argv()[i] == "gpu":
-            gpu = True
-    if gpu:
-        run_gl[App](
-            "Gradients (GPU)",
-            width=1280,
-            height=720,
-            autoscale=Autoscale.EXTEND,
-        )
-    else:
-        run[App](
-            "Gradients", width=1280, height=720, autoscale=Autoscale.EXTEND
-        )
+            backend = RenderBackend.GPU
+    run[App](
+        "Gradients",
+        width=1280,
+        height=720,
+        autoscale=Autoscale.EXTEND,
+        backend=backend,
+    )
