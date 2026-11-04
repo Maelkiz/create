@@ -95,6 +95,7 @@ def run_headless[
         context._advance_frame(now)
         state = step(program, context, state^)
         state._backend.present(mem.surface(), state._view.scale)
+    state._backend.finish_recording()
     return _image_of(mem^)
 
 

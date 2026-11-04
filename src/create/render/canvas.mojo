@@ -1,5 +1,5 @@
 from std.collections import Optional
-from std.math import floor
+from std.math import ceil, floor
 
 from create.color.color import Color
 from create.color.gradient import Gradient
@@ -36,7 +36,8 @@ from create.math.matrix import (
 )
 from create.image.image import Image
 from create.image.animator import Animator
-from ._backend import Backend, _ImageRequest, _seed
+from ._backend import Backend, _ImageRequest, _Recording, _seed
+from ._gif import GifWriter
 from .render_backend import RenderBackend
 from ._command import (
     clear_command,
@@ -1013,6 +1014,102 @@ struct Canvas(DrawTarget, Movable):
             self._state._backend.target.value().save(path, opaque=False)
             return
         self._state._backend.request_screenshot(path)
+
+    def record(
+        mut self,
+        path: String,
+        *,
+        seconds: _OptionalFloat64 = None,
+        frames: Optional[Int] = None,
+        fps: Float64 = 30.0,
+        scale: Float64 = 1.0,
+        dither: Bool = False,
+    ) raises:
+        """Record the frames from this one on as an animated GIF at `path`.
+
+        Each frame is what `save_image` would save: the design size times
+        `scale`, no letterbox, replayed on the CPU, so either backend and
+        every machine records the same pixels, and a headless run records
+        deterministically. Recording starts with the frame this is called
+        in, captured whole however early in `update` it was called, and runs
+        until `seconds` of the run's time or `frames` frames, until
+        `stop_recording`, or until the run ends, which finishes the file.
+        A new `record` finishes the recording in progress first.
+
+        The run's clock is sampled `fps` times a second, so the GIF plays at
+        the program's own speed whatever the display's rate: a window faster
+        than `fps` skips frames, and a slow frame stays on screen longer. A
+        GIF times frames in hundredths of a second, and many players slow
+        anything faster than 50 fps, so `fps` is at most 50.
+
+        Each frame gets a palette of its own: exact if it has 256 colours or
+        fewer, the nearest 256 otherwise. `dither` mixes neighbouring pixels
+        so smooth gradients don't band, at the cost of a grainier file.
+
+        Capturing and encoding run as each frame is presented, so a long
+        recording of a heavy scene slows it down. With the autoclear off,
+        each frame holds only what was drawn in it, as `save_image` does.
+
+        Raises at once for a path not ending in `.gif`, `seconds` and
+        `frames` both given, a value that isn't positive, `fps` above 50, a
+        file that can't be opened, or an offscreen canvas, which has no
+        frames to record.
+        """
+        if self._offscreen():
+            raise Error(
+                "record needs the frame canvas: an offscreen canvas has no"
+                " frames"
+            )
+        if not path.lower().endswith(".gif"):
+            raise Error(
+                "record saves GIF files, so its path must end in .gif, got "
+                + path
+            )
+        if seconds and frames:
+            raise Error("record takes seconds or frames, not both")
+        if seconds and seconds.value() <= 0.0:
+            raise Error(
+                "record needs positive seconds, got " + String(seconds.value())
+            )
+        if frames and frames.value() <= 0:
+            raise Error(
+                "record needs a positive number of frames, got "
+                + String(frames.value())
+            )
+        if fps <= 0.0 or fps > 50.0:
+            raise Error("record's fps must be above 0 and at most 50")
+        if scale <= 0.0:
+            raise Error("record needs a positive scale, got " + String(scale))
+        var capture = Viewport()
+        capture.autoscale = Autoscale.FIT
+        capture.set_design(self._width, self._height)
+        var pw = Int(self._width * scale + 0.5)
+        var ph = Int(self._height * scale + 0.5)
+        capture.set_size(pw, ph)
+        var max_slots = Optional[Int]()
+        if seconds:
+            max_slots = Int(ceil(seconds.value() * fps - 1e-9))
+        self._state._backend.start_recording(
+            _Recording(
+                GifWriter(path, pw, ph),
+                capture.scale,
+                capture.base_matrix(),
+                fps,
+                dither,
+                max_slots,
+                frames,
+            )
+        )
+
+    def stop_recording(mut self) raises:
+        """Finish the recording in progress now: the file is complete when
+        this returns, and the frame it is called in is not in it. Nothing
+        happens when nothing is being recorded."""
+        self._state._backend.finish_recording()
+
+    def recording(self) -> Bool:
+        """Whether a `record` is in progress."""
+        return Bool(self._state._backend.recording)
 
     def rectangle(
         mut self,

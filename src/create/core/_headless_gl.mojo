@@ -93,6 +93,7 @@ def _run_headless_gl[
         context._advance_frame(now)
         state = step(program, context, state^)
         state._backend.present_gpu(pw, ph, state._view.scale)
+    state._backend.finish_recording()
 
     var pixels = state._backend.gl.value().read_frame(pw, ph)
     var mem = MemorySurface(pw, ph)

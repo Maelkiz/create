@@ -89,6 +89,9 @@ def _run_loop[
         _present(win, state)
         _apply_window_mode(win, applied, context)
         _finish_frame(win, context, frame_start)
+    # A recording still running when the window closes gets its last frame
+    # and its trailer, so the file is complete.
+    state._backend.finish_recording()
 
 
 def run[
