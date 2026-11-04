@@ -1,12 +1,13 @@
-"""The five solid command kinds, for comparing the two backends.
+"""One scene to run on each backend, CPU and GPU, made of the cases they
+could disagree about.
 
-    pixi run example shapes                 # CPU
-    pixi run example shapes gpu             # the same scene through the GPU
-    pixi run example shapes gpu fullscreen  # letterboxed on a wide display
+    pixi run example backends                 # CPU
+    pixi run example backends gpu             # the same scene through the GPU
+    pixi run example backends gpu fullscreen  # letterboxed on a wide display
 
 The two frames should be indistinguishable apart from the GPU's
-multisampled edges. Everything on screen is deliberately a case the two
-backends could disagree about — a translucent fill under an outline, an
+multisampled edges. Everything on screen is deliberately such a case — the
+five solid command kinds, a translucent fill under an outline, an
 outline wider than its shape, a rotated rect, a diagonal line, and in
 fullscreen a letterbox bar under `FIT`: the 4:3 design keeps its size, so
 on a 16:9 display the bars are on screen from the first frame. A cycles
@@ -148,4 +149,4 @@ def main() raises:
             backend = RenderBackend.GPU
         elif argv()[i] == "fullscreen":
             mode = WindowMode.FULLSCREEN
-    run[App]("Shapes", mode, width=800, height=600, backend=backend)
+    run[App]("Backends", mode, width=800, height=600, backend=backend)
