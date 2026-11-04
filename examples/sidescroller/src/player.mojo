@@ -19,7 +19,7 @@ struct Player(Copyable, Drawable, Movable):
     comptime GRAVITY = -5400.0  # units/s^2
     comptime JUMP_SPEED = 1400.0  # units/s
     comptime JUMP_HOLD = 1080.0  # units/s^2, against gravity while W is held
-    comptime JUMPS = 2  # a jump and a double jump, back on landing
+    comptime JUMPS = 2  # one from the ground, one in the air
 
     var position: Point2D
     """The middle of the body, as every shape is placed."""
@@ -56,10 +56,18 @@ struct Player(Copyable, Drawable, Movable):
         self.position = self.position + self.velocity * dt
 
         # Platforms are one-way, as in most platformers: jumped through from
-        # below, landed on from above. A landing is the feet crossing a top
-        # this frame on the way down, so a fast fall can't skip one.
-        if self.velocity.y > 0:
+        # below, landed on from above.
+        if self.velocity.y <= 0 and self.land(feet_before, platforms):
             return
+        # In the air without having jumped, walked off a ledge: the jump from
+        # the ground is gone, and only the double jump is left.
+        self.jumps_left = min(self.jumps_left, Self.JUMPS - 1)
+
+    def land(
+        mut self, feet_before: Float64, platforms: List[Rectangle]
+    ) -> Bool:
+        """Stand on the platform whose top the feet crossed this frame, if
+        any. Tested as a crossing, so a fast fall can't skip one."""
         for platform in platforms:
             var top = platform.position.y + platform.h / 2.0
             var reach = (platform.w + Self.WIDTH) / 2.0
@@ -73,6 +81,8 @@ struct Player(Copyable, Drawable, Movable):
                 )
                 self.velocity = Vector2D(self.velocity.x, 0.0)
                 self.jumps_left = Self.JUMPS
+                return True
+        return False
 
     def draw_to[T: DrawTarget](self, mut target: T):
         target.draw(self.body())
