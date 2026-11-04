@@ -20,23 +20,24 @@ from create import *
 @fieldwise_init
 struct MyApp(Program):
     @staticmethod
-    def create(mut context: Context, mut canvas: Canvas) -> MyApp:
+    def create(mut context: Context, mut canvas: Canvas) raises -> MyApp:
         # Called once: set initial application state and draw the first frame
         return MyApp()
 
-    def update(mut self, mut context: Context, mut canvas: Canvas):
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         # Called once per frame: handle input, modify state, and draw to the screen
+        canvas.font_size(48)
         canvas.text("Hello World!", (0, 0))
 
 
 def main() raises:
-    run[MyApp]("Hello", WindowMode.WINDOWED)
+    run[MyApp]("Hello")
 ```
 
 Rendering runs on the CPU by default. `backend=RenderBackend.GPU` runs the same program through an OpenGL 3.3 backend instead:
 
 ```mojo
-run[MyApp]("Example Sketch", backend=RenderBackend.GPU)
+run[MyApp]("Hello", backend=RenderBackend.GPU)
 ```
 
 The example programs in this repository can be run with the `example` pixi task, which takes a name rather than a path. 
