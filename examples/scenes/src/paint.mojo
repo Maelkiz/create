@@ -27,19 +27,18 @@ struct Paint:
             self._entering = False
 
         if context.input.mouse_down(MouseButton.LEFT):
-            with canvas.style():
-                canvas.outline_enabled(False)
-                canvas.fill(Color(240, 200, 90))
+            with canvas.style(fill=Color(240, 200, 90), outline_enabled=False):
                 canvas.circle(context.input.mouse, 14.0)
 
-        with canvas.style():
-            canvas.text_color(Color(180, 180, 190))
-            canvas.font_size(18)
-            # Align.BOTTOM anchors the text box's bottom edge at y, so it
-            # grows upward from the margin instead of straddling it — the
-            # default Align.CENTER would hang half the line below the margin,
-            # its descenders against canvas.bottom() and the letterbox clip.
-            canvas.text_align(Align.BOTTOM)
+        # Align.BOTTOM anchors the text box's bottom edge at y, so it grows
+        # upward from the margin instead of straddling it — the default
+        # Align.CENTER would hang half the line below the margin, its
+        # descenders against canvas.bottom() and the letterbox clip.
+        with canvas.style(
+            text_color=Color(180, 180, 190),
+            font_size=18,
+            text_align=Align.BOTTOM,
+        ):
             canvas.text(
                 "left-drag to paint    right-click for menu",
                 (0, canvas.bottom() + 14.0),

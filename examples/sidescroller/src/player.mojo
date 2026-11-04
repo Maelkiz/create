@@ -52,7 +52,5 @@ struct Player:
     def render(self, mut canvas: Canvas) raises:
         # Scoped, because this is a callee: without the guard the caller's
         # next render would silently inherit this fill and outline_enabled(False).
-        with canvas.style():
-            canvas.fill(Color(220, 80, 80))
-            canvas.outline_enabled(False)
+        with canvas.style(fill=Color(220, 80, 80), outline_enabled=False):
             canvas.rectangle((self.x, self.y), self.width, self.height)
