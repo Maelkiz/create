@@ -431,7 +431,7 @@ display. `run(..., autoscale=)` (or `context.autoscale(mode)` later) takes `FIT`
 `EXTEND` or `OFF`; `OFF` makes coordinates the window's own pixels. Both decide frame 1's mapping
 only as `run` arguments: the viewport is derived before `create`. Under `EXTEND` the reported size
 grows with the window, so anchor layout to the edges. Font size, outline thickness and image size
-scale by `canvas.scale()`. See [examples/autoscale.mojo](examples/autoscale.mojo).
+scale by `canvas.scale()`. See [examples/window.mojo](examples/window.mojo).
 
 `Context` dials are the run's, not the drawing's: `design_size`, `autoscale`, `title`,
 `window_mode`, `resizable`, `quit_on_escape`, `max_frame_rate`. They are methods
