@@ -36,9 +36,7 @@ struct Game(Program):
 
         # Ground markers every 200 world units, so panning past the edge of
         # any one screen is visible rather than looking like an empty void.
-        with canvas.style():
-            canvas.outline_enabled(False)
-            canvas.fill(Color(70, 70, 70))
+        with canvas.style(fill=Color(70, 70, 70), outline_enabled=False):
             var first = Int((self.camera.position.x - 1000.0) / 200.0) * 200
             var last = first + 2200
             for i in range(
@@ -51,9 +49,7 @@ struct Game(Program):
         self.player.render(canvas)
 
         # Walls at the world edges; only the one in view actually renders.
-        with canvas.style():
-            canvas.outline_enabled(False)
-            canvas.fill(Color(150, 60, 60))
+        with canvas.style(fill=Color(150, 60, 60), outline_enabled=False):
             var wall_h = canvas.top() - canvas.bottom()
             canvas.rectangle((self.WORLD_LEFT, 0.0), 30.0, wall_h)
             canvas.rectangle((self.WORLD_RIGHT, 0.0), 30.0, wall_h)
