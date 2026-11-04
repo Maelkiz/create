@@ -14,7 +14,7 @@ comptime _BACKGROUND = Color(40, 42, 56)
 comptime _FACE = Color(30, 32, 42)
 comptime _TRACK = Color(62, 64, 82)
 comptime _HAND = Color(200, 200, 212)
-comptime _SECONDS = Color(235, 120, 70)
+comptime _SECONDS = Color(120, 210, 140)
 comptime _HINT = Color(150, 160, 180)
 
 comptime _CENTER = Point2D(-230.0, 0.0)

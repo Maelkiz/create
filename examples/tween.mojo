@@ -85,7 +85,7 @@ struct App(Program):
                 canvas.circle((lerp(_TRACK_START, _TRACK_END, t), y), 11)
 
             canvas.text_color(
-                Color(235, 120, 70) if active else Color(140, 140, 155)
+                Color(120, 210, 140) if active else Color(140, 140, 155)
             )
             canvas.text(String(self.curves[i]), (-614.0, y))
 

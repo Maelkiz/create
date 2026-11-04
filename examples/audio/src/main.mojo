@@ -15,7 +15,7 @@ from create import *
 comptime _BACKGROUND = Color(40, 42, 56)
 comptime _TRACK = Color(62, 64, 82)
 comptime _LEVEL = Color(90, 170, 255)
-comptime _CHIME = Color(235, 120, 70)
+comptime _CHIME = Color(120, 210, 140)
 comptime _TEXT = Color(200, 200, 212)
 comptime _HINT = Color(150, 160, 180)
 comptime _BAR_WIDTH = 360.0

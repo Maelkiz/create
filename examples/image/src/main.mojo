@@ -31,7 +31,7 @@ def _formats() -> List[String]:
 def _tints() -> List[Color]:
     return [
         Color.WHITE,
-        Color(255, 150, 150),
+        Color(150, 255, 180),
         Color(150, 200, 255),
         Color(160, 160, 160),
     ]

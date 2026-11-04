@@ -82,7 +82,7 @@ struct App(Program):
         # the square.
         canvas.shadow(Color(0, 0, 0, 80), offset=Vector2D(14, -14), blur=blur)
         var square = Rectangle((0, 0), 120, 120, corner_radius=14)
-        with canvas.style(fill=Color(0xF0, 0x90, 0x50), outline_enabled=False):
+        with canvas.style(fill=Color(0x5A, 0xAA, 0xFF), outline_enabled=False):
             with canvas.transform(translate(170, 110) @ rotate(self.angle)):
                 canvas.draw(square)
             with canvas.style(shadow_follows_transform=True):

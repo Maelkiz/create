@@ -42,7 +42,10 @@ struct Clipping(Program):
             canvas.outline_enabled(False)
             with canvas.transform(translate(200.0, 0.0) @ rotate(t * 0.5)):
                 for i in range(-10, 11):
-                    canvas.fill(Color.ORANGE if i % 2 == 0 else Color.PURPLE)
+                    canvas.fill(
+                        Color(90, 170, 255) if i % 2
+                        == 0 else Color(120, 210, 140)
+                    )
                     canvas.rectangle((Float64(i) * 24, 0), 24, 500)
 
         # Fog with a hole in it, wherever the mouse is.

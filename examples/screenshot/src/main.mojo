@@ -50,9 +50,9 @@ struct App(Program):
 
         with canvas.style(outline_enabled=False):
             with canvas.transform(rotate(self.angle)):
-                canvas.fill(Color(0xE0, 0x50, 0x50))
+                canvas.fill(Color(0x3A, 0x86, 0xFF))
                 canvas.rectangle((0, 0), 220, 220)
-                canvas.fill(Color(0x50, 0xC0, 0xE0))
+                canvas.fill(Color(0x78, 0xD2, 0x8C))
                 canvas.circle((0, 0), 70)
 
         canvas.text_color(Color.WHITE)

@@ -48,7 +48,7 @@ struct App(Program):
             canvas.rectangle((-260, 180), 160, 100)
 
         with canvas.style(
-            fill=Color(0xFD, 0xA4, 0x3D),
+            fill=Color(0x4C, 0xC9, 0x8A),
             outline=Color.BLACK,
             outline_thickness=6,
         ):
@@ -69,7 +69,7 @@ struct App(Program):
         ):
             canvas.circle((-260, 180), 70)
 
-        with canvas.style(fill=Color(0xE0, 0x50, 0x90), outline_enabled=False):
+        with canvas.style(fill=Color(0x3A, 0x86, 0xFF), outline_enabled=False):
             canvas.circle((0, 0), 90)
 
         with canvas.style(
@@ -83,7 +83,7 @@ struct App(Program):
         # outline ring has to follow the shape rather than stay axis-aligned.
         with canvas.transform(translate(-230, 0) @ rotate(self.angle)):
             with canvas.style(
-                fill=Color(0xFF, 0xD5, 0x4F),
+                fill=Color(0x7B, 0xE0, 0xAD),
                 outline=Color.BLACK,
                 outline_thickness=4,
             ):
@@ -93,7 +93,7 @@ struct App(Program):
             canvas.line((-340, -140), (340, -260))
 
         with canvas.style(
-            fill=Color(0x88, 0x5F, 0xE8),
+            fill=Color(0x2E, 0x9E, 0x6A),
             outline=Color.WHITE,
             outline_thickness=3,
         ):
@@ -116,7 +116,7 @@ struct App(Program):
             canvas.text("left / top", (canvas.left() + 12, canvas.top() - 12))
 
         with canvas.style(
-            text_color=Color(0xFF, 0xD5, 0x4F, 0xA0),
+            text_color=Color(0x7B, 0xE0, 0xAD, 0xA0),
             font_size=20,
             text_align=Align.BOTTOM_RIGHT,
         ):
