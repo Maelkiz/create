@@ -31,10 +31,10 @@ def _shares() -> List[Float64]:
 def _slice_color(i: Int) -> Color:
     var colors: List[Color] = [
         Color(90, 170, 255),
-        Color(235, 120, 70),
         Color(120, 210, 140),
-        Color(240, 200, 80),
-        Color(190, 130, 230),
+        Color(60, 110, 210),
+        Color(80, 200, 210),
+        Color(170, 225, 120),
     ]
     return colors[i % len(colors)]
 
@@ -118,13 +118,13 @@ struct App(Program):
             canvas.draw(slice)
             start = slice.end_angle()
 
-        var body = Color(250, 200, 40)
+        var body = Color(170, 225, 120)
         if pacman.contains(mouse):
             body = Color(255, 255, 255)
         var hit = not eaten and overlaps(pacman, self.ball)
         with canvas.style(
             fill=body,
-            outline=Color(235, 120, 70) if hit else _BACKGROUND,
+            outline=Color(60, 110, 210) if hit else _BACKGROUND,
             outline_thickness=6,
             shadow=Color(0, 0, 0, 170),
             shadow_offset=Vector2D(8, -12),

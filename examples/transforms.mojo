@@ -65,7 +65,9 @@ struct Transforms(Program):
                     @ rotate(-arm_angle)
                 ):
                     var t = (sin(elapsed * 2.0 + Float64(i)) + 1.0) / 2.0
-                    canvas.fill(Color(60, 80, 180).lerp(Color(240, 80, 80), t))
+                    canvas.fill(
+                        Color(60, 110, 210).lerp(Color(120, 210, 140), t)
+                    )
                     canvas.rectangle((0.0, 0.0), 36.0, 18.0)
 
         # Rotating triangle fan

@@ -10,7 +10,7 @@ from create import *
 
 comptime _BACKGROUND = Color(40, 42, 56)
 comptime _SHAPE = Color(90, 170, 255)
-comptime _HIT = Color(235, 120, 70)
+comptime _HIT = Color(120, 210, 140)
 comptime _GUIDE = Color(120, 124, 150)
 comptime _TEXT = Color(200, 200, 212)
 

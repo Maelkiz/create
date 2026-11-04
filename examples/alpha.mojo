@@ -47,7 +47,7 @@ struct App(Program):
         var opacity = 0.5 + 0.5 * sin(context.time.elapsed * 1.5)
         with canvas.style(opacity=opacity):
             with canvas.style(
-                fill=Color(235, 120, 70),
+                fill=Color(120, 210, 140),
                 outline=Color.WHITE,
                 outline_thickness=6,
             ):

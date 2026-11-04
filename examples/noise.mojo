@@ -55,7 +55,7 @@ struct App(Program):
 
         # The same range as Random.float(), so lerp turns it into a position.
         var x = lerp(canvas.left() + 40, canvas.right() - 40, self.wobble.at(t))
-        canvas.fill(Color(235, 120, 70))
+        canvas.fill(Color(90, 170, 255))
         canvas.outline(Color.WHITE, thickness=3)
         canvas.circle((x, 0), 24)
 

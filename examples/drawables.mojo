@@ -45,7 +45,7 @@ struct App(Program):
 
         for b in self.buttons:
             var hovered = b.plate.contains(context.input.mouse)
-            canvas.fill(Color(0xFF, 0xB0, 0x40) if hovered else Color.WHITE)
+            canvas.fill(Color(0x78, 0xD2, 0x8C) if hovered else Color.WHITE)
             canvas.draw(b)
 
         with canvas.style(fill=Color(0x60, 0x90, 0xE0)):

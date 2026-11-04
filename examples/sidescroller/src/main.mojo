@@ -22,7 +22,7 @@ comptime _SKY = Color(24, 26, 34)
 comptime _GROUND = Color(38, 42, 54)
 comptime _PLATFORM = Color(70, 76, 98)
 comptime _WALL = Color(52, 56, 72)
-comptime _PLAYER = Color(235, 120, 70)
+comptime _PLAYER = Color(120, 210, 140)
 comptime _HINT = Color(150, 160, 180)
 
 

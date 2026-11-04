@@ -38,7 +38,7 @@ struct App(Program):
         canvas.arc(counter, _RING_RADIUS, 0.0, TAU)
         canvas.outline(Color(90, 170, 255))
         canvas.arc(clockwise, _RING_RADIUS, PI / 2.0, -sweep)
-        canvas.outline(Color(235, 120, 70))
+        canvas.outline(Color(120, 210, 140))
         canvas.arc(counter, _RING_RADIUS, PI / 2.0, sweep)
 
         canvas.text_color(Color(200, 200, 212))

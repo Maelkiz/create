@@ -12,7 +12,7 @@ them.
 from create import *
 
 comptime _BACKGROUND = Color(18, 18, 24)
-comptime _MARKER = Color(235, 120, 70)
+comptime _MARKER = Color(120, 210, 140)
 comptime _TEXT = Color(200, 200, 212)
 comptime _PAN_SPEED = 300.0
 """Screen units per second, so a pan feels the same at any zoom."""
@@ -63,10 +63,10 @@ struct CameraDemo(Program):
         for i in range(-20, 20):
             var x = Float64(i) * 120.0
             var t = (sin(context.time.elapsed + Float64(i)) + 1.0) / 2.0
-            canvas.fill(Color(60, 90, 160).lerp(Color(210, 90, 160), t))
+            canvas.fill(Color(60, 110, 210).lerp(Color(120, 210, 140), t))
             canvas.rectangle((x, 0.0), 40.0, 200.0)
 
-        canvas.fill(Color(230, 190, 40))
+        canvas.fill(Color(90, 170, 255))
         canvas.circle((0.0, 140.0), 14.0)
 
         # In world units, so a marker grows and shrinks with the zoom.

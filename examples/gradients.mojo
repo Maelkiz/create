@@ -25,14 +25,14 @@ struct App(Program):
         var sky = Gradient.linear(
             [
                 (0.0, Color.hex(0x0B1D3A)),
-                (0.55, Color.hex(0x5B3A7A)),
-                (1.0, Color.hex(0xF4A261)),
+                (0.55, Color.hex(0x1D4E89)),
+                (1.0, Color.hex(0x2EC4B6)),
             ]
         )
         # A style can carry a gradient like any colour.
         var card = Style(
             fill_gradient=Gradient.linear(
-                Color.hex(0xFFE29A), Color.hex(0xFF7A59)
+                Color.hex(0xA8E6CF), Color.hex(0x2EC4B6)
             ),
             outline_enabled=False,
             shadow=Color(0, 0, 0, 90),
@@ -68,8 +68,8 @@ struct App(Program):
         # Corner to corner, with no trigonometry.
         canvas.fill(
             Gradient.linear(
-                Color.hex(0xFFBE0B),
-                Color.hex(0xFB5607),
+                Color.hex(0xB8F2A0),
+                Color.hex(0x2E9E6A),
                 direction=Vector2D(1, 1),
             )
         )
@@ -77,13 +77,13 @@ struct App(Program):
         # A sector spans its whole circle, so the slice shows part of it.
         canvas.fill(
             Gradient.linear(
-                Color.hex(0x8338EC),
-                Color.hex(0xFF006E),
+                Color.hex(0x3A86FF),
+                Color.hex(0x7BE0AD),
                 direction=Vector2D.RIGHT,
             )
         )
         canvas.sector((220, 120), 65.0, 0.5, 1.6 * PI)
-        canvas.fill(Gradient.linear(Color.hex(0xFFD166), Color.hex(0xEF476F)))
+        canvas.fill(Gradient.linear(Color.hex(0xA8E6CF), Color.hex(0x3A86FF)))
         canvas.draw(Polygon.star((450, 120), 70.0, 30.0, 5))
 
         # The card turns, and its gradient turns with it.

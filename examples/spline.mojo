@@ -105,7 +105,7 @@ struct App(Program):
 
         canvas.outline_enabled(False)
         if len(self.points) > 0:
-            canvas.fill(Color(235, 120, 70))
+            canvas.fill(Color(120, 210, 140))
             canvas.circle(dot, 13)
 
         for i in range(len(self.points)):
