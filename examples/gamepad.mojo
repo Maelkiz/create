@@ -1,8 +1,8 @@
 from create import *
 
-comptime PLAYERS = 4
-comptime SPEED = 300.0
-comptime MESSAGE_SECONDS = 3.0
+comptime _PLAYERS = 4
+comptime _SPEED = 300.0
+comptime _MESSAGE_SECONDS = 3.0
 
 
 @fieldwise_init
@@ -21,7 +21,7 @@ struct Gamepads(Program):
     def create(mut context: Context, mut canvas: Canvas) raises -> Gamepads:
         var positions = List[Point2D]()
         var colors = List[Int]()
-        for i in range(PLAYERS):
+        for i in range(_PLAYERS):
             positions.append(Point2D(Float64(i) * 120 - 180, 0))
             colors.append(i)
         return Gamepads(positions^, colors^, "", 0)
@@ -30,7 +30,7 @@ struct Gamepads(Program):
         canvas.background(Color(30, 30, 40))
         var palette = [Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW]
 
-        for i in range(PLAYERS):
+        for i in range(_PLAYERS):
             var pad = context.input.gamepad(i)
             var player = "Player " + String(i + 1)
             if pad.connected_this_frame:
@@ -40,7 +40,7 @@ struct Gamepads(Program):
                 self.say(context, player + " left: " + pad.name)
             if not pad.connected:
                 continue
-            var speed = SPEED * (1.0 + pad.right_trigger)
+            var speed = _SPEED * (1.0 + pad.right_trigger)
             self.positions[i] = (
                 self.positions[i] + pad.left_stick * speed * context.time.delta
             )
@@ -57,11 +57,11 @@ struct Gamepads(Program):
 
         canvas.text_color(Color.WHITE)
         var connected = 0
-        for i in range(PLAYERS):
+        for i in range(_PLAYERS):
             if context.input.gamepad(i).connected:
                 connected += 1
         canvas.text(
-            String(connected) + " of " + String(PLAYERS) + " gamepads",
+            String(connected) + " of " + String(_PLAYERS) + " gamepads",
             (canvas.left() + 20, canvas.top() - 30),
         )
         if context.time.elapsed < self.message_until:
@@ -73,7 +73,7 @@ struct Gamepads(Program):
 
     def say(mut self, context: Context, message: String):
         self.message = message
-        self.message_until = context.time.elapsed + MESSAGE_SECONDS
+        self.message_until = context.time.elapsed + _MESSAGE_SECONDS
 
 
 def main() raises:

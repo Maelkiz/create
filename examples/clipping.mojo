@@ -1,7 +1,7 @@
 from create import *
 
-comptime LINES = 24
-comptime LINE_HEIGHT = 28.0
+comptime _LINES = 24
+comptime _LINE_HEIGHT = 28.0
 
 
 @fieldwise_init
@@ -28,12 +28,12 @@ struct Clipping(Program):
         canvas.fill(Color(24, 26, 36))
         canvas.draw(self.panel)
         with canvas.clip(self.panel):
-            var scroll = (t * 40.0) % (LINES * LINE_HEIGHT)
+            var scroll = (t * 40.0) % (_LINES * _LINE_HEIGHT)
             canvas.text_color(Color.WHITE)
-            for i in range(LINES * 2):
-                var y = 200.0 - Float64(i) * LINE_HEIGHT + scroll
+            for i in range(_LINES * 2):
+                var y = 200.0 - Float64(i) * _LINE_HEIGHT + scroll
                 canvas.text(
-                    "Row " + String(i % LINES + 1), (self.panel.position.x, y)
+                    "Row " + String(i % _LINES + 1), (self.panel.position.x, y)
                 )
 
         # Stripes seen through a star: the clip stays put while they turn.
