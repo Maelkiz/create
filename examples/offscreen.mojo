@@ -9,8 +9,6 @@ Press `c` to clear the layer.
 
 from create import *
 
-from _arguments import backend_argument
-
 
 comptime _BADGE_SIZE = 80
 
@@ -81,5 +79,8 @@ struct Offscreen(Program):
 
 def main() raises:
     run[Offscreen](
-        "Offscreen", width=800, height=600, backend=backend_argument()
+        "Offscreen",
+        width=800,
+        height=600,
+        backend=RenderBackend.from_arguments(),
     )

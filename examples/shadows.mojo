@@ -8,8 +8,6 @@ Space toggles every shadow between soft and hard.
 
 from create import *
 
-from _arguments import backend_argument
-
 
 @fieldwise_init
 struct App(Program):
@@ -106,4 +104,9 @@ struct App(Program):
 
 
 def main() raises:
-    run[App]("Shadows", width=1280, height=720, backend=backend_argument())
+    run[App](
+        "Shadows",
+        width=1280,
+        height=720,
+        backend=RenderBackend.from_arguments(),
+    )
