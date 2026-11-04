@@ -1,3 +1,10 @@
+"""Polygons: regular ones from three sides to eight, turning stars, a concave
+U and a self-crossing pentagram, each lit while the mouse is inside it.
+
+Up and down change the stars' inner radius; drag the pentagram onto the U
+to test `overlaps`.
+"""
+
 from create import *
 
 comptime _BACKGROUND = Color(40, 42, 56)

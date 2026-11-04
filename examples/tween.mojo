@@ -1,3 +1,8 @@
+"""Easing curves side by side, played by one `Tween`.
+
+Hover a row to play its curve.
+"""
+
 from create import *
 
 comptime _ROW_SPACING = 70.0

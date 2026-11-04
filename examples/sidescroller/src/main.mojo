@@ -1,3 +1,9 @@
+"""A side-scroller: a player that runs and double-jumps under gravity, and a
+camera that follows it across a world wider than the screen.
+
+A and D move, W jumps (again in the air); hold W to jump higher.
+"""
+
 from create import *
 from player import Player
 

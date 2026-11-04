@@ -1,3 +1,8 @@
+"""Translucency: three half-transparent circles mix where they cross, and a
+translucent background, drawn over the last frame instead of clearing it,
+leaves the orbiting dot a fading trail.
+"""
+
 from create import *
 
 

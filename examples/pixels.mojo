@@ -1,13 +1,14 @@
+"""Reading back what is drawn: each frame is drawn over a slightly larger,
+fainter copy of the last one, so the circles leave trails that drift
+outwards, and the swatch at the bottom shows the colour under the
+mouse.
+"""
+
 from create import *
 
 
 @fieldwise_init
 struct Pixels(Program):
-    """Reading back what is drawn: each frame is drawn over a slightly larger,
-    fainter copy of the last one, so the circles leave trails that drift
-    outwards, and the swatch at the bottom shows the colour under the
-    mouse."""
-
     var last: Optional[Image]
 
     @staticmethod

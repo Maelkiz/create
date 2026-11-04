@@ -1,3 +1,8 @@
+"""Three uses of `canvas.clip`: a panel whose list scrolls under its
+edges, a star-shaped window onto turning stripes, and fog everywhere
+except around the mouse.
+"""
+
 from create import *
 
 comptime _LINES = 24
@@ -6,10 +11,6 @@ comptime _LINE_HEIGHT = 28.0
 
 @fieldwise_init
 struct Clipping(Program):
-    """Three uses of `canvas.clip`: a panel whose list scrolls under its
-    edges, a star-shaped window onto turning stripes, and fog everywhere
-    except around the mouse."""
-
     var panel: Rectangle
     var window: Polygon
 

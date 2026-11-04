@@ -1,3 +1,12 @@
+"""Two ways to build an animation, and the three playback modes.
+
+`idle` and `run` are cut out of one sprite sheet -- row 0 and row 1 of the
+same PNG -- while `spin` is loaded from a folder of numbered frames. Both
+end up as the same type, so nothing downstream cares which path was used.
+
+A and D (or the arrows) run, space spins, P pauses.
+"""
+
 from create import *
 
 comptime _SIZE = 128
@@ -9,13 +18,6 @@ comptime _FOOT_PAD = 12.0
 
 @fieldwise_init
 struct Game(Program):
-    """Two ways to build an animation, and the three playback modes.
-
-    `idle` and `run` are cut out of one sprite sheet -- row 0 and row 1 of the
-    same PNG -- while `spin` is loaded from a folder of numbered frames. Both
-    end up as the same type, so nothing downstream cares which path was used.
-    """
-
     var idle: Animation
     var run: Animation
     var spin: Animation

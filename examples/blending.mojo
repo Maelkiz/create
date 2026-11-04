@@ -1,3 +1,14 @@
+"""Blend modes. Each is easiest to read against a range of brightness, so the
+circles cross bars from black to white:
+
+    ADD       light: brightens, saturating to white over the light bars
+    SUBTRACT  takes light away: vanishes over black, darkens elsewhere
+    MULTIPLY  tinted film: plain colour over white, black stays black
+    SCREEN    softer ADD: brightens without burning out to white
+
+Space cycles the modes.
+"""
+
 from create import *
 
 comptime _BARS = 8
@@ -21,12 +32,6 @@ struct App(Program):
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> App:
-        # Space cycles the modes. Each is easiest to read against a range of
-        # brightness, so the circles cross bars from black to white:
-        #   ADD       light: brightens, saturating to white over the light bars
-        #   SUBTRACT  takes light away: vanishes over black, darkens elsewhere
-        #   MULTIPLY  tinted film: plain colour over white, black stays black
-        #   SCREEN    softer ADD: brightens without burning out to white
         return App(BlendMode.NORMAL)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:

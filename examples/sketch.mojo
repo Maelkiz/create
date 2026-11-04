@@ -1,3 +1,7 @@
+"""A first sketch: shapes built as values and drawn with `canvas.draw`, each in
+the fill set before it, all with one outline.
+"""
+
 from create import *
 
 

@@ -1,3 +1,7 @@
+"""`overlaps` between two circles: the blue one follows the mouse, and the
+background lights up while it overlaps the red one.
+"""
+
 from create import *
 
 

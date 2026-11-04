@@ -1,3 +1,9 @@
+"""Up to four players, one per gamepad: the left stick moves, the right
+trigger boosts, SOUTH (Xbox A, PlayStation Cross) swaps colour with a
+buzz and START returns home. A pad thumps as it joins, and the screen
+says who joined or left.
+"""
+
 from create import *
 
 comptime _PLAYERS = 4
@@ -7,11 +13,6 @@ comptime _MESSAGE_SECONDS = 3.0
 
 @fieldwise_init
 struct Gamepads(Program):
-    """Up to four players, one per gamepad: the left stick moves, the right
-    trigger boosts, SOUTH (Xbox A, PlayStation Cross) swaps colour with a
-    buzz and START returns home. A pad thumps as it joins, and the screen
-    says who joined or left."""
-
     var positions: List[Point2D]
     var colors: List[Int]
     var message: String
