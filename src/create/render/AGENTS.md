@@ -13,6 +13,7 @@ and the layering rules.
 | `_backend.mojo` | `Backend` — the text renderer, interned images; replays commands via `present` (CPU) or `present_gpu` |
 | `_raster.mojo` | CPU rasteriser over a `Surface`; called only from `_backend.mojo` |
 | `_surface.mojo` | `Surface`, the borrowed RGBA view the rasteriser writes, and `MemorySurface`, an owned buffer (headless runs, pixel reads, offscreen canvases); `run_headless` hands its pixels over as an `Image` |
+| `_gif.mojo` | The GIF writer behind `canvas.record`: per-frame quantising (exact up to 256 colours, else median cut, optional Floyd-Steinberg), LZW, and `GifWriter`, which streams frames to the file |
 | `_gl.mojo` | GL entry points resolved at runtime; the only file that talks to the driver |
 | `_text.mojo` | `TextRenderer` — the glyph cache and layout both backends place text with; faces are `create.text.Font` |
 | `_gl_backend.mojo` | `GLRenderer` — shader, vertex buffer, glyph atlas, image textures, batching |
