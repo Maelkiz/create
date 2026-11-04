@@ -66,4 +66,4 @@ struct App(Program):
 
 
 def main() raises:
-    run[App]("Saving the frame", width=_DESIGN_W, height=_DESIGN_H)
+    run[App]("Screenshot", width=_DESIGN_W, height=_DESIGN_H)

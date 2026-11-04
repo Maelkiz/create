@@ -74,4 +74,4 @@ struct Chart(Program):
 
 
 def main() raises:
-    run[Chart]("Data Example", width=960, height=540)
+    run[Chart]("Data", width=960, height=540)

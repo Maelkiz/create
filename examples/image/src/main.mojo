@@ -39,4 +39,4 @@ struct Game(Program):
 
 
 def main() raises:
-    run[Game]("Image Example")
+    run[Game]("Image")

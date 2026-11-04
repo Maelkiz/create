@@ -119,4 +119,4 @@ struct Game(Program):
 
 
 def main() raises:
-    run[Game]("Animation Example", width=800, height=600)
+    run[Game]("Animation", width=800, height=600)
