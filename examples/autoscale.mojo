@@ -1,14 +1,6 @@
 from create import *
 
 
-def _mode_name(mode: Autoscale) -> String:
-    if mode == Autoscale.FIT:
-        return "FIT"
-    if mode == Autoscale.EXTEND:
-        return "EXTEND"
-    return "OFF"
-
-
 @fieldwise_init
 struct App(Program):
     var x: Float64
@@ -63,7 +55,7 @@ struct App(Program):
         canvas.text_color(Color.BLACK)
         canvas.font_size(28)
         canvas.text_align(Align.TOP)
-        canvas.text("Autoscale Mode: " + _mode_name(self.mode), (0, -140))
+        canvas.text(String(self.mode), (0, -140))
         canvas.font_size(20)
         canvas.text("(space to cycle, F11 for fullscreen)", (0, -180))
         canvas.font_size(28)

@@ -4,14 +4,12 @@ from create import *
 @fieldwise_init
 struct CameraDemo(Program):
     var camera: Camera
-    var elapsed: Float64
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> CameraDemo:
-        return CameraDemo(Camera(), 0.0)
+        return CameraDemo(Camera())
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.elapsed = context.time.elapsed
         var speed = 300.0 * context.time.delta
         if context.input.key_down(Key.RIGHT):
             self.camera.position += Vector2D(speed, 0.0)
@@ -35,8 +33,8 @@ struct CameraDemo(Program):
         canvas.outline_enabled(False)
         for i in range(-20, 20):
             var x = Float64(i) * 120.0
-            var t = (sin(self.elapsed + Float64(i)) + 1.0) / 2.0
-            canvas.fill(Color(UInt8(60 + Int(t * 150.0)), 90, 160))
+            var t = (sin(context.time.elapsed + Float64(i)) + 1.0) / 2.0
+            canvas.fill(Color(60, 90, 160).lerp(Color(210, 90, 160), t))
             canvas.rectangle((x, 0.0), 40.0, 200.0)
 
         canvas.fill(Color(230, 190, 40))

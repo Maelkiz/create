@@ -11,7 +11,6 @@ struct AudioDemo(Program):
 
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> AudioDemo:
-        context.quit_on_escape(True)
         var audio = Audio()
         var chime = Sound.load(source_path("../assets/chime.wav"))
         var ambience = Sound.load(source_path("../assets/ambience.wav"))

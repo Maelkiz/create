@@ -1,5 +1,3 @@
-from std.math import cos, sin
-
 from create import *
 
 comptime _BACKGROUND = Color(40, 42, 56)

@@ -3,30 +3,28 @@ from create import *
 
 @fieldwise_init
 struct Transforms(Program):
-    var elapsed: Float64
-
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> Transforms:
-        return Transforms(elapsed=0.0)
+        return Transforms()
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.elapsed = context.time.elapsed
+        var elapsed = context.time.elapsed
 
         canvas.background(Color(8, 8, 20))
 
-        var planet_angle = self.elapsed * TAU / 10.0
-        var moon_angle = self.elapsed * TAU / 3.5
+        var planet_angle = elapsed * TAU / 10.0
+        var moon_angle = elapsed * TAU / 3.5
 
         # Solar system: the sun sits at the origin, so it needs no transform of
         # its own — the nesting below is what the demo is about.
         # Hit-test the sun in the frame it is rendered in. `to_local` maps a
         # screen position, which is what `context.input.mouse` is, into it.
-        var local = canvas.to_local(context.input.mouse)
-        var sun_hovered = local.x * local.x + local.y * local.y <= 40.0 * 40.0
+        var sun = Circle((0.0, 0.0), 40.0)
+        var sun_hovered = sun.contains(canvas.to_local(context.input.mouse))
 
         canvas.outline_enabled(False)
         canvas.fill(Color(30, 180, 230) if sun_hovered else Color(230, 180, 20))
-        canvas.circle((0.0, 0.0), 40.0)
+        canvas.draw(sun)
 
         # Planet — rotate then translate so it orbits the sun
         with canvas.transform(rotate(planet_angle) @ translate(160.0, 0.0)):
@@ -52,23 +50,21 @@ struct Transforms(Program):
             canvas.circle((0.0, 0.0), 8.0)
 
             for i in range(6):
-                var arm_angle = self.elapsed * 0.9 + Float64(i) * TAU / 6.0
+                var arm_angle = elapsed * 0.9 + Float64(i) * TAU / 6.0
                 # Arm rotates; rect counter-rotates so it stays axis-aligned in world space
                 with canvas.transform(
                     rotate(arm_angle)
                     @ translate(70.0, 0.0)
                     @ rotate(-arm_angle)
                 ):
-                    var t = (sin(self.elapsed * 2.0 + Float64(i)) + 1.0) / 2.0
-                    var r = UInt8(60 + Int(t * 180.0))
-                    var b = UInt8(180 - Int(t * 100.0))
-                    canvas.fill(Color(r, 80, b))
+                    var t = (sin(elapsed * 2.0 + Float64(i)) + 1.0) / 2.0
+                    canvas.fill(Color(60, 80, 180).lerp(Color(240, 80, 80), t))
                     canvas.rectangle((0.0, 0.0), 36.0, 18.0)
 
         # Rotating triangle fan
         with canvas.transform(translate(232.0, -165.0)):
             for i in range(5):
-                var a = self.elapsed * 0.6 + Float64(i) * TAU / 5.0
+                var a = elapsed * 0.6 + Float64(i) * TAU / 5.0
                 with canvas.transform(rotate(a)):
                     var g = UInt8(100 + Int(Float64(i) * 30.0))
                     canvas.outline_enabled(False)

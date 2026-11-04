@@ -29,7 +29,7 @@ struct App(Program):
         # clear is off for the whole program: `Menu` paints its own background
         # every frame, and `Paint` clears once on entry.
         canvas.autoclear(False)
-        return App(MENU, Menu(False), Paint(False, False, False, Point2D(0, 0)))
+        return App(MENU, Menu(False), Paint(False, False))
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         if self.scene == MENU:
