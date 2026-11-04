@@ -333,6 +333,15 @@ both the finished framebuffer and the unconsumed command buffer; a failed write 
   on `Backend`, not `GLRenderer`). Reproducible across machines.
 - `canvas.save_screenshot(path)` — what the user saw: drawable resolution, bars included. On GPU this
   is a `glReadPixels` stall — fine on a keypress, not per frame.
+- `canvas.record(path, …)` — a `_Recording` on the `Backend` that lasts across frames, serviced by
+  `_record_frame` in both presents as `_flush_image` is serviced, through the CPU replay. It keeps the
+  capture's own base matrix and composes it with each frame's `screen_inv`, so a resize mid-recording
+  is undone like any frame's. Timing: `Backend.clock` is set from `context.time.elapsed` by
+  `first_step`/`step` (render never sees `Context`); the clock is cut into `1/fps` slots from the first
+  present, a frame is captured in each slot it enters, and the capture waits in `pending` until the
+  next says how many slots it covered, since a GIF frame's delay precedes its pixels. Delays are
+  differences of rounded slot times (`_centiseconds`), so they never drift. Every loop calls
+  `finish_recording` after its last frame; `GifWriter` (`_gif.mojo`) streams the file.
 
 See [examples/capture/main.mojo](../../../examples/capture/main.mojo).
 

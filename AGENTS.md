@@ -402,6 +402,26 @@ does a backend's cache of it, so drawing a new image costs no copy. An image not
 frame costs bounded memory. Shapes, text and gradients go into an image through an offscreen
 `Canvas` instead (above).
 
+### Recording
+
+`canvas.record(path, seconds=, frames=, fps=30, scale=1.0, dither=False)` records the frames from
+the one it is called in as an animated GIF (the only format; the path must end in `.gif`). See
+[examples/capture/main.mojo](examples/capture/main.mojo).
+- **Each frame is a `save_image`:** design size × `scale`, no letterbox, replayed on the CPU, so
+  either backend and every machine record the same bytes, and a headless run records
+  deterministically. With the autoclear off a frame holds only its own drawing, as an image does.
+- **Lasts across frames**, like the canvas settings above: until `seconds` of the run's time or
+  `frames` frames, `canvas.stop_recording()` (the file is complete when it returns), or the end of
+  the run, which finishes it. `canvas.recording()` reads it back; a new `record` finishes the one in
+  progress first.
+- **Timed by the run's clock**, sampled `fps` times a second (at most 50): a display faster than
+  `fps` skips frames, and a slow frame stays on screen longer, so the GIF plays at the program's
+  speed.
+- **A palette per frame:** exact with 256 colours or fewer, median cut otherwise; `dither` trades
+  banding for grain. Capturing and encoding run at present, so recording a heavy scene slows it.
+- Raises at once for a bad path or extension, `seconds` with `frames`, a value that isn't
+  positive, and on an offscreen canvas.
+
 ### Coordinates, camera, autoscale
 
 **Not Processing's coordinates.** Origin at the screen centre, **y up**; `x ∈ [-w/2, w/2]`,
