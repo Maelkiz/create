@@ -118,7 +118,7 @@ struct App(Program):
             canvas.draw(slice)
             start = slice.end_angle()
 
-        var body = Color(170, 225, 120)
+        var body = Color(250, 200, 40)
         if pacman.contains(mouse):
             body = Color(255, 255, 255)
         var hit = not eaten and overlaps(pacman, self.ball)
