@@ -1033,8 +1033,14 @@ struct Canvas(DrawTarget, Movable):
         deterministically. Recording starts with the frame this is called
         in, captured whole however early in `update` it was called, and runs
         until `seconds` of the run's time or `frames` frames, until
-        `stop_recording`, or until the run ends, which finishes the file.
-        A new `start_recording` finishes the recording in progress first.
+        `stop_recording`, or until the run ends, which finishes the file;
+        `cancel_recording` ends it without one. A new `start_recording`
+        finishes the recording in progress first.
+
+        Until it finishes, the frames stream to `path` with `.partial`
+        added, which then replaces `path` in one step: a file already at
+        `path` is untouched until then, and stays if the recording is
+        cancelled.
 
         The run's clock is sampled `fps` times a second, so the GIF plays at
         the program's own speed whatever the display's rate: a window faster
@@ -1106,10 +1112,17 @@ struct Canvas(DrawTarget, Movable):
         )
 
     def stop_recording(mut self) raises:
-        """Finish the recording in progress now: the file is complete when
-        this returns, and the frame it is called in is not in it. Nothing
-        happens when nothing is being recorded."""
+        """Finish the recording in progress now and save it: the file is
+        complete when this returns, and the frame it is called in is not in
+        it. `cancel_recording` ends one without saving. Nothing happens when
+        nothing is being recorded."""
         self._state._backend.finish_recording()
+
+    def cancel_recording(mut self) raises:
+        """End the recording in progress without saving it: no file appears
+        at its path, and a file already there is left as it was. Nothing
+        happens when nothing is being recorded."""
+        self._state._backend.cancel_recording()
 
     def recording(self) -> Bool:
         """Whether a recording started by `start_recording` is in progress."""

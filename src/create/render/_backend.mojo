@@ -1141,6 +1141,14 @@ struct Backend(Movable):
         recording.write_pending(recording.pending_slot + 1)
         recording.writer.finish()
 
+    def cancel_recording(mut self) raises:
+        """End the recording in progress without saving it. Nothing happens
+        without one."""
+        if not self.recording:
+            return
+        var recording = self.recording.take()
+        recording.writer.cancel()
+
     def _record_frame(mut self, cmds: List[RenderCommand]) raises:
         """Capture the presented frame into the recording, if its slot is due.
 

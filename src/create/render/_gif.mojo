@@ -8,10 +8,17 @@ and the frame is written with its own palette and display time.
 
 The file is streamed: `GifWriter` writes the header when opened, each frame
 as it is added, and the trailer at `finish`, so a long recording holds one
-frame in memory, not all of them.
+frame in memory, not all of them. It streams to a `.partial` file beside the
+target and renames it into place at `finish`, so the target is only ever a
+whole GIF, an older file there survives a `cancel`, and a crash leaves a
+`.partial` behind rather than a broken GIF under the real name.
 """
 
+from std.ffi import external_call
 from std.math import clamp, sqrt
+from std.os import remove
+
+from create._bytes import cstr
 
 comptime _HISTOGRAM = 1 << 15
 """Buckets in the quantiser's histogram: five bits a channel."""
@@ -367,6 +374,9 @@ struct GifWriter(Movable):
     """An animated GIF being written, looping forever when played."""
 
     var _file: FileHandle
+    var path: String
+    """Where the GIF ends up; it is written to `path + ".partial"` until
+    `finish`."""
     var width: Int
     var height: Int
     var frames: Int
@@ -377,7 +387,8 @@ struct GifWriter(Movable):
             raise Error("cannot record a GIF with no area: " + path)
         if width > 65535 or height > 65535:
             raise Error("a GIF is at most 65535 pixels a side: " + path)
-        self._file = open(path, "w")
+        self._file = open(path + ".partial", "w")
+        self.path = path
         self.width = width
         self.height = height
         self.frames = 0
@@ -417,7 +428,26 @@ struct GifWriter(Movable):
         self.frames += 1
 
     def finish(mut self) raises:
-        """Write the trailer and close the file."""
+        """Write the trailer, close the file and move it to `path`, replacing
+        any file there."""
         var trailer: List[UInt8] = [0x3B]
         self._file.write_bytes(Span(trailer))
         self._file.close()
+        var partial = cstr(self.path + ".partial")
+        var final = cstr(self.path)
+        # The standard library has no rename; C's replaces the target in one
+        # step, as it is in the same folder.
+        var failed = external_call["rename", Int32](
+            partial.unsafe_ptr(), final.unsafe_ptr()
+        )
+        _ = partial^
+        _ = final^
+        if failed != 0:
+            raise Error(
+                "could not move the finished recording into place: " + self.path
+            )
+
+    def cancel(mut self) raises:
+        """Close and delete the file, leaving `path` as it was."""
+        self._file.close()
+        remove(self.path + ".partial")
