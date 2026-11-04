@@ -16,7 +16,7 @@ struct Game(Program):
     def create(mut context: Context, mut canvas: Canvas) raises -> Game:
         var w: Float64 = 60
         var h: Float64 = 80
-        return Game(Player(0.0, 0.0, w, h, 0.0, False, 2), Camera())
+        return Game(Player(0.0, 0.0, w, h, 0.0, 2), Camera())
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         self.player.update(context, canvas)

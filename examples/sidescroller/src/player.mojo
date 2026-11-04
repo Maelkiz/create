@@ -16,7 +16,6 @@ struct Player:
     var width: Float64
     var height: Float64
     var vel_y: Float64
-    var on_ground: Bool
     var jumps_left: Int
 
     def update(mut self, context: Context, canvas: Canvas):
@@ -48,10 +47,7 @@ struct Player:
         if self.y - half_h <= canvas.bottom():
             self.y = canvas.bottom() + half_h
             self.vel_y = 0.0
-            self.on_ground = True
             self.jumps_left = 2
-        else:
-            self.on_ground = False
 
     def render(self, mut canvas: Canvas) raises:
         # Scoped, because this is a callee: without the guard the caller's

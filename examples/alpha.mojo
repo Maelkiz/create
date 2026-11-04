@@ -3,8 +3,6 @@ from create import *
 
 @fieldwise_init
 struct App(Program):
-    var t: Float64
-
     @staticmethod
     def create(mut context: Context, mut canvas: Canvas) raises -> App:
         # The trails below are rendered by fading the *previous* frame, so the
@@ -13,11 +11,9 @@ struct App(Program):
         # With no clear, the first frame is painted the colour the trails
         # fade towards, once.
         canvas.background(Color(0x11, 0x11, 0x11))
-        return App(0.0)
+        return App()
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        self.t = context.time.elapsed
-
         # A translucent background fades the previous frame instead of
         # clearing it, leaving motion trails.
         canvas.background(Color(0x11, 0x11, 0x11, 24))
@@ -36,7 +32,8 @@ struct App(Program):
         # An orbiting dot renders the trail the faded background preserves.
         var r = 220.0
         canvas.fill(Color.ORANGE)
-        canvas.circle((r * cos(self.t), r * sin(self.t) * 0.5), 14.0)
+        var t = context.time.elapsed
+        canvas.circle((r * cos(t), r * sin(t) * 0.5), 14.0)
 
         canvas.text_color(Color(255, 255, 255, 160))
         canvas.font_size(28)

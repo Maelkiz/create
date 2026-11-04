@@ -15,26 +15,22 @@ struct Paint:
 
     var back_pressed: Bool
     var _entering: Bool
-    var painting: Bool
-    var pen: Point2D
 
     def enter(mut self):
         self._entering = True
 
     def update(mut self, context: Context, mut canvas: Canvas) raises:
         self.back_pressed = context.input.mouse_pressed(MouseButton.RIGHT)
-        self.painting = context.input.mouse_down(MouseButton.LEFT)
-        self.pen = context.input.mouse
 
         if self._entering:
             canvas.background(Color(24, 24, 28))
             self._entering = False
 
-        if self.painting:
+        if context.input.mouse_down(MouseButton.LEFT):
             with canvas.style():
                 canvas.outline_enabled(False)
                 canvas.fill(Color(240, 200, 90))
-                canvas.circle(self.pen, 14.0)
+                canvas.circle(context.input.mouse, 14.0)
 
         with canvas.style():
             canvas.text_color(Color(180, 180, 190))
