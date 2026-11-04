@@ -138,5 +138,31 @@ def test_a_font_kept_in_a_field_draws_every_frame() raises -> None:
     assert_true(_differing(default_face, every_frame) > 0)
 
 
+@fieldwise_init
+struct PressesOnce(Program):
+    """Presses A on frame 2 and checks frame 3: green if A is still down but
+    no longer pressed, red otherwise."""
+
+    var _unused: Int
+
+    @staticmethod
+    def create(mut context: Context, mut canvas: Canvas) raises -> PressesOnce:
+        return PressesOnce(0)
+
+    def update(mut self, mut context: Context, mut canvas: Canvas) raises:
+        if context.frame_count() == 2:
+            context.input._key_down(Key.A)
+            context.input._type_text("a")
+        var held = context.input.key_down(Key.A)
+        var edge = context.input.key_pressed(Key.A) or context.input.text != ""
+        canvas.background(Color.GREEN if held and not edge else Color.RED)
+
+
+def test_a_fed_key_press_lasts_one_frame() raises -> None:
+    # Two updates: frame 2 presses, frame 3 is drawn.
+    var m = run_headless[PressesOnce](10, 10, 2)
+    assert_equal(m.pixel(5, 5), Color.GREEN)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

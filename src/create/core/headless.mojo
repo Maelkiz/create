@@ -40,7 +40,10 @@ def run_headless[
     window maps 1:1 and leaves no bars. The returned image is that size.
 
     Time is synthetic and the input is empty, so the result depends only on
-    the program.
+    the program. A program that feeds `context.input` itself (a test
+    pressing keys) gets the windowed loops' frame boundaries: a press,
+    release or typed text lasts the frame it was fed in, while a key held
+    down stays down.
 
     `backend=RenderBackend.GPU` runs the same frames through the GL backend
     into an offscreen framebuffer instead, reading the result back at the
@@ -84,6 +87,10 @@ def run_headless[
         # Re-derived every frame, as the windowed loops do, so a dial turned
         # in create() or a previous update() reaches this one.
         context._set_viewport(state, pw, ph)
+        # This frame's presses, releases and typed text start empty, as
+        # apply_events starts them in the windowed loops: there are no events
+        # here, but a program may feed context.input itself.
+        context.input._new_frame()
         now += _FRAME_MILLIS
         context._advance_frame(now)
         state = step(program, context, state^)
