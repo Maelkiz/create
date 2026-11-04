@@ -16,7 +16,7 @@ struct Pixels(Program):
         return Pixels(None)
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        canvas.background(Color(20, 20, 30))
+        canvas.background(Color(40, 40, 44))
         if self.last:
             # The last frame, 1% larger, faded by a translucent background:
             # a trail that drifts outwards.
@@ -26,13 +26,18 @@ struct Pixels(Program):
                 canvas.width() * 1.01,
                 canvas.height() * 1.01,
             )
-            canvas.background(Color(20, 20, 30, 30))
+            canvas.background(Color(40, 40, 44, 30))
 
         var t = context.time.elapsed
         canvas.outline_enabled(False)
+        var colors: List[Color] = [
+            Color(226, 46, 56),
+            Color(201, 140, 150),
+            Color(98, 104, 168),
+        ]
         for i in range(3):
             var angle = t * (0.7 + 0.3 * Float64(i)) + Float64(i) * 2.1
-            canvas.fill(Color.hsv(Float64(i) * 120.0, 0.8, 1.0))
+            canvas.fill(colors[i])
             canvas.circle((cos(angle) * 180, sin(angle * 1.3) * 120), 18)
 
         # Kept before the swatch, so the trail never shows it.
@@ -40,9 +45,9 @@ struct Pixels(Program):
 
         var under = canvas.color_at(context.input.mouse)
         canvas.fill(under)
-        canvas.outline(Color.WHITE)
+        canvas.outline(Color(240, 236, 222))
         canvas.rectangle((0, canvas.bottom() + 40), 60, 40)
-        canvas.text_color(Color.WHITE)
+        canvas.text_color(Color(240, 236, 222))
         canvas.text(String(under), (0, canvas.bottom() + 80))
 
 

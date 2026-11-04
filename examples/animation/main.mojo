@@ -88,14 +88,14 @@ struct Game(Program):
         self.x = clamp(self.x, canvas.left() + margin, canvas.right() - margin)
         self.animator.update(context.time.delta)
 
-        canvas.background(Color(24, 26, 34))
+        canvas.background(Color(40, 40, 44))
 
         canvas.outline_enabled(False)
 
         # The ground runs from its surface all the way to the bottom edge, so
         # it never floats over the background however tall the window is.
         var height = _GROUND - canvas.bottom()
-        canvas.fill(Color(38, 42, 54))
+        canvas.fill(Color(30, 30, 33))
         canvas.rectangle(
             (0.0, canvas.bottom() + height / 2.0), canvas.right() * 2.0, height
         )
@@ -109,7 +109,7 @@ struct Game(Program):
             _SIZE,
         )
 
-        canvas.text_color(Color(150, 160, 180))
+        canvas.text_color(Color(176, 172, 162))
         canvas.text_align(Align.TOP)
         canvas.font_size(20)
         canvas.text(

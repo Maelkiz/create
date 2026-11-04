@@ -1,12 +1,12 @@
 """Sectors: a pie chart whose slice under the mouse slides out, and a chewing
 pac-man that `contains` and `overlaps` test exactly, its mouth outside it.
 
-Drag the blue ball into the pac-man's mouth and let go as it shuts.
+Drag the ball into the pac-man's mouth and let go as it shuts.
 """
 
 from create import *
 
-comptime _BACKGROUND = Color(40, 42, 56)
+comptime _BACKGROUND = Color(40, 40, 44)
 """Light enough for the pac-man's shadow to show against it."""
 
 comptime _PIE = Point2D(-260.0, -20.0)
@@ -30,11 +30,11 @@ def _shares() -> List[Float64]:
 
 def _slice_color(i: Int) -> Color:
     var colors: List[Color] = [
-        Color(90, 170, 255),
-        Color(120, 210, 140),
-        Color(60, 110, 210),
-        Color(80, 200, 210),
-        Color(170, 225, 120),
+        Color(98, 104, 168),
+        Color(201, 140, 150),
+        Color(150, 154, 206),
+        Color(240, 236, 222),
+        Color(226, 46, 56),
     ]
     return colors[i % len(colors)]
 
@@ -120,11 +120,11 @@ struct App(Program):
 
         var body = Color(250, 200, 40)
         if pacman.contains(mouse):
-            body = Color(255, 255, 255)
+            body = Color(240, 236, 222)
         var hit = not eaten and overlaps(pacman, self.ball)
         with canvas.style(
             fill=body,
-            outline=Color(60, 110, 210) if hit else _BACKGROUND,
+            outline=Color(226, 46, 56) if hit else _BACKGROUND,
             outline_thickness=6,
             shadow=Color(0, 0, 0, 170),
             shadow_offset=Vector2D(8, -12),
@@ -134,16 +134,16 @@ struct App(Program):
 
         if self.respawn_in == 0.0:
             canvas.outline_enabled(False)
-            canvas.fill(Color(90, 170, 255))
+            canvas.fill(Color(98, 104, 168))
             canvas.draw(self.ball)
 
-        canvas.text_color(Color(200, 200, 212))
+        canvas.text_color(Color(240, 236, 222))
         canvas.font_size(30)
         canvas.text_align(Align.TOP)
         canvas.text("Sectors", (0, 362))
         canvas.font_size(18)
         canvas.text(
-            "Hover the pie and the pac-man; feed it the blue ball",
+            "Hover the pie and the pac-man; feed it the ball",
             (0, 322),
         )
 

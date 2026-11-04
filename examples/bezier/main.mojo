@@ -64,17 +64,17 @@ struct App(Program):
             self.travelled = 0.0
         var dot = curve.at_distance(self.travelled)
 
-        canvas.background(Color(18, 18, 24))
+        canvas.background(Color(40, 40, 44))
 
         # The control polygon: each control's pull on its endpoint.
-        canvas.outline(Color(70, 70, 90), thickness=2)
+        canvas.outline(Color(62, 62, 68), thickness=2)
         canvas.line(self.handles[0], self.handles[1])
         canvas.line(self.handles[3], self.handles[2])
 
         # The curve itself, with a soft shadow. A curve has no interior, so
         # only the outline draws and casts.
         with canvas.style(
-            outline=Color(90, 170, 255),
+            outline=Color(98, 104, 168),
             outline_thickness=12,
             shadow=Color(0, 0, 0, 160),
             shadow_offset=Vector2D(6, -10),
@@ -83,20 +83,20 @@ struct App(Program):
             canvas.draw(curve)
 
         canvas.outline_enabled(False)
-        canvas.fill(Color(120, 210, 140))
+        canvas.fill(Color(226, 46, 56))
         canvas.circle(dot, 13)
 
         for i in range(len(self.handles)):
             var endpoint = i == 0 or i == 3
             if i == self.dragging:
-                canvas.fill(Color(255, 255, 255))
+                canvas.fill(Color(240, 236, 222))
             elif endpoint:
-                canvas.fill(Color(200, 200, 212))
+                canvas.fill(Color(240, 236, 222))
             else:
-                canvas.fill(Color(120, 120, 140))
+                canvas.fill(Color(176, 172, 162))
             canvas.circle(self.handles[i], 10 if endpoint else 8)
 
-        canvas.text_color(Color(200, 200, 212))
+        canvas.text_color(Color(240, 236, 222))
         canvas.font_size(30)
         canvas.text_align(Align.TOP)
         canvas.text("Cubic Bézier", (0, 362))

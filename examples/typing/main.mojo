@@ -50,7 +50,7 @@ struct TypingTest(Program):
             + " of "
             + String(len(self.phrases))
         )
-        canvas.background(Color(30, 30, 40))
+        canvas.background(Color(40, 40, 44))
         var target = characters(self.phrases[self.phrase])
         var finished = self.typed.text == self.phrases[self.phrase]
 
@@ -71,7 +71,7 @@ struct TypingTest(Program):
         canvas.font_size(28)
         canvas.text_align(Align.LEFT)
         var left = -canvas.text_width(self.phrases[self.phrase]) / 2
-        canvas.text_color(Color(200, 200, 220))
+        canvas.text_color(Color(176, 172, 162))
         canvas.text(self.phrases[self.phrase], (left, 60))
 
         var x = left
@@ -79,19 +79,19 @@ struct TypingTest(Program):
         for i in range(len(typed)):
             var right = i < len(target) and typed[i] == target[i]
             canvas.text_color(
-                Color(120, 200, 140) if right else Color(230, 90, 90)
+                Color(240, 236, 222) if right else Color(226, 46, 56)
             )
             canvas.text(typed[i], (x, 0))
             x += canvas.text_width(typed[i])
 
         if not finished and Int(context.time.elapsed * 2) % 2 == 0:
             var caret_x = left + canvas.text_width(self.typed.before_caret())
-            canvas.outline(Color.WHITE, thickness=2)
+            canvas.outline(Color(240, 236, 222), thickness=2)
             canvas.line((caret_x, -16), (caret_x, 16))
 
         canvas.font_size(20)
         canvas.text_align(Align.CENTER)
-        canvas.text_color(Color(150, 150, 170))
+        canvas.text_color(Color(176, 172, 162))
         if finished:
             canvas.text(self.result, (0, -80))
             canvas.text("Enter for the next phrase", (0, -120))

@@ -18,12 +18,12 @@ comptime _PLATFORM_THICKNESS = 24.0
 comptime _CAMERA_LEAD = 150.0
 """How far above the camera's centre the player climbs before it follows."""
 
-comptime _SKY = Color(24, 26, 34)
-comptime _GROUND = Color(38, 42, 54)
-comptime _PLATFORM = Color(70, 76, 98)
-comptime _WALL = Color(52, 56, 72)
-comptime _PLAYER = Color(120, 210, 140)
-comptime _HINT = Color(150, 160, 180)
+comptime _SKY = Color(40, 40, 44)
+comptime _GROUND = Color(30, 30, 33)
+comptime _PLATFORM = Color(98, 104, 168)
+comptime _WALL = Color(62, 62, 68)
+comptime _PLAYER = Color(226, 46, 56)
+comptime _HINT = Color(176, 172, 162)
 
 
 def _platforms() -> List[Rectangle]:

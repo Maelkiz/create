@@ -90,12 +90,12 @@ struct App(Program):
             self.travelled = 0.0
         var dot = spline.at_distance(self.travelled)
 
-        canvas.background(Color(18, 18, 24))
+        canvas.background(Color(40, 40, 44))
 
         # Translucent, so any joint painted twice would show as a brighter
         # seam; there is none, closed or not.
         with canvas.style(
-            outline=Color(90, 170, 255, 170),
+            outline=Color(98, 104, 168, 170),
             outline_thickness=14,
             shadow=Color(0, 0, 0, 160),
             shadow_offset=Vector2D(6, -10),
@@ -105,14 +105,14 @@ struct App(Program):
 
         canvas.outline_enabled(False)
         if len(self.points) > 0:
-            canvas.fill(Color(120, 210, 140))
+            canvas.fill(Color(226, 46, 56))
             canvas.circle(dot, 13)
 
         for i in range(len(self.points)):
             if i == self.dragging:
-                canvas.fill(Color(255, 255, 255))
+                canvas.fill(Color(240, 236, 222))
             else:
-                canvas.fill(Color(200, 200, 212))
+                canvas.fill(Color(240, 236, 222))
             canvas.circle(self.points[i], 9)
 
         var kind: String
@@ -122,7 +122,7 @@ struct App(Program):
             kind = "centripetal"
         else:
             kind = "chordal"
-        canvas.text_color(Color(200, 200, 212))
+        canvas.text_color(Color(240, 236, 222))
         canvas.font_size(30)
         canvas.text_align(Align.TOP)
         canvas.text(

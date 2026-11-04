@@ -56,14 +56,14 @@ struct App(Program):
         # start forever, exactly like an un-ticked Animator.
         self.clock.update(context.time.delta)
 
-        canvas.background(Color(18, 18, 24))
+        canvas.background(Color(40, 40, 44))
 
-        canvas.text_color(Color(200, 200, 212))
+        canvas.text_color(Color(240, 236, 222))
         canvas.font_size(30)
         canvas.text_align(Align.TOP)
         canvas.text("Easing and tweens", (0, 362))
         canvas.font_size(18)
-        canvas.text_color(Color(140, 140, 155))
+        canvas.text_color(Color(176, 172, 162))
         canvas.text("Hover over a curve to play it", (0, 318))
 
         canvas.text_align(Align.LEFT)
@@ -71,7 +71,7 @@ struct App(Program):
             var y = _row_y(i)
             var active = i == self.hovered
             canvas.outline(
-                Color(70, 70, 92) if active else Color(44, 44, 58), thickness=3
+                Color(90, 90, 98) if active else Color(62, 62, 68), thickness=3
             )
             canvas.line((_TRACK_START, y), (_TRACK_END, y))
 
@@ -81,11 +81,11 @@ struct App(Program):
             var t = 0.0
             if active:
                 t = ease(self.curves[i], self.clock.progress())
-            with canvas.style(fill=Color(90, 170, 255), outline_enabled=False):
+            with canvas.style(fill=Color(98, 104, 168), outline_enabled=False):
                 canvas.circle((lerp(_TRACK_START, _TRACK_END, t), y), 11)
 
             canvas.text_color(
-                Color(120, 210, 140) if active else Color(140, 140, 155)
+                Color(226, 46, 56) if active else Color(176, 172, 162)
             )
             canvas.text(String(self.curves[i]), (-614.0, y))
 

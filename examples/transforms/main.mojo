@@ -17,7 +17,7 @@ struct Transforms(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         var elapsed = context.time.elapsed
 
-        canvas.background(Color(8, 8, 20))
+        canvas.background(Color(40, 40, 44))
 
         var planet_angle = elapsed * TAU / 10.0
         var moon_angle = elapsed * TAU / 3.5
@@ -30,30 +30,30 @@ struct Transforms(Program):
         var sun_hovered = sun.contains(canvas.to_local(context.input.mouse))
 
         canvas.outline_enabled(False)
-        canvas.fill(Color(30, 180, 230) if sun_hovered else Color(230, 180, 20))
+        canvas.fill(Color(226, 46, 56) if sun_hovered else Color(230, 180, 20))
         canvas.draw(sun)
 
         # Planet — rotate then translate so it orbits the sun
         with canvas.transform(rotate(planet_angle) @ translate(160.0, 0.0)):
             # Thin orbit guide rendered in planet's frame before further nesting
-            canvas.outline(Color(50, 50, 70), thickness=1)
+            canvas.outline(Color(62, 62, 68), thickness=1)
             canvas.fill_enabled(False)
             canvas.circle((0.0, 0.0), 45.0)
 
             canvas.outline_enabled(False)
-            canvas.fill(Color(60, 120, 220))
+            canvas.fill(Color(98, 104, 168))
             canvas.circle((0.0, 0.0), 18.0)
 
             # Moon — orbits the planet
             with canvas.transform(rotate(moon_angle) @ translate(45.0, 0.0)):
-                canvas.fill(Color(170, 170, 170))
+                canvas.fill(Color(176, 172, 162))
                 canvas.circle((0.0, 0.0), 8.0)
 
         # Spinning rect cluster: same transform pattern, different shape.
         # Below and left of centre, so both coordinates are negative.
         with canvas.transform(translate(-232.0, -165.0)):
             canvas.outline_enabled(False)
-            canvas.fill(Color(60, 60, 80))
+            canvas.fill(Color(62, 62, 68))
             canvas.circle((0.0, 0.0), 8.0)
 
             for i in range(6):
@@ -66,7 +66,7 @@ struct Transforms(Program):
                 ):
                     var t = (sin(elapsed * 2.0 + Float64(i)) + 1.0) / 2.0
                     canvas.fill(
-                        Color(60, 110, 210).lerp(Color(120, 210, 140), t)
+                        Color(98, 104, 168).lerp(Color(201, 140, 150), t)
                     )
                     canvas.rectangle((0.0, 0.0), 36.0, 18.0)
 
@@ -75,9 +75,12 @@ struct Transforms(Program):
             for i in range(5):
                 var a = elapsed * 0.6 + Float64(i) * TAU / 5.0
                 with canvas.transform(rotate(a)):
-                    var g = UInt8(100 + Int(Float64(i) * 30.0))
                     canvas.outline_enabled(False)
-                    canvas.fill(Color(40, g, 160))
+                    canvas.fill(
+                        Color(98, 104, 168).lerp(
+                            Color(201, 140, 150), Float64(i) / 4.0
+                        )
+                    )
                     canvas.triangle((0.0, 0.0), (60.0, 15.0), (60.0, -15.0))
 
 

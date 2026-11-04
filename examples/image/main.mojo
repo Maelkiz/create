@@ -12,9 +12,9 @@ every pixel, so white keeps each colour and darker tints shade it.
 
 from create import *
 
-comptime _BACKGROUND = Color(40, 42, 56)
-comptime _TEXT = Color(200, 200, 212)
-comptime _HINT = Color(150, 160, 180)
+comptime _BACKGROUND = Color(40, 40, 44)
+comptime _TEXT = Color(240, 236, 222)
+comptime _HINT = Color(176, 172, 162)
 comptime _SIZE = 220.0
 """How big each loaded picture is drawn, in design units."""
 comptime _ROW_Y = 120.0
@@ -30,9 +30,9 @@ def _formats() -> List[String]:
 
 def _tints() -> List[Color]:
     return [
-        Color.WHITE,
-        Color(150, 255, 180),
-        Color(150, 200, 255),
+        Color(240, 236, 222),
+        Color(255, 190, 200),
+        Color(190, 194, 255),
         Color(160, 160, 160),
     ]
 
@@ -47,9 +47,16 @@ def _sprite() raises -> Image:
             var offset = Vector2D(Float64(x) - middle, middle - Float64(y))
             var distance = offset.magnitude()
             if distance <= middle + 0.5:
-                var hue = (offset.angle() / TAU) * 360.0
-                var value = 0.55 if distance < middle / 2.0 else 1.0
-                buffer.set(x, y, Color.hsv(hue, 0.7, value))
+                # Indigo to rose to red round the ring, darker inside.
+                var turn = offset.angle() / TAU + 0.5
+                var color = Color(98, 104, 168).lerp(
+                    Color(201, 140, 150), turn * 2.0
+                ) if turn < 0.5 else Color(201, 140, 150).lerp(
+                    Color(226, 46, 56), turn * 2.0 - 1.0
+                )
+                if distance < middle / 2.0:
+                    color = color.lerp(Color(40, 40, 44), 0.45)
+                buffer.set(x, y, color)
     # The buffer is handed over, not copied: it can't be used after this.
     return Image(buffer^)
 

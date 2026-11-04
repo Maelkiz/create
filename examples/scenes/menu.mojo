@@ -14,12 +14,12 @@ struct Menu:
     def update(mut self, context: Context, mut canvas: Canvas) raises:
         self.start_pressed = context.input.mouse_pressed()
 
-        canvas.background(Color(24, 24, 28))
+        canvas.background(Color(40, 40, 44))
         with canvas.style(
-            text_color=Color.WHITE, font_size=48, text_align=Align.TOP
+            text_color=Color(240, 236, 222), font_size=48, text_align=Align.TOP
         ):
             canvas.text("Scenes", (0, 40))
         with canvas.style(
-            text_color=Color(180, 180, 190), font_size=20, text_align=Align.TOP
+            text_color=Color(176, 172, 162), font_size=20, text_align=Align.TOP
         ):
             canvas.text("Click to start painting", (0, -20))

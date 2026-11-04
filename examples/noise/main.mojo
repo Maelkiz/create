@@ -31,15 +31,15 @@ struct App(Program):
         )
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        canvas.background(Color(18, 18, 24))
+        canvas.background(Color(40, 40, 44))
         var t = context.time.elapsed
 
         # A grid of cells shaded from deep water to pale grass. Anchored to the
         # edge methods, so the field fills whatever the canvas reports.
         var cell_w = (canvas.right() - canvas.left()) / Float64(_COLUMNS)
         var cell_h = (canvas.top() - canvas.bottom()) / Float64(_ROWS)
-        var low = Color(20, 40, 110)
-        var high = Color(200, 230, 150)
+        var low = Color(44, 46, 84)
+        var high = Color(240, 236, 222)
         canvas.outline_enabled(False)
         for column in range(_COLUMNS):
             for row in range(_ROWS):
@@ -55,11 +55,11 @@ struct App(Program):
 
         # The same range as Random.float(), so lerp turns it into a position.
         var x = lerp(canvas.left() + 40, canvas.right() - 40, self.wobble.at(t))
-        canvas.fill(Color(90, 170, 255))
-        canvas.outline(Color.WHITE, thickness=3)
+        canvas.fill(Color(226, 46, 56))
+        canvas.outline(Color(240, 236, 222), thickness=3)
         canvas.circle((x, 0), 24)
 
-        canvas.text_color(Color.WHITE)
+        canvas.text_color(Color(240, 236, 222))
         canvas.font_size(16)
         canvas.text_align(Align.BOTTOM_LEFT)
         canvas.text(

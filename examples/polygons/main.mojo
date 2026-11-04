@@ -7,7 +7,7 @@ to test `overlaps`.
 
 from create import *
 
-comptime _BACKGROUND = Color(40, 42, 56)
+comptime _BACKGROUND = Color(40, 40, 44)
 """Light enough for the U's shadow to show against it."""
 
 comptime _SPIN = 0.6
@@ -18,12 +18,12 @@ comptime _PENTAGRAM_HOME = Point2D(520.0, -80.0)
 
 def _side_color(sides: Int) -> Color:
     var colors: List[Color] = [
-        Color(90, 170, 255),
-        Color(120, 210, 140),
-        Color(60, 110, 210),
-        Color(80, 200, 210),
-        Color(170, 225, 120),
-        Color(60, 160, 110),
+        Color(98, 104, 168),
+        Color(201, 140, 150),
+        Color(150, 154, 206),
+        Color(240, 236, 222),
+        Color(226, 46, 56),
+        Color(150, 92, 106),
     ]
     return colors[(sides - 3) % len(colors)]
 
@@ -87,7 +87,7 @@ struct App(Program):
             var x = -500.0 + 200.0 * Float64(sides - 3)
             var shape = Polygon.regular((x, 170), 70, sides)
             if shape.contains(mouse):
-                canvas.fill(Color.WHITE)
+                canvas.fill(Color(240, 236, 222))
             else:
                 canvas.fill(_side_color(sides))
             canvas.draw(shape)
@@ -106,9 +106,9 @@ struct App(Program):
                 start_angle=TAU / 4.0 + direction * turn,
             )
             if star.contains(mouse):
-                canvas.fill(Color.WHITE)
+                canvas.fill(Color(240, 236, 222))
             else:
-                canvas.fill(Color(170, 225, 120))
+                canvas.fill(Color(201, 140, 150))
             canvas.draw(star)
 
         # A concave U from literal vertices, translucent and shadowed. Its
@@ -125,12 +125,12 @@ struct App(Program):
             (60, 20),
         )
         var hit = overlaps(u, self.pentagram)
-        var fill = Color(90, 170, 255, 150)
+        var fill = Color(98, 104, 168, 150)
         if u.contains(mouse):
-            fill = Color(255, 255, 255, 190)
+            fill = Color(240, 236, 222, 190)
         with canvas.style(
             fill=fill,
-            outline=Color(120, 210, 140) if hit else Color(200, 200, 212),
+            outline=Color(226, 46, 56) if hit else Color(240, 236, 222),
             outline_thickness=6,
             shadow=Color(0, 0, 0, 170),
             shadow_offset=Vector2D(10, -14),
@@ -141,13 +141,13 @@ struct App(Program):
         # Translucent, so the outline shows every edge, the crossing ones
         # through the middle too, while the middle is filled just once.
         with canvas.style(
-            fill=Color(120, 210, 140, 90),
-            outline=Color(120, 210, 140),
+            fill=Color(201, 140, 150, 90),
+            outline=Color(201, 140, 150),
             outline_thickness=3,
         ):
             canvas.draw(self.pentagram)
 
-        canvas.text_color(Color(200, 200, 212))
+        canvas.text_color(Color(240, 236, 222))
         canvas.font_size(30)
         canvas.text_align(Align.TOP)
         canvas.text("Polygons", (0, 362))

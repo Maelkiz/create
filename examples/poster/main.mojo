@@ -54,10 +54,10 @@ def _weights() -> List[FontWeight]:
 def _palettes() -> List[List[Color]]:
     """Paper, ink and accent."""
     return [
-        [Color(236, 240, 232), Color(30, 30, 36), Color(40, 150, 100)],
-        [Color(24, 26, 34), Color(230, 230, 236), Color(90, 170, 255)],
-        [Color(190, 230, 200), Color(24, 40, 60), Color(40, 90, 200)],
-        [Color(30, 60, 90), Color(240, 244, 240), Color(120, 220, 160)],
+        [Color(240, 236, 222), Color(40, 40, 44), Color(226, 46, 56)],
+        [Color(40, 40, 44), Color(240, 236, 222), Color(201, 140, 150)],
+        [Color(98, 104, 168), Color(240, 236, 222), Color(226, 46, 56)],
+        [Color(201, 140, 150), Color(40, 40, 44), Color(240, 236, 222)],
     ]
 
 

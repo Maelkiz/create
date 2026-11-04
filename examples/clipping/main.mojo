@@ -22,15 +22,15 @@ struct Clipping(Program):
         )
 
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
-        canvas.background(Color(40, 44, 60))
+        canvas.background(Color(40, 40, 44))
         var t = context.time.elapsed
 
         # A list scrolling through a panel: rows enter and leave at its edges.
-        canvas.fill(Color(24, 26, 36))
+        canvas.fill(Color(30, 30, 33))
         canvas.draw(self.panel)
         with canvas.clip(self.panel):
             var scroll = (t * 40.0) % (_LINES * _LINE_HEIGHT)
-            canvas.text_color(Color.WHITE)
+            canvas.text_color(Color(240, 236, 222))
             for i in range(_LINES * 2):
                 var y = 200.0 - Float64(i) * _LINE_HEIGHT + scroll
                 canvas.text(
@@ -43,8 +43,8 @@ struct Clipping(Program):
             with canvas.transform(translate(200.0, 0.0) @ rotate(t * 0.5)):
                 for i in range(-10, 11):
                     canvas.fill(
-                        Color(90, 170, 255) if i % 2
-                        == 0 else Color(120, 210, 140)
+                        Color(98, 104, 168) if i % 2
+                        == 0 else Color(201, 140, 150)
                     )
                     canvas.rectangle((Float64(i) * 24, 0), 24, 500)
 

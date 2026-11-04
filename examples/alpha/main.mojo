@@ -8,10 +8,10 @@ every part of a render call at once.
 
 from create import *
 
-comptime _BACKGROUND = Color(18, 18, 24)
-comptime _PANEL = Color(30, 32, 42)
-comptime _TEXT = Color(200, 200, 212)
-comptime _HINT = Color(150, 160, 180)
+comptime _BACKGROUND = Color(40, 40, 44)
+comptime _PANEL = Color(30, 30, 33)
+comptime _TEXT = Color(240, 236, 222)
+comptime _HINT = Color(176, 172, 162)
 comptime _CARD = Point2D(200.0, 20.0)
 
 
@@ -35,11 +35,11 @@ struct App(Program):
         canvas.rectangle(_CARD, 300.0, 240.0, corner_radius=16)
 
         # Overlapping translucent colours mix where they cross.
-        canvas.fill(Color(255, 0, 0, 128))
+        canvas.fill(Color(226, 46, 56, 128))
         canvas.circle((-225.0, -5.0), 60.0)
-        canvas.fill(Color(0, 255, 0, 128))
+        canvas.fill(Color(201, 140, 150, 128))
         canvas.circle((-145.0, -5.0), 60.0)
-        canvas.fill(Color(0, 0, 255, 128))
+        canvas.fill(Color(98, 104, 168, 128))
         canvas.circle((-185.0, 65.0), 60.0)
 
         # One value fades fill, outline, text and image alike. Each shape
@@ -47,13 +47,13 @@ struct App(Program):
         var opacity = 0.5 + 0.5 * sin(context.time.elapsed * 1.5)
         with canvas.style(opacity=opacity):
             with canvas.style(
-                fill=Color(120, 210, 140),
-                outline=Color.WHITE,
+                fill=Color(201, 140, 150),
+                outline=Color(240, 236, 222),
                 outline_thickness=6,
             ):
                 canvas.rectangle(_CARD, 220.0, 170.0, corner_radius=18)
             canvas.image(self.logo, _CARD + Vector2D(0, 20), 100, 100)
-            with canvas.style(text_color=Color.WHITE, font_size=22):
+            with canvas.style(text_color=Color(240, 236, 222), font_size=22):
                 canvas.text(
                     String("Opacity ", round(opacity, 2)),
                     _CARD - Vector2D(0, 55),
