@@ -5,7 +5,7 @@ The mouse is in screen space; `camera.to_world` says where it is in the
 world. Zooming keeps the world point under the cursor where it is, and a
 click drops a marker there, which then stays put in the world.
 
-Left and right pan, the mouse wheel zooms, a click drops a marker, C clears
+Left and Right pan, the mouse wheel zooms, a click drops a marker, C clears
 them.
 """
 
@@ -81,16 +81,16 @@ struct CameraDemo(Program):
                 text_color=_TEXT, font_size=18, text_align=Align.TOP
             ):
                 canvas.text(
-                    "left/right pan, wheel zooms, click drops a marker, C"
+                    "Left/Right pan, the wheel zooms, a click drops a marker, C"
                     + " clears",
                     (0.0, canvas.top() - 16.0),
                 )
                 var world = self.camera.to_world(input.mouse)
                 canvas.text(
                     String(
-                        "zoom ",
+                        "Zoom ",
                         round(self.camera.zoom, 2),
-                        "x   mouse in the world: (",
+                        "x   Mouse in the world: (",
                         Int(world.x),
                         ", ",
                         Int(world.y),

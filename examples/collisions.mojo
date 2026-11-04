@@ -90,7 +90,7 @@ struct Collisions(Program):
             canvas.text("Collisions", (0, 362))
         with canvas.style(text_color=_TEXT, font_size=18, text_align=Align.TOP):
             canvas.text(
-                "regions light up as they overlap the circle, curves as they"
+                "Regions light up as they overlap the circle, curves as they"
                 + " cross it; lines run to each shape's closest point",
                 (0, 322),
             )

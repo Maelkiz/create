@@ -143,7 +143,7 @@ struct App(Program):
         canvas.text("Sectors", (0, 362))
         canvas.font_size(18)
         canvas.text(
-            "hover the pie and the pac-man; feed it the blue ball.",
+            "Hover the pie and the pac-man; feed it the blue ball",
             (0, 322),
         )
 

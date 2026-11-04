@@ -7,7 +7,7 @@ scales every voice's own. `audio.update()` runs every frame, or looping
 voices stall.
 
 Space plays the chime. L starts or stops the ambience, P pauses and resumes
-it, up and down set its volume, left and right the overall volume.
+it, Up and Down set its volume, Left and Right the overall volume.
 """
 
 from create import *
@@ -105,7 +105,7 @@ struct AudioDemo(Program):
         ):
             canvas.circle((-250.0, 40.0), 40.0 + 12.0 * flash)
         with canvas.style(text_color=_HINT, font_size=18):
-            canvas.text("space: chime", (-250.0, -30.0))
+            canvas.text("Space: chime", (-250.0, -30.0))
 
         var state: String
         if self.ambience_voice == Voice.NONE:
@@ -115,15 +115,15 @@ struct AudioDemo(Program):
         else:
             state = "paused"
         with canvas.style(text_color=_TEXT, font_size=26):
-            canvas.text("ambience " + state, (120.0, 60.0))
+            canvas.text("Ambience " + state, (120.0, 60.0))
         with canvas.style(text_color=_HINT, font_size=18):
             canvas.text("L: start/stop   P: pause/resume", (120.0, 20.0))
 
-        _volume_bar(canvas, "ambience", self.ambience_volume, -90.0)
-        _volume_bar(canvas, "overall", self.audio.volume(), -140.0)
+        _volume_bar(canvas, "Ambience", self.ambience_volume, -90.0)
+        _volume_bar(canvas, "Overall", self.audio.volume(), -140.0)
         with canvas.style(text_color=_HINT, font_size=18):
             canvas.text(
-                "up/down: ambience volume   left/right: overall volume",
+                "Up/Down: ambience volume   Left/Right: overall volume",
                 (0.0, -200.0),
             )
 

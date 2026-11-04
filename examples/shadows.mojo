@@ -56,7 +56,7 @@ struct App(Program):
         with canvas.style(text_color=Color(0x30, 0x40, 0x60), font_size=26):
             canvas.text("A card", (-330, 110))
         with canvas.style(text_color=Color(0x70, 0x78, 0x88), font_size=18):
-            canvas.text("a drop shadow, offset straight down", (-330, 60))
+            canvas.text("A drop shadow, offset straight down", (-330, 60))
 
         # A text field pressed into the page: the inset shadow darkens the
         # top-left inner edges, as if lit from above.
@@ -94,13 +94,13 @@ struct App(Program):
         canvas.shadow_enabled(False)
 
         with canvas.style(text_color=Color(0x50, 0x58, 0x68), font_size=18):
-            canvas.text("fixed to the screen", (170, -20))
-            canvas.text("follows the transform", (430, -20))
-            canvas.text("an image's alpha", (300, -265))
+            canvas.text("Fixed to the screen", (170, -20))
+            canvas.text("Follows the transform", (430, -20))
+            canvas.text("An image's alpha", (300, -265))
 
         with canvas.style(text_color=Color(0x70, 0x78, 0x88), font_size=18):
             canvas.text(
-                "space: " + ("soft" if self.soft else "hard") + " shadows",
+                "Space: " + ("soft" if self.soft else "hard") + " shadows",
                 (0, canvas.bottom() + 40),
             )
 

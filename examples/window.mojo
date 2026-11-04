@@ -85,19 +85,19 @@ struct App(Program):
         # the lines below centre sit at negative y.
         var cap = context.max_frame_rate()
         var lines: List[String] = [
-            String(context.autoscale(), "   scale ", round(canvas.scale(), 2)),
+            String(context.autoscale(), "   Scale ", round(canvas.scale(), 2)),
             String(
-                "world ",
+                "World ",
                 Int(canvas.width()),
                 " x ",
                 Int(canvas.height()),
-                "   resizable ",
+                "   Resizable ",
                 context.resizable(),
             ),
             String(
-                "frame rate ",
+                "Frame rate ",
                 Int(context.frame_rate() + 0.5),
-                "   cap ",
+                "   Cap ",
                 String(cap) if cap > 0 else "none",
             ),
         ]
@@ -106,7 +106,10 @@ struct App(Program):
                 canvas.text(lines[i], (0, -70 - 40 * i))
         with canvas.style(text_color=_HINT, font_size=18):
             canvas.text(
-                "space: autoscale   F11: fullscreen   R: resizable   F: cap",
+                (
+                    "Space: autoscale   F11: fullscreen   R: resizable   F:"
+                    " frame-rate cap"
+                ),
                 (0, -210),
             )
 

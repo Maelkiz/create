@@ -47,7 +47,7 @@ struct App(Program):
         canvas.text("Arcs", (0, 362))
         canvas.font_size(18)
         canvas.text(
-            "one tween, swept clockwise and counter-clockwise from the top",
+            "One tween, swept clockwise and counter-clockwise from the top",
             (0, 322),
         )
 

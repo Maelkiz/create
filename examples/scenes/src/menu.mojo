@@ -22,4 +22,4 @@ struct Menu:
         with canvas.style(
             text_color=Color(180, 180, 190), font_size=20, text_align=Align.TOP
         ):
-            canvas.text("click to start painting", (0, -20))
+            canvas.text("Click to start painting", (0, -20))

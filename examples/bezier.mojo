@@ -101,7 +101,7 @@ struct App(Program):
         canvas.text_align(Align.TOP)
         canvas.text("Cubic Bézier", (0, 362))
         canvas.font_size(18)
-        canvas.text("drag the handles to reshape the curve", (0, 322))
+        canvas.text("Drag the handles to reshape the curve", (0, 322))
 
 
 def main() raises:

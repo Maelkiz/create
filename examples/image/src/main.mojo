@@ -103,7 +103,7 @@ struct Images(Program):
         canvas.background(_BACKGROUND)
 
         var formats = _formats()
-        var reading = String("hover a picture to read its pixels")
+        var reading = String("Hover a picture to read its pixels")
         for i in range(len(self.pictures)):
             ref picture = self.pictures[i]
             var center = Point2D(Float64(i - 1) * 300.0, _ROW_Y)
@@ -153,7 +153,7 @@ struct Images(Program):
             canvas.image(self.sprite, self.position, _SPRITE_SIZE, _SPRITE_SIZE)
         with canvas.style(text_color=_HINT, font_size=18):
             canvas.text(
-                "W A S D move the sprite, T tints it: " + String(tint),
+                "W, A, S and D move the sprite; T tints it: " + String(tint),
                 (0.0, canvas.bottom() + 30),
             )
 

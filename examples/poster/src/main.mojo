@@ -146,7 +146,7 @@ struct Poster(Program):
             text_align=Align.BOTTOM,
         ):
             canvas.text(
-                String("seed ", self.seed, "   space: a new poster"),
+                String("Seed ", self.seed, "   Space: a new poster"),
                 (0.0, canvas.bottom() + 20.0),
             )
 

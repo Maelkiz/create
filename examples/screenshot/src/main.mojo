@@ -58,10 +58,10 @@ struct App(Program):
         canvas.text_color(Color.WHITE)
         canvas.text_align(Align.TOP)
         canvas.font_size(26)
-        canvas.text("S - screenshot     I - image     Shift+I - 2x", (0, 220))
+        canvas.text("S: screenshot   I: image   Shift+I: image at 2x", (0, 220))
         canvas.font_size(20)
         if self.saved:
-            canvas.text("wrote " + self.saved, (0, -200))
+            canvas.text("Wrote " + self.saved, (0, -200))
 
 
 def main() raises:
