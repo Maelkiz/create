@@ -8,6 +8,8 @@ RenderBackend.GPU)` used to mean `frames=1` on the CPU backend and compile.
 The constructor is deliberately not `@implicit` for the same reason.
 """
 
+from std.sys import argv
+
 
 struct RenderBackend(
     Copyable, Equatable, ImplicitlyCopyable, Movable, Writable
@@ -21,6 +23,32 @@ struct RenderBackend(
 
     def __init__(out self, value: Int):
         self.value = value
+
+    @staticmethod
+    def from_arguments() -> RenderBackend:
+        """The backend named on the command line: `GPU` when the program was
+        run with a `gpu` argument, `CPU` otherwise or with `cpu`, the last
+        named winning. So one build runs on either, `./sketch gpu` or
+        `pixi run example shadows gpu`, passed as
+        `run(..., backend=RenderBackend.from_arguments())`; other arguments
+        are left for the program."""
+        var arguments = List[String]()
+        var raw = argv()
+        for i in range(1, len(raw)):
+            arguments.append(String(raw[i]))
+        return RenderBackend._from_argument_list(arguments)
+
+    @staticmethod
+    def _from_argument_list(arguments: List[String]) -> RenderBackend:
+        """`from_arguments` over a given list, so it can be tested without a
+        command line."""
+        var backend = RenderBackend.CPU
+        for argument in arguments:
+            if argument == "gpu":
+                backend = RenderBackend.GPU
+            elif argument == "cpu":
+                backend = RenderBackend.CPU
+        return backend
 
     def __eq__(self, other: RenderBackend) -> Bool:
         return self.value == other.value

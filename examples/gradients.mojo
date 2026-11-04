@@ -9,8 +9,6 @@ it.
 """
 from create import *
 
-from _arguments import backend_argument
-
 
 @fieldwise_init
 struct App(Program):
@@ -118,5 +116,5 @@ def main() raises:
         width=1280,
         height=720,
         autoscale=Autoscale.EXTEND,
-        backend=backend_argument(),
+        backend=RenderBackend.from_arguments(),
     )

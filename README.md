@@ -40,6 +40,12 @@ Rendering runs on the CPU by default. `backend=RenderBackend.GPU` runs the same 
 run[MyApp]("Hello", backend=RenderBackend.GPU)
 ```
 
+`RenderBackend.from_arguments()` lets the command line choose instead: `GPU` when the program is run with a `gpu` argument, the CPU otherwise.
+
+```mojo
+run[MyApp]("Hello", backend=RenderBackend.from_arguments())  # ./hello gpu
+```
+
 The example programs in this repository can be run with the `example` pixi task, which takes a name rather than a path. 
 The name must correspond to a file or folder under `examples/`. For folders it will find an run their `src/main.mojo`.
 

@@ -25,7 +25,7 @@ it makes the library better.
 | root | `src/create/__init__.mojo` | The preamble: star-imports all ten subpackages below |
 | `core` | `src/create/core/` | `Program`, the run state (`Context`, `Time`), the run loops (windowed, GPU, headless), `step`, event-to-`Input` translation, `WindowMode`, `source_path`, `DateTime` |
 | `input` | `src/create/input/` | `Input` (keyboard, mouse, gamepads, typed text), `Key`, `MouseButton`, `Gamepad`, `GamepadButton`, `EditableText` |
-| `render` | `src/create/render/` | `Canvas` and its `with`-block guards, `Style`, `Camera`, `Antialiasing`, `Autoscale`, `Align` (text anchoring), `RenderBackend` (`run`'s CPU/GPU choice), text layout, the command buffer, both backends (CPU rasteriser, GL 3.3) |
+| `render` | `src/create/render/` | `Canvas` and its `with`-block guards, `Style`, `Camera`, `Antialiasing`, `Autoscale`, `Align` (text anchoring), `RenderBackend` (`run`'s CPU/GPU choice; `from_arguments` reads it from a `gpu` argument), text layout, the command buffer, both backends (CPU rasteriser, GL 3.3) |
 | `color` | `src/create/color/` | `Color`, `Gradient` (with the ramp and dither both backends share), `BlendMode` |
 | `math` | `src/create/math/` | `Point2D`, `Vector2D`, `Matrix` and its functions, `Random`, `Noise`, `Easing`/`ease` and `Tween`, `PI`/`TAU`, util functions, re-exported `std.math` functions |
 | `geometry` | `src/create/geometry/` | The shapes (`Rectangle`, `Circle`, `Triangle`, `Sector`, `Polygon`, `Line`, `Arc`), `Bezier`, `Spline`, the `Shape`/`Region`/`Curve` and `Drawable`/`DrawTarget` traits, `overlaps`/`contains`/`intersects`, corner rounding's maths |
