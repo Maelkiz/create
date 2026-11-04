@@ -61,10 +61,10 @@ struct App(Program):
         canvas.text_color(Color(200, 200, 212))
         canvas.font_size(30)
         canvas.text_align(Align.TOP)
-        canvas.text("Easing and Tweens", (0, 362))
+        canvas.text("Easing and tweens", (0, 362))
         canvas.font_size(18)
         canvas.text_color(Color(140, 140, 155))
-        canvas.text("hover over a curve to play it", (0, 318))
+        canvas.text("Hover over a curve to play it", (0, 318))
 
         canvas.text_align(Align.LEFT)
         for i in range(len(self.curves)):
@@ -95,4 +95,4 @@ def _row_y(i: Int) -> Float64:
 
 
 def main() raises:
-    run[App]("Easing and Tweens", width=1280, height=800)
+    run[App]("Easing and tweens", width=1280, height=800)

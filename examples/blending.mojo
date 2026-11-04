@@ -86,7 +86,7 @@ struct App(Program):
         canvas.font_size(28)
         canvas.text(String(self.mode), (0.0, canvas.bottom() + 75.0))
         canvas.font_size(18)
-        canvas.text("(space to cycle)", (0.0, canvas.bottom() + 45.0))
+        canvas.text("(Space to cycle)", (0.0, canvas.bottom() + 45.0))
 
 
 def main() raises:

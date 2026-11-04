@@ -103,13 +103,13 @@ struct App(Program):
             canvas.circle((150, -140), 120)
 
         with canvas.style(text_color=Color.WHITE, font_size=18):
-            canvas.text("linear", (-450, 30))
-            canvas.text("radial", (-220, 30))
-            canvas.text("diagonal", (0, 30))
-            canvas.text("sector", (220, 30))
-            canvas.text("polygon", (450, 30))
-            canvas.text("turns with the shape", (-250, -250))
-            canvas.text("fades to transparent", (150, -250))
+            canvas.text("Linear", (-450, 30))
+            canvas.text("Radial", (-220, 30))
+            canvas.text("Diagonal", (0, 30))
+            canvas.text("Sector", (220, 30))
+            canvas.text("Polygon", (450, 30))
+            canvas.text("Turns with the shape", (-250, -250))
+            canvas.text("Fades to transparent", (150, -250))
 
 
 def main() raises:

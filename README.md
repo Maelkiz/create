@@ -27,7 +27,7 @@ struct MyApp(Program):
     def update(mut self, mut context: Context, mut canvas: Canvas) raises:
         # Called once per frame: handle input, modify state, and draw to the screen
         canvas.font_size(48)
-        canvas.text("Hello World!", (0, 0))
+        canvas.text("Hello, world!", (0, 0))
 
 
 def main() raises:

@@ -4,7 +4,7 @@
 same PNG -- while `spin` is loaded from a folder of numbered frames. Both
 end up as the same type, so nothing downstream cares which path was used.
 
-A and D (or the arrows) run, space spins, P pauses.
+A and D (or Left and Right) run, Space spins, P pauses.
 """
 
 from create import *
@@ -115,7 +115,7 @@ struct Game(Program):
         canvas.text_align(Align.TOP)
         canvas.font_size(20)
         canvas.text(
-            "A / D to run  -  SPACE to spin  -  P to pause spin animation",
+            "A/D: run   Space: spin   P: pause",
             (0.0, 140.0),
         )
 

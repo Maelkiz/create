@@ -1,7 +1,7 @@
 """Polygons: regular ones from three sides to eight, turning stars, a concave
 U and a self-crossing pentagram, each lit while the mouse is inside it.
 
-Up and down change the stars' inner radius; drag the pentagram onto the U
+Up and Down change the stars' inner radius; drag the pentagram onto the U
 to test `overlaps`.
 """
 
@@ -38,7 +38,8 @@ def _pentagram(position: Point2D, r: Float64) -> Polygon:
 @fieldwise_init
 struct App(Program):
     var inner_ratio: Float64
-    """The stars' inner radius as a fraction of the outer; up and down."""
+    """The stars' inner radius as a fraction of the outer; Up and Down
+    change it."""
 
     var pentagram: Polygon
     """Dragged onto the U to test the overlap."""
@@ -152,10 +153,10 @@ struct App(Program):
         canvas.text("Polygons", (0, 362))
         canvas.font_size(18)
         canvas.text(
-            "hover the shapes; up and down change the stars' inner radius"
+            "Hover the shapes; Up and Down change the stars' inner radius"
             + " ("
             + String(Int(self.inner_ratio * 100.0 + 0.5))
-            + "%); drag the pentagram onto the U.",
+            + "%); drag the pentagram onto the U",
             (0, 322),
         )
 

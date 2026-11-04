@@ -76,7 +76,7 @@ struct Offscreen(Program):
         canvas.image(self.badge, input.mouse, _BADGE_SIZE, _BADGE_SIZE)
 
         with canvas.style(text_color=Color(0x90, 0x98, 0xA8), font_size=18):
-            canvas.text("drag to paint, c to clear", (0, canvas.bottom() + 30))
+            canvas.text("Drag to paint, C to clear", (0, canvas.bottom() + 30))
 
 
 def main() raises:

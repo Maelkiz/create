@@ -139,8 +139,8 @@ struct App(Program):
         canvas.font_size(18)
         canvas.text(
             (
-                "click to add a point, drag to move, right-click to remove;"
-                " C closes, 1 2 3 set alpha"
+                "Click to add a point, drag to move, right-click to remove;"
+                " C closes the curve; 1, 2 and 3 set alpha"
             ),
             (0, 322),
         )

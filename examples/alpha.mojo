@@ -55,13 +55,13 @@ struct App(Program):
             canvas.image(self.logo, _CARD + Vector2D(0, 20), 100, 100)
             with canvas.style(text_color=Color.WHITE, font_size=22):
                 canvas.text(
-                    String("opacity ", round(opacity, 2)),
+                    String("Opacity ", round(opacity, 2)),
                     _CARD - Vector2D(0, 55),
                 )
 
         with canvas.style(text_color=_HINT, font_size=18):
-            canvas.text("alpha: each colour its own", (-185.0, -120.0))
-            canvas.text("opacity: one value for every part", (200.0, -130.0))
+            canvas.text("Alpha: each colour its own", (-185.0, -120.0))
+            canvas.text("Opacity: one value for every part", (200.0, -130.0))
 
 
 def main() raises:
