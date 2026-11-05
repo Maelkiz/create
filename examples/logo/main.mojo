@@ -1,17 +1,9 @@
-"""The Create logo: a black triangle cut into four rows of smaller ones, with
-the six pointing down in colour and the middle one left white.
+"""The Create logo, built up on screen.
 
-The logo is Pascal's triangle, rows 0 to 3, by parity: the triangles
-pointing up are its entries, black where the entry is odd and white where it
-is even. Pascal's triangle by parity, carried on forever, is the Sierpinski
-triangle, so that is drawn first, in points, with the chaos game: start at a
-corner, then over and over move halfway towards a corner picked at random.
-
-Then each small triangle of the logo flies in over it from off screen,
-spinning, one after another, and each on a different easing curve.
-
-The whole animation is recorded as it plays, and saved to `out/logo.gif`
-beside this file once the finished logo has been on screen for 1.5 seconds.
+First the Sierpinski triangle appears in points, by the chaos game: start at a
+corner, then keep moving halfway towards a randomly picked corner. Then the
+logo's small triangles grow in place over it, one after another, each on its
+own easing curve. The animation is recorded to `out/logo.gif`.
 """
 
 from std.os import makedirs
@@ -22,16 +14,16 @@ from create import *
 comptime _SIDE = 640.0
 comptime _PAPER = Color(253, 253, 250)
 
-comptime _POINTS_PER_FRAME = 2000
+comptime _POINTS_PER_FRAME = 1000
 comptime _MAX_POINTS = 240_000
-"""Where the points stop and the triangles set off."""
-comptime _DURATION = 1.2
-"""Seconds each triangle takes to fly in."""
+"""Where the points stop."""
+comptime _GROW_POINTS = 40_000
+"""Where the triangles start to grow, while the points carry on."""
+comptime _DURATION = 2.5
+"""Seconds each triangle takes to grow to its full size."""
 comptime _STAGGER = 0.25
-"""Seconds between one triangle setting off and the next."""
-comptime _DISTANCE = 900.0
-"""How far out each triangle starts: past the corner of the 1280x720 screen."""
-comptime _HOLD_SECONDS = 1.5
+"""Seconds between one triangle starting to grow and the next."""
+comptime _HOLD_SECONDS = 2.5
 """How long the recording keeps the finished logo on screen."""
 
 
@@ -48,19 +40,16 @@ def _corner(row: Int, index: Int) -> Point2D:
 
 @fieldwise_init
 struct _Piece(Copyable):
-    """One small triangle and its flight."""
+    """One small triangle and its growth."""
 
     var shape: Triangle
     """The triangle around its own centre, placed by the transform."""
     var home: Point2D
-    """Where its centre lands."""
-    var start: Point2D
-    var spin: Float64
-    """The turn it makes on the way, in radians."""
+    """Where its centre sits, and what it grows from."""
     var color: Color
     var tween: Tween
     var delay: Float64
-    """Seconds after the start before it sets off."""
+    """Seconds after the start before it starts to grow."""
 
 
 @fieldwise_init
@@ -75,7 +64,7 @@ struct Logo(Program):
     """`layer` as last read."""
     var count: Int
     var elapsed: Float64
-    """Seconds since the points stopped and the triangles set off."""
+    """Seconds since the triangles started to grow."""
     var shown: Float64
     """Seconds the finished logo has been on screen."""
 
@@ -129,15 +118,19 @@ struct Logo(Program):
         var pieces = List[_Piece]()
         for i in range(len(triangles)):
             var home = triangles[i].center()
-            var outward = Vector2D(home).normalize()
+            var curve = curves[i % len(curves)]
+            var duration = _DURATION
+            # The last, bottom-right triangle would bounce; let it ease in,
+            # and quicker, so the logo doesn't wait on it.
+            if i == len(triangles) - 1:
+                curve = Easing.OUT_SINE
+                duration = _DURATION * 0.6
             pieces.append(
                 _Piece(
                     shape=triangles[i].translate(-Vector2D(home)),
                     home=home,
-                    start=home + outward * _DISTANCE,
-                    spin=PI if i % 2 == 0 else -PI,
                     color=triangle_colors[i],
-                    tween=Tween(_DURATION, curves[i % len(curves)]),
+                    tween=Tween(duration, curve),
                     delay=Float64(i) * _STAGGER,
                 )
             )
@@ -179,13 +172,13 @@ struct Logo(Program):
                         self.layer.rectangle(self.point, 1, 1)
             self.count += _POINTS_PER_FRAME
             self.picture = self.layer.snapshot()
-        else:
+        if self.count >= _GROW_POINTS:
             self.elapsed += context.time.delta
 
         var landed = True
         for ref piece in self.pieces:
             if (
-                self.count >= _MAX_POINTS
+                self.count >= _GROW_POINTS
                 and self.elapsed >= piece.delay
                 and not piece.tween.is_playing()
                 and not piece.tween.is_finished()
@@ -211,12 +204,11 @@ struct Logo(Program):
             if not piece.tween.is_playing() and not piece.tween.is_finished():
                 continue
             # Eased curves like OUT_BACK run past 1 on the way, so the piece
-            # overshoots its home and turns back a little.
-            var t = piece.tween.value()
-            var position = piece.start.lerp(piece.home, t)
-            var angle = piece.spin * (1.0 - t)
+            # grows a little too big and shrinks back; IN_OUT_BACK dips below
+            # 0 first, which would turn it inside out, so hold it at nothing.
+            var size = max(piece.tween.value(), 0.0)
             with canvas.transform(
-                translate(Vector2D(position)) @ rotate(angle)
+                translate(Vector2D(piece.home)) @ scale(size)
             ):
                 canvas.fill(piece.color)
                 canvas.draw(piece.shape)
