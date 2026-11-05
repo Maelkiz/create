@@ -73,21 +73,23 @@ Both skip their checks when every changed path is inert (`*.md`, `LICENSE`, agen
 the allowlist is in `.githooks/_inert.sh`, read by the hook and the workflow alike.
 
 **Workflow.** `main` is protected by a ruleset: no direct pushes, no force pushes, no deletion,
-and a linear history. Every change lands as a squash-merged pull request once the required check
-`ci` passes — it passes when `linux-format`, `linux-precompile`, `linux-examples`, `linux-tests`,
+and a linear history. Every change lands as a pull request, merged once the required check `ci`
+passes — it passes when `linux-format`, `linux-precompile`, `linux-examples`, `linux-tests`,
 `macos-examples` and `macos-tests` all passed, or were skipped for an inert change; no approval is
-required.
+required. **Rebase and merge** is the only merge method enabled: squash and merge commits are off.
 
 ```bash
 git switch -c some-change                 # from an up-to-date main
 git push -u origin some-change            # pushes run no hook; CI runs on the PR
 gh pr create --fill
-gh pr merge --auto --squash               # merges itself once CI is green
+gh pr merge --auto --rebase               # merges itself once CI is green
 git switch main && git pull --ff-only
 ```
 
-The branch need not be up to date with `main` to merge, and the head branch is deleted on merge.
-A repository admin may bypass the checks when merging a pull request (CI itself broken), never
+Each of the branch's commits lands on `main` as it is, rebased (new hashes), so every one should
+build and carry a finished message; tidy the branch before merging rather than relying on a
+squash. The branch need not be up to date with `main` to merge, and the head branch is deleted on
+merge. A repository admin may bypass the checks when merging a pull request (CI itself broken), never
 for a direct push. Leave merging to the user unless they ask for it.
 
 Neither tier subsumes the other: building a consumer program type-checks only the `def` bodies it
