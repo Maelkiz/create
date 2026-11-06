@@ -16,7 +16,7 @@ from sketch to game, prototype to full application. It provides a clean, modular
 <p align="center">
     <img src="assets/gifs/logo-animation.gif" alt="The Create logo assembling: a Sierpinski triangle drawn in points, then the logo's triangles flying in over it">
     <br>
-    <sub>The logo drawn, animated and recorded to a GIF using the Create library itself. See: <a href="examples/logo/main.mojo">examples/logo</a> for the source code.</sub>
+    <sub>The logo drawn, animated, and recorded to a GIF using the Create library itself. See: <a href="examples/logo/main.mojo">examples/logo</a> for the source code.</sub>
 </p>
 
 ## The boilerplate
@@ -48,7 +48,8 @@ Rendering runs on the CPU by default. `backend=RenderBackend.GPU` runs the same 
 run[MyApp]("Hello", backend=RenderBackend.GPU)
 ```
 
-`RenderBackend.from_arguments()` lets the command line choose instead: `GPU` when the program is run with a `gpu` argument, the CPU otherwise.
+`RenderBackend.from_arguments()` lets the command line choose instead: given `gpu` as an argument, the program will run using the GPU backend. 
+Conversely, providing `cpu` (or omitting the argument entirely) runs the program on the CPU rendering backend.
 
 ```mojo
 run[MyApp]("Hello", backend=RenderBackend.from_arguments())
@@ -56,7 +57,7 @@ run[MyApp]("Hello", backend=RenderBackend.from_arguments())
 
 ## Running examples and benchmarks
 
-The example programs in this repository can be run with the `example` pixi task, which takes a name rather than a path. 
+You can run the example programs in this repository with the `example` pixi task, which takes a name rather than a path. 
 The name is a folder under `examples/`, and the task runs its `main.mojo`.
 
 ```bash
@@ -70,7 +71,7 @@ Benchmarks live under `benchmarks/` and run the same way with the `benchmark` ta
 ```bash
 pixi run benchmark frame         # a heavy frame through the window loop, GPU
 pixi run benchmark frame cpu     # the same frame on the CPU backend
-pixi run benchmark raster        # CPU rasterisation per primitive, headless
+pixi run benchmark raster        # CPU rasterization per primitive, headless
 ```
 
 ## Supported Platforms
@@ -81,7 +82,7 @@ pixi run benchmark raster        # CPU rasterisation per primitive, headless
 | Windows through WSL2 | Supported, used day to day |
 | macOS on Apple silicon | Built and tested in CI on every change; little use on a real desktop yet |
 
-Intel Macs and native Windows are not supported: Mojo doesn't run on either. Every dependency, Mojo included,
-comes from [pixi](https://pixi.sh), so `pixi run` is all a supported machine needs. A program built with
-`mojo build` finds those libraries itself, from any directory, while the pixi environment it was built in
-stays where it is.
+Intel Macs and native Windows are not supported: Mojo doesn't run on either. Every dependency, Mojo included, 
+is managed by [pixi](https://pixi.sh), so `pixi run` is all a supported machine needs. Programs built with 
+`mojo build` can be run from any working directory and locate their shared libraries in the original Pixi 
+environment, which must remain in place.
